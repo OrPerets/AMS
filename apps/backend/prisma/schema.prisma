@@ -23,4 +23,28 @@ model User {
   role          Role
   refreshTokenHash String?
   createdAt     DateTime @default(now())
+  resident      Resident?
+}
+
+model Building {
+  id        Int     @id @default(autoincrement())
+  name      String
+  address   String
+  tenantId  Int
+  units     Unit[]
+}
+
+model Unit {
+  id         Int        @id @default(autoincrement())
+  number     String
+  buildingId Int
+  building   Building   @relation(fields: [buildingId], references: [id])
+  residents  Resident[]
+}
+
+model Resident {
+  id      Int    @id @default(autoincrement())
+  userId  Int    @unique
+  user    User   @relation(fields: [userId], references: [id])
+  units   Unit[]
 }
