@@ -8,8 +8,8 @@
 
 - [x] Task 1: Implement JWT-based Auth (short-lived + refresh tokens).
 - [x] Task 2: Create User model with role & tenant_id.
-- [ ] Task 3: Add RBAC middleware (admin/pm/tech/resident/accountant).
-- [ ] Task 4: Setup RLS (Row-Level Security) in Postgres by tenant_id.
+- [x] Task 3: Add RBAC middleware (admin/pm/tech/resident/accountant).
+- [x] Task 4: Setup RLS (Row-Level Security) in Postgres by tenant_id.
 
 **Acceptance:** משתמש נכנס ורואה רק את המידע של הטננט שלו לפי הרשאה.
 

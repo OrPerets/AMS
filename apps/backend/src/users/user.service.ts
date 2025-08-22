@@ -13,4 +13,8 @@ export class UserService {
   create(data: Prisma.UserCreateInput): Promise<User> {
     return this.prisma.user.create({ data });
   }
+
+  findAll(): Promise<User[]> {
+    return this.prisma.user.findMany();
+  }
 }
