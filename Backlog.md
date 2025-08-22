@@ -19,10 +19,10 @@
 
 **User Story:** כ–מנהל, אני רוצה לנהל בניינים, דירות ודיירים.
 
-- [ ] Task 1: Create Building, Unit, Resident models.
-- [ ] Task 2: CRUD endpoints: /api/v1/buildings, /api/v1/units.
-- [ ] Task 3: Associate residents with units (many-to-many).
-- [ ] Task 4: Seed demo building with test data.
+ - [x] Task 1: Create Building, Unit, Resident models.
+ - [x] Task 2: CRUD endpoints: /api/v1/buildings, /api/v1/units.
+ - [x] Task 3: Associate residents with units (many-to-many).
+ - [x] Task 4: Seed demo building with test data.
 
 **Acceptance:** מנהל יכול להוסיף בניין, יחידות ודיירים; דייר רואה רק את יחידתו.
 
