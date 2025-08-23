@@ -6,6 +6,7 @@
     "start": "node -r dotenv/config dist/main.js",
     "start:dev": "ts-node -r dotenv/config src/main.ts",
     "prisma:seed": "ts-node -r dotenv/config prisma/seed.ts",
+    "prisma:reset": "prisma migrate reset --force --skip-generate",
     "test": "jest"
   },
   "dependencies": {
@@ -23,7 +24,8 @@
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.1",
     "pdfkit": "^0.13.0",
-    "twilio": "^4.0.0"
+    "twilio": "^4.0.0",
+    "@faker-js/faker": "^8.3.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
