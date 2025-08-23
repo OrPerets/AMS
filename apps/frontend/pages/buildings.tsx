@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { authFetch } from '../lib/auth';
 
 interface Building {
   id: number;
@@ -8,14 +9,29 @@ interface Building {
 export default function Buildings() {
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/v1/buildings')
-      .then((res) => res.json())
-      .then((data) => {
-        setBuildings(data);
+    (async () => {
+      try {
+        const res = await authFetch('/api/v1/buildings');
+        if (!res.ok) {
+          throw new Error(`Failed to load buildings (${res.status})`);
+        }
+        const data = await res.json();
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray((data as any)?.items)
+          ? (data as any).items
+          : [];
+        setBuildings(list);
+      } catch (e: any) {
+        setError(e?.message || 'Failed to load');
+        setBuildings([]);
+      } finally {
         setLoading(false);
-      });
+      }
+    })();
   }, []);
 
   return (
@@ -23,6 +39,8 @@ export default function Buildings() {
       <h1>בניינים</h1>
       {loading ? (
         <p>טוען...</p>
+      ) : error ? (
+        <p style={{ color: 'red' }}>{error}</p>
       ) : (
         <ul>
           {buildings.map((b) => (

@@ -18,7 +18,11 @@ export class PhotoService {
         }),
       );
     } catch (e) {
-      console.log('S3 upload failed or skipped:', e.message);
+      if (e instanceof Error) {
+        console.log('S3 upload failed or skipped:', e.message);
+      } else {
+        console.log('S3 upload failed or skipped:', e);
+      }
     }
     return `https://${bucket}.s3.amazonaws.com/${key}`;
   }

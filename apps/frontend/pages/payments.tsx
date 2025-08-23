@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { authFetch } from '../lib/auth';
 
 interface Invoice {
   id: number;
@@ -10,12 +11,25 @@ export default function Payments() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/v1/invoices/unpaid')
-      .then((res) => res.json())
-      .then((data) => {
-        setInvoices(data);
-        setLoading(false);
-      });
+    let isMounted = true;
+    (async () => {
+      try {
+        const res = await authFetch('/api/v1/invoices/unpaid');
+        if (!res.ok) {
+          if (isMounted) setInvoices([]);
+        } else {
+          const data = await res.json();
+          if (isMounted) setInvoices(Array.isArray(data) ? data : []);
+        }
+      } catch (e) {
+        if (isMounted) setInvoices([]);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (

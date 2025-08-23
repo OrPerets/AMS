@@ -7,7 +7,11 @@ async function main() {
   const passwordHash = await bcrypt.hash('admin123', 10);
   await prisma.user.upsert({
     where: { email: 'admin@demo.com' },
-    update: {},
+    update: {
+      passwordHash,
+      role: 'ADMIN',
+      tenantId: 1,
+    },
     create: {
       email: 'admin@demo.com',
       passwordHash,
@@ -22,6 +26,16 @@ async function main() {
   await prisma.user.deleteMany({ where: { role: 'RESIDENT' } });
 
   const residentPassword = await bcrypt.hash('resident123', 10);
+
+  await prisma.building.createMany({
+    data: [
+      { name: 'אפרים קישון 5', address: 'אפרים קישון 5, הרצליה', tenantId: 1 },
+      { name: 'אמה טאובר 9', address: 'אמה טאובר 9, הרצליה', tenantId: 1 },
+      { name: 'אפריים קישון 24', address: 'אפריים קישון 24, הרצליה', tenantId: 1 },
+      { name: 'אריאל 5', address: 'אריאל 5, הרצליה', tenantId: 1 },
+    ],
+    skipDuplicates: true,
+  });
 
   await prisma.building.create({
     data: {

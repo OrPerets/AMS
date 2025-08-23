@@ -15,8 +15,12 @@ export class UnitController {
 
   @Post()
   create(@Body() dto: CreateUnitDto) {
-    const { residentIds, ...data } = dto;
-    return this.units.create(data, residentIds);
+    const { residentIds, buildingId, number } = dto;
+    const data = {
+      number,
+      building: { connect: { id: buildingId } },
+    };
+    return this.units.create(data as any, residentIds);
   }
 
   @Get()
@@ -31,7 +35,10 @@ export class UnitController {
 
   @Put(':id')
   update(@Param('id') id: string, @Body() dto: UpdateUnitDto) {
-    const { residentIds, ...data } = dto;
+    const { residentIds } = dto;
+    const data: any = {};
+    if (dto.number !== undefined) data.number = dto.number;
+    if (dto.buildingId !== undefined) data.building = { connect: { id: dto.buildingId } };
     return this.units.update(+id, data, residentIds);
   }
 

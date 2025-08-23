@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { authFetch } from '../lib/auth';
 
 interface Ticket {
   id: number;
@@ -11,12 +12,12 @@ export default function Tickets() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/v1/tickets')
+    authFetch('/api/v1/tickets')
       .then((res) => res.json())
       .then((data) => {
-        setTickets(data);
-        setLoading(false);
-      });
+        setTickets(Array.isArray(data) ? data : []);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   return (

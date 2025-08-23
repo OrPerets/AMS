@@ -120,11 +120,79 @@
 
 ---
 
-## Sprint Plan 
+## Epic: Master User & Role Switching
 
-- **Sprint 0**: Repo setup (monorepo, Next.js + NestJS, auth base, DB seed).
-- **Sprint 1**: Tickets module (end-to-end).
-- **Sprint 2**: Payments basic flow.
-- **Sprint 3**: Dashboard + Notifications.
-- **Sprint 4**: Hardening (NFRs, polish, MFA, backups).
+**User Story:** כ–מנהל מערכת, אני רוצה משתמש-על ("Master") שיכול להחליף תצוגות בין תפקידים (מנהל/דייר/טכנאי/רו"ח/PM) לצורך בדיקות, תמיכה והדרכות – באופן מאובטח ומתועד.
+
+- [ ] Task 1: Add `MASTER` to roles enum + DB migration.
+- [ ] Task 2: Seed Master user (DEV בלבד) עם סיסמה מאובטחת.
+- [ ] Task 3: Backend – Impersonation מאובטח:
+  - יצירת endpoint `POST /api/v1/admin/impersonate` (Master בלבד) שמנפיק JWT עם claim של `actAsRole` ו-`tenantId`.
+  - יצירת endpoint `POST /api/v1/admin/impersonate/stop` שמחזיר ל-token המקורי.
+  - הוספת Audit log לטבלת `impersonation_events` (start/stop, by, target, reason, ip, userAgent).
+  - הגנות: תוקף קצר (30 דק'), מניעת חציית טננטים, אימות שרק תפקידים מוכרים ב-actAs.
+- [ ] Task 4: Frontend – Role Switcher UI:
+  - רכיב מחליף-תפקידים ב-`Layout` ל-Master בלבד, עם badge מודגש "צפייה כ–<role>".
+  - קריאה ל-impersonate לקבלת token חדש והחזרה ל-token המקורי ב-stop.
+  - אינדיקציה קבועה (banner) במצב impersonation + כפתור "חזור למשתמש המקורי".
+- [ ] Task 5: אבטחה והתנהגות פעולות רגישות:
+  - החלטת מדיניות: לאפשר פעולות כתפקיד המתחזה (לצורכי בדיקות) אך לתעד הכל, או להגביל פעולות הרסניות.
+  - הוספת התראות מנהליות על impersonation פעיל מעבר ל-60 דק'.
+- [ ] Task 6: בדיקות – יחידה/אינטגרציה/E2E לריבוי תפקידים תחת impersonation ו-RBAC.
+
+**Acceptance:** משתמש Master יכול להחליף תצוגה לתפקידים מותרים באותו tenant; כל בקשות ה-API מאושרות לפי `actAsRole`; כל אירועי impersonation מתועדים ומסומנים UI.
+
+---
+
+## Epic: Rich Mock/Test Data (Seed)
+
+**User Story:** כ–בודק/מדריך, אני רוצה דאטה מגוון וריאלי כדי להדגים תרחישים ולבצע בדיקות מקיפות ללא עבודה ידנית.
+
+- [ ] Task 1: הרחבת `seed.ts` עם קונפיג קנה-מידה (`SEED_SCALE=small|medium|large`).
+- [ ] Task 2: יצירת נתונים:
+  - Tenants (2), Buildings (3–5 לכל טננט), Units (20–50 לכל בניין).
+  - Users לפי תפקיד: Master (1, DEV), Admin, PM, Tech, Accountant, Residents.
+  - Suppliers, Tickets (סטטוסים שונים, עם SLA), Work Orders (כולל "היום"), Invoices (UNPAID/PAID/OVERDUE), Payments, Notifications.
+- [ ] Task 3: דור נתונים דטרמיניסטי (seed ל-faker), Idempotent (ניקוי והזרקה מחדש), DEV בלבד.
+- [ ] Task 4: מדיה ודוא"ל בסביבת פיתוח:
+  - תמונות: שימוש ב-placeholder/avatarlorempics; אחסון מקומי/דמי.
+  - דוא"ל: ניתוב ל-Mailhog/Console במקום שליחה אמיתית.
+- [ ] Task 5: הדפסת תקציר קרדנציאלס בסיום seed (טבלה של משתמשים/סיסמאות DEV).
+- [ ] Task 6: סקריפטים: `yarn db:reset` + `yarn seed:test` + תיעוד שגיאות נפוצות.
+- [ ] Task 7: תיעוד: README – איך מריצים seed, לאילו משתמשים להתחבר, ומה לבדוק.
+
+**Acceptance:** הרצה יחידה מייצרת דאטה ריאלי עם קרדנציאלס לבדיקה; עמודי תשלומים/משימות טכנאי מאוכלסים; הרצה חוזרת בטוחה ומנקה נתונים קודמים ב-DEV.
+
+---
+
+## Epic: UI Redesign & Theming (RTL-first)
+
+**User Story:** כ–משתמש, אני רוצה ממשק אלגנטי, מקצועי ושימושי (RTL מלא), שמדגיש בהירות ויעילות.
+
+- [ ] Task 1: Design System & Foundations:
+  - הטמעת Tailwind CSS + Radix UI + shadcn/ui.
+  - הגדרת RTL, טיפוגרפיה, טוקני צבע/ריווח, מצב Light/Dark.
+- [ ] Task 2: Layout & Navigation:
+  - App Shell מודרני: Header (עם Role Switcher), Sidebar, Breadcrumbs, Footer.
+  - ניווט רספונסיבי ונגיש (Mobile-first).
+- [ ] Task 3: Component Library:
+  - Buttons, Inputs, Selects, Date/Time Picker, Modal, Toast, Badge, Tabs.
+  - Data Table (מיון/סינון/עמוד-עבודה), Skeletons, Empty States.
+  - טפסים עם `react-hook-form` + `zod`, הודעות שגיאה עקביות.
+- [ ] Task 4: Page Redesigns:
+  - Dashboard: כרטיסי KPI, גרפים בסיסיים.
+  - Tickets: רשימה, פרטי קריאה, הקצאה, העלאת תמונות.
+  - Tech Jobs: רשימת משימות היום, פעולה מהירה לסגירה, פידבק הצלחה.
+  - Payments: רשימת חובות, CTA לתשלום, סטטוס קבלה.
+  - Buildings/Units: רשימות ופרטים עם UX עריכה נוח.
+- [ ] Task 5: Accessibility & i18n:
+  - תאימות WCAG 2.1 AA, מצבי פוקוס, ARIA, ניווט מקלדת.
+  - טיפול כיוון ותרגומים, מספרים/תאריכים בפורמט מקומי.
+- [ ] Task 6: Visual Polish:
+  - מיקרו-אנימציות, טרנזיציות עדינות, ריווח עקבי.
+  - מצבי טעינה/שגיאה אחידים, Toasts להתראות.
+- [ ] Task 7: Docs & Storybook:
+  - Storybook לרכיבים מרכזיים, מדריך תרומות לעיצוב.
+
+**Acceptance:** UI אחיד, נגיש ומותאם RTL; עמודים מרכזיים נראים ומתנהגים באופן מקצועי; מדדים חיוביים בשביעות רצון ובמהירות ביצוע.
 

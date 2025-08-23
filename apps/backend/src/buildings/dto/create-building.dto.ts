@@ -2,11 +2,11 @@ import { IsInt, IsString } from 'class-validator';
 
 export class CreateBuildingDto {
   @IsString()
-  name: string;
+  name!: string;
 
   @IsString()
-  address: string;
+  address!: string;
 
   @IsInt()
-  tenantId: number;
+  tenantId!: number;
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ExecutionContext, Injectable } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { PrismaService } from '../prisma.service';
 
@@ -8,10 +8,16 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     super();
   }
 
-  async handleRequest(err: any, user: any, info: any, context: any, status?: any) {
+  handleRequest<TUser = any>(
+    err: any,
+    user: any,
+    info: any,
+    context: ExecutionContext,
+    status?: any,
+  ): TUser {
     if (user?.tenantId) {
-      await this.prisma.$executeRaw`SET app.tenant_id = ${user.tenantId}`;
+      void this.prisma.$executeRaw`SET app.tenant_id = ${user.tenantId}`;
     }
-    return super.handleRequest(err, user, info, context, status);
+    return super.handleRequest(err, user, info, context, status) as TUser;
   }
 }

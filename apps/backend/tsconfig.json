@@ -3,6 +3,6 @@
   "include": ["src/**/*", "prisma/**/*"],
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "."
   }
 }

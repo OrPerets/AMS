@@ -18,6 +18,8 @@ export class BuildingController {
     return this.buildings.create(dto);
   }
 
+  // Public list endpoint for frontend
+  @UseGuards()
   @Get()
   findAll() {
     return this.buildings.findAll();

@@ -3,10 +3,10 @@ import { IsEnum, IsInt, IsOptional, IsDateString } from 'class-validator';
 
 export class CreateTicketDto {
   @IsInt()
-  unitId: number;
+  unitId!: number;
 
   @IsEnum(TicketSeverity)
-  severity: TicketSeverity;
+  severity!: TicketSeverity;
 
   @IsOptional()
   @IsDateString()

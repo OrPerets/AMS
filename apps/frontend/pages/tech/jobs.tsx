@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { authFetch } from '../../lib/auth';
 
 interface WorkOrder {
   id: number;
@@ -10,13 +11,27 @@ export default function Jobs() {
   const [orders, setOrders] = useState<WorkOrder[]>([]);
 
   useEffect(() => {
-    fetch('/api/v1/work-orders/today?supplierId=1')
-      .then((res) => res.json())
-      .then(setOrders);
+    let isMounted = true;
+    (async () => {
+      try {
+        const res = await authFetch('/api/v1/work-orders/today?supplierId=1');
+        if (!res.ok) {
+          if (isMounted) setOrders([]);
+          return;
+        }
+        const data = await res.json();
+        if (isMounted) setOrders(Array.isArray(data) ? data : []);
+      } catch (e) {
+        if (isMounted) setOrders([]);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const markDone = async (ticketId: number) => {
-    await fetch(`/api/v1/tickets/${ticketId}/status`, {
+    await authFetch(`/api/v1/tickets/${ticketId}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'RESOLVED' }),
