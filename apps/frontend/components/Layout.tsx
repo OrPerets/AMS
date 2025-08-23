@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import React from 'react';
+import RoleSwitcher from './RoleSwitcher';
 
 interface Props {
   children: React.ReactNode;
@@ -16,6 +17,7 @@ export default function Layout({ children }: Props) {
         <Link href="/admin/dashboard">דשבורד מנהל</Link>
         <Link href="/tech/jobs">משימות טכנאי</Link>
       </nav>
+      <RoleSwitcher />
       <main className="container">{children}</main>
     </div>
   );

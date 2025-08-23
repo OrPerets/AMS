@@ -8,6 +8,7 @@ import { WorkOrderModule } from './work-orders/work-order.module';
 import { PaymentModule } from './payments/payment.module';
 import { NotificationModule } from './notifications/notification.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     PaymentModule,
     NotificationModule,
     DashboardModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

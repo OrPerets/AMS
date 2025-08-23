@@ -20,6 +20,22 @@ async function main() {
     },
   });
 
+  const masterHash = await bcrypt.hash('master123', 10);
+  await prisma.user.upsert({
+    where: { email: 'master@demo.com' },
+    update: {
+      passwordHash: masterHash,
+      role: 'MASTER',
+      tenantId: 1,
+    },
+    create: {
+      email: 'master@demo.com',
+      passwordHash: masterHash,
+      role: 'MASTER',
+      tenantId: 1,
+    },
+  });
+
   await prisma.resident.deleteMany();
   await prisma.unit.deleteMany();
   await prisma.building.deleteMany();
