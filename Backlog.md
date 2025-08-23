@@ -73,9 +73,9 @@
 
 **User Story:** כ–מנהל, אני רוצה לשלוח הודעות לדיירים/בניינים.
 
-- [ ] Task 1: Notification service (to: user/building/all tenants).
-- [ ] Task 2: Channels: Email (SendGrid), Push (PWA), SMS (Twilio).
-- [ ] Task 3: Templates for status updates & general announcements.
+ - [x] Task 1: Notification service (to: user/building/all tenants).
+ - [x] Task 2: Channels: Email (SendGrid), Push (PWA), SMS (Twilio).
+ - [x] Task 3: Templates for status updates & general announcements.
 
 **Acceptance:** דייר מקבל הודעת "קריאה נפתרה" + יכולת למנהל לשלוח עדכון לכל בניין.
 
