@@ -23,16 +23,16 @@ export default function UnpaidInvoices() {
 
   return (
     <div>
-      <h1>Unpaid Invoices</h1>
+      <h1>חשבוניות שלא שולמו</h1>
       <input
-        placeholder="Resident ID"
+        placeholder="מזהה דייר"
         value={residentId}
         onChange={(e) => setResidentId(e.target.value)}
       />
       <ul>
         {invoices.map((inv) => (
           <li key={inv.id}>
-            #{inv.id} - ${inv.amount}
+            #{inv.id} - ₪{inv.amount}
           </li>
         ))}
       </ul>

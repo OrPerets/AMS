@@ -26,12 +26,12 @@ export default function Jobs() {
 
   return (
     <main>
-      <h1>Today's Jobs</h1>
+      <h1>משימות היום</h1>
       <ul>
         {orders.map((o) => (
           <li key={o.id}>
-            Ticket #{o.ticket.id} - Unit {o.ticket.unitId}{' '}
-            <button onClick={() => markDone(o.ticket.id)}>Done</button>
+            קריאה #{o.ticket.id} - יחידה {o.ticket.unitId}{' '}
+            <button onClick={() => markDone(o.ticket.id)}>סגור</button>
           </li>
         ))}
       </ul>
