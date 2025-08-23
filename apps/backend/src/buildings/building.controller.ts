@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
+import { Public } from '../auth/roles.decorator';
 
 @Controller('api/v1/buildings')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -19,7 +20,7 @@ export class BuildingController {
   }
 
   // Public list endpoint for frontend
-  @UseGuards()
+  @Public()
   @Get()
   findAll() {
     return this.buildings.findAll();
