@@ -148,18 +148,18 @@
 
 **User Story:** כ–בודק/מדריך, אני רוצה דאטה מגוון וריאלי כדי להדגים תרחישים ולבצע בדיקות מקיפות ללא עבודה ידנית.
 
-- [ ] Task 1: הרחבת `seed.ts` עם קונפיג קנה-מידה (`SEED_SCALE=small|medium|large`).
-- [ ] Task 2: יצירת נתונים:
-  - Tenants (2), Buildings (3–5 לכל טננט), Units (20–50 לכל בניין).
-  - Users לפי תפקיד: Master (1, DEV), Admin, PM, Tech, Accountant, Residents.
-  - Suppliers, Tickets (סטטוסים שונים, עם SLA), Work Orders (כולל "היום"), Invoices (UNPAID/PAID/OVERDUE), Payments, Notifications.
-- [ ] Task 3: דור נתונים דטרמיניסטי (seed ל-faker), Idempotent (ניקוי והזרקה מחדש), DEV בלבד.
-- [ ] Task 4: מדיה ודוא"ל בסביבת פיתוח:
-  - תמונות: שימוש ב-placeholder/avatarlorempics; אחסון מקומי/דמי.
-  - דוא"ל: ניתוב ל-Mailhog/Console במקום שליחה אמיתית.
-- [ ] Task 5: הדפסת תקציר קרדנציאלס בסיום seed (טבלה של משתמשים/סיסמאות DEV).
-- [ ] Task 6: סקריפטים: `yarn db:reset` + `yarn seed:test` + תיעוד שגיאות נפוצות.
-- [ ] Task 7: תיעוד: README – איך מריצים seed, לאילו משתמשים להתחבר, ומה לבדוק.
+ - [x] Task 1: הרחבת `seed.ts` עם קונפיג קנה-מידה (`SEED_SCALE=small|medium|large`).
+ - [x] Task 2: יצירת נתונים:
+   - Tenants (2), Buildings (3–5 לכל טננט), Units (20–50 לכל בניין).
+   - Users לפי תפקיד: Master (1, DEV), Admin, PM, Tech, Accountant, Residents.
+   - Suppliers, Tickets (סטטוסים שונים, עם SLA), Work Orders (כולל "היום"), Invoices (UNPAID/PAID/OVERDUE), Payments, Notifications.
+ - [x] Task 3: דור נתונים דטרמיניסטי (seed ל-faker), Idempotent (ניקוי והזרקה מחדש), DEV בלבד.
+ - [x] Task 4: מדיה ודוא"ל בסביבת פיתוח:
+   - תמונות: שימוש ב-placeholder/avatarlorempics; אחסון מקומי/דמי.
+   - דוא"ל: ניתוב ל-Mailhog/Console במקום שליחה אמיתית.
+ - [x] Task 5: הדפסת תקציר קרדנציאלס בסיום seed (טבלה של משתמשים/סיסמאות DEV).
+ - [x] Task 6: סקריפטים: `yarn db:reset` + `yarn seed:test` + תיעוד שגיאות נפוצות.
+ - [x] Task 7: תיעוד: README – איך מריצים seed, לאילו משתמשים להתחבר, ומה לבדוק.
 
 **Acceptance:** הרצה יחידה מייצרת דאטה ריאלי עם קרדנציאלס לבדיקה; עמודי תשלומים/משימות טכנאי מאוכלסים; הרצה חוזרת בטוחה ומנקה נתונים קודמים ב-DEV.
 

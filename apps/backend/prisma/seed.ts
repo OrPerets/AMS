@@ -1,105 +1,225 @@
-import { PrismaClient, Role } from '@prisma/client';
+import {
+  PrismaClient,
+  Role,
+  TicketSeverity,
+  TicketStatus,
+  InvoiceStatus,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { faker } from '@faker-js/faker';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  const passwordHash = await bcrypt.hash('admin123', 10);
-  await prisma.user.upsert({
-    where: { email: 'admin@demo.com' },
-    update: {
-      passwordHash,
-      role: Role.ADMIN,
-      tenantId: 1,
-    },
-    create: {
-      email: 'admin@demo.com',
-      passwordHash,
-      role: Role.ADMIN,
-      tenantId: 1,
-    },
-  });
+// Scale configuration for different dataset sizes
+const SCALE_CONFIG = {
+  small: { buildings: 3, units: 20 },
+  medium: { buildings: 4, units: 35 },
+  large: { buildings: 5, units: 50 },
+} as const;
 
-  const masterHash = await bcrypt.hash('master123', 10);
-  await prisma.user.upsert({
+const scale = (process.env.SEED_SCALE || 'small') as keyof typeof SCALE_CONFIG;
+const config = SCALE_CONFIG[scale] ?? SCALE_CONFIG.small;
+
+// deterministic data
+faker.seed(123);
+
+async function createUser(
+  email: string,
+  role: Role,
+  tenantId: number,
+  passwordHash: string,
+) {
+  return prisma.user.create({
+    data: { email, passwordHash, role, tenantId },
+  });
+}
+
+async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Seeding should not run in production');
+  }
+
+  // wipe existing data for idempotency
+  await prisma.$transaction([
+    prisma.workOrder.deleteMany(),
+    prisma.ticket.deleteMany(),
+    prisma.invoice.deleteMany(),
+    prisma.resident.deleteMany(),
+    prisma.unit.deleteMany(),
+    prisma.building.deleteMany(),
+    prisma.supplier.deleteMany(),
+    prisma.user.deleteMany({ where: { role: { not: Role.MASTER } } }),
+  ]);
+
+  const credentials: { email: string; password: string; role: Role }[] = [];
+
+  const defaultPassword = 'password123';
+  const defaultPasswordHash = await bcrypt.hash(defaultPassword, 10);
+
+  // master user for DEV
+  const masterPassword = 'master123';
+  const masterHash = await bcrypt.hash(masterPassword, 10);
+  const master = await prisma.user.upsert({
     where: { email: 'master@demo.com' },
-    update: {
-      passwordHash: masterHash,
-      role: 'MASTER' as Role,
-      tenantId: 1,
-    },
+    update: { passwordHash: masterHash, role: Role.MASTER, tenantId: 1 },
     create: {
       email: 'master@demo.com',
       passwordHash: masterHash,
-      role: 'MASTER' as Role,
+      role: Role.MASTER,
       tenantId: 1,
     },
   });
+  credentials.push({ email: master.email, password: masterPassword, role: Role.MASTER });
 
-  await prisma.resident.deleteMany();
-  await prisma.unit.deleteMany();
-  await prisma.building.deleteMany();
-  await prisma.user.deleteMany({ where: { role: 'RESIDENT' } });
-
-  const residentPassword = await bcrypt.hash('resident123', 10);
-
-  await prisma.building.createMany({
-    data: [
-      { name: 'אפרים קישון 5', address: 'אפרים קישון 5, הרצליה', tenantId: 1 },
-      { name: 'אמה טאובר 9', address: 'אמה טאובר 9, הרצליה', tenantId: 1 },
-      { name: 'אפריים קישון 24', address: 'אפריים קישון 24, הרצליה', tenantId: 1 },
-      { name: 'אריאל 5', address: 'אריאל 5, הרצליה', tenantId: 1 },
-    ],
-    skipDuplicates: true,
-  });
-
-  await prisma.building.create({
-    data: {
-      name: 'Demo Building',
-      address: '123 Main St',
-      tenantId: 1,
-      units: {
-        create: [
-          {
-            number: '1A',
-            residents: {
-              create: [
-                {
-                  user: {
-                    create: {
-                      email: 'resident1@demo.com',
-                      passwordHash: residentPassword,
-                      role: Role.RESIDENT,
-                      tenantId: 1,
-                    },
-                  },
-                },
-              ],
-            },
-          },
-          {
-            number: '1B',
-            residents: {
-              create: [
-                {
-                  user: {
-                    create: {
-                      email: 'resident2@demo.com',
-                      passwordHash: residentPassword,
-                      role: Role.RESIDENT,
-                      tenantId: 1,
-                    },
-                  },
-                },
-              ],
-            },
-          },
-        ],
+  for (let tenantId = 1; tenantId <= 2; tenantId++) {
+    const admin = await createUser(
+      `admin${tenantId}@demo.com`,
+      Role.ADMIN,
+      tenantId,
+      defaultPasswordHash,
+    );
+    const pm = await createUser(
+      `pm${tenantId}@demo.com`,
+      Role.PM,
+      tenantId,
+      defaultPasswordHash,
+    );
+    const tech = await createUser(
+      `tech${tenantId}@demo.com`,
+      Role.TECH,
+      tenantId,
+      defaultPasswordHash,
+    );
+    const accountant = await createUser(
+      `accountant${tenantId}@demo.com`,
+      Role.ACCOUNTANT,
+      tenantId,
+      defaultPasswordHash,
+    );
+    credentials.push(
+      { email: admin.email, password: defaultPassword, role: admin.role },
+      { email: pm.email, password: defaultPassword, role: pm.role },
+      { email: tech.email, password: defaultPassword, role: tech.role },
+      {
+        email: accountant.email,
+        password: defaultPassword,
+        role: accountant.role,
       },
-    },
-  });
+    );
+
+    // suppliers for tenant
+    const suppliers = [] as { id: number }[];
+    for (let s = 1; s <= 2; s++) {
+      const supplierUser = await createUser(
+        `supplier${s}t${tenantId}@demo.com`,
+        Role.TECH,
+        tenantId,
+        defaultPasswordHash,
+      );
+      credentials.push({
+        email: supplierUser.email,
+        password: defaultPassword,
+        role: supplierUser.role,
+      });
+      const supplier = await prisma.supplier.create({
+        data: {
+          name: faker.company.name(),
+          skills: [faker.helpers.arrayElement(['electric', 'plumbing', 'general'])],
+          rating: faker.number.float({ min: 3, max: 5, precision: 0.1 }),
+          documents: [],
+          userId: supplierUser.id,
+        },
+      });
+      suppliers.push({ id: supplier.id });
+    }
+
+    for (let b = 0; b < config.buildings; b++) {
+      const building = await prisma.building.create({
+        data: {
+          name: `Building ${b + 1} T${tenantId}`,
+          address: faker.location.streetAddress(),
+          tenantId,
+        },
+      });
+
+      const ticketStatuses = [
+        TicketStatus.OPEN,
+        TicketStatus.ASSIGNED,
+        TicketStatus.IN_PROGRESS,
+        TicketStatus.RESOLVED,
+      ];
+
+      for (let u = 1; u <= config.units; u++) {
+        const residentEmail = `resident${tenantId}_${b + 1}_${u}@demo.com`;
+        const residentUser = await createUser(
+          residentEmail,
+          Role.RESIDENT,
+          tenantId,
+          defaultPasswordHash,
+        );
+        credentials.push({
+          email: residentUser.email,
+          password: defaultPassword,
+          role: residentUser.role,
+        });
+
+        const resident = await prisma.resident.create({
+          data: { userId: residentUser.id },
+        });
+
+        const unit = await prisma.unit.create({
+          data: {
+            number: String(u),
+            buildingId: building.id,
+            residents: { connect: { id: resident.id } },
+          },
+        });
+
+        await prisma.invoice.create({
+          data: {
+            residentId: resident.id,
+            items: { description: 'Monthly fee' },
+            amount: faker.number.int({ min: 100, max: 400 }),
+            status: u % 2 === 0 ? InvoiceStatus.PAID : InvoiceStatus.UNPAID,
+          },
+        });
+
+        if (u <= ticketStatuses.length) {
+          const ticket = await prisma.ticket.create({
+            data: {
+              unitId: unit.id,
+              severity: faker.helpers.arrayElement([
+                TicketSeverity.LOW,
+                TicketSeverity.MEDIUM,
+                TicketSeverity.HIGH,
+              ]),
+              status: ticketStatuses[u - 1],
+              slaDue: faker.date.soon({ days: 7 }),
+              photos: ['https://placehold.co/600x400'],
+              assignedToId: tech.id,
+            },
+          });
+
+          await prisma.workOrder.create({
+            data: {
+              ticketId: ticket.id,
+              supplierId: suppliers[0].id,
+              costEstimate: faker.number.int({ min: 50, max: 500 }),
+              createdAt: u === 1 ? new Date() : faker.date.recent({ days: 5 }),
+            },
+          });
+        }
+      }
+    }
+  }
+
+  console.log('Seed complete. Demo credentials:');
+  console.table(
+    credentials.map((c) => ({ email: c.email, password: c.password, role: c.role })),
+  );
 }
 
 main().finally(async () => {
   await prisma.$disconnect();
 });
+
