@@ -1,11 +1,17 @@
 {
-  "extends": "../../tsconfig.base.json",
   "include": ["src/**/*", "prisma/**/*"],
   "compilerOptions": {
+    "target": "es2019",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
     "outDir": "dist",
     "rootDir": ".",
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "esModuleInterop": true
+    "emitDecoratorMetadata": true
   }
 }
