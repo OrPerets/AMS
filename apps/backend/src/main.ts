@@ -11,6 +11,14 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
-  await app.listen(process.env.PORT ? parseInt(process.env.PORT, 10) : 3001, '0.0.0.0');
+  const fallbackPort = process.env.NODE_ENV === 'development' ? 3001 : 3000;
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : fallbackPort;
+  // Helpful diagnostics in deployment logs
+  // eslint-disable-next-line no-console
+  console.log(`[bootstrap] NODE_ENV=${process.env.NODE_ENV} PORT=${process.env.PORT} resolvedPort=${port}`);
+
+  await app.listen(port, '0.0.0.0');
+  // eslint-disable-next-line no-console
+  console.log(`[bootstrap] Listening on 0.0.0.0:${port}`);
 }
 bootstrap();
