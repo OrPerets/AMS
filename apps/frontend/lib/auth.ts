@@ -27,6 +27,17 @@ export function clearTokens() {
   window.localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
+export function getTokenPayload(): any | null {
+  const token = getAccessToken();
+  if (!token) return null;
+  try {
+    const [, payload] = token.split('.');
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
+  }
+}
+
 export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
   const headers = new Headers(init.headers || {});
   const token = getAccessToken();
@@ -40,6 +51,30 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
     window.location.href = `/login?next=${next}`;
   }
   return res;
+}
+
+export async function startImpersonation(role: string, tenantId: number, reason?: string) {
+  const res = await authFetch('/admin/impersonate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role, tenantId, reason }),
+  });
+  if (!res.ok) {
+    throw new Error('Impersonation failed');
+  }
+  const data: LoginResponse = await res.json();
+  setTokens(data);
+  return data;
+}
+
+export async function stopImpersonation() {
+  const res = await authFetch('/admin/impersonate/stop', { method: 'POST' });
+  if (!res.ok) {
+    throw new Error('Stop impersonation failed');
+  }
+  const data: LoginResponse = await res.json();
+  setTokens(data);
+  return data;
 }
 
 export async function login(email: string, password: string) {
