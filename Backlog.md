@@ -59,11 +59,11 @@
 
 **User Story:** כ–דייר, אני רוצה לשלם אונליין ולקבל קבלה במייל.
 
-- [ ] Task 1: Create Invoice model (debtor_id, items[], status).
-- [ ] Task 2: Integrate with Tranzila sandbox API.
-- [ ] Task 3: Webhook endpoint for payment confirmation.
-- [ ] Task 4: PDF receipt generation (SendGrid or SES).
-- [ ] Task 5: Dashboard: unpaid invoices list + filter.
+ - [x] Task 1: Create Invoice model (debtor_id, items[], status).
+ - [x] Task 2: Integrate with Tranzila sandbox API.
+ - [x] Task 3: Webhook endpoint for payment confirmation.
+ - [x] Task 4: PDF receipt generation (SendGrid or SES).
+ - [x] Task 5: Dashboard: unpaid invoices list + filter.
 
 **Acceptance:** דייר מקבל לינק תשלום → משלם → קבלה נשלחת למייל.
 

@@ -63,6 +63,7 @@ model Resident {
   userId  Int    @unique
   user    User   @relation(fields: [userId], references: [id])
   units   Unit[]
+  invoices Invoice[]
 }
 
 model Ticket {
@@ -98,4 +99,19 @@ model WorkOrder {
   createdAt    DateTime @default(now())
   ticket       Ticket   @relation(fields: [ticketId], references: [id])
   supplier     Supplier @relation(fields: [supplierId], references: [id])
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PAID
+}
+
+model Invoice {
+  id         Int           @id @default(autoincrement())
+  residentId Int
+  resident   Resident      @relation(fields: [residentId], references: [id])
+  items      Json
+  amount     Float
+  status     InvoiceStatus @default(UNPAID)
+  createdAt  DateTime      @default(now())
 }
