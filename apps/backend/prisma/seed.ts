@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -9,13 +9,13 @@ async function main() {
     where: { email: 'admin@demo.com' },
     update: {
       passwordHash,
-      role: 'ADMIN',
+      role: Role.ADMIN,
       tenantId: 1,
     },
     create: {
       email: 'admin@demo.com',
       passwordHash,
-      role: 'ADMIN',
+      role: Role.ADMIN,
       tenantId: 1,
     },
   });
@@ -25,13 +25,13 @@ async function main() {
     where: { email: 'master@demo.com' },
     update: {
       passwordHash: masterHash,
-      role: 'MASTER',
+      role: 'MASTER' as Role,
       tenantId: 1,
     },
     create: {
       email: 'master@demo.com',
       passwordHash: masterHash,
-      role: 'MASTER',
+      role: 'MASTER' as Role,
       tenantId: 1,
     },
   });
@@ -69,7 +69,7 @@ async function main() {
                     create: {
                       email: 'resident1@demo.com',
                       passwordHash: residentPassword,
-                      role: 'RESIDENT',
+                      role: Role.RESIDENT,
                       tenantId: 1,
                     },
                   },
@@ -86,7 +86,7 @@ async function main() {
                     create: {
                       email: 'resident2@demo.com',
                       passwordHash: residentPassword,
-                      role: 'RESIDENT',
+                      role: Role.RESIDENT,
                       tenantId: 1,
                     },
                   },

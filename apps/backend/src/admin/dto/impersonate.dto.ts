@@ -3,10 +3,10 @@ import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class ImpersonateDto {
   @IsEnum(Role)
-  role: Role;
+  role!: Role;
 
   @IsInt()
-  tenantId: number;
+  tenantId!: number;
 
   @IsOptional()
   @IsString()

@@ -4,7 +4,11 @@ import { PrismaService } from '../prisma.service';
 import sgMail from '@sendgrid/mail';
 import twilio from 'twilio';
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
+if (process.env.SENDGRID_API_KEY && process.env.SENDGRID_API_KEY.startsWith('SG.')) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+} else {
+  console.warn('SENDGRID_API_KEY not set or invalid; email sending disabled.');
+}
 const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
   ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
   : null;
