@@ -11,7 +11,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
-  const fallbackPort = process.env.NODE_ENV === 'development' ? 3001 : 3000;
+  const fallbackPort = 3000;
   const envPort = process.env.PORT ? parseInt(process.env.PORT, 10) : undefined;
   // Some platforms may inject PORT=5432 from a linked Postgres service.
   const isInvalidDbPort = envPort === 5432;
