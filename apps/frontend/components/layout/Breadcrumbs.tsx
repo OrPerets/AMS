@@ -11,6 +11,10 @@ import { useDirection, useLocale } from '../../lib/providers';
 // Breadcrumb configuration for different routes
 const getBreadcrumbConfig = (t: (key: string) => string) => ({
   '/': [{ title: t('nav.home'), href: '/' }],
+  '/home': [
+    { title: t('nav.home'), href: '/' },
+    { title: 'בית', href: '/home' }
+  ],
   '/admin/dashboard': [
     { title: t('nav.home'), href: '/' },
     { title: t('nav.dashboard'), href: '/admin/dashboard' }

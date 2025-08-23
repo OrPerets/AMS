@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { login } from '../lib/auth';
+import { login, getDefaultRoute } from '../lib/auth';
 import { useRouter } from 'next/router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -20,7 +20,7 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(email, password);
-      const next = typeof router.query.next === 'string' ? router.query.next : '/';
+      const next = typeof router.query.next === 'string' ? router.query.next : getDefaultRoute();
       router.replace(next);
     } catch (err: any) {
       setError(err?.message || 'Login failed');

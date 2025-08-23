@@ -99,4 +99,37 @@ export function logout() {
   }
 }
 
+// Role helpers and routing
+export function getEffectiveRole(): string | null {
+  const payload = getTokenPayload();
+  if (!payload) return null;
+  return payload.actAsRole || payload.role || null;
+}
+
+export function isAuthenticated(): boolean {
+  return !!getAccessToken();
+}
+
+export function routeForRole(role?: string | null): string {
+  switch (role) {
+    case 'ADMIN':
+    case 'PM':
+    case 'MASTER':
+      return '/admin/dashboard';
+    case 'TECH':
+      return '/tech/jobs';
+    case 'ACCOUNTANT':
+      return '/payments';
+    case 'RESIDENT':
+      return '/tickets';
+    default:
+      return '/home';
+  }
+}
+
+export function getDefaultRoute(): string {
+  const role = getEffectiveRole();
+  return routeForRole(role);
+}
+
 
