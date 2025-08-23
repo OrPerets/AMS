@@ -169,20 +169,19 @@ export default function Payments() {
     });
   }, [invoices, statusFilter, typeFilter]);
 
-  const handlePayNow = (invoice: Invoice) => {
-    toast({
-      title: "מעבר לתשלום",
-      description: `מעבר לעמוד תשלום עבור חשבונית #${invoice.id}`,
-      variant: "info",
-    });
+  const handlePayNow = async (invoice: Invoice) => {
+    try {
+      const res = await authFetch(`/api/v1/invoices/${invoice.id}/pay`, { method: 'POST' });
+      if (!res.ok) throw new Error(await res.text());
+      toast({ title: 'תשלום הוזנק', description: `חשבונית #${invoice.id}` });
+      loadInvoices();
+    } catch (e: any) {
+      toast({ title: 'שגיאה בתשלום', description: e?.message || 'נסו שוב', variant: 'destructive' });
+    }
   };
 
   const handleViewReceipt = (invoice: Invoice) => {
-    toast({
-      title: "צפיה בקבלה",
-      description: `פתיחת קבלה #${invoice.receiptNumber}`,
-      variant: "info",
-    });
+    window.open(`/api/v1/invoices/${invoice.id}/receipt`, '_blank');
   };
 
   const getDaysOverdue = (dueDate: string) => {

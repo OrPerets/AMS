@@ -46,7 +46,13 @@ export class PaymentService {
       data: { status: InvoiceStatus.PAID },
       include: { resident: { include: { user: true } } },
     });
-    await this.receipts.send(invoice);
+    // In a real system, email the receipt
+    await this.receipts.generate(invoice);
     return invoice;
+  }
+
+  async generateReceipt(id: number): Promise<Buffer> {
+    const invoice = await this.prisma.invoice.findUniqueOrThrow({ where: { id } });
+    return this.receipts.generate(invoice);
   }
 }
