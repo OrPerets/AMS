@@ -1,38 +1,7 @@
-import {
-  PrismaClient,
-  Role,
-  TicketSeverity,
-  TicketStatus,
-  InvoiceStatus,
-} from '.prisma/client';
+import { PrismaClient, Role, TicketSeverity, TicketStatus } from '.prisma/client';
 import * as bcrypt from 'bcrypt';
-import { faker } from '@faker-js/faker';
 
 const prisma = new PrismaClient();
-
-// Scale configuration for different dataset sizes
-const SCALE_CONFIG = {
-  small: { buildings: 3, units: 20 },
-  medium: { buildings: 4, units: 35 },
-  large: { buildings: 5, units: 50 },
-} as const;
-
-const scale = (process.env.SEED_SCALE || 'small') as keyof typeof SCALE_CONFIG;
-const config = SCALE_CONFIG[scale] ?? SCALE_CONFIG.small;
-
-// deterministic data
-faker.seed(123);
-
-async function createUser(
-  email: string,
-  role: Prisma.Role,
-  tenantId: number,
-  passwordHash: string,
-) {
-  return prisma.user.create({
-    data: { email, passwordHash, role, tenantId },
-  });
-}
 
 async function main() {
   if (process.env.NODE_ENV === 'production') {
@@ -48,11 +17,10 @@ async function main() {
     prisma.unit.deleteMany(),
     prisma.building.deleteMany(),
     prisma.supplier.deleteMany(),
-    prisma.user.deleteMany({ where: { role: { not: Prisma.Role.MASTER } } }),
+    prisma.user.deleteMany({ where: { role: { not: Role.MASTER } } }),
   ]);
 
-  const credentials: { email: string; password: string; role: Prisma.Role }[] = [];
-
+  const credentials: { email: string; password: string; role: Role }[] = [];
   const defaultPassword = 'password123';
   const defaultPasswordHash = await bcrypt.hash(defaultPassword, 10);
 
@@ -61,161 +29,173 @@ async function main() {
   const masterHash = await bcrypt.hash(masterPassword, 10);
   const master = await prisma.user.upsert({
     where: { email: 'master@demo.com' },
-    update: { passwordHash: masterHash, role: Prisma.Role.MASTER, tenantId: 1 },
+    update: { passwordHash: masterHash, role: Role.MASTER, tenantId: 1 },
     create: {
       email: 'master@demo.com',
       passwordHash: masterHash,
-      role: Prisma.Role.MASTER,
+      role: Role.MASTER,
       tenantId: 1,
     },
   });
-  credentials.push({ email: master.email, password: masterPassword, role: Prisma.Role.MASTER });
+  credentials.push({ email: master.email, password: masterPassword, role: Role.MASTER });
 
-  for (let tenantId = 1; tenantId <= 2; tenantId++) {
-    const admin = await createUser(
-      `admin${tenantId}@demo.com`,
-      Prisma.Role.ADMIN,
-      tenantId,
-      defaultPasswordHash,
-    );
-    const pm = await createUser(
-      `pm${tenantId}@demo.com`,
-      Prisma.Role.PM,
-      tenantId,
-      defaultPasswordHash,
-    );
-    const tech = await createUser(
-      `tech${tenantId}@demo.com`,
-      Prisma.Role.TECH,
-      tenantId,
-      defaultPasswordHash,
-    );
-    const accountant = await createUser(
-      `accountant${tenantId}@demo.com`,
-      Prisma.Role.ACCOUNTANT,
-      tenantId,
-      defaultPasswordHash,
-    );
-    credentials.push(
-      { email: admin.email, password: defaultPassword, role: admin.role },
-      { email: pm.email, password: defaultPassword, role: pm.role },
-      { email: tech.email, password: defaultPassword, role: tech.role },
-      {
-        email: accountant.email,
-        password: defaultPassword,
-        role: accountant.role,
+  // demo users
+  const users = [
+    { email: 'amit.magen@demo.com', role: Role.ADMIN },
+    { email: 'or.peretz@demo.com', role: Role.ADMIN },
+    { email: 'maya@demo.com', role: Role.PM },
+    { email: 'client@demo.com', role: Role.RESIDENT },
+    { email: 'tech1@demo.com', role: Role.TECH },
+    { email: 'tech2@demo.com', role: Role.TECH },
+    { email: 'tech3@demo.com', role: Role.TECH },
+  ];
+
+  const createdUsers: Record<string, { id: number }> = {};
+  for (const u of users) {
+    const user = await prisma.user.create({
+      data: { email: u.email, passwordHash: defaultPasswordHash, role: u.role, tenantId: 1 },
+    });
+    createdUsers[u.email] = { id: user.id };
+    credentials.push({ email: u.email, password: defaultPassword, role: u.role });
+  }
+
+  // resident profile for demo client
+  const resident = await prisma.resident.create({
+    data: { userId: createdUsers['client@demo.com'].id },
+  });
+
+  // buildings dataset
+  const buildingLabels = [
+    'אפרים קישון 5, הרצליה',
+    'אמה טאובר 9, הרצליה',
+    'אפריים קישון 24, הרצליה',
+    'אפריים קישון 26, הרצליה',
+    'אפריים קישון 28, הרצליה',
+    'אריאל 5, הרצליה',
+    'הדר 38, הרצליה',
+    'בר אילן 20, הרצליה',
+    'רבקה גרובר 3, הרצליה',
+    'דוד שמעוני 12, הרצליה',
+    'דוד שמעוני 16, הרצליה',
+    'דוד שמעוני 26, הרצליה',
+    'דוד שמעוני 28, הרצליה',
+    'דורי 17, הרצליה',
+    'דורי 19, הרצליה',
+    'י.ל.ברוך 22, הרצליה',
+    'דליה רביקוביץ 5, רעננה',
+    'דליה רביקוביץ 7, רעננה',
+    'דליה רביקוביץ 8, הרצליה',
+    'דליה רביקוביץ 10, הרצליה',
+    'דליה רביקוביץ 12, הרצליה',
+    'דליה רביקוביץ 14, הרצליה',
+    'האוניברסיטה 1, הרצליה',
+    'האוניברסיטה 3, הרצליה',
+    'האוניברסיטה 5, הרצליה',
+    'האסיף 6, הרצליה',
+    'הדר 40, הרצליה',
+    'הדר 42, הרצליה',
+    'הקרן 6, הרצליה',
+    'הקרן 8, הרצליה',
+    'זלמן שניאור 21, הרצליה',
+    'זלמן שניאור 23, הרצליה',
+    'זלמן שניאור 25, הרצליה',
+    'חובת הלבבות 3, הרצליה',
+    'חובת הלבבות 9, הרצליה',
+    'חנה רובינא 3, הרצליה',
+    'חנה רובינא 5, הרצליה',
+    'חנה רובינא 7, הרצליה',
+    'חנה רובינא 9, הרצליה',
+    'חנה רובינא 13, הרצליה',
+    'חנה רובינא 19, הרצליה',
+    'חנה רובינא 40, הרצליה',
+    'חנה רובינא 42, הרצליה',
+    'חנה רובינא 44, הרצליה',
+    'חנה רובינא 46, הרצליה',
+    'טשרניחובסקי 10, הרצליה',
+    'יגאל אלון 4, הרצליה',
+    'יגאל אלון 40, הרצליה',
+    'יהודה עמיחי 6, רעננה',
+    'יהודה עמיחי 16, רעננה',
+    'יהודה הלוי 8, הרצליה',
+    'כיבוש העבודה 27, הרצליה',
+    'לאה גולדברג 6, הרצליה',
+    'לוין 22, הרצליה',
+    'מכבי 6א, רעננה',
+    'מכבי 6ב, רעננה',
+    'יערה 14, רעננה',
+    'יערה 16, רעננה',
+    'יהודה עמיחי 4, רעננה',
+    'נורדאו 2, הרצליה',
+    'נעמי שמר 17, רעננה',
+    'נעמי שמר 19, רעננה',
+    'נתן אלתרמן 12, הרצליה',
+    'נתן אלתרמן 14, הרצליה',
+    'נתן אלתרמן 42, הרצליה',
+    'נתן אלתרמן 44, הרצליה',
+    'עינב 20, הרצליה',
+    'עזרא הסופר 9, הרצליה',
+    'עזרא הסופר 11, הרצליה',
+    'עינב 22, הרצליה',
+    'צמרות 4-6-8, הרצליה',
+    'רחבעם זאבי 1, הרצליה',
+    'העלומים 3, הרצליה',
+    'בני בנימין 22, הרצליה',
+    'בני בנימין 22א, הרצליה',
+    'האסיף 2, הרצליה',
+    'שדרות חן 2, הרצליה',
+    'חובבי ציון 9, הרצליה',
+  ];
+
+  const buildings = [] as { id: number }[];
+  for (const label of buildingLabels) {
+    const building = await prisma.building.create({
+      data: { name: label, address: label, tenantId: 1 },
+    });
+    buildings.push({ id: building.id });
+  }
+
+  // unit and tickets for demonstration
+  const unit = await prisma.unit.create({
+    data: {
+      number: '1',
+      buildingId: buildings[0].id,
+      residents: { connect: { id: resident.id } },
+    },
+  });
+
+  const techUsers = [
+    createdUsers['tech1@demo.com'].id,
+    createdUsers['tech2@demo.com'].id,
+    createdUsers['tech3@demo.com'].id,
+  ];
+
+  const severities = [
+    TicketSeverity.LOW,
+    TicketSeverity.MEDIUM,
+    TicketSeverity.HIGH,
+  ];
+  const statuses = [
+    TicketStatus.OPEN,
+    TicketStatus.IN_PROGRESS,
+    TicketStatus.RESOLVED,
+  ];
+
+  for (let i = 0; i < 3; i++) {
+    await prisma.ticket.create({
+      data: {
+        unitId: unit.id,
+        severity: severities[i],
+        status: statuses[i],
+        slaDue: new Date(),
+        photos: [],
+        assignedToId: techUsers[i],
       },
-    );
-
-    // suppliers for tenant
-    const suppliers = [] as { id: number }[];
-    for (let s = 1; s <= 2; s++) {
-      const supplierUser = await createUser(
-        `supplier${s}t${tenantId}@demo.com`,
-        Prisma.Role.TECH,
-        tenantId,
-        defaultPasswordHash,
-      );
-      credentials.push({
-        email: supplierUser.email,
-        password: defaultPassword,
-        role: supplierUser.role,
-      });
-      const supplier = await prisma.supplier.create({
-        data: {
-          name: faker.company.name(),
-          skills: [faker.helpers.arrayElement(['electric', 'plumbing', 'general'])],
-          rating: faker.number.float({ min: 3, max: 5, precision: 0.1 }),
-          documents: [],
-          userId: supplierUser.id,
-        },
-      });
-      suppliers.push({ id: supplier.id });
-    }
-
-    for (let b = 0; b < config.buildings; b++) {
-      const building = await prisma.building.create({
-        data: {
-          name: `Building ${b + 1} T${tenantId}`,
-          address: faker.location.streetAddress(),
-          tenantId,
-        },
-      });
-
-      const ticketStatuses = [
-        Prisma.TicketStatus.OPEN,
-        Prisma.TicketStatus.ASSIGNED,
-        Prisma.TicketStatus.IN_PROGRESS,
-        Prisma.TicketStatus.RESOLVED,
-      ];
-
-      for (let u = 1; u <= config.units; u++) {
-        const residentEmail = `resident${tenantId}_${b + 1}_${u}@demo.com`;
-        const residentUser = await createUser(
-          residentEmail,
-          Prisma.Role.RESIDENT,
-          tenantId,
-          defaultPasswordHash,
-        );
-        credentials.push({
-          email: residentUser.email,
-          password: defaultPassword,
-          role: residentUser.role,
-        });
-
-        const resident = await prisma.resident.create({
-          data: { userId: residentUser.id },
-        });
-
-        const unit = await prisma.unit.create({
-          data: {
-            number: String(u),
-            buildingId: building.id,
-            residents: { connect: { id: resident.id } },
-          },
-        });
-
-        await prisma.invoice.create({
-          data: {
-            residentId: resident.id,
-            items: { description: 'Monthly fee' },
-            amount: faker.number.int({ min: 100, max: 400 }),
-            status: u % 2 === 0 ? Prisma.InvoiceStatus.PAID : Prisma.InvoiceStatus.UNPAID,
-          },
-        });
-
-        if (u <= ticketStatuses.length) {
-          const ticket = await prisma.ticket.create({
-            data: {
-              unitId: unit.id,
-              severity: faker.helpers.arrayElement([
-                Prisma.TicketSeverity.LOW,
-                Prisma.TicketSeverity.MEDIUM,
-                Prisma.TicketSeverity.HIGH,
-              ]),
-              status: ticketStatuses[u - 1],
-              slaDue: faker.date.soon({ days: 7 }),
-              photos: ['https://placehold.co/600x400'],
-              assignedToId: tech.id,
-            },
-          });
-
-          await prisma.workOrder.create({
-            data: {
-              ticketId: ticket.id,
-              supplierId: suppliers[0].id,
-              costEstimate: faker.number.int({ min: 50, max: 500 }),
-              createdAt: u === 1 ? new Date() : faker.date.recent({ days: 5 }),
-            },
-          });
-        }
-      }
-    }
+    });
   }
 
   console.log('Seed complete. Demo credentials:');
   console.table(
-    credentials.map((c) => ({ email: c.email, password: c.password, role: c.role })),
+    credentials.map((c) => ({ email: c.email, password: c.password, role: c.role }))
   );
 }
 
