@@ -5,8 +5,13 @@ import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors({ origin: 'http://localhost:3000' });
+
+  const origins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : true;
+  app.enableCors({ origin: origins });
+
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-  await app.listen(3001);
+
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();
