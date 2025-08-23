@@ -85,9 +85,9 @@
 
 **User Story:** כ–מנהל, אני רוצה לראות סטטוס כולל של תקלות ותשלומים.
 
-- [ ] Task 1: Build dashboard with KPIs (open tickets, SLA breaches, unpaid invoices).
-- [ ] Task 2: Add search/filter bar for quick lookup.
-- [ ] Task 3: Export CSV/Excel for accountant.
+- [x] Task 1: Build dashboard with KPIs (open tickets, SLA breaches, unpaid invoices).
+- [x] Task 2: Add search/filter bar for quick lookup.
+- [x] Task 3: Export CSV/Excel for accountant.
 
 **Acceptance:** מנהל רואה בלוח בקרה תמונה מלאה ומבצע חיתוכים לפי בניין/סטטוס.
 
