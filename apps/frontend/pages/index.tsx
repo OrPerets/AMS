@@ -1,6 +1,5 @@
 // /Users/orperetz/Documents/AMS/apps/frontend/pages/index.tsx
 import React, { useEffect, useState, useCallback } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { TypeAnimation } from 'react-type-animation';
@@ -13,12 +12,7 @@ import {
   Shield, 
   Users, 
   Zap, 
-  CheckCircle, 
-  ArrowRight,
-  Star,
-  BarChart3,
-  Clock,
-  Smartphone
+  ArrowRight
 } from 'lucide-react';
 import { getDefaultRoute, isAuthenticated } from '../lib/auth';
 
@@ -61,9 +55,6 @@ export default function LandingPage() {
 
   useEffect(() => {
     setMounted(true);
-    if (isAuthenticated()) {
-      router.replace(getDefaultRoute());
-    }
     
     initParticlesEngine(async (engine) => {
       await loadSlim(engine);
@@ -79,6 +70,14 @@ export default function LandingPage() {
   const [heroRef, heroInView] = useInView({ threshold: 0.3, triggerOnce: true });
   const [featuresRef, featuresInView] = useInView({ threshold: 0.2, triggerOnce: true });
   const [statsRef, statsInView] = useInView({ threshold: 0.3, triggerOnce: true });
+
+  const handleLoginClick = () => {
+    if (isAuthenticated()) {
+      router.push(getDefaultRoute());
+    } else {
+      router.push('/login');
+    }
+  };
 
   if (!mounted) return null;
 
@@ -238,39 +237,24 @@ export default function LandingPage() {
               מערכת ניהול אחזקות מתקדמת המשלבת טכנולוגיות חדשניות לניהול יעיל ומקצועי של נכסים ואחזקה
             </motion.p>
 
-            {/* CTA Buttons */}
+            {/* CTA Button */}
             <motion.div 
               variants={fadeInUp}
-              className="flex flex-col sm:flex-row items-center justify-center gap-6"
+              className="flex items-center justify-center"
             >
-              <Link href="/login">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button 
+                  onClick={handleLoginClick}
+                  size="lg" 
+                  className="h-14 px-8 text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-xl group"
                 >
-                  <Button 
-                    size="lg" 
-                    className="h-14 px-8 text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-xl group"
-                  >
-                    כניסה למערכת
-                    <ArrowRight className="mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </motion.div>
-              </Link>
-              <Link href="/home">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    className="h-14 px-8 text-lg border-white/30 text-white hover:bg-white/10 backdrop-blur-sm"
-                  >
-                    סיור מהיר
-                  </Button>
-                </motion.div>
-              </Link>
+                  כניסה למערכת
+                  <ArrowRight className="mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </motion.div>
             </motion.div>
 
             {/* Scroll indicator */}
@@ -388,19 +372,18 @@ export default function LandingPage() {
             <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
               הצטרפו לאלפי לקוחות מרוצים שכבר חווים את העתיד של ניהול אחזקות
             </p>
-            <Link href="/login">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Button 
+                onClick={handleLoginClick}
+                size="lg"
+                className="h-16 px-12 text-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-2xl"
               >
-                <Button 
-                  size="lg"
-                  className="h-16 px-12 text-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-2xl"
-                >
-                  התחילו עכשיו
-                </Button>
-              </motion.div>
-            </Link>
+                התחילו עכשיו
+              </Button>
+            </motion.div>
           </motion.div>
         </div>
       </section>
