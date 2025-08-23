@@ -38,6 +38,7 @@ model User {
   createdAt     DateTime @default(now())
   resident      Resident?
   assignedTickets Ticket[] @relation("TicketAssignee")
+  supplier      Supplier?
 }
 
 model Building {
@@ -75,4 +76,26 @@ model Ticket {
   assignedToId Int?
   assignedTo   User?          @relation("TicketAssignee", fields: [assignedToId], references: [id])
   createdAt    DateTime       @default(now())
+  workOrders   WorkOrder[]
+}
+
+model Supplier {
+  id        Int       @id @default(autoincrement())
+  name      String
+  skills    String[]
+  rating    Float?
+  documents String[]
+  userId    Int?      @unique
+  user      User?     @relation(fields: [userId], references: [id])
+  workOrders WorkOrder[]
+}
+
+model WorkOrder {
+  id           Int      @id @default(autoincrement())
+  ticketId     Int
+  supplierId   Int
+  costEstimate Float?
+  createdAt    DateTime @default(now())
+  ticket       Ticket   @relation(fields: [ticketId], references: [id])
+  supplier     Supplier @relation(fields: [supplierId], references: [id])
 }

@@ -47,7 +47,7 @@ export class TicketController {
   @Patch(':id/assign')
   @Roles(Role.ADMIN, Role.PM)
   assign(@Param('id') id: string, @Body() dto: AssignTicketDto) {
-    return this.tickets.assign(+id, dto.assigneeId);
+    return this.tickets.assign(+id, dto);
   }
 
   @Patch(':id/status')
