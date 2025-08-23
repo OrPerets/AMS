@@ -20,8 +20,8 @@ export default function Layout({ children }: Props) {
   const { direction } = useDirection();
   const router = useRouter();
 
-  // Don't show layout on login page
-  if (router.pathname === '/login') {
+  // Don't show layout on login page and landing page
+  if (router.pathname === '/login' || router.pathname === '/') {
     return (
       <div className={cn("min-h-screen bg-background text-foreground")}>
         {children}

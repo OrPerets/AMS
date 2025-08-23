@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { Prisma, User } from '@prisma/client';
+// Prisma types are generated in runtime; keep signatures lightweight to avoid tight coupling
 
 @Injectable()
 export class UserService {
@@ -10,11 +10,11 @@ export class UserService {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
-  create(data: Prisma.UserCreateInput): Promise<User> {
+  create(data: { email: string; passwordHash: string; role: any; tenantId: number }) {
     return this.prisma.user.create({ data });
   }
 
-  findAll(): Promise<User[]> {
+  findAll() {
     return this.prisma.user.findMany();
   }
 }
