@@ -16,7 +16,7 @@ describe('AuthService', () => {
         } as any;
       }
       return null;
-    }),
+    }) as any,
   };
   const jwtService = new JwtService({ secret: 'test' });
   const service = new AuthService(userService as UserService, jwtService);

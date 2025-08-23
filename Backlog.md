@@ -46,10 +46,10 @@
 
 **User Story:** כ–מנהל, אני רוצה להקצות קריאות שירות לטכנאי או ספק.
 
-- [ ] Task 1: Create Supplier model (skills[], rating, documents).
-- [ ] Task 2: Create WorkOrder model (ticket_id, supplier_id, cost_estimate).
-- [ ] Task 3: Endpoint PATCH /api/v1/tickets/{id}/assign.
-- [ ] Task 4: Tech mobile view: list of today’s jobs + update status.
+- [x] Task 1: Create Supplier model (skills[], rating, documents).
+- [x] Task 2: Create WorkOrder model (ticket_id, supplier_id, cost_estimate).
+- [x] Task 3: Endpoint PATCH /api/v1/tickets/{id}/assign.
+- [x] Task 4: Tech mobile view: list of today’s jobs + update status.
 
 **Acceptance:** מנהל מקצה תקלה לספק; ספק רואה אותה באפליקציה וסוגר עם תמונה.
 

@@ -26,11 +26,27 @@ export class TicketService {
     return this.prisma.ticket.findMany({ where });
   }
 
-  assign(id: number, assigneeId: number) {
-    return this.prisma.ticket.update({
-      where: { id },
-      data: { assignedToId: assigneeId, status: TicketStatus.ASSIGNED },
-    });
+  async assign(id: number, dto: { assigneeId?: number; supplierId?: number; costEstimate?: number }) {
+    if (dto.assigneeId) {
+      return this.prisma.ticket.update({
+        where: { id },
+        data: { assignedToId: dto.assigneeId, status: TicketStatus.ASSIGNED },
+      });
+    }
+    if (dto.supplierId) {
+      await this.prisma.workOrder.create({
+        data: {
+          ticket: { connect: { id } },
+          supplier: { connect: { id: dto.supplierId } },
+          costEstimate: dto.costEstimate,
+        },
+      });
+      return this.prisma.ticket.update({
+        where: { id },
+        data: { status: TicketStatus.ASSIGNED },
+      });
+    }
+    throw new Error('No assignee specified');
   }
 
   async updateStatus(id: number, status: TicketStatus) {
