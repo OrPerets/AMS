@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { authFetch } from '../../lib/auth';
 
 interface Kpis {
   openTickets: number;
@@ -12,7 +13,7 @@ export default function Dashboard() {
 
   async function load() {
     const query = buildingId ? `?buildingId=${buildingId}` : '';
-    const res = await fetch(`/api/v1/dashboard${query}`);
+    const res = await authFetch(`/api/v1/dashboard${query}`);
     if (res.ok) {
       setKpis(await res.json());
     }
