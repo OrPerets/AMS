@@ -24,17 +24,17 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1>Dashboard</h1>
+      <h1>דשבורד</h1>
       <input
-        placeholder="Building ID"
+        placeholder="מזהה בניין"
         value={buildingId}
         onChange={(e) => setBuildingId(e.target.value)}
       />
-      <div>Open Tickets: {kpis.openTickets}</div>
-      <div>SLA Breaches: {kpis.slaBreaches}</div>
-      <div>Unpaid Invoices: {kpis.unpaidInvoices}</div>
+      <div>קריאות פתוחות: {kpis.openTickets}</div>
+      <div>הפרות SLA: {kpis.slaBreaches}</div>
+      <div>חשבוניות שלא שולמו: {kpis.unpaidInvoices}</div>
       <a href={`/api/v1/dashboard/export${buildingId ? `?buildingId=${buildingId}` : ''}`}>
-        Export CSV
+        יצוא CSV
       </a>
     </div>
   );

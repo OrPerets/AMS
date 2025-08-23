@@ -7,8 +7,22 @@ Monorepo for AMIT Property Management System.
 - `apps/frontend`: Next.js web application.
 
 ## Development
+Install dependencies:
 ```
 npm install
+```
+
+Run the backend server:
+```
 npm run dev:backend
+```
+
+Run the frontend app:
+```
 npm run dev:frontend
+```
+
+Run local tests:
+```
+npm test
 ```

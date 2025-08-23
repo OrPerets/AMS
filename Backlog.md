@@ -111,10 +111,10 @@
 
 **User Story:** כ–משתמש, אני רוצה ממשק משתמש בעברית המכסה את כל הפונקציונליות כדי ליהנות מחוויית שימוש מקצועית.
 
- - [ ] Task 1: Hebrew interface.
- - [ ] Task 2: Include all system functionality.
- - [ ] Task 3: Elegant & professional UI.
- - [ ] Task 4: Enhanced user experience & engagement.
+ - [x] Task 1: Hebrew interface.
+ - [x] Task 2: Include all system functionality.
+ - [x] Task 3: Elegant & professional UI.
+ - [x] Task 4: Enhanced user experience & engagement.
 
 **Acceptance:** משתמשים יכולים להפעיל את כל המערכת דרך ממשק עברי מקצועי וחוויתי.
 
