@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Invoice } from '@prisma/client';
-import PDFDocument from 'pdfkit';
+import PDFDocument = require('pdfkit');
 
 @Injectable()
 export class ReceiptService {
