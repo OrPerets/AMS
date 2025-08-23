@@ -8,3 +8,4 @@ prisma/dev.db
 out
 coverage
 .DS_Store
+.vercel

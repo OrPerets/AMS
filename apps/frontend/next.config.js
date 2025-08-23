@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001';
+
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: false,
@@ -8,9 +10,9 @@ const nextConfig = {
   },
   async rewrites() {
     return [
-      { source: '/api/v1/:path*', destination: 'http://localhost:3001/api/v1/:path*' },
-      { source: '/auth/:path*', destination: 'http://localhost:3001/auth/:path*' },
-      { source: '/admin/:path*', destination: 'http://localhost:3001/admin/:path*' },
+      { source: '/api/v1/:path*', destination: `${API_BASE}/api/v1/:path*` },
+      { source: '/auth/:path*', destination: `${API_BASE}/auth/:path*` },
+      { source: '/admin/:path*', destination: `${API_BASE}/admin/:path*` },
     ];
   },
 }

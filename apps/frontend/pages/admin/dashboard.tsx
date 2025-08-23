@@ -234,7 +234,7 @@ export default function Dashboard() {
 
         <KpiCard
           title="הושלמו היום"
-          value={formatNumber(kpis.completedTicketsToday)}
+          value={formatNumber(kpis.completedTicketsToday ?? 0)}
           icon={Wrench}
           badgeText="עודכן"
           badgeVariant="success"

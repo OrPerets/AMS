@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "main": "dist/main.js",
   "scripts": {
-    "start": "node -r dotenv/config dist/main.js",
+    "start": "node -r dotenv/config dist/src/main.js",
+    "start:prod": "npm run prisma:deploy && npm run start",
     "start:dev": "ts-node -r dotenv/config src/main.ts",
     "prisma:seed": "ts-node -r dotenv/config prisma/seed.ts",
     "prisma:reset": "prisma migrate reset --force --skip-generate",
+    "prisma:deploy": "prisma migrate deploy && prisma generate",
     "test": "jest",
     "build": "tsc -p tsconfig.json && prisma generate"
   },
