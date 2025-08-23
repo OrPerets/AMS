@@ -32,11 +32,11 @@
 
 **User Story:** כ–דייר, אני רוצה לפתוח קריאת שירות עם תיאור ותמונה.
 
-- [ ] Task 1: Create Ticket model (id, unit_id, severity, status, sla_due, photos[]).
-- [ ] Task 2: Endpoint POST /api/v1/tickets (with photo upload → S3).
-- [ ] Task 3: Endpoint GET /api/v1/tickets?status&buildingId.
-- [ ] Task 4: Manager dashboard: assign ticket to supplier/tech.
-- [ ] Task 5: Notifications on status change (email/push).
+ - [x] Task 1: Create Ticket model (id, unit_id, severity, status, sla_due, photos[]).
+ - [x] Task 2: Endpoint POST /api/v1/tickets (with photo upload → S3).
+ - [x] Task 3: Endpoint GET /api/v1/tickets?status&buildingId.
+ - [x] Task 4: Manager dashboard: assign ticket to supplier/tech.
+ - [x] Task 5: Notifications on status change (email/push).
 
 **Acceptance:** דייר פותח קריאה → מופיעה לדשבורד המנהל → מוקצת לטכנאי → נסגרת.
 
