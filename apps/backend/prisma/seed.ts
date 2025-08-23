@@ -4,7 +4,7 @@ import {
   TicketSeverity,
   TicketStatus,
   InvoiceStatus,
-} from '@prisma/client';
+} from '.prisma/client';
 import * as bcrypt from 'bcrypt';
 import { faker } from '@faker-js/faker';
 
@@ -25,7 +25,7 @@ faker.seed(123);
 
 async function createUser(
   email: string,
-  role: Role,
+  role: Prisma.Role,
   tenantId: number,
   passwordHash: string,
 ) {
@@ -48,10 +48,10 @@ async function main() {
     prisma.unit.deleteMany(),
     prisma.building.deleteMany(),
     prisma.supplier.deleteMany(),
-    prisma.user.deleteMany({ where: { role: { not: Role.MASTER } } }),
+    prisma.user.deleteMany({ where: { role: { not: Prisma.Role.MASTER } } }),
   ]);
 
-  const credentials: { email: string; password: string; role: Role }[] = [];
+  const credentials: { email: string; password: string; role: Prisma.Role }[] = [];
 
   const defaultPassword = 'password123';
   const defaultPasswordHash = await bcrypt.hash(defaultPassword, 10);
@@ -61,38 +61,38 @@ async function main() {
   const masterHash = await bcrypt.hash(masterPassword, 10);
   const master = await prisma.user.upsert({
     where: { email: 'master@demo.com' },
-    update: { passwordHash: masterHash, role: Role.MASTER, tenantId: 1 },
+    update: { passwordHash: masterHash, role: Prisma.Role.MASTER, tenantId: 1 },
     create: {
       email: 'master@demo.com',
       passwordHash: masterHash,
-      role: Role.MASTER,
+      role: Prisma.Role.MASTER,
       tenantId: 1,
     },
   });
-  credentials.push({ email: master.email, password: masterPassword, role: Role.MASTER });
+  credentials.push({ email: master.email, password: masterPassword, role: Prisma.Role.MASTER });
 
   for (let tenantId = 1; tenantId <= 2; tenantId++) {
     const admin = await createUser(
       `admin${tenantId}@demo.com`,
-      Role.ADMIN,
+      Prisma.Role.ADMIN,
       tenantId,
       defaultPasswordHash,
     );
     const pm = await createUser(
       `pm${tenantId}@demo.com`,
-      Role.PM,
+      Prisma.Role.PM,
       tenantId,
       defaultPasswordHash,
     );
     const tech = await createUser(
       `tech${tenantId}@demo.com`,
-      Role.TECH,
+      Prisma.Role.TECH,
       tenantId,
       defaultPasswordHash,
     );
     const accountant = await createUser(
       `accountant${tenantId}@demo.com`,
-      Role.ACCOUNTANT,
+      Prisma.Role.ACCOUNTANT,
       tenantId,
       defaultPasswordHash,
     );
@@ -112,7 +112,7 @@ async function main() {
     for (let s = 1; s <= 2; s++) {
       const supplierUser = await createUser(
         `supplier${s}t${tenantId}@demo.com`,
-        Role.TECH,
+        Prisma.Role.TECH,
         tenantId,
         defaultPasswordHash,
       );
@@ -143,17 +143,17 @@ async function main() {
       });
 
       const ticketStatuses = [
-        TicketStatus.OPEN,
-        TicketStatus.ASSIGNED,
-        TicketStatus.IN_PROGRESS,
-        TicketStatus.RESOLVED,
+        Prisma.TicketStatus.OPEN,
+        Prisma.TicketStatus.ASSIGNED,
+        Prisma.TicketStatus.IN_PROGRESS,
+        Prisma.TicketStatus.RESOLVED,
       ];
 
       for (let u = 1; u <= config.units; u++) {
         const residentEmail = `resident${tenantId}_${b + 1}_${u}@demo.com`;
         const residentUser = await createUser(
           residentEmail,
-          Role.RESIDENT,
+          Prisma.Role.RESIDENT,
           tenantId,
           defaultPasswordHash,
         );
@@ -180,7 +180,7 @@ async function main() {
             residentId: resident.id,
             items: { description: 'Monthly fee' },
             amount: faker.number.int({ min: 100, max: 400 }),
-            status: u % 2 === 0 ? InvoiceStatus.PAID : InvoiceStatus.UNPAID,
+            status: u % 2 === 0 ? Prisma.InvoiceStatus.PAID : Prisma.InvoiceStatus.UNPAID,
           },
         });
 
@@ -189,9 +189,9 @@ async function main() {
             data: {
               unitId: unit.id,
               severity: faker.helpers.arrayElement([
-                TicketSeverity.LOW,
-                TicketSeverity.MEDIUM,
-                TicketSeverity.HIGH,
+                Prisma.TicketSeverity.LOW,
+                Prisma.TicketSeverity.MEDIUM,
+                Prisma.TicketSeverity.HIGH,
               ]),
               status: ticketStatuses[u - 1],
               slaDue: faker.date.soon({ days: 7 }),
