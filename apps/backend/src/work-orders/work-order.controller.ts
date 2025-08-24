@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Patch, Param } from '@nestjs/common';
 import { WorkOrderService } from './work-order.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -14,5 +14,17 @@ export class WorkOrderController {
   @Roles(Role.TECH)
   listToday(@Query('supplierId') supplierId: string) {
     return this.orders.listTodayForSupplier(+supplierId);
+  }
+
+  @Patch(':id/start')
+  @Roles(Role.TECH)
+  start(@Param('id') id: string) {
+    return this.orders.start(+id);
+  }
+
+  @Patch(':id/complete')
+  @Roles(Role.TECH)
+  complete(@Param('id') id: string) {
+    return this.orders.complete(+id);
   }
 }

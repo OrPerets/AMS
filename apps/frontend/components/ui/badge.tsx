@@ -23,9 +23,10 @@ const badgeVariants = cva(
           "border-transparent bg-info text-info-foreground hover:bg-info/80",
         // Status-specific variants
         open: "border-transparent bg-warning/10 text-warning hover:bg-warning/20",
-        "in-progress": "border-transparent bg-info/10 text-info hover:bg-info/20", 
-        completed: "border-transparent bg-success/10 text-success hover:bg-success/20",
-        closed: "border-transparent bg-muted text-muted-foreground hover:bg-muted/80",
+        "in-progress": "border-transparent bg-info/10 text-info hover:bg-info/20",
+        assigned:
+          "border-transparent bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:hover:bg-purple-900/40",
+        resolved: "border-transparent bg-success/10 text-success hover:bg-success/20",
         high: "border-transparent bg-destructive/10 text-destructive hover:bg-destructive/20",
       },
     },
