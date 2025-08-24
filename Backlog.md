@@ -169,30 +169,51 @@
 
 **User Story:** כ–משתמש, אני רוצה ממשק אלגנטי, מקצועי ושימושי (RTL מלא), שמדגיש בהירות ויעילות.
 
-- [ ] Task 1: Design System & Foundations:
-  - הטמעת Tailwind CSS + Radix UI + shadcn/ui.
-  - הגדרת RTL, טיפוגרפיה, טוקני צבע/ריווח, מצב Light/Dark.
-- [ ] Task 2: Layout & Navigation:
-  - App Shell מודרני: Header (עם Role Switcher), Sidebar, Breadcrumbs, Footer.
-  - ניווט רספונסיבי ונגיש (Mobile-first).
-- [ ] Task 3: Component Library:
-  - Buttons, Inputs, Selects, Date/Time Picker, Modal, Toast, Badge, Tabs.
-  - Data Table (מיון/סינון/עמוד-עבודה), Skeletons, Empty States.
-  - טפסים עם `react-hook-form` + `zod`, הודעות שגיאה עקביות.
-- [ ] Task 4: Page Redesigns:
-  - Dashboard: כרטיסי KPI, גרפים בסיסיים.
-  - Tickets: רשימה, פרטי קריאה, הקצאה, העלאת תמונות.
-  - Tech Jobs: רשימת משימות היום, פעולה מהירה לסגירה, פידבק הצלחה.
-  - Payments: רשימת חובות, CTA לתשלום, סטטוס קבלה.
-  - Buildings/Units: רשימות ופרטים עם UX עריכה נוח.
-- [ ] Task 5: Accessibility & i18n:
-  - תאימות WCAG 2.1 AA, מצבי פוקוס, ARIA, ניווט מקלדת.
-  - טיפול כיוון ותרגומים, מספרים/תאריכים בפורמט מקומי.
-- [ ] Task 6: Visual Polish:
-  - מיקרו-אנימציות, טרנזיציות עדינות, ריווח עקבי.
-  - מצבי טעינה/שגיאה אחידים, Toasts להתראות.
-- [ ] Task 7: Docs & Storybook:
-  - Storybook לרכיבים מרכזיים, מדריך תרומות לעיצוב.
+ - [x] Task 1: Design System & Foundations:
+   - הטמעת Tailwind CSS + Radix UI + shadcn/ui.
+   - הגדרת RTL, טיפוגרפיה, טוקני צבע/ריווח, מצב Light/Dark.
+ - [x] Task 2: Layout & Navigation:
+   - App Shell מודרני: Header (עם Role Switcher), Sidebar, Breadcrumbs, Footer.
+   - ניווט רספונסיבי ונגיש (Mobile-first).
+ - [x] Task 3: Component Library:
+   - Buttons, Inputs, Selects, Date/Time Picker, Modal, Toast, Badge, Tabs.
+   - Data Table (מיון/סינון/עמוד-עבודה), Skeletons, Empty States.
+   - טפסים עם `react-hook-form` + `zod`, הודעות שגיאה עקביות.
+ - [x] Task 4: Page Redesigns:
+   - Dashboard: כרטיסי KPI, גרפים בסיסיים.
+   - Tickets: רשימה, פרטי קריאה, הקצאה, העלאת תמונות.
+   - Tech Jobs: רשימת משימות היום, פעולה מהירה לסגירה, פידבק הצלחה.
+   - Payments: רשימת חובות, CTA לתשלום, סטטוס קבלה.
+   - Buildings/Units: רשימות ופרטים עם UX עריכה נוח.
+ - [x] Task 5: Accessibility & i18n:
+   - תאימות WCAG 2.1 AA, מצבי פוקוס, ARIA, ניווט מקלדת.
+   - טיפול כיוון ותרגומים, מספרים/תאריכים בפורמט מקומי.
+ - [x] Task 6: Visual Polish:
+   - מיקרו-אנימציות, טרנזיציות עדינות, ריווח עקבי.
+   - מצבי טעינה/שגיאה אחידים, Toasts להתראות.
+ - [x] Task 7: Docs & Storybook:
+   - Storybook לרכיבים מרכזיים, מדריך תרומות לעיצוב.
 
 **Acceptance:** UI אחיד, נגיש ומותאם RTL; עמודים מרכזיים נראים ומתנהגים באופן מקצועי; מדדים חיוביים בשביעות רצון ובמהירות ביצוע.
+
+## Gaps & Unimplemented Items (Detected by code review)
+
+- [ ] Settings page missing: `Sidebar` links to `/settings`, but no page exists. Create `apps/frontend/pages/settings.tsx` with profile, password, preferences.
+- [ ] Privacy page missing: `Footer` links to `/privacy`, but no page exists. Create `apps/frontend/pages/privacy.tsx` with policy content.
+- [ ] Terms page missing: `Footer` links to `/terms`, but no page exists. Create `apps/frontend/pages/terms.tsx` with terms content.
+- [ ] Support page missing: `Footer` links to `/support`, but no page exists. Create `apps/frontend/pages/support.tsx` with contact/help info.
+- [ ] Dashboard charts endpoint: Frontend calls `/api/v1/dashboard/charts`, but backend has no route. Add `GET /api/v1/dashboard/charts` returning ticketsByStatus, monthlyTrend, techWorkload.
+- [ ] Tickets domain mismatches: Frontend uses statuses `COMPLETED`/`CLOSED` and priorities, but backend `TicketStatus` is `OPEN/ASSIGNED/IN_PROGRESS/RESOLVED` and no priority field. Align API or adapt frontend mapping; add priority to model or remove in UI.
+- [ ] Tickets page lacks create/view/assign flows: Implement `POST /api/v1/tickets` with photos in UI, ticket details page (e.g., `/tickets/[id].tsx`), and assign/status update actions wired to backend.
+- [ ] Tech jobs: Frontend fetches `/api/v1/work-orders/today?supplierId=1` and updates ticket status to `RESOLVED`; confirm mapping to backend `TicketStatus.RESOLVED` and add endpoints for start/complete work order if needed.
+- [ ] Payments resident flow: Frontend posts to `/api/v1/invoices/:id/pay` then expects webhook/receipt. Ensure UI shows payment result and link to `/api/v1/invoices/:id/receipt`; add receipt download UI.
+- [ ] Admin unpaid invoices page: `/pages/admin/unpaid-invoices.tsx` exists; ensure filters/actions (mark paid, export) are wired to backend `GET /api/v1/invoices/unpaid` and confirm bulk actions.
+- [ ] Role switcher banner: Add persistent banner/indicator across pages when `actAsRole` is present, with a "stop impersonation" CTA (currently shown only in `RoleSwitcher`).
+- [ ] Security guards: Ensure impersonation cannot elevate to `MASTER` (backend validates) and tenant boundaries are enforced on all queries; add tests.
+- [ ] RLS setup: Guard applies `SET app.tenant_id`; verify all Prisma queries rely on RLS and add integration tests.
+- [ ] Auth refresh tokens in frontend: Frontend stores refresh token but no refresh flow implemented. Add silent refresh or re-login handling; optionally `/auth/refresh` endpoint wiring.
+- [ ] Environment config: Next rewrites rely on `NEXT_PUBLIC_API_BASE`. Document and validate env var in README and deployment; add runtime check with warning toast if missing.
+- [ ] i18n coverage: `useLocale` has basic translations; audit UI for hard-coded strings and extract to keys.
+- [ ] Accessibility checks: Add keyboard focus styles, ARIA labels, and ensure components meet WCAG 2.1 AA.
+- [ ] Testing: Add unit/integration tests for impersonation, RBAC routes, payments receipt generation, ticket creation with photos, and dashboard KPIs.
 
