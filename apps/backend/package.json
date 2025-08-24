@@ -9,6 +9,7 @@
     "prisma:seed": "ts-node -r dotenv/config prisma/seed.ts",
     "user:create": "ts-node -r dotenv/config scripts/create-user.ts",
     "users:upsert:prod": "ts-node -r dotenv/config scripts/upsert-demo-users.ts",
+    "buildings:upsert:prod": "ts-node -r dotenv/config scripts/upsert-buildings.ts",
     "prisma:reset": "prisma migrate reset --force --skip-generate",
     "prisma:deploy": "prisma migrate deploy && prisma generate",
     "test": "jest",
