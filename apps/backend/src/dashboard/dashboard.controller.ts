@@ -17,6 +17,11 @@ export class DashboardController {
     return this.dashboard.kpis({ buildingId: buildingId ? +buildingId : undefined });
   }
 
+  @Get('charts')
+  charts(@Query('buildingId') buildingId?: string) {
+    return this.dashboard.charts({ buildingId: buildingId ? +buildingId : undefined });
+  }
+
   @Get('export')
   async export(@Res() res: Response, @Query('buildingId') buildingId?: string) {
     const csv = await this.dashboard.exportInvoices({ buildingId: buildingId ? +buildingId : undefined });
