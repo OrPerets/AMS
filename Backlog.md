@@ -198,11 +198,11 @@
 
 ## Gaps & Unimplemented Items (Detected by code review)
 
-- [ ] Settings page missing: `Sidebar` links to `/settings`, but no page exists. Create `apps/frontend/pages/settings.tsx` with profile, password, preferences.
-- [ ] Privacy page missing: `Footer` links to `/privacy`, but no page exists. Create `apps/frontend/pages/privacy.tsx` with policy content.
-- [ ] Terms page missing: `Footer` links to `/terms`, but no page exists. Create `apps/frontend/pages/terms.tsx` with terms content.
-- [ ] Support page missing: `Footer` links to `/support`, but no page exists. Create `apps/frontend/pages/support.tsx` with contact/help info.
-- [ ] Dashboard charts endpoint: Frontend calls `/api/v1/dashboard/charts`, but backend has no route. Add `GET /api/v1/dashboard/charts` returning ticketsByStatus, monthlyTrend, techWorkload.
+ - [x] Settings page missing: `Sidebar` links to `/settings`, but no page exists. Create `apps/frontend/pages/settings.tsx` with profile, password, preferences.
+ - [x] Privacy page missing: `Footer` links to `/privacy`, but no page exists. Create `apps/frontend/pages/privacy.tsx` with policy content.
+ - [x] Terms page missing: `Footer` links to `/terms`, but no page exists. Create `apps/frontend/pages/terms.tsx` with terms content.
+ - [x] Support page missing: `Footer` links to `/support`, but no page exists. Create `apps/frontend/pages/support.tsx` with contact/help info.
+ - [x] Dashboard charts endpoint: Frontend calls `/api/v1/dashboard/charts`, but backend has no route. Add `GET /api/v1/dashboard/charts` returning ticketsByStatus, monthlyTrend, techWorkload.
 - [ ] Tickets domain mismatches: Frontend uses statuses `COMPLETED`/`CLOSED` and priorities, but backend `TicketStatus` is `OPEN/ASSIGNED/IN_PROGRESS/RESOLVED` and no priority field. Align API or adapt frontend mapping; add priority to model or remove in UI.
 - [ ] Tickets page lacks create/view/assign flows: Implement `POST /api/v1/tickets` with photos in UI, ticket details page (e.g., `/tickets/[id].tsx`), and assign/status update actions wired to backend.
 - [ ] Tech jobs: Frontend fetches `/api/v1/work-orders/today?supplierId=1` and updates ticket status to `RESOLVED`; confirm mapping to backend `TicketStatus.RESOLVED` and add endpoints for start/complete work order if needed.
