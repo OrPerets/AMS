@@ -39,13 +39,14 @@ import {
 import { cn, formatDate, getStatusColor, getStatusLabel } from '../lib/utils';
 import { useLocale } from '../lib/providers';
 import { toast } from '../components/ui/use-toast';
+import { useRouter } from 'next/router';
 
 interface Ticket {
   id: number;
   unitId: number;
   buildingId?: number;
-  status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CLOSED';
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  status: 'OPEN' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED';
+  severity: 'LOW' | 'MEDIUM' | 'HIGH';
   title?: string;
   description?: string;
   assignedTo?: string;
@@ -58,26 +59,40 @@ interface Ticket {
   category?: string;
 }
 
-const priorityConfig = {
+const severityConfig = {
   LOW: { label: 'נמוך', variant: 'outline' as const },
   MEDIUM: { label: 'בינוני', variant: 'info' as const },
   HIGH: { label: 'גבוה', variant: 'warning' as const },
-  URGENT: { label: 'דחוף', variant: 'destructive' as const },
 };
 
 const statusConfig = {
   OPEN: { label: 'פתוח', variant: 'open' as const },
+  ASSIGNED: { label: 'הוקצה', variant: 'assigned' as const },
   IN_PROGRESS: { label: 'בתהליך', variant: 'in-progress' as const },
-  COMPLETED: { label: 'הושלם', variant: 'completed' as const },
-  CLOSED: { label: 'סגור', variant: 'closed' as const },
+  RESOLVED: { label: 'נפתרה', variant: 'resolved' as const },
 };
 
 export default function Tickets() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [severityFilter, setSeverityFilter] = useState<string>('all');
   const { locale } = useLocale();
+  const router = useRouter();
+
+  const handleCreateTicket = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    try {
+      const res = await authFetch('/api/v1/tickets', { method: 'POST', body: formData });
+      if (!res.ok) throw new Error(await res.text());
+      toast({ title: 'קריאה נוצרה', description: 'הקריאה נוצרה בהצלחה' });
+      e.currentTarget.reset();
+      loadTickets();
+    } catch (error: any) {
+      toast({ title: 'שגיאה ביצירת קריאה', description: error?.message || 'נסו שוב', variant: 'destructive' });
+    }
+  };
 
   const loadTickets = async () => {
     try {
@@ -93,7 +108,7 @@ export default function Tickets() {
             unitId: 12,
             buildingId: 1,
             status: 'OPEN',
-            priority: 'HIGH',
+            severity: 'HIGH',
             title: 'דליפת מים בחדר אמבטיה',
             description: 'דליפה מתמשכת מהברז הראשי',
             assignedTo: 'tech1',
@@ -110,7 +125,7 @@ export default function Tickets() {
             unitId: 25,
             buildingId: 1,
             status: 'IN_PROGRESS',
-            priority: 'MEDIUM',
+            severity: 'MEDIUM',
             title: 'תיקון מעלית',
             description: 'המעלית תקועה בקומה השנייה',
             assignedTo: 'tech2',
@@ -125,8 +140,8 @@ export default function Tickets() {
             id: 1003,
             unitId: 8,
             buildingId: 2,
-            status: 'COMPLETED',
-            priority: 'LOW',
+            status: 'RESOLVED',
+            severity: 'LOW',
             title: 'החלפת נורה בחדר מדרגות',
             description: 'נורה שרופה בקומה 3',
             assignedTo: 'tech1',
@@ -157,25 +172,27 @@ export default function Tickets() {
   const filteredTickets = useMemo(() => {
     return tickets.filter(ticket => {
       const statusMatch = statusFilter === 'all' || ticket.status === statusFilter;
-      const priorityMatch = priorityFilter === 'all' || ticket.priority === priorityFilter;
-      return statusMatch && priorityMatch;
+      const severityMatch = severityFilter === 'all' || ticket.severity === severityFilter;
+      return statusMatch && severityMatch;
     });
-  }, [tickets, statusFilter, priorityFilter]);
+  }, [tickets, statusFilter, severityFilter]);
 
   const handleViewTicket = (ticket: Ticket) => {
-    toast({
-      title: `קריאה #${ticket.id}`,
-      description: ticket.title || "פתיחת פרטי הקריאה",
-      variant: "info",
-    });
+    router.push(`/tickets/${ticket.id}`);
   };
 
-  const handleAssignTicket = (ticket: Ticket) => {
-    toast({
-      title: "הקצאת קריאה",
-      description: `הקצאת קריאה #${ticket.id} לטכנאי`,
-      variant: "info",
-    });
+  const handleAssignTicket = async (ticket: Ticket) => {
+    try {
+      await authFetch(`/api/v1/tickets/${ticket.id}/assign`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assigneeId: 1 }),
+      });
+      toast({ title: 'הקריאה הוקצתה' });
+      loadTickets();
+    } catch (error: any) {
+      toast({ title: 'שגיאה בהקצאה', description: error?.message || 'נסו שוב', variant: 'destructive' });
+    }
   };
 
   const columns: ColumnDef<Ticket>[] = [
@@ -218,12 +235,12 @@ export default function Tickets() {
       },
     },
     {
-      accessorKey: "priority",
-      header: "עדיפות",
+      accessorKey: "severity",
+      header: "חומרה",
       cell: ({ row }) => {
-        const rawPriority = row.getValue("priority");
-        const priority = rawPriority as keyof typeof priorityConfig;
-        const config = priorityConfig[priority] ?? { label: String(rawPriority ?? 'לא ידוע'), variant: 'outline' as const };
+        const rawSeverity = row.getValue("severity");
+        const severity = rawSeverity as keyof typeof severityConfig;
+        const config = severityConfig[severity] ?? { label: String(rawSeverity ?? 'לא ידוע'), variant: 'outline' as const };
         return (
           <Badge variant={config.variant}>
             {config.label}
@@ -340,10 +357,30 @@ export default function Tickets() {
             ניהול וטיפול בקריאות שירות במערכת
           </p>
         </div>
-        <Button>
-          <Plus className="me-2 h-4 w-4" />
-          קריאה חדשה
-        </Button>
+        <form onSubmit={handleCreateTicket} className="flex flex-wrap items-center gap-2">
+          <input
+            name="unitId"
+            type="number"
+            placeholder="יחידה"
+            className="w-24 rounded border p-2"
+            required
+          />
+          <select name="severity" className="rounded border p-2">
+            <option value="LOW">נמוך</option>
+            <option value="MEDIUM">בינוני</option>
+            <option value="HIGH">גבוה</option>
+          </select>
+          <input
+            name="description"
+            placeholder="תיאור"
+            className="flex-1 rounded border p-2"
+          />
+          <input name="photos" type="file" multiple className="flex-1" />
+          <Button type="submit">
+            <Plus className="me-2 h-4 w-4" />
+            צור קריאה
+          </Button>
+        </form>
       </div>
 
       {/* Stats Cards */}
@@ -385,7 +422,7 @@ export default function Tickets() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {tickets.filter(t => t.status === 'COMPLETED').length}
+              {tickets.filter(t => t.status === 'RESOLVED').length}
             </div>
           </CardContent>
         </Card>
@@ -416,32 +453,31 @@ export default function Tickets() {
           <SelectContent>
             <SelectItem value="all">כל הסטטוסים</SelectItem>
             <SelectItem value="OPEN">פתוח</SelectItem>
+            <SelectItem value="ASSIGNED">הוקצה</SelectItem>
             <SelectItem value="IN_PROGRESS">בתהליך</SelectItem>
-            <SelectItem value="COMPLETED">הושלם</SelectItem>
-            <SelectItem value="CLOSED">סגור</SelectItem>
+            <SelectItem value="RESOLVED">נפתרה</SelectItem>
           </SelectContent>
         </Select>
 
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+        <Select value={severityFilter} onValueChange={setSeverityFilter}>
           <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="עדיפות" />
+            <SelectValue placeholder="חומרה" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">כל העדיפויות</SelectItem>
+            <SelectItem value="all">כל החומרות</SelectItem>
             <SelectItem value="LOW">נמוך</SelectItem>
             <SelectItem value="MEDIUM">בינוני</SelectItem>
             <SelectItem value="HIGH">גבוה</SelectItem>
-            <SelectItem value="URGENT">דחוף</SelectItem>
           </SelectContent>
         </Select>
 
-        {(statusFilter !== 'all' || priorityFilter !== 'all') && (
-          <Button 
-            variant="outline" 
+        {(statusFilter !== 'all' || severityFilter !== 'all') && (
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => {
               setStatusFilter('all');
-              setPriorityFilter('all');
+              setSeverityFilter('all');
             }}
           >
             נקה סינונים

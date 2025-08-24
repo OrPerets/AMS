@@ -203,11 +203,11 @@
  - [x] Terms page missing: `Footer` links to `/terms`, but no page exists. Create `apps/frontend/pages/terms.tsx` with terms content.
  - [x] Support page missing: `Footer` links to `/support`, but no page exists. Create `apps/frontend/pages/support.tsx` with contact/help info.
  - [x] Dashboard charts endpoint: Frontend calls `/api/v1/dashboard/charts`, but backend has no route. Add `GET /api/v1/dashboard/charts` returning ticketsByStatus, monthlyTrend, techWorkload.
-- [ ] Tickets domain mismatches: Frontend uses statuses `COMPLETED`/`CLOSED` and priorities, but backend `TicketStatus` is `OPEN/ASSIGNED/IN_PROGRESS/RESOLVED` and no priority field. Align API or adapt frontend mapping; add priority to model or remove in UI.
-- [ ] Tickets page lacks create/view/assign flows: Implement `POST /api/v1/tickets` with photos in UI, ticket details page (e.g., `/tickets/[id].tsx`), and assign/status update actions wired to backend.
-- [ ] Tech jobs: Frontend fetches `/api/v1/work-orders/today?supplierId=1` and updates ticket status to `RESOLVED`; confirm mapping to backend `TicketStatus.RESOLVED` and add endpoints for start/complete work order if needed.
-- [ ] Payments resident flow: Frontend posts to `/api/v1/invoices/:id/pay` then expects webhook/receipt. Ensure UI shows payment result and link to `/api/v1/invoices/:id/receipt`; add receipt download UI.
-- [ ] Admin unpaid invoices page: `/pages/admin/unpaid-invoices.tsx` exists; ensure filters/actions (mark paid, export) are wired to backend `GET /api/v1/invoices/unpaid` and confirm bulk actions.
+ - [x] Tickets domain mismatches: Frontend uses statuses `COMPLETED`/`CLOSED` and priorities, but backend `TicketStatus` is `OPEN/ASSIGNED/IN_PROGRESS/RESOLVED` and no priority field. Align API or adapt frontend mapping; add priority to model or remove in UI.
+ - [x] Tickets page lacks create/view/assign flows: Implement `POST /api/v1/tickets` with photos in UI, ticket details page (e.g., `/tickets/[id].tsx`), and assign/status update actions wired to backend.
+ - [x] Tech jobs: Frontend fetches `/api/v1/work-orders/today?supplierId=1` and updates ticket status to `RESOLVED`; confirm mapping to backend `TicketStatus.RESOLVED` and add endpoints for start/complete work order if needed.
+ - [x] Payments resident flow: Frontend posts to `/api/v1/invoices/:id/pay` then expects webhook/receipt. Ensure UI shows payment result and link to `/api/v1/invoices/:id/receipt`; add receipt download UI.
+ - [x] Admin unpaid invoices page: `/pages/admin/unpaid-invoices.tsx` exists; ensure filters/actions (mark paid, export) are wired to backend `GET /api/v1/invoices/unpaid` and confirm bulk actions.
 - [ ] Role switcher banner: Add persistent banner/indicator across pages when `actAsRole` is present, with a "stop impersonation" CTA (currently shown only in `RoleSwitcher`).
 - [ ] Security guards: Ensure impersonation cannot elevate to `MASTER` (backend validates) and tenant boundaries are enforced on all queries; add tests.
 - [ ] RLS setup: Guard applies `SET app.tenant_id`; verify all Prisma queries rely on RLS and add integration tests.

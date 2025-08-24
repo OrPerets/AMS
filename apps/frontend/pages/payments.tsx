@@ -173,8 +173,9 @@ export default function Payments() {
     try {
       const res = await authFetch(`/api/v1/invoices/${invoice.id}/pay`, { method: 'POST' });
       if (!res.ok) throw new Error(await res.text());
-      toast({ title: 'תשלום הוזנק', description: `חשבונית #${invoice.id}` });
+      toast({ title: 'תשלום הושלם', description: `חשבונית #${invoice.id} שולמה בהצלחה` });
       loadInvoices();
+      window.open(`/api/v1/invoices/${invoice.id}/receipt`, '_blank');
     } catch (e: any) {
       toast({ title: 'שגיאה בתשלום', description: e?.message || 'נסו שוב', variant: 'destructive' });
     }

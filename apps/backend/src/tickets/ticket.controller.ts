@@ -44,6 +44,11 @@ export class TicketController {
     });
   }
 
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.tickets.findOne(+id);
+  }
+
   @Patch(':id/assign')
   @Roles(Role.ADMIN, Role.PM)
   assign(@Param('id') id: string, @Body() dto: AssignTicketDto) {

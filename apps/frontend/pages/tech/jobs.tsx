@@ -26,13 +26,14 @@ import { toast } from '../../components/ui/use-toast';
 
 interface WorkOrder {
   id: number;
-  ticket: { 
-    id: number; 
+  ticket: {
+    id: number;
     unitId: number;
     buildingId?: number;
     title?: string;
     description?: string;
-    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+    severity: 'LOW' | 'MEDIUM' | 'HIGH';
+    status: 'OPEN' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED';
     residentName?: string;
     residentPhone?: string;
     category?: string;
@@ -46,14 +47,13 @@ interface WorkOrder {
     address: string;
     floor?: number;
   };
-  status: 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED';
+  status: 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED';
 }
 
-const priorityConfig = {
+const severityConfig = {
   LOW: { label: 'נמוך', variant: 'outline' as const, color: 'text-muted-foreground' },
   MEDIUM: { label: 'בינוני', variant: 'info' as const, color: 'text-info' },
   HIGH: { label: 'גבוה', variant: 'warning' as const, color: 'text-warning' },
-  URGENT: { label: 'דחוף', variant: 'destructive' as const, color: 'text-destructive' },
 };
 
 export default function Jobs() {
@@ -67,7 +67,10 @@ export default function Jobs() {
         const res = await authFetch('/api/v1/work-orders/today?supplierId=1');
       if (res.ok) {
         const data = await res.json();
-        setOrders(Array.isArray(data) ? data : []);
+        const mapped = Array.isArray(data)
+          ? data.map((o: any) => ({ ...o, status: o.ticket.status }))
+          : [];
+        setOrders(mapped);
       } else {
         // Mock data for demo
         setOrders([
@@ -79,7 +82,8 @@ export default function Jobs() {
               buildingId: 1,
               title: 'דליפת מים בחדר אמבטיה',
               description: 'דליפה מתמשכת מהברז הראשי בחדר האמבטיה הראשי',
-              priority: 'HIGH',
+              severity: 'HIGH',
+              status: 'ASSIGNED',
               residentName: 'דניאל לוי',
               residentPhone: '050-1234567',
               category: 'אינסטלציה'
@@ -103,7 +107,8 @@ export default function Jobs() {
               buildingId: 1,
               title: 'תיקון מעלית',
               description: 'המעלית תקועה בקומה השנייה ולא מגיבה',
-              priority: 'URGENT',
+              severity: 'HIGH',
+              status: 'IN_PROGRESS',
               residentName: 'משה דוד',
               residentPhone: '052-9876543',
               category: 'מעלית'
@@ -127,7 +132,8 @@ export default function Jobs() {
               buildingId: 2,
               title: 'תיקון דלת כניסה',
               description: 'המנעול לא פועל כראוי',
-              priority: 'MEDIUM',
+              severity: 'MEDIUM',
+              status: 'ASSIGNED',
               residentName: 'שרה אברהם',
               residentPhone: '054-5555444',
               category: 'נגרות'
@@ -168,17 +174,13 @@ export default function Jobs() {
 
   const markInProgress = async (orderId: number) => {
     try {
-      setOrders(prev => prev.map(order => 
-        order.id === orderId 
-          ? { ...order, status: 'IN_PROGRESS' as const } 
+      await authFetch(`/api/v1/work-orders/${orderId}/start`, { method: 'PATCH' });
+      setOrders(prev => prev.map(order =>
+        order.id === orderId
+          ? { ...order, status: 'IN_PROGRESS' as const, ticket: { ...order.ticket, status: 'IN_PROGRESS' as const } }
           : order
       ));
-      
-      toast({
-        title: "משימה הוחלה",
-        description: "המשימה סומנה כבתהליך",
-        variant: "success",
-      });
+      toast({ title: "משימה הוחלה", description: "המשימה סומנה כבתהליך", variant: "success" });
     } catch (error) {
       toast({
         title: "שגיאה",
@@ -190,19 +192,9 @@ export default function Jobs() {
 
   const markCompleted = async (orderId: number) => {
     try {
-      await authFetch(`/api/v1/tickets/${orders.find(o => o.id === orderId)?.ticket.id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'RESOLVED' }),
-    });
-      
+      await authFetch(`/api/v1/work-orders/${orderId}/complete`, { method: 'PATCH' });
       setOrders(prev => prev.filter(order => order.id !== orderId));
-      
-      toast({
-        title: "משימה הושלמה!",
-        description: "המשימה סומנה כהושלמה בהצלחה",
-        variant: "success",
-      });
+      toast({ title: "משימה הושלמה!", description: "המשימה סומנה כהושלמה בהצלחה", variant: "success" });
     } catch (error) {
       toast({
         title: "שגיאה",
@@ -212,12 +204,10 @@ export default function Jobs() {
     }
   };
 
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'URGENT':
-        return <AlertTriangle className="h-4 w-4" />;
+  const getSeverityIcon = (severity: string) => {
+    switch (severity) {
       case 'HIGH':
-        return <Clock className="h-4 w-4" />;
+        return <AlertTriangle className="h-4 w-4" />;
       default:
         return <Wrench className="h-4 w-4" />;
     }
@@ -259,7 +249,7 @@ export default function Jobs() {
     total: orders.length,
     assigned: assignedJobs.length,
     inProgress: inProgressJobs.length,
-    urgent: orders.filter(o => o.ticket.priority === 'URGENT').length
+    urgent: orders.filter(o => o.ticket.severity === 'HIGH').length
   };
 
   return (
@@ -345,26 +335,26 @@ export default function Jobs() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {orders.map((order) => {
-            const priority = priorityConfig[order.ticket.priority];
+            const severity = severityConfig[order.ticket.severity];
             const timeRemaining = getTimeRemaining(order.dueTime);
             const isOverdue = timeRemaining === 'פג תוקף';
-            
+
             return (
-              <Card 
-                key={order.id} 
+              <Card
+                key={order.id}
                 className={cn(
                   "transition-all duration-200 hover:shadow-md",
                   order.status === 'IN_PROGRESS' && "ring-2 ring-info/20",
-                  order.ticket.priority === 'URGENT' && "ring-2 ring-destructive/20"
+                  order.ticket.severity === 'HIGH' && "ring-2 ring-destructive/20"
                 )}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <Badge variant={priority.variant} className="text-xs">
-                          {getPriorityIcon(order.ticket.priority)}
-                          <span className="ms-1">{priority.label}</span>
+                        <Badge variant={severity.variant} className="text-xs">
+                          {getSeverityIcon(order.ticket.severity)}
+                          <span className="ms-1">{severity.label}</span>
                         </Badge>
                         {order.status === 'IN_PROGRESS' && (
                           <Badge variant="info" className="text-xs">בביצוע</Badge>

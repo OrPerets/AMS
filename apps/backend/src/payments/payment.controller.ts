@@ -20,14 +20,28 @@ export class PaymentController {
 
   @Get('invoices/unpaid')
   @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
-  listUnpaid(@Query('residentId') residentId?: string) {
-    return this.payments.listUnpaid(residentId ? +residentId : undefined);
+  listUnpaid(@Query('residentId') residentId?: string, @Query('format') format?: string, @Res() res?: Response) {
+    const data = this.payments.listUnpaid(residentId ? +residentId : undefined);
+    if (format === 'csv' && res) {
+      return data.then((invoices) => {
+        const csv = ['id,residentId,amount,status', ...invoices.map((i) => `${i.id},${i.residentId},${i.amount},${i.status}`)].join('\n');
+        res.setHeader('Content-Type', 'text/csv');
+        res.send(csv);
+      });
+    }
+    return data;
   }
 
   @Post('invoices/:id/pay')
   @Roles(Role.RESIDENT)
   pay(@Param('id') id: string) {
     return this.payments.initiatePayment(+id);
+  }
+
+  @Post('invoices/:id/confirm')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  confirm(@Param('id') id: string) {
+    return this.payments.confirmPayment(+id);
   }
 
   @Post('payments/webhook')

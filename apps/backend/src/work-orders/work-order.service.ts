@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { TicketStatus } from '@prisma/client';
 
 @Injectable()
 export class WorkOrderService {
@@ -17,5 +18,19 @@ export class WorkOrderService {
       },
       include: { ticket: true },
     });
+  }
+
+  async start(id: number) {
+    const order = await this.prisma.workOrder.findUnique({ where: { id } });
+    if (!order) throw new Error('Work order not found');
+    await this.prisma.ticket.update({ where: { id: order.ticketId }, data: { status: TicketStatus.IN_PROGRESS } });
+    return { ok: true };
+  }
+
+  async complete(id: number) {
+    const order = await this.prisma.workOrder.findUnique({ where: { id } });
+    if (!order) throw new Error('Work order not found');
+    await this.prisma.ticket.update({ where: { id: order.ticketId }, data: { status: TicketStatus.RESOLVED } });
+    return { ok: true };
   }
 }

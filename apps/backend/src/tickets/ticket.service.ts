@@ -54,4 +54,8 @@ export class TicketService {
     await this.notifications.ticketStatusChanged(ticket);
     return ticket;
   }
+
+  findOne(id: number) {
+    return this.prisma.ticket.findUnique({ where: { id } });
+  }
 }

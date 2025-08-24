@@ -65,11 +65,10 @@ export function generateId(): string {
 export function getStatusColor(status: string): string {
   const statusMap: Record<string, string> = {
     'OPEN': 'status-open',
-    'IN_PROGRESS': 'status-in-progress', 
-    'COMPLETED': 'status-completed',
-    'CLOSED': 'status-closed',
+    'ASSIGNED': 'status-assigned',
+    'IN_PROGRESS': 'status-in-progress',
+    'RESOLVED': 'status-resolved',
     'HIGH': 'status-high-priority',
-    'URGENT': 'status-high-priority',
   };
   
   return statusMap[status?.toUpperCase()] || 'bg-muted text-muted-foreground';
@@ -78,28 +77,26 @@ export function getStatusColor(status: string): string {
 export function getStatusLabel(status: string, locale: string = 'he'): string {
   const hebrewLabels: Record<string, string> = {
     'OPEN': 'פתוח',
+    'ASSIGNED': 'הוקצה',
     'IN_PROGRESS': 'בתהליך',
-    'COMPLETED': 'הושלם',
-    'CLOSED': 'סגור',
+    'RESOLVED': 'נפתרה',
     'PENDING': 'ממתין',
     'CANCELLED': 'בוטל',
     'HIGH': 'גבוה',
-    'MEDIUM': 'בינוני', 
+    'MEDIUM': 'בינוני',
     'LOW': 'נמוך',
-    'URGENT': 'דחוף',
   };
 
   const englishLabels: Record<string, string> = {
     'OPEN': 'Open',
+    'ASSIGNED': 'Assigned',
     'IN_PROGRESS': 'In Progress',
-    'COMPLETED': 'Completed',
-    'CLOSED': 'Closed',
+    'RESOLVED': 'Resolved',
     'PENDING': 'Pending',
     'CANCELLED': 'Cancelled',
     'HIGH': 'High',
     'MEDIUM': 'Medium',
-    'LOW': 'Low', 
-    'URGENT': 'Urgent',
+    'LOW': 'Low',
   };
 
   const labels = locale === 'he' ? hebrewLabels : englishLabels;

@@ -359,12 +359,12 @@
     @apply bg-info/10 text-info border-info/20;
   }
 
-  .status-completed {
-    @apply bg-success/10 text-success border-success/20;
+  .status-assigned {
+    @apply bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800;
   }
 
-  .status-closed {
-    @apply bg-muted/10 text-muted-foreground border-muted/20;
+  .status-resolved {
+    @apply bg-success/10 text-success border-success/20;
   }
 
   .status-high-priority {
