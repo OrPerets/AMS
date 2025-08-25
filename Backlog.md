@@ -124,14 +124,14 @@
 
 **User Story:** כ–מנהל מערכת, אני רוצה משתמש-על ("Master") שיכול להחליף תצוגות בין תפקידים (מנהל/דייר/טכנאי/רו"ח/PM) לצורך בדיקות, תמיכה והדרכות – באופן מאובטח ומתועד.
 
-- [ ] Task 1: Add `MASTER` to roles enum + DB migration.
-- [ ] Task 2: Seed Master user (DEV בלבד) עם סיסמה מאובטחת.
-- [ ] Task 3: Backend – Impersonation מאובטח:
+- [x] Task 1: Add `MASTER` to roles enum + DB migration.
+- [x] Task 2: Seed Master user (DEV בלבד) עם סיסמה מאובטחת.
+- [x] Task 3: Backend – Impersonation מאובטח:
   - יצירת endpoint `POST /api/v1/admin/impersonate` (Master בלבד) שמנפיק JWT עם claim של `actAsRole` ו-`tenantId`.
   - יצירת endpoint `POST /api/v1/admin/impersonate/stop` שמחזיר ל-token המקורי.
   - הוספת Audit log לטבלת `impersonation_events` (start/stop, by, target, reason, ip, userAgent).
   - הגנות: תוקף קצר (30 דק'), מניעת חציית טננטים, אימות שרק תפקידים מוכרים ב-actAs.
-- [ ] Task 4: Frontend – Role Switcher UI:
+- [x] Task 4: Frontend – Role Switcher UI:
   - רכיב מחליף-תפקידים ב-`Layout` ל-Master בלבד, עם badge מודגש "צפייה כ–<role>".
   - קריאה ל-impersonate לקבלת token חדש והחזרה ל-token המקורי ב-stop.
   - אינדיקציה קבועה (banner) במצב impersonation + כפתור "חזור למשתמש המקורי".
@@ -198,22 +198,35 @@
 
 ## Gaps & Unimplemented Items (Detected by code review)
 
- - [x] Settings page missing: `Sidebar` links to `/settings`, but no page exists. Create `apps/frontend/pages/settings.tsx` with profile, password, preferences.
- - [x] Privacy page missing: `Footer` links to `/privacy`, but no page exists. Create `apps/frontend/pages/privacy.tsx` with policy content.
- - [x] Terms page missing: `Footer` links to `/terms`, but no page exists. Create `apps/frontend/pages/terms.tsx` with terms content.
- - [x] Support page missing: `Footer` links to `/support`, but no page exists. Create `apps/frontend/pages/support.tsx` with contact/help info.
- - [x] Dashboard charts endpoint: Frontend calls `/api/v1/dashboard/charts`, but backend has no route. Add `GET /api/v1/dashboard/charts` returning ticketsByStatus, monthlyTrend, techWorkload.
- - [x] Tickets domain mismatches: Frontend uses statuses `COMPLETED`/`CLOSED` and priorities, but backend `TicketStatus` is `OPEN/ASSIGNED/IN_PROGRESS/RESOLVED` and no priority field. Align API or adapt frontend mapping; add priority to model or remove in UI.
- - [x] Tickets page lacks create/view/assign flows: Implement `POST /api/v1/tickets` with photos in UI, ticket details page (e.g., `/tickets/[id].tsx`), and assign/status update actions wired to backend.
- - [x] Tech jobs: Frontend fetches `/api/v1/work-orders/today?supplierId=1` and updates ticket status to `RESOLVED`; confirm mapping to backend `TicketStatus.RESOLVED` and add endpoints for start/complete work order if needed.
- - [x] Payments resident flow: Frontend posts to `/api/v1/invoices/:id/pay` then expects webhook/receipt. Ensure UI shows payment result and link to `/api/v1/invoices/:id/receipt`; add receipt download UI.
- - [x] Admin unpaid invoices page: `/pages/admin/unpaid-invoices.tsx` exists; ensure filters/actions (mark paid, export) are wired to backend `GET /api/v1/invoices/unpaid` and confirm bulk actions.
-- [ ] Role switcher banner: Add persistent banner/indicator across pages when `actAsRole` is present, with a "stop impersonation" CTA (currently shown only in `RoleSwitcher`).
-- [ ] Security guards: Ensure impersonation cannot elevate to `MASTER` (backend validates) and tenant boundaries are enforced on all queries; add tests.
-- [ ] RLS setup: Guard applies `SET app.tenant_id`; verify all Prisma queries rely on RLS and add integration tests.
-- [ ] Auth refresh tokens in frontend: Frontend stores refresh token but no refresh flow implemented. Add silent refresh or re-login handling; optionally `/auth/refresh` endpoint wiring.
-- [ ] Environment config: Next rewrites rely on `NEXT_PUBLIC_API_BASE`. Document and validate env var in README and deployment; add runtime check with warning toast if missing.
-- [ ] i18n coverage: `useLocale` has basic translations; audit UI for hard-coded strings and extract to keys.
-- [ ] Accessibility checks: Add keyboard focus styles, ARIA labels, and ensure components meet WCAG 2.1 AA.
-- [ ] Testing: Add unit/integration tests for impersonation, RBAC routes, payments receipt generation, ticket creation with photos, and dashboard KPIs.
-
+- [x] Settings page missing: `Sidebar` links to `/settings`, but no page exists. Create `apps/frontend/pages/settings.tsx` with profile, password, preferences.
+- [x] Privacy page missing: `Footer` links to `/privacy`, but no page exists. Create `apps/frontend/pages/privacy.tsx` with policy content.
+- [x] Terms page missing: `Footer` links to `/terms`, but no page exists. Create `apps/frontend/pages/terms.tsx` with terms content.
+- [x] Support page missing: `Footer` links to `/support`, but no page exists. Create `apps/frontend/pages/support.tsx` with contact/help info.
+- [x] Dashboard charts endpoint: Frontend calls `/api/v1/dashboard/charts`, but backend has no route. Add `GET /api/v1/dashboard/charts` returning ticketsByStatus, monthlyTrend, techWorkload.
+- [x] Tickets domain mismatches: Frontend uses statuses aligned with backend (`OPEN/ASSIGNED/IN_PROGRESS/RESOLVED`). Mapping validated.
+- [x] Tickets page create/view/assign flows wired: `POST /api/v1/tickets` with photos, `/tickets/[id].tsx`, assign/status update actions wired to backend.
+- [x] Tech jobs: `/api/v1/work-orders/today`, start/complete endpoints implemented and UI mapped to `IN_PROGRESS/RESOLVED`.
+- [x] Payments resident flow: `/api/v1/invoices/:id/pay` + receipt download implemented; UI shows result and opens receipt.
+- [x] Admin unpaid invoices page: wired to `GET /api/v1/invoices/unpaid` and bulk `POST /api/v1/invoices/:id/confirm`.
+- [x] Role switcher banner: אינדיקציה קבועה בעת impersonation ב-Header עם CTA "חזור למקורי".
+- [x] Impersonation guard: חסימת העלאה ל-`MASTER` מאושמת ב-`AdminService`.
+- [ ] Tenant isolation & RLS: לאשר שכל השאילתות נאכפות תחת RLS לכל הבקשות (כולל impersonation); להוסיף בדיקות אינטגרציה/SQL שמוודאות `SET app.tenant_id` פעיל לכל בקשה מוגנת.
+- [ ] Auth refresh flow: להוסיף endpoint `POST /auth/refresh` (Guard: `jwt-refresh`) ולהטמיע ב-frontend נסיון רענון שקט לפני ניתוב ל-login.
+- [ ] Environment config: לתעד ולאמת `NEXT_PUBLIC_API_BASE` (frontend) + סודות backend (JWT_SECRET, JWT_REFRESH_SECRET); הודעת אזהרה/Toast אם חסר בקונפיג ריצה.
+- [ ] Notifications security & UI:
+  - לאבטח את `NotificationController` עם `JwtAuthGuard` + `Roles(Role.ADMIN, Role.PM)` ולהעביר לנתיב `api/v1/notifications`.
+  - להוסיף עמוד Admin לשליחת הודעות (User/Building/All tenants) עם תבניות.
+- [ ] File storage (S3/local): להגדיר `AWS_REGION`, `S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` או מתאם קבצים מקומי לפיילוט; טיפול שגיאות העלאה והצגת Placeholder.
+- [ ] Seed completeness: להוסיף חשבוניות (UNPAID/PAID/OVERDUE) ו-Work Orders לנתוני seed כדי לאכלס עמודי Payments/Jobs לפיילוט.
+- [ ] Error UX: עמוד 403/Unauthorized כלל מערכת, מסכי ריק עקביים, ומחסומי הרשאות בדפים רגישים.
+- [ ] i18n coverage: סקירת טקסטים קשיחים והעברתם ל-`useLocale` keys; תמיכה מלאה ב-he/en.
+- [ ] Accessibility checks: WCAG 2.1 AA – תיוגי ARIA חסרים, סדרי טאב, מצבי פוקוס נראים, ניגודיות.
+- [ ] Testing: כיסוי יחידה/אינטגרציה/E2E עבור:
+  - impersonation + RBAC בכל הראוטים הרגישים
+  - יצירת קריאה עם תמונות + הודעת סטטוס
+  - קבלות תשלום (PDF) ו-webhook
+  - KPIs/Charts של הדשבורד (ערכים ואגרגציות)
+- [ ] Deployment readiness:
+  - קבצי `.env.example` לשתי האפליקציות עם הסברים.
+  - הנחיות פריסה (Vercel/Render) כולל `NEXT_PUBLIC_API_BASE`.
+  - בריאות/מצב (health check) ו-liveness/readiness ב-backend.
