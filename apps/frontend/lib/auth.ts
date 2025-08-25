@@ -15,6 +15,11 @@ export function getAccessToken(): string | null {
   return window.localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
+export function getRefreshToken(): string | null {
+  if (!isBrowser()) return null;
+  return window.localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
 export function setTokens(tokens: LoginResponse) {
   if (!isBrowser()) return;
   window.localStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
@@ -44,13 +49,37 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
-  const res = await fetch(input, { ...init, headers });
+  let res = await fetch(input, { ...init, headers });
   if (res.status === 401 && isBrowser()) {
-    clearTokens();
-    const next = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href = `/login?next=${next}`;
+    const refreshed = await refreshTokens();
+    if (refreshed) {
+      const newToken = getAccessToken();
+      if (newToken) headers.set('Authorization', `Bearer ${newToken}`);
+      res = await fetch(input, { ...init, headers });
+    }
+    if (res.status === 401) {
+      clearTokens();
+      const next = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = `/login?next=${next}`;
+    }
   }
   return res;
+}
+
+export async function refreshTokens(): Promise<boolean> {
+  const token = getRefreshToken();
+  if (!token) return false;
+  const res = await fetch('/auth/refresh', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    clearTokens();
+    return false;
+  }
+  const data: LoginResponse = await res.json();
+  setTokens(data);
+  return true;
 }
 
 export async function startImpersonation(role: string, tenantId: number, reason?: string) {

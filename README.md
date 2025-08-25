@@ -27,6 +27,14 @@ Run local tests:
 npm test
 ```
 
+## Environment Configuration
+Create `.env` files for each app based on the provided examples:
+
+- `apps/backend/.env` requires `DATABASE_URL`, `JWT_SECRET` and `JWT_REFRESH_SECRET`.
+- `apps/frontend/.env` requires `NEXT_PUBLIC_API_BASE` (URL of the backend).
+
+The backend exposes a basic health check at `/health` for deployment monitoring.
+
 ## Database Seeding
 Reset the database and generate deterministic mock data:
 

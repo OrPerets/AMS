@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Toaster } from '../components/ui/toaster';
+import { toast } from '../components/ui/use-toast';
 
 // Theme Provider
 type Theme = "dark" | "light" | "system";
@@ -202,6 +203,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.payments': 'תשלומים',
     'nav.tech-jobs': 'משימות טכנאי',
     'nav.admin': 'ניהול',
+    'nav.notifications': 'הודעות',
     
     // Common
     'common.loading': 'טוען...',
@@ -249,6 +251,17 @@ const translations: Record<Locale, Record<string, string>> = {
     'error.unauthorized': 'אין הרשאה',
     'error.not-found': 'לא נמצא',
     'error.validation': 'שגיאת אימות',
+    // Notifications
+    'notification.title': 'שליחת הודעות',
+    'notification.user': 'למשתמש',
+    'notification.building': 'לבניין',
+    'notification.all': 'לכל הדיירים',
+    'notification.id': 'מזהה',
+    'notification.titleField': 'כותרת',
+    'notification.messageField': 'הודעה',
+    'notification.send': 'שלח',
+    'notification.sent': 'הודעה נשלחה',
+    'notification.error': 'שגיאה בשליחה',
   },
   en: {
     // Navigation
@@ -259,6 +272,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.payments': 'Payments',
     'nav.tech-jobs': 'Tech Jobs',
     'nav.admin': 'Admin',
+    'nav.notifications': 'Notifications',
     
     // Common
     'common.loading': 'Loading...',
@@ -306,6 +320,17 @@ const translations: Record<Locale, Record<string, string>> = {
     'error.unauthorized': 'Unauthorized',
     'error.not-found': 'Not found',
     'error.validation': 'Validation error',
+    // Notifications
+    'notification.title': 'Send Notifications',
+    'notification.user': 'To user',
+    'notification.building': 'To building',
+    'notification.all': 'All tenants',
+    'notification.id': 'Identifier',
+    'notification.titleField': 'Title',
+    'notification.messageField': 'Message',
+    'notification.send': 'Send',
+    'notification.sent': 'Notification sent',
+    'notification.error': 'Failed to send',
   },
 };
 
@@ -367,6 +392,14 @@ export const useLocale = () => {
 
 // Combined Providers
 export function AppProviders({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_API_BASE) {
+      toast({
+        title: 'Missing API base',
+        description: 'NEXT_PUBLIC_API_BASE is not set',
+      });
+    }
+  }, []);
   return (
     <ThemeProvider defaultTheme="light" storageKey="amit-theme">
       <DirectionProvider defaultDirection="rtl" storageKey="amit-direction">
