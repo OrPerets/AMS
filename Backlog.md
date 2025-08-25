@@ -211,9 +211,9 @@
 - [x] Role switcher banner: אינדיקציה קבועה בעת impersonation ב-Header עם CTA "חזור למקורי".
 - [x] Impersonation guard: חסימת העלאה ל-`MASTER` מאושמת ב-`AdminService`.
 - [ ] Tenant isolation & RLS: לאשר שכל השאילתות נאכפות תחת RLS לכל הבקשות (כולל impersonation); להוסיף בדיקות אינטגרציה/SQL שמוודאות `SET app.tenant_id` פעיל לכל בקשה מוגנת.
-- [ ] Auth refresh flow: להוסיף endpoint `POST /auth/refresh` (Guard: `jwt-refresh`) ולהטמיע ב-frontend נסיון רענון שקט לפני ניתוב ל-login.
-- [ ] Environment config: לתעד ולאמת `NEXT_PUBLIC_API_BASE` (frontend) + סודות backend (JWT_SECRET, JWT_REFRESH_SECRET); הודעת אזהרה/Toast אם חסר בקונפיג ריצה.
-- [ ] Notifications security & UI:
+- [x] Auth refresh flow: להוסיף endpoint `POST /auth/refresh` (Guard: `jwt-refresh`) ולהטמיע ב-frontend נסיון רענון שקט לפני ניתוב ל-login.
+- [x] Environment config: לתעד ולאמת `NEXT_PUBLIC_API_BASE` (frontend) + סודות backend (JWT_SECRET, JWT_REFRESH_SECRET); הודעת אזהרה/Toast אם חסר בקונפיג ריצה.
+- [x] Notifications security & UI:
   - לאבטח את `NotificationController` עם `JwtAuthGuard` + `Roles(Role.ADMIN, Role.PM)` ולהעביר לנתיב `api/v1/notifications`.
   - להוסיף עמוד Admin לשליחת הודעות (User/Building/All tenants) עם תבניות.
 - [ ] File storage (S3/local): להגדיר `AWS_REGION`, `S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` או מתאם קבצים מקומי לפיילוט; טיפול שגיאות העלאה והצגת Placeholder.
@@ -226,7 +226,7 @@
   - יצירת קריאה עם תמונות + הודעת סטטוס
   - קבלות תשלום (PDF) ו-webhook
   - KPIs/Charts של הדשבורד (ערכים ואגרגציות)
-- [ ] Deployment readiness:
+- [x] Deployment readiness:
   - קבצי `.env.example` לשתי האפליקציות עם הסברים.
   - הנחיות פריסה (Vercel/Render) כולל `NEXT_PUBLIC_API_BASE`.
   - בריאות/מצב (health check) ו-liveness/readiness ב-backend.

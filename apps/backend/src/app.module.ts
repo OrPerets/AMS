@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { HealthController } from './health.controller';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './users/user.module';
 import { BuildingModule } from './buildings/building.module';
@@ -23,5 +24,6 @@ import { AdminModule } from './admin/admin.module';
     DashboardModule,
     AdminModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}

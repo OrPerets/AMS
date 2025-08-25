@@ -11,6 +11,14 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
+  const requiredEnv = ['JWT_SECRET', 'JWT_REFRESH_SECRET'];
+  for (const key of requiredEnv) {
+    if (!process.env[key]) {
+      // eslint-disable-next-line no-console
+      console.warn(`[bootstrap] Warning: ${key} is not set.`);
+    }
+  }
+
   const fallbackPort = 3000;
   const envPort = process.env.PORT ? parseInt(process.env.PORT, 10) : undefined;
   // Some platforms may inject PORT=5432 from a linked Postgres service.

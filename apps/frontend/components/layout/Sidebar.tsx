@@ -14,6 +14,7 @@ import {
   Settings,
   Users,
   FileText,
+  Bell,
   X
 } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -72,6 +73,12 @@ const getNavigationItems = (role: string, t: (key: string) => string) => {
       href: '/admin/unpaid-invoices',
       icon: FileText,
       roles: ['ADMIN', 'ACCOUNTANT'],
+    },
+    {
+      title: t('nav.notifications'),
+      href: '/admin/notifications',
+      icon: Bell,
+      roles: ['ADMIN', 'PM'],
     },
   ];
 

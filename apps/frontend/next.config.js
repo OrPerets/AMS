@@ -8,6 +8,9 @@ const nextConfig = {
     // Disable SWC and use Babel for JSX transformation
     styledComponents: true,
   },
+  env: {
+    NEXT_PUBLIC_API_BASE: API_BASE,
+  },
   async rewrites() {
     return [
       { source: '/api/v1/:path*', destination: `${API_BASE}/api/v1/:path*` },

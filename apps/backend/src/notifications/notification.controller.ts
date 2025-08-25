@@ -1,7 +1,13 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 import { NotificationService, NotificationTemplate } from './notification.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
+import { Role } from '@prisma/client';
 
-@Controller('notifications')
+@Controller('api/v1/notifications')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN, Role.PM)
 export class NotificationController {
   constructor(private notifications: NotificationService) {}
 
