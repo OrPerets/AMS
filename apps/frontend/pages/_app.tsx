@@ -2,6 +2,7 @@
 import type { AppProps } from 'next/app';
 import { Inter, Heebo } from 'next/font/google';
 import '../styles/globals.css';
+import 'react-day-picker/dist/style.css';
 import Layout from '../components/Layout';
 import { AppProviders } from '../lib/providers';
 import { cn } from '../lib/utils';

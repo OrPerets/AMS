@@ -3,6 +3,7 @@ import { Ticket, User } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import sgMail from '@sendgrid/mail';
 import twilio from 'twilio';
+import { CreateNotificationDto } from './dto/create-notification.dto';
 
 if (process.env.SENDGRID_API_KEY && process.env.SENDGRID_API_KEY.startsWith('SG.')) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -76,26 +77,98 @@ export class NotificationService {
     }
   }
 
+  private async logNotification(data: {
+    title: string;
+    message: string;
+    type?: string;
+    tenantId?: number;
+    userId?: number;
+    buildingId?: number;
+    metadata?: Record<string, any>;
+  }) {
+    return this.prisma.notification.create({
+      data: {
+        ...data,
+        metadata: data.metadata ? (data.metadata as any) : undefined,
+      },
+    });
+  }
+
+  async create(dto: CreateNotificationDto) {
+    return this.logNotification(dto);
+  }
+
   async notifyUser(userId: number, template: NotificationTemplate, params: TemplateParams) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (user) {
       const { subject, body } = this.render(template, params);
       await this.send(user as any, subject, body);
+      await this.logNotification({
+        title: subject,
+        message: body,
+        type: template,
+        tenantId: user.tenantId,
+        userId: user.id,
+        metadata: params,
+      });
     }
   }
 
   async notifyBuilding(buildingId: number, template: NotificationTemplate, params: TemplateParams) {
-    const users = await this.prisma.user.findMany({
-      where: { resident: { units: { some: { buildingId } } } },
-    });
+    const [users, building] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { resident: { units: { some: { buildingId } } } },
+      }),
+      this.prisma.building.findUnique({ where: { id: buildingId } }),
+    ]);
     const { subject, body } = this.render(template, params);
-    await Promise.all(users.map((u) => this.send(u as any, subject, body)));
+    await Promise.all(
+      users.map((u) =>
+        Promise.all([
+          this.send(u as any, subject, body),
+          this.logNotification({
+            title: subject,
+            message: body,
+            type: template,
+            tenantId: u.tenantId,
+            userId: u.id,
+            buildingId,
+            metadata: params,
+          }),
+        ]),
+      ),
+    );
+
+    if (users.length === 0) {
+      await this.logNotification({
+        title: subject,
+        message: body,
+        type: template,
+        tenantId: building?.tenantId,
+        buildingId,
+        metadata: params,
+      });
+    }
   }
 
   async notifyAllTenants(template: NotificationTemplate, params: TemplateParams) {
     const users = await this.prisma.user.findMany();
     const { subject, body } = this.render(template, params);
-    await Promise.all(users.map((u) => this.send(u as any, subject, body)));
+    await Promise.all(
+      users.map((u) =>
+        Promise.all([
+          this.send(u as any, subject, body),
+          this.logNotification({
+            title: subject,
+            message: body,
+            type: template,
+            tenantId: u.tenantId,
+            userId: u.id,
+            metadata: params,
+          }),
+        ]),
+      ),
+    );
   }
 
   async ticketStatusChanged(ticket: Ticket): Promise<void> {
@@ -108,7 +181,43 @@ export class NotificationService {
       id: ticket.id.toString(),
       status: ticket.status,
     });
-    await Promise.all(users.map((u) => this.send(u as any, subject, body)));
+    await Promise.all(
+      users.map((u) =>
+        Promise.all([
+          this.send(u as any, subject, body),
+          this.logNotification({
+            title: subject,
+            message: body,
+            type: NotificationTemplate.TICKET_STATUS,
+            tenantId: u.tenantId,
+            userId: u.id,
+            buildingId: unit?.buildingId,
+            metadata: { ticketId: ticket.id, status: ticket.status },
+          }),
+        ]),
+      ),
+    );
+  }
+
+  getUserNotifications(userId: number) {
+    return this.prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  getBuildingNotifications(buildingId: number) {
+    return this.prisma.notification.findMany({
+      where: { buildingId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async markAsRead(id: number) {
+    return this.prisma.notification.update({
+      where: { id },
+      data: { read: true, readAt: new Date() },
+    });
   }
 }
 

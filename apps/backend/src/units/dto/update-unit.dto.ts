@@ -1,4 +1,10 @@
-import { IsArray, IsInt, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class UpdateUnitDto {
   @IsOptional()
@@ -12,4 +18,24 @@ export class UpdateUnitDto {
   @IsOptional()
   @IsArray()
   residentIds?: number[];
+
+  @IsOptional()
+  @IsNumber()
+  area?: number;
+
+  @IsOptional()
+  @IsInt()
+  bedrooms?: number;
+
+  @IsOptional()
+  @IsInt()
+  bathrooms?: number;
+
+  @IsOptional()
+  @IsInt()
+  parkingSpaces?: number;
+
+  @IsOptional()
+  @IsInt()
+  floor?: number;
 }

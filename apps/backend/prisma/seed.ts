@@ -1,4 +1,13 @@
-import { PrismaClient, Role, TicketSeverity, TicketStatus } from '.prisma/client';
+import {
+  PrismaClient,
+  Role,
+  TicketSeverity,
+  TicketStatus,
+  MaintenanceCategory,
+  MaintenanceType,
+  BudgetStatus,
+  ExpenseCategory,
+} from '.prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -10,6 +19,14 @@ async function main() {
 
   // wipe existing data for idempotency
   await prisma.$transaction([
+    prisma.communication.deleteMany(),
+    prisma.maintenanceSchedule.deleteMany(),
+    prisma.document.deleteMany(),
+    prisma.notification.deleteMany(),
+    prisma.contract.deleteMany(),
+    prisma.asset.deleteMany(),
+    prisma.expense.deleteMany(),
+    prisma.budget.deleteMany(),
     prisma.workOrder.deleteMany(),
     prisma.ticket.deleteMany(),
     prisma.invoice.deleteMany(),
@@ -147,9 +164,26 @@ async function main() {
   ];
 
   const buildings = [] as { id: number }[];
-  for (const label of buildingLabels) {
+  const now = new Date();
+  for (const [index, label] of buildingLabels.entries()) {
+    const buildYear = 1980 + (index % 30);
+    const floors = 4 + (index % 6);
+    const totalUnits = floors * 2;
     const building = await prisma.building.create({
-      data: { name: label, address: label, tenantId: 1 },
+      data: {
+        name: label,
+        address: label,
+        tenantId: 1,
+        yearBuilt: buildYear,
+        floors,
+        totalUnits,
+        area: 1200 + index * 15,
+        amenities: index % 2 === 0 ? ['חדר כושר', 'חניון'] : ['לובי מפואר', 'מעלית חכמה'],
+        managerName: 'צוות ניהול עמית',
+        contactEmail: 'support@amit-housing.demo',
+        contactPhone: '+972-3-555-0101',
+        notes: 'נוצר כחלק מזריעת נתונים לדמו.',
+      },
     });
     buildings.push({ id: building.id });
   }
@@ -159,6 +193,11 @@ async function main() {
     data: {
       number: '1',
       buildingId: buildings[0].id,
+      area: 95,
+      bedrooms: 3,
+      bathrooms: 2,
+      parkingSpaces: 1,
+      floor: 2,
       residents: { connect: { id: resident.id } },
     },
   });
@@ -192,6 +231,219 @@ async function main() {
       },
     });
   }
+
+  // supplier & contracts
+  const hvacSupplier = await prisma.supplier.create({
+    data: {
+      name: 'HVAC Experts Ltd.',
+      skills: ['HVAC Maintenance', 'Air Quality'],
+      rating: 4.8,
+      documents: [],
+    },
+  });
+
+  const hvacContract = await prisma.contract.create({
+    data: {
+      buildingId: buildings[0].id,
+      supplierId: hvacSupplier.id,
+      title: 'HVAC Service Agreement',
+      description: 'Annual preventive maintenance for HVAC systems.',
+      value: 12000,
+      startDate: new Date(now.getFullYear(), 0, 1),
+      endDate: new Date(now.getFullYear(), 11, 31),
+    },
+  });
+
+  // assets
+  const hvacAsset = await prisma.asset.create({
+    data: {
+      buildingId: buildings[0].id,
+      name: 'Roof HVAC Unit A',
+      category: MaintenanceCategory.HVAC,
+      description: 'Primary HVAC system for tower A',
+      serialNumber: 'HVAC-ROOF-A-001',
+      location: 'Roof',
+      purchaseDate: new Date(now.getFullYear() - 6, 5, 1),
+      warrantyExpiry: new Date(now.getFullYear() + 1, 5, 1),
+      status: 'OPERATIONAL',
+    },
+  });
+
+  const generatorAsset = await prisma.asset.create({
+    data: {
+      buildingId: buildings[0].id,
+      name: 'Backup Generator',
+      category: MaintenanceCategory.GENERAL,
+      description: 'Diesel backup generator for emergency power.',
+      serialNumber: 'GEN-2020-004',
+      location: 'Parking level -2',
+      purchaseDate: new Date(now.getFullYear() - 4, 8, 15),
+      status: 'OPERATIONAL',
+    },
+  });
+
+  // maintenance schedules
+  const hvacSchedule = await prisma.maintenanceSchedule.create({
+    data: {
+      buildingId: buildings[0].id,
+      assetId: hvacAsset.id,
+      title: 'HVAC Quarterly Inspection',
+      description: 'Quarterly preventive maintenance for HVAC system.',
+      category: MaintenanceCategory.HVAC,
+      type: MaintenanceType.PREVENTIVE,
+      frequency: 'QUARTERLY',
+      startDate: now,
+      nextOccurrence: new Date(now.getFullYear(), now.getMonth() + 3, now.getDate()),
+      assignedToId: techUsers[0],
+    },
+  });
+
+  await prisma.maintenanceSchedule.create({
+    data: {
+      buildingId: buildings[0].id,
+      assetId: generatorAsset.id,
+      title: 'Generator Load Test',
+      description: 'Bi-annual generator load testing.',
+      category: MaintenanceCategory.GENERAL,
+      type: MaintenanceType.INSPECTION,
+      frequency: 'BI_ANNUAL',
+      startDate: new Date(now.getFullYear(), 0, 15),
+      nextOccurrence: new Date(now.getFullYear(), 6, 15),
+      assignedToId: techUsers[1],
+    },
+  });
+
+  // budgets & expenses
+  const operatingBudget = await prisma.budget.create({
+    data: {
+      buildingId: buildings[0].id,
+      name: `Operating Budget ${now.getFullYear()}`,
+      year: now.getFullYear(),
+      amount: 50000,
+      status: BudgetStatus.ACTIVE,
+      notes: 'Covers general maintenance, utilities and staffing.',
+    },
+  });
+
+  const hvacExpense = await prisma.expense.create({
+    data: {
+      buildingId: buildings[0].id,
+      budgetId: operatingBudget.id,
+      category: ExpenseCategory.MAINTENANCE,
+      amount: 1800,
+      description: 'HVAC filter replacements and calibration',
+      incurredAt: new Date(now.getFullYear(), now.getMonth() - 1, 10),
+    },
+  });
+
+  const utilityExpense = await prisma.expense.create({
+    data: {
+      buildingId: buildings[0].id,
+      budgetId: operatingBudget.id,
+      category: ExpenseCategory.UTILITIES,
+      amount: 3200,
+      description: 'Electricity bill for common areas',
+      incurredAt: new Date(now.getFullYear(), now.getMonth() - 1, 25),
+    },
+  });
+
+  const totalExpenses = await prisma.expense.aggregate({
+    _sum: { amount: true },
+    where: { budgetId: operatingBudget.id },
+  });
+
+  await prisma.budget.update({
+    where: { id: operatingBudget.id },
+    data: {
+      actualSpent: totalExpenses._sum.amount ?? 0,
+    },
+  });
+
+  // documents
+  await prisma.document.create({
+    data: {
+      buildingId: buildings[0].id,
+      name: 'Fire Safety Plan',
+      url: 'https://example.com/docs/fire-safety-plan.pdf',
+      category: 'safety',
+      uploadedById: master.id,
+    },
+  });
+
+  await prisma.document.create({
+    data: {
+      contractId: hvacContract.id,
+      name: 'HVAC Contract 2024.pdf',
+      url: 'https://example.com/docs/hvac-contract-2024.pdf',
+      category: 'contract',
+      uploadedById: createdUsers['maya@demo.com'].id,
+    },
+  });
+
+  await prisma.document.create({
+    data: {
+      assetId: hvacAsset.id,
+      name: 'HVAC Maintenance Manual.pdf',
+      url: 'https://example.com/docs/hvac-manual.pdf',
+      category: 'manual',
+      uploadedById: createdUsers['tech1@demo.com'].id,
+    },
+  });
+
+  await prisma.document.create({
+    data: {
+      expenseId: hvacExpense.id,
+      name: 'HVAC Invoice #INV-231.pdf',
+      url: 'https://example.com/docs/hvac-invoice.pdf',
+      category: 'invoice',
+      uploadedById: createdUsers['maya@demo.com'].id,
+    },
+  });
+
+  // notifications & communications
+  await prisma.notification.createMany({
+    data: [
+      {
+        tenantId: 1,
+        buildingId: buildings[0].id,
+        userId: createdUsers['client@demo.com'].id,
+        title: 'ביקור טכנאי מתוכנן',
+        message: 'ב-15 לחודש יתקיים טיפול מנע במערכת המיזוג בבניין.',
+        type: 'MAINTENANCE',
+      },
+      {
+        tenantId: 1,
+        buildingId: buildings[0].id,
+        title: 'עדכון תקציב חודשי',
+        message: 'דו"ח התקציב עודכן עם ההוצאות האחרונות.',
+        type: 'FINANCE',
+      },
+    ],
+  });
+
+  await prisma.communication.create({
+    data: {
+      buildingId: buildings[0].id,
+      unitId: unit.id,
+      senderId: createdUsers['maya@demo.com'].id,
+      recipientId: createdUsers['client@demo.com'].id,
+      maintenanceScheduleId: hvacSchedule.id,
+      subject: 'תיאום תחזוקה לרבעון הקרוב',
+      message: 'אנא אשרו כי ניתן לבצע את ביקור הטכנאי ביום שני בשעה 10:00.',
+      channel: 'PORTAL',
+    },
+  });
+
+  await prisma.communication.create({
+    data: {
+      buildingId: buildings[0].id,
+      senderId: createdUsers['tech1@demo.com'].id,
+      maintenanceScheduleId: hvacSchedule.id,
+      subject: 'דו"ח סיום טיפול',
+      message: 'הטיפול במערכת המיזוג הושלם בהצלחה. המסנן הוחלף והמערכת נבדקה.',
+      channel: 'INTERNAL',
+    },
+  });
 
   console.log('Seed complete. Demo credentials:');
   console.table(

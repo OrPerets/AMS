@@ -26,6 +26,26 @@ export class BuildingController {
     return this.buildings.findAll();
   }
 
+  @Get(':id/details')
+  findDetails(@Param('id') id: string) {
+    return this.buildings.findDetailed(+id);
+  }
+
+  @Get(':id/overview')
+  getOverview(@Param('id') id: string) {
+    return this.buildings.getOverview(+id);
+  }
+
+  @Get(':id/maintenance/upcoming')
+  getUpcomingMaintenance(@Param('id') id: string) {
+    return this.buildings.getUpcomingMaintenance(+id);
+  }
+
+  @Get(':id/financial/summary')
+  getFinancialSummary(@Param('id') id: string) {
+    return this.buildings.getFinancialSummary(+id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.buildings.findOne(+id);
