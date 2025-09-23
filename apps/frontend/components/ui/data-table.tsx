@@ -1,7 +1,7 @@
 // /Users/orperetz/Documents/AMS/apps/frontend/components/ui/data-table.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ColumnDef,
   flexRender,
@@ -20,8 +20,10 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Filter,
   Search,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 
 import { Button } from "./button";
@@ -40,6 +42,18 @@ import {
   SelectValue,
 } from "./select";
 import { cn } from "../../lib/utils";
+import { Badge } from "./badge";
+
+interface FilterOption {
+  label: string;
+  value: string;
+}
+
+interface FilterableColumn<TData> {
+  id: keyof TData extends string ? keyof TData : string;
+  title?: string;
+  options?: FilterOption[];
+}
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -48,6 +62,8 @@ interface DataTableProps<TData, TValue> {
   searchPlaceholder?: string;
   className?: string;
   onRowClick?: (row: TData) => void;
+  filterableColumns?: FilterableColumn<TData>[];
+  onFiltersChange?: (filters: Record<string, string[]>) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -57,15 +73,95 @@ export function DataTable<TData, TValue>({
   searchPlaceholder = "חיפוש...",
   className,
   onRowClick,
+  filterableColumns,
+  onFiltersChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
+  const [columnValueFilters, setColumnValueFilters] = useState<Record<string, string[]>>({});
+
+  const resolvedFilters = useMemo(() => {
+    if (!filterableColumns || filterableColumns.length === 0) {
+      return [] as (FilterableColumn<TData> & { options: FilterOption[] })[];
+    }
+
+    return filterableColumns.map((filter) => {
+      const columnId = String(filter.id);
+      const options =
+        filter.options ||
+        Array.from(
+          new Set(
+            data.flatMap((row) => {
+              const value = (row as any)[columnId];
+              if (value == null) return [];
+              if (Array.isArray(value)) {
+                return value.map((item) => String(item));
+              }
+              return [String(value)];
+            })
+          )
+        ).map((value) => ({ label: value, value }));
+
+      return {
+        ...filter,
+        id: columnId,
+        title: filter.title ?? columnId,
+        options,
+      } as FilterableColumn<TData> & { options: FilterOption[] };
+    });
+  }, [filterableColumns, data]);
+
+  const filteredData = useMemo(() => {
+    const hasFilters = Object.values(columnValueFilters).some((values) => values?.length);
+    if (!hasFilters) {
+      return data;
+    }
+
+    return data.filter((row) =>
+      Object.entries(columnValueFilters).every(([columnId, selectedValues]) => {
+        if (!selectedValues || selectedValues.length === 0) {
+          return true;
+        }
+        const value = (row as any)[columnId];
+        if (value == null) {
+          return false;
+        }
+        if (Array.isArray(value)) {
+          return value.some((item) => selectedValues.includes(String(item)));
+        }
+        return selectedValues.includes(String(value));
+      })
+    );
+  }, [data, columnValueFilters]);
+
+  useEffect(() => {
+    onFiltersChange?.(columnValueFilters);
+  }, [columnValueFilters, onFiltersChange]);
+
+  const toggleFilterValue = (columnId: string, value: string) => {
+    setColumnValueFilters((prev) => {
+      const current = prev[columnId] ?? [];
+      const exists = current.includes(value);
+      const nextValues = exists ? current.filter((item) => item !== value) : [...current, value];
+      const nextState = { ...prev, [columnId]: nextValues };
+      if (nextValues.length === 0) {
+        delete nextState[columnId];
+      }
+      return { ...nextState };
+    });
+  };
+
+  const clearFilters = () => {
+    setColumnValueFilters({});
+  };
+
+  const hasActiveFilters = Object.values(columnValueFilters).some((values) => values?.length);
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -145,6 +241,77 @@ export function DataTable<TData, TValue>({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Filters */}
+      {resolvedFilters.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {resolvedFilters.map((filter) => (
+              <DropdownMenu key={filter.id as string}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={
+                      columnValueFilters[String(filter.id)]?.length ? "default" : "outline"
+                    }
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Filter className="h-4 w-4" />
+                    {filter.title}
+                    {columnValueFilters[String(filter.id)]?.length ? (
+                      <span className="text-xs">
+                        ({columnValueFilters[String(filter.id)].length})
+                      </span>
+                    ) : null}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  {filter.options.map((option) => (
+                    <DropdownMenuCheckboxItem
+                      key={option.value}
+                      checked={
+                        columnValueFilters[String(filter.id)]?.includes(option.value) ?? false
+                      }
+                      onCheckedChange={() =>
+                        toggleFilterValue(String(filter.id), option.value)
+                      }
+                    >
+                      {option.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ))}
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="me-1 h-4 w-4" /> נקה סינונים
+              </Button>
+            )}
+          </div>
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2">
+              {resolvedFilters.flatMap((filter) =>
+                (columnValueFilters[String(filter.id)] ?? []).map((value) => (
+                  <Badge
+                    key={`${String(filter.id)}-${value}`}
+                    variant="secondary"
+                    className="flex items-center gap-1"
+                  >
+                    <span className="font-medium">{filter.title}:</span> {value}
+                    <button
+                      type="button"
+                      onClick={() => toggleFilterValue(String(filter.id), value)}
+                      className="text-muted-foreground transition hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Table */}
       <div className="rounded-md border data-table">

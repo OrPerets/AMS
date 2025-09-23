@@ -4,17 +4,22 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { 
-  Home, 
-  Building, 
-  Ticket, 
-  CreditCard, 
-  BarChart3, 
+import {
+  Home,
+  Building,
+  Ticket,
+  CreditCard,
+  BarChart3,
   Wrench,
   Settings,
   Users,
   FileText,
   Bell,
+  CalendarClock,
+  Wallet,
+  Folder,
+  Box,
+  MessageCircle,
   X
 } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -51,6 +56,12 @@ const getNavigationItems = (role: string, t: (key: string) => string) => {
       roles: ['ADMIN', 'PM', 'TECH', 'RESIDENT'],
     },
     {
+      title: 'תחזוקה',
+      href: '/maintenance',
+      icon: CalendarClock,
+      roles: ['ADMIN', 'PM', 'TECH'],
+    },
+    {
       title: t('nav.tech-jobs'),
       href: '/tech/jobs',
       icon: Wrench,
@@ -67,6 +78,30 @@ const getNavigationItems = (role: string, t: (key: string) => string) => {
       href: '/payments',
       icon: CreditCard,
       roles: ['ADMIN', 'PM', 'RESIDENT', 'ACCOUNTANT'],
+    },
+    {
+      title: 'תקציבים והוצאות',
+      href: '/finance/budgets',
+      icon: Wallet,
+      roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
+    },
+    {
+      title: 'מסמכים',
+      href: '/documents',
+      icon: Folder,
+      roles: ['ADMIN', 'PM', 'TECH', 'ACCOUNTANT'],
+    },
+    {
+      title: 'ציוד ונכסים',
+      href: '/assets',
+      icon: Box,
+      roles: ['ADMIN', 'PM', 'TECH'],
+    },
+    {
+      title: 'מרכז תקשורת',
+      href: '/communications',
+      icon: MessageCircle,
+      roles: ['ADMIN', 'PM', 'TECH'],
     },
     {
       title: 'חשבוניות שלא שולמו',

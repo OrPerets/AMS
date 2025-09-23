@@ -16,6 +16,23 @@ enum Role {
   MASTER
 }
 
+enum MaintenanceCategory {
+  GENERAL
+  HVAC
+  ELECTRICAL
+  PLUMBING
+  SAFETY
+  LANDSCAPING
+  ELEVATORS
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  INSPECTION
+  CORRECTIVE
+  EMERGENCY
+}
+
 enum TicketSeverity {
   LOW
   MEDIUM
@@ -27,6 +44,20 @@ enum TicketStatus {
   ASSIGNED
   IN_PROGRESS
   RESOLVED
+}
+
+enum BudgetStatus {
+  PLANNED
+  ACTIVE
+  CLOSED
+}
+
+enum ExpenseCategory {
+  MAINTENANCE
+  UTILITIES
+  STAFF
+  ADMINISTRATION
+  OTHER
 }
 
 model User {
@@ -41,6 +72,11 @@ model User {
   assignedTickets Ticket[] @relation("TicketAssignee")
   supplier      Supplier?
   impersonationEvents ImpersonationEvent[] @relation("MasterEvents")
+  uploadedDocuments  Document[] @relation("UploadedDocuments")
+  notifications      Notification[] @relation("UserNotifications")
+  sentCommunications Communication[] @relation("CommunicationSender")
+  receivedCommunications Communication[] @relation("CommunicationRecipient")
+  maintenanceAssignments MaintenanceSchedule[] @relation("MaintenanceAssignments")
 }
 
 model Building {
@@ -49,6 +85,23 @@ model Building {
   address   String
   tenantId  Int
   units     Unit[]
+  yearBuilt Int?
+  floors    Int?
+  totalUnits Int?
+  area      Float?
+  amenities String[]
+  managerName String?
+  contactEmail String?
+  contactPhone String?
+  notes     String?
+  maintenanceSchedules MaintenanceSchedule[]
+  budgets   Budget[]
+  expenses  Expense[]
+  documents Document[]
+  assets    Asset[]
+  contracts Contract[]
+  notifications Notification[]
+  communications Communication[]
 }
 
 model Unit {
@@ -58,6 +111,13 @@ model Unit {
   building   Building   @relation(fields: [buildingId], references: [id])
   residents  Resident[]
   tickets    Ticket[]
+  area       Float?
+  bedrooms   Int?
+  bathrooms  Int?
+  parkingSpaces Int?
+  floor      Int?
+  documents  Document[]
+  communications Communication[]
 }
 
 model Resident {
@@ -91,6 +151,7 @@ model Supplier {
   userId    Int?      @unique
   user      User?     @relation(fields: [userId], references: [id])
   workOrders WorkOrder[]
+  contracts Contract[]
 }
 
 model WorkOrder {
@@ -129,4 +190,146 @@ model ImpersonationEvent {
   ip           String?
   userAgent    String?
   createdAt    DateTime @default(now())
+}
+
+model MaintenanceSchedule {
+  id             Int                 @id @default(autoincrement())
+  buildingId     Int
+  building       Building            @relation(fields: [buildingId], references: [id])
+  assetId        Int?
+  asset          Asset?              @relation(fields: [assetId], references: [id])
+  title          String
+  description    String?
+  category       MaintenanceCategory
+  type           MaintenanceType
+  frequency      String
+  startDate      DateTime
+  nextOccurrence DateTime?
+  assignedToId   Int?
+  assignedTo     User?               @relation("MaintenanceAssignments", fields: [assignedToId], references: [id])
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  communications Communication[]
+}
+
+model Budget {
+  id          Int           @id @default(autoincrement())
+  buildingId  Int
+  building    Building      @relation(fields: [buildingId], references: [id])
+  name        String
+  year        Int
+  amount      Float
+  actualSpent Float         @default(0)
+  status      BudgetStatus  @default(PLANNED)
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  expenses    Expense[]
+}
+
+model Expense {
+  id          Int             @id @default(autoincrement())
+  buildingId  Int
+  building    Building        @relation(fields: [buildingId], references: [id])
+  budgetId    Int?
+  budget      Budget?         @relation(fields: [budgetId], references: [id])
+  category    ExpenseCategory
+  amount      Float
+  description String?
+  incurredAt  DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  documents   Document[]
+}
+
+model Document {
+  id           Int       @id @default(autoincrement())
+  buildingId   Int?
+  building     Building? @relation(fields: [buildingId], references: [id])
+  unitId       Int?
+  unit         Unit?     @relation(fields: [unitId], references: [id])
+  contractId   Int?
+  contract     Contract? @relation("ContractDocuments", fields: [contractId], references: [id])
+  assetId      Int?
+  asset        Asset?    @relation("AssetDocuments", fields: [assetId], references: [id])
+  expenseId    Int?
+  expense      Expense?  @relation(fields: [expenseId], references: [id])
+  uploadedById Int?
+  uploadedBy   User?     @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+  name         String
+  url          String
+  category     String?
+  uploadedAt   DateTime  @default(now())
+}
+
+model Notification {
+  id         Int       @id @default(autoincrement())
+  tenantId   Int?
+  userId     Int?
+  buildingId Int?
+  title      String
+  message    String
+  type       String?
+  metadata   Json?
+  read       Boolean   @default(false)
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+  user       User?     @relation("UserNotifications", fields: [userId], references: [id])
+  building   Building? @relation(fields: [buildingId], references: [id])
+}
+
+model Contract {
+  id          Int        @id @default(autoincrement())
+  buildingId  Int
+  building    Building   @relation(fields: [buildingId], references: [id])
+  supplierId  Int?
+  supplier    Supplier?  @relation(fields: [supplierId], references: [id])
+  title       String
+  description String?
+  value       Float?
+  startDate   DateTime
+  endDate     DateTime?
+  status      String     @default("ACTIVE")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  documents   Document[] @relation("ContractDocuments")
+}
+
+model Asset {
+  id          Int                 @id @default(autoincrement())
+  buildingId  Int
+  building    Building            @relation(fields: [buildingId], references: [id])
+  name        String
+  category    MaintenanceCategory
+  description String?
+  serialNumber String?
+  location    String?
+  purchaseDate DateTime?
+  warrantyExpiry DateTime?
+  value       Float?
+  status      String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  maintenanceSchedules MaintenanceSchedule[]
+  documents   Document[]          @relation("AssetDocuments")
+}
+
+model Communication {
+  id            Int        @id @default(autoincrement())
+  buildingId    Int?
+  building      Building?  @relation(fields: [buildingId], references: [id])
+  unitId        Int?
+  unit          Unit?      @relation(fields: [unitId], references: [id])
+  senderId      Int
+  sender        User       @relation("CommunicationSender", fields: [senderId], references: [id])
+  recipientId   Int?
+  recipient     User?      @relation("CommunicationRecipient", fields: [recipientId], references: [id])
+  maintenanceScheduleId Int?
+  maintenanceSchedule   MaintenanceSchedule? @relation(fields: [maintenanceScheduleId], references: [id])
+  subject       String?
+  message       String
+  channel       String?
+  metadata      Json?
+  readAt        DateTime?
+  createdAt     DateTime   @default(now())
 }

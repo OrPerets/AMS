@@ -10,6 +10,11 @@ import { PaymentModule } from './payments/payment.module';
 import { NotificationModule } from './notifications/notification.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AdminModule } from './admin/admin.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
+import { BudgetModule } from './budgets/budget.module';
+import { DocumentModule } from './documents/document.module';
+import { AssetModule } from './assets/asset.module';
+import { CommunicationModule } from './communications/communication.module';
 
 @Module({
   imports: [
@@ -21,6 +26,11 @@ import { AdminModule } from './admin/admin.module';
     WorkOrderModule,
     PaymentModule,
     NotificationModule,
+    MaintenanceModule,
+    BudgetModule,
+    DocumentModule,
+    AssetModule,
+    CommunicationModule,
     DashboardModule,
     AdminModule,
   ],

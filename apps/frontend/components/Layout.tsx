@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import { useDirection, useTheme, useLocale } from '../lib/providers';
+import { useDirection } from '../lib/providers';
 import Header from './layout/Header';
 import Sidebar from './layout/Sidebar';
 import Breadcrumbs from './layout/Breadcrumbs';
@@ -61,14 +61,14 @@ export default function Layout({ children }: Props) {
       )}>
         {/* Breadcrumbs */}
         <div className="border-b bg-background/50 backdrop-blur-sm">
-          <div className="container py-3">
+          <div className="container px-4 py-3 sm:px-6">
             <Breadcrumbs />
           </div>
         </div>
-        
+
         {/* Page Content */}
         <div className="flex-1 overflow-auto">
-          <div className="container py-6">
+          <div className="container px-4 py-6 sm:px-6">
             {children}
           </div>
         </div>

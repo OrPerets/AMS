@@ -1,46 +1,12 @@
 // /Users/orperetz/Documents/AMS/apps/frontend/components/layout/Breadcrumbs.tsx
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useDirection, useLocale } from '../../lib/providers';
-
-// Breadcrumb configuration for different routes
-const getBreadcrumbConfig = (t: (key: string) => string) => ({
-  '/': [{ title: t('nav.home'), href: '/' }],
-  '/home': [
-    { title: t('nav.home'), href: '/' },
-    { title: 'בית', href: '/home' }
-  ],
-  '/admin/dashboard': [
-    { title: t('nav.home'), href: '/' },
-    { title: t('nav.dashboard'), href: '/admin/dashboard' }
-  ],
-  '/tickets': [
-    { title: t('nav.home'), href: '/' },
-    { title: t('nav.tickets'), href: '/tickets' }
-  ],
-  '/tech/jobs': [
-    { title: t('nav.home'), href: '/' },
-    { title: t('nav.tech-jobs'), href: '/tech/jobs' }
-  ],
-  '/buildings': [
-    { title: t('nav.home'), href: '/' },
-    { title: t('nav.buildings'), href: '/buildings' }
-  ],
-  '/payments': [
-    { title: t('nav.home'), href: '/' },
-    { title: t('nav.payments'), href: '/payments' }
-  ],
-  '/admin/unpaid-invoices': [
-    { title: t('nav.home'), href: '/' },
-    { title: t('nav.admin'), href: '/admin/dashboard' },
-    { title: 'חשבוניות שלא שולמו', href: '/admin/unpaid-invoices' }
-  ],
-});
 
 interface BreadcrumbItem {
   title: string;
@@ -52,31 +18,59 @@ export default function Breadcrumbs() {
   const { direction } = useDirection();
   const { t } = useLocale();
 
-  const breadcrumbConfig = getBreadcrumbConfig(t);
-  const currentPath = router.pathname;
-  
-  // Get breadcrumb items for current path
-  const breadcrumbItems: BreadcrumbItem[] = breadcrumbConfig[currentPath as keyof typeof breadcrumbConfig] || [
-    { title: t('nav.home'), href: '/' },
-    { title: 'עמוד לא מוכר', href: currentPath }
-  ];
+  const breadcrumbs = useMemo(() => {
+    const pathWithoutQuery = router.asPath.split('?')[0].split('#')[0];
+    const segments = pathWithoutQuery.split('/').filter(Boolean);
+    if (segments.length === 0) {
+      return [] as BreadcrumbItem[];
+    }
+
+    const labelMap: Record<string, string> = {
+      home: 'בית',
+      admin: t('nav.admin'),
+      dashboard: t('nav.dashboard'),
+      tickets: t('nav.tickets'),
+      tech: t('nav.tech-jobs'),
+      jobs: 'משימות שטח',
+      buildings: t('nav.buildings'),
+      payments: t('nav.payments'),
+      maintenance: 'תחזוקה',
+      finance: 'פיננסים',
+      budgets: 'תקציבים',
+      documents: 'מסמכים',
+      assets: 'נכסים',
+      communications: 'תקשורת',
+      notifications: t('nav.notifications'),
+      'unpaid-invoices': 'חשבוניות שלא שולמו',
+    };
+
+    const items: BreadcrumbItem[] = [{ title: t('nav.home'), href: '/' }];
+    segments.forEach((segment, index) => {
+      const href = `/${segments.slice(0, index + 1).join('/')}`;
+      const isNumeric = /^\d+$/.test(segment);
+      const title = labelMap[segment] || (isNumeric ? 'פרטים' : decodeURIComponent(segment).replace(/-/g, ' '));
+      items.push({ title, href });
+    });
+
+    return items;
+  }, [router.asPath, t]);
 
   // Don't show breadcrumbs on home page or if only one item
-  if (breadcrumbItems.length <= 1) {
+  if (breadcrumbs.length <= 1) {
     return null;
   }
 
   const ChevronIcon = direction === 'rtl' ? ChevronLeft : ChevronRight;
 
   return (
-    <nav 
+    <nav
       className="flex items-center space-x-1 text-sm text-muted-foreground"
       aria-label="breadcrumb"
     >
       <ol className="flex items-center space-x-1">
-        {breadcrumbItems.map((item, index) => {
-          const isLast = index === breadcrumbItems.length - 1;
-          
+        {breadcrumbs.map((item, index) => {
+          const isLast = index === breadcrumbs.length - 1;
+
           return (
             <li key={item.href} className="flex items-center">
               {index > 0 && (
