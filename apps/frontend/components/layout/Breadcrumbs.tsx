@@ -26,22 +26,33 @@ export default function Breadcrumbs() {
     }
 
     const labelMap: Record<string, string> = {
-      home: 'בית',
-      admin: t('nav.admin'),
-      dashboard: t('nav.dashboard'),
-      tickets: t('nav.tickets'),
-      tech: t('nav.tech-jobs'),
+      // Main sections
+      home: 'סקירה כללית',
+      admin: 'ניהול המערכת',
+      dashboard: 'לוח ניהול',
+      // Operations
+      tickets: 'קריאות שירות',
+      maintenance: 'תחזוקה מתוכננת',
+      tech: 'משימות שטח',
       jobs: 'משימות שטח',
-      buildings: t('nav.buildings'),
-      payments: t('nav.payments'),
-      maintenance: 'תחזוקה',
-      finance: 'פיננסים',
-      budgets: 'תקציבים',
+      communications: 'מרכז תקשורת',
+      // Property Management
+      buildings: 'בניינים ויחידות',
+      assets: 'ציוד ונכסים',
       documents: 'מסמכים',
-      assets: 'נכסים',
-      communications: 'תקשורת',
-      notifications: t('nav.notifications'),
-      'unpaid-invoices': 'חשבוניות שלא שולמו',
+      // Financial
+      payments: 'תשלומים',
+      finance: 'ניהול פיננסי',
+      budgets: 'תקציבים והוצאות',
+      reports: 'דוחות פיננסיים',
+      analytics: 'ניתוח פיננסי',
+      'unpaid-invoices': 'חשבוניות ממתינות',
+      // System
+      notifications: 'התראות',
+      settings: 'הגדרות',
+      support: 'תמיכה',
+      privacy: 'פרטיות',
+      terms: 'תנאי שימוש',
     };
 
     const items: BreadcrumbItem[] = [{ title: t('nav.home'), href: '/' }];

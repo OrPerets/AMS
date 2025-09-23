@@ -122,7 +122,7 @@ export default function BudgetsPage() {
   };
 
   const totals = data?.totals || { planned: 0, actual: 0, variance: 0 };
-  const categories = useMemo(() => (data?.expensesByCategory || []).map(x => x.category), [data]);
+  const categories = useMemo(() => (data?.expensesByCategory || []).map(x => ({ name: x.category, value: x._sum.amount || 0 })), [data]);
 
   return (
     <div className="p-6 space-y-6">

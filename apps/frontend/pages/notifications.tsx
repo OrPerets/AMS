@@ -180,7 +180,7 @@ export default function NotificationsPage() {
     return matchesSearch && matchesType && matchesStatus;
   });
 
-  const notificationTypes = Array.from(new Set(notifications.map(n => n.type).filter(Boolean)));
+  const notificationTypes = Array.from(new Set(notifications.map(n => n.type).filter((type): type is string => Boolean(type))));
 
   return (
     <div className="container mx-auto p-6 space-y-6">

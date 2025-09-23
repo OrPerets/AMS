@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { CreateExpenseDto } from './dto/create-expense.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, ExpenseStatus, BudgetStatus } from '@prisma/client';
 import { NotificationService, NotificationTemplate } from '../notifications/notification.service';
 
 @Injectable()
@@ -111,7 +111,7 @@ export class BudgetService {
   async approve(id: number) {
     const budget = await this.prisma.budget.update({
       where: { id },
-      data: { status: 'ACTIVE' as any },
+      data: { status: BudgetStatus.ACTIVE },
     });
     // Notify building users
     try {
@@ -128,7 +128,7 @@ export class BudgetService {
   async reject(id: number) {
     const budget = await this.prisma.budget.update({
       where: { id },
-      data: { status: 'PLANNED' as any },
+      data: { status: BudgetStatus.PLANNED },
     });
     try {
       await this.notifications.notifyBuilding(budget.buildingId, NotificationTemplate.ANNOUNCEMENT, {
@@ -144,7 +144,7 @@ export class BudgetService {
   private async updateBudgetActualsAndAlert(budgetId: number) {
     const aggregate = await this.prisma.expense.aggregate({
       _sum: { amount: true },
-      where: { budgetId, status: 'APPROVED' as any },
+      where: { budgetId, status: ExpenseStatus.APPROVED },
     });
     const updated = await this.prisma.budget.update({
       where: { id: budgetId },
@@ -174,7 +174,7 @@ export class BudgetService {
   async approveExpense(expenseId: number, approverUserId?: number) {
     const expense = await this.prisma.expense.update({
       where: { id: expenseId },
-      data: { status: 'APPROVED' as any, approvedById: approverUserId, approvedAt: new Date() },
+      data: { status: ExpenseStatus.APPROVED, approvedById: approverUserId, approvedAt: new Date() },
       include: { budget: true },
     });
     if (expense.budgetId) {
@@ -186,14 +186,14 @@ export class BudgetService {
   async rejectExpense(expenseId: number, approverUserId?: number) {
     const expense = await this.prisma.expense.update({
       where: { id: expenseId },
-      data: { status: 'REJECTED' as any, approvedById: approverUserId, approvedAt: new Date() },
+      data: { status: ExpenseStatus.REJECTED, approvedById: approverUserId, approvedAt: new Date() },
     });
     return expense;
   }
 
-  listExpenses(status?: 'PENDING' | 'APPROVED' | 'REJECTED') {
+  listExpenses(status?: ExpenseStatus) {
     return this.prisma.expense.findMany({
-      where: status ? { status: status as any } : {},
+      where: status ? { status } : {},
       orderBy: [{ incurredAt: 'desc' }],
       include: { building: true, budget: true },
     });

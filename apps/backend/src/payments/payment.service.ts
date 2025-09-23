@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { InvoiceStatus } from '@prisma/client';
+import { InvoiceStatus, PaymentIntentStatus } from '@prisma/client';
 import { TranzilaService } from './tranzila.service';
 import { ReceiptService } from './receipt.service';
+import { TranzilaProvider } from './tranzila.provider';
 
 @Injectable()
 export class PaymentService {
@@ -10,6 +11,7 @@ export class PaymentService {
     private prisma: PrismaService,
     private tranzila: TranzilaService,
     private receipts: ReceiptService,
+    private tranzilaProvider: TranzilaProvider,
   ) {}
 
   createInvoice(data: { residentId: number; items: any[]; amount?: number }) {
@@ -40,7 +42,19 @@ export class PaymentService {
       include: { resident: { include: { user: true } } },
     });
     if (!invoice) throw new Error('Invoice not found');
-    return this.tranzila.charge(invoice);
+    // Create PaymentIntent
+    const intent = await this.prisma.paymentIntent.create({
+      data: {
+        invoiceId: invoice.id,
+        amount: invoice.amount,
+        currency: 'NIS',
+        status: PaymentIntentStatus.REQUIRES_CONFIRMATION,
+        provider: 'tranzila',
+      },
+    });
+    const result = await this.tranzilaProvider.createPayment({ amount: invoice.amount, currency: 'NIS', description: `Invoice #${invoice.id}` });
+    await this.prisma.paymentIntent.update({ where: { id: intent.id }, data: { providerIntentId: result.providerIntentId || String(intent.id), clientSecret: result.clientSecret || null } });
+    return { intentId: intent.id, redirectUrl: result.redirectUrl, clientSecret: result.clientSecret };
   }
 
   async confirmPayment(invoiceId: number) {
@@ -49,9 +63,41 @@ export class PaymentService {
       data: { status: InvoiceStatus.PAID },
       include: { resident: { include: { user: true } } },
     });
+    // Ledger entries (payment and net/fee simplified)
+    await this.prisma.ledgerEntry.create({ data: { invoiceId, entryType: 'payment', amount: invoice.amount, debit: 'Cash', credit: 'Accounts Receivable' } });
     // In a real system, email the receipt
     await this.receipts.generate(invoice);
     return invoice;
+  }
+
+  async createPaymentIntentFromInvoice(invoiceId: number) {
+    const invoice = await this.prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
+    const intent = await this.prisma.paymentIntent.create({
+      data: {
+        invoiceId: invoice.id,
+        amount: invoice.amount,
+        currency: 'NIS',
+        status: PaymentIntentStatus.REQUIRES_CONFIRMATION,
+        provider: 'tranzila',
+      },
+    });
+    const result = await this.tranzilaProvider.createPayment({ amount: invoice.amount, currency: 'NIS', description: `Invoice #${invoice.id}` });
+    await this.prisma.paymentIntent.update({ where: { id: intent.id }, data: { providerIntentId: result.providerIntentId || String(intent.id), clientSecret: result.clientSecret || null } });
+    return { id: intent.id, status: intent.status, redirectUrl: result.redirectUrl, clientSecret: result.clientSecret };
+  }
+
+  async refund(paymentIntentId: number, amount?: number) {
+    const intent = await this.prisma.paymentIntent.findUniqueOrThrow({ where: { id: paymentIntentId }, include: { invoice: true } });
+    const res = await this.tranzilaProvider.refund({ providerIntentId: intent.providerIntentId || String(intent.id), amount });
+    await this.prisma.refund.create({ data: { paymentIntentId: intent.id, amount: amount ?? intent.amount, providerRefundId: res.providerRefundId || undefined } });
+    await this.prisma.ledgerEntry.create({ data: { invoiceId: intent.invoiceId, paymentIntentId: intent.id, entryType: 'refund', amount: -(amount ?? intent.amount), debit: 'Accounts Receivable', credit: 'Cash' } });
+    await this.prisma.invoice.update({ where: { id: intent.invoiceId }, data: { status: InvoiceStatus.UNPAID } });
+    return { ok: true };
+  }
+
+  async getPayment(paymentIntentId: number) {
+    const intent = await this.prisma.paymentIntent.findUniqueOrThrow({ where: { id: paymentIntentId } });
+    return intent;
   }
 
   async applyLatePenalty(invoiceId: number, penaltyAmount: number) {

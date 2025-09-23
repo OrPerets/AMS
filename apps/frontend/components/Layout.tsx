@@ -8,6 +8,7 @@ import Header from './layout/Header';
 import Sidebar from './layout/Sidebar';
 import Breadcrumbs from './layout/Breadcrumbs';
 import Footer from './layout/Footer';
+import { ErrorBoundary, CompactErrorFallback } from './ui/error-boundary';
 import { cn } from '../lib/utils';
 
 interface Props {
@@ -69,7 +70,9 @@ export default function Layout({ children }: Props) {
         {/* Page Content */}
         <div className="flex-1 overflow-auto">
           <div className="container px-4 py-6 sm:px-6">
-            {children}
+            <ErrorBoundary fallback={CompactErrorFallback}>
+              {children}
+            </ErrorBoundary>
           </div>
         </div>
       </main>

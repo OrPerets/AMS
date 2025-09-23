@@ -34,96 +34,139 @@ interface SidebarProps {
   collapsed?: boolean;
 }
 
-// Navigation items configuration
-const getNavigationItems = (role: string, t: (key: string) => string) => {
-  const baseItems = [
+interface NavigationGroup {
+  title: string;
+  items: NavigationItem[];
+  roles: string[];
+}
+
+interface NavigationItem {
+  title: string;
+  href: string;
+  icon: any;
+  roles: string[];
+}
+
+// Navigation items configuration with logical grouping
+const getNavigationGroups = (role: string, t: (key: string) => string): NavigationGroup[] => {
+  const groups: NavigationGroup[] = [
     {
-      title: t('nav.home'),
-      href: '/',
-      icon: Home,
+      title: 'לוח בקרה',
       roles: ['ADMIN', 'PM', 'TECH', 'RESIDENT', 'ACCOUNTANT'],
+      items: [
+        {
+          title: 'סקירה כללית',
+          href: '/home',
+          icon: Home,
+          roles: ['ADMIN', 'PM', 'TECH', 'RESIDENT', 'ACCOUNTANT'],
+        },
+        {
+          title: 'לוח ניהול',
+          href: '/admin/dashboard',
+          icon: BarChart3,
+          roles: ['ADMIN', 'PM'],
+        },
+      ]
     },
     {
-      title: t('nav.dashboard'),
-      href: '/admin/dashboard',
-      icon: BarChart3,
-      roles: ['ADMIN', 'PM'],
-    },
-    {
-      title: t('nav.tickets'),
-      href: '/tickets',
-      icon: Ticket,
+      title: 'תפעול יומיומי',
       roles: ['ADMIN', 'PM', 'TECH', 'RESIDENT'],
+      items: [
+        {
+          title: 'קריאות שירות',
+          href: '/tickets',
+          icon: Ticket,
+          roles: ['ADMIN', 'PM', 'TECH', 'RESIDENT'],
+        },
+        {
+          title: 'תחזוקה מתוכננת',
+          href: '/maintenance',
+          icon: CalendarClock,
+          roles: ['ADMIN', 'PM', 'TECH'],
+        },
+        {
+          title: 'משימות שטח',
+          href: '/tech/jobs',
+          icon: Wrench,
+          roles: ['TECH'],
+        },
+        {
+          title: 'מרכז תקשורת',
+          href: '/communications',
+          icon: MessageCircle,
+          roles: ['ADMIN', 'PM', 'TECH'],
+        },
+      ]
     },
     {
-      title: 'תחזוקה',
-      href: '/maintenance',
-      icon: CalendarClock,
+      title: 'ניהול נכסים',
       roles: ['ADMIN', 'PM', 'TECH'],
+      items: [
+        {
+          title: 'בניינים ויחידות',
+          href: '/buildings',
+          icon: Building,
+          roles: ['ADMIN', 'PM'],
+        },
+        {
+          title: 'ציוד ונכסים',
+          href: '/assets',
+          icon: Box,
+          roles: ['ADMIN', 'PM', 'TECH'],
+        },
+        {
+          title: 'מסמכים',
+          href: '/documents',
+          icon: Folder,
+          roles: ['ADMIN', 'PM', 'TECH', 'ACCOUNTANT'],
+        },
+      ]
     },
     {
-      title: t('nav.tech-jobs'),
-      href: '/tech/jobs',
-      icon: Wrench,
-      roles: ['TECH'],
+      title: 'ניהול פיננסי',
+      roles: ['ADMIN', 'PM', 'ACCOUNTANT', 'RESIDENT'],
+      items: [
+        {
+          title: 'תשלומים',
+          href: '/payments',
+          icon: CreditCard,
+          roles: ['ADMIN', 'PM', 'RESIDENT', 'ACCOUNTANT'],
+        },
+        {
+          title: 'תקציבים והוצאות',
+          href: '/finance/budgets',
+          icon: Wallet,
+          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
+        },
+        {
+          title: 'דוחות פיננסיים',
+          href: '/finance/reports',
+          icon: BarChart3,
+          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
+        },
+        {
+          title: 'חשבוניות ממתינות',
+          href: '/admin/unpaid-invoices',
+          icon: FileText,
+          roles: ['ADMIN', 'ACCOUNTANT'],
+        },
+      ]
     },
     {
-      title: t('nav.buildings'),
-      href: '/buildings',
-      icon: Building,
+      title: 'ניהול המערכת',
       roles: ['ADMIN', 'PM'],
-    },
-    {
-      title: t('nav.payments'),
-      href: '/payments',
-      icon: CreditCard,
-      roles: ['ADMIN', 'PM', 'RESIDENT', 'ACCOUNTANT'],
-    },
-    {
-      title: 'תקציבים והוצאות',
-      href: '/finance/budgets',
-      icon: Wallet,
-      roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
-    },
-    {
-      title: 'דוחות פיננסיים',
-      href: '/finance/reports',
-      icon: BarChart3,
-      roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
-    },
-    {
-      title: 'מסמכים',
-      href: '/documents',
-      icon: Folder,
-      roles: ['ADMIN', 'PM', 'TECH', 'ACCOUNTANT'],
-    },
-    {
-      title: 'ציוד ונכסים',
-      href: '/assets',
-      icon: Box,
-      roles: ['ADMIN', 'PM', 'TECH'],
-    },
-    {
-      title: 'מרכז תקשורת',
-      href: '/communications',
-      icon: MessageCircle,
-      roles: ['ADMIN', 'PM', 'TECH'],
-    },
-    {
-      title: 'חשבוניות שלא שולמו',
-      href: '/admin/unpaid-invoices',
-      icon: FileText,
-      roles: ['ADMIN', 'ACCOUNTANT'],
-    },
-    {
-      title: t('nav.notifications'),
-      href: '/admin/notifications',
-      icon: Bell,
-      roles: ['ADMIN', 'PM'],
-    },
+      items: [
+        {
+          title: 'התראות',
+          href: '/admin/notifications',
+          icon: Bell,
+          roles: ['ADMIN', 'PM'],
+        },
+      ]
+    }
   ];
 
-  return baseItems.filter(item => item.roles.includes(role));
+  return groups.filter(group => group.roles.includes(role));
 };
 
 export default function Sidebar({ className, open, onClose, collapsed }: SidebarProps) {
@@ -138,11 +181,11 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
     setUserRole(payload?.actAsRole || payload?.role || 'RESIDENT');
   }, []);
   
-  const navigationItems = getNavigationItems(userRole, t);
+  const navigationGroups = getNavigationGroups(userRole, t);
 
   const isActive = (href: string) => {
-    if (href === '/') {
-      return router.pathname === '/';
+    if (href === '/' || href === '/home') {
+      return router.pathname === '/' || router.pathname === '/home';
     }
     return router.pathname.startsWith(href);
   };
@@ -172,26 +215,42 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
           )}
         </div>
         
-        <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.href);
-            
+        <nav className="flex-1 space-y-6 p-4 overflow-y-auto">
+          {navigationGroups.map((group) => {
+            const filteredItems = group.items.filter(item => item.roles.includes(userRole));
+            if (filteredItems.length === 0) return null;
+
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                  collapsed && "justify-center px-2"
+              <div key={group.title} className="space-y-2">
+                {!collapsed && (
+                  <h4 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    {group.title}
+                  </h4>
                 )}
-              >
-                <Icon className={cn("h-5 w-5", collapsed && "h-6 w-6")} />
-                {!collapsed && <span>{item.title}</span>}
-              </Link>
+                <div className="space-y-1">
+                  {filteredItems.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.href);
+                    
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                          active
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-foreground/70 hover:bg-accent hover:text-accent-foreground",
+                          collapsed && "justify-center px-2"
+                        )}
+                      >
+                        <Icon className={cn("h-5 w-5", collapsed && "h-6 w-6")} />
+                        {!collapsed && <span>{item.title}</span>}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </nav>
@@ -232,26 +291,40 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
           </Button>
         </div>
         
-        <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.href);
-            
+        <nav className="flex-1 space-y-6 p-4 overflow-y-auto">
+          {navigationGroups.map((group) => {
+            const filteredItems = group.items.filter(item => item.roles.includes(userRole));
+            if (filteredItems.length === 0) return null;
+
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                )}
-              >
-                <Icon className="h-5 w-5" />
-                <span>{item.title}</span>
-              </Link>
+              <div key={group.title} className="space-y-2">
+                <h4 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {group.title}
+                </h4>
+                <div className="space-y-1">
+                  {filteredItems.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.href);
+                    
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={onClose}
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                          active
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-foreground/70 hover:bg-accent hover:text-accent-foreground"
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span>{item.title}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </nav>
