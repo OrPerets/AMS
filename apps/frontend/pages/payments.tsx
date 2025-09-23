@@ -23,6 +23,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
+import { Input } from '../components/ui/input';
 import { 
   Select,
   SelectContent,
@@ -72,6 +73,8 @@ export default function Payments() {
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [newInvoice, setNewInvoice] = useState<{ residentId: string; items: { description: string; quantity: string; unitPrice: string }[] }>({ residentId: '', items: [{ description: '', quantity: '1', unitPrice: '' }] });
+  const [recurring, setRecurring] = useState<{ residentId: string; recurrence: string; items: { description: string; quantity: string; unitPrice: string }[] }>({ residentId: '', recurrence: 'monthly', items: [{ description: '', quantity: '1', unitPrice: '' }] });
   const { locale } = useLocale();
 
   const loadInvoices = async () => {
@@ -183,6 +186,41 @@ export default function Payments() {
 
   const handleViewReceipt = (invoice: Invoice) => {
     window.open(`/api/v1/invoices/${invoice.id}/receipt`, '_blank');
+  };
+
+  const addInvoiceItem = () => setNewInvoice({ ...newInvoice, items: [...newInvoice.items, { description: '', quantity: '1', unitPrice: '' }] });
+  const addRecurringItem = () => setRecurring({ ...recurring, items: [...recurring.items, { description: '', quantity: '1', unitPrice: '' }] });
+
+  const computeTotal = (items: { quantity: string; unitPrice: string }[]) => items.reduce((s, it) => s + (Number(it.quantity || 0) * Number(it.unitPrice || 0)), 0);
+
+  const submitInvoice = async () => {
+    const payload = {
+      residentId: Number(newInvoice.residentId),
+      items: newInvoice.items.map(i => ({ description: i.description, quantity: Number(i.quantity || 1), unitPrice: Number(i.unitPrice || 0) })),
+    };
+    const res = await authFetch('/api/v1/invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (res.ok) {
+      toast({ title: 'חשבונית נוצרה' });
+      loadInvoices();
+      setNewInvoice({ residentId: '', items: [{ description: '', quantity: '1', unitPrice: '' }] });
+    } else {
+      toast({ title: 'יצירת חשבונית נכשלה', variant: 'destructive' });
+    }
+  };
+
+  const submitRecurring = async () => {
+    const payload = {
+      residentId: Number(recurring.residentId),
+      recurrence: recurring.recurrence,
+      items: recurring.items.map(i => ({ description: i.description, quantity: Number(i.quantity || 1), unitPrice: Number(i.unitPrice || 0) })),
+    };
+    const res = await authFetch('/api/v1/recurring-invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (res.ok) {
+      toast({ title: 'חשבונית מחזורית נשמרה' });
+      setRecurring({ residentId: '', recurrence: 'monthly', items: [{ description: '', quantity: '1', unitPrice: '' }] });
+    } else {
+      toast({ title: 'שמירת מחזורית נכשלה', variant: 'destructive' });
+    }
   };
 
   const getDaysOverdue = (dueDate: string) => {
@@ -520,6 +558,84 @@ export default function Payments() {
             data={filteredInvoices}
             searchPlaceholder="חיפוש חשבוניות..."
           />
+        </CardContent>
+      </Card>
+
+      {/* Create Invoice */}
+      <Card>
+        <CardHeader>
+          <CardTitle>חשבונית חדשה</CardTitle>
+          <CardDescription>יצירת חשבונית עם שורות</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+            <label>מזהה דייר</label>
+            <Input className="md:col-span-2" value={newInvoice.residentId} onChange={(e) => setNewInvoice({ ...newInvoice, residentId: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            {newInvoice.items.map((it, idx) => (
+              <div key={idx} className="grid grid-cols-6 gap-2 items-center">
+                <label className="col-span-1">תיאור</label>
+                <Input className="col-span-2" value={it.description} onChange={(e) => {
+                  const items = [...newInvoice.items]; items[idx] = { ...items[idx], description: e.target.value }; setNewInvoice({ ...newInvoice, items });
+                }} />
+                <label>כמות</label>
+                <Input type="number" value={it.quantity} onChange={(e) => {
+                  const items = [...newInvoice.items]; items[idx] = { ...items[idx], quantity: e.target.value }; setNewInvoice({ ...newInvoice, items });
+                }} />
+                <label>מחיר יח׳</label>
+                <Input type="number" value={it.unitPrice} onChange={(e) => {
+                  const items = [...newInvoice.items]; items[idx] = { ...items[idx], unitPrice: e.target.value }; setNewInvoice({ ...newInvoice, items });
+                }} />
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={addInvoiceItem}>הוסף שורה</Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="ms-auto font-medium">סה"כ: {computeTotal(newInvoice.items).toLocaleString('he-IL', { style: 'currency', currency: 'ILS' })}</div>
+            <Button onClick={submitInvoice} disabled={!newInvoice.residentId || newInvoice.items.length === 0}>צור חשבונית</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recurring Invoice */}
+      <Card>
+        <CardHeader>
+          <CardTitle>חשבונית מחזורית</CardTitle>
+          <CardDescription>הגדרת חיוב חודשי/רבעוני</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+            <label>מזהה דייר</label>
+            <Input className="md:col-span-2" value={recurring.residentId} onChange={(e) => setRecurring({ ...recurring, residentId: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+            <label>תדירות</label>
+            <Input className="md:col-span-2" placeholder="monthly | quarterly | yearly" value={recurring.recurrence} onChange={(e) => setRecurring({ ...recurring, recurrence: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            {recurring.items.map((it, idx) => (
+              <div key={idx} className="grid grid-cols-6 gap-2 items-center">
+                <label className="col-span-1">תיאור</label>
+                <Input className="col-span-2" value={it.description} onChange={(e) => {
+                  const items = [...recurring.items]; items[idx] = { ...items[idx], description: e.target.value }; setRecurring({ ...recurring, items });
+                }} />
+                <label>כמות</label>
+                <Input type="number" value={it.quantity} onChange={(e) => {
+                  const items = [...recurring.items]; items[idx] = { ...items[idx], quantity: e.target.value }; setRecurring({ ...recurring, items });
+                }} />
+                <label>מחיר יח׳</label>
+                <Input type="number" value={it.unitPrice} onChange={(e) => {
+                  const items = [...recurring.items]; items[idx] = { ...items[idx], unitPrice: e.target.value }; setRecurring({ ...recurring, items });
+                }} />
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={addRecurringItem}>הוסף שורה</Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="ms-auto font-medium">סה"כ: {computeTotal(recurring.items).toLocaleString('he-IL', { style: 'currency', currency: 'ILS' })}</div>
+            <Button onClick={submitRecurring} disabled={!recurring.residentId || recurring.items.length === 0}>שמור מחזורית</Button>
+          </div>
         </CardContent>
       </Card>
     </div>

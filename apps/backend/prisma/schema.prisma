@@ -75,6 +75,12 @@ enum ExpenseCategory {
   OTHER
 }
 
+enum ExpenseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id            Int      @id @default(autoincrement())
   email         String   @unique
@@ -97,6 +103,7 @@ model User {
   verifiedMaintenance MaintenanceHistory[] @relation("MaintenanceHistoryVerifier")
   verifiedMaintenanceSchedules MaintenanceSchedule[] @relation("MaintenanceVerifications")
   approvedWorkOrders WorkOrder[] @relation("WorkOrderApprover")
+  approvedExpenses  Expense[]   @relation("ExpenseApprover")
 }
 
 model Building {
@@ -146,6 +153,7 @@ model Resident {
   user    User   @relation(fields: [userId], references: [id])
   units   Unit[]
   invoices Invoice[]
+  recurringInvoices RecurringInvoice[]
 }
 
 model Ticket {
@@ -212,6 +220,20 @@ model Invoice {
   amount     Float
   status     InvoiceStatus @default(UNPAID)
   createdAt  DateTime      @default(now())
+}
+
+model RecurringInvoice {
+  id           Int      @id @default(autoincrement())
+  residentId   Int
+  resident     Resident @relation(fields: [residentId], references: [id])
+  items        Json
+  amount       Float
+  recurrence   String   // e.g., "monthly", "quarterly", or cronstr
+  nextRunAt    DateTime
+  lastRunAt    DateTime?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model ImpersonationEvent {
@@ -286,6 +308,10 @@ model Expense {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   documents   Document[]
+  status      ExpenseStatus   @default(PENDING)
+  approvedById Int?
+  approvedBy  User?           @relation("ExpenseApprover", fields: [approvedById], references: [id])
+  approvedAt  DateTime?
 }
 
 model Document {

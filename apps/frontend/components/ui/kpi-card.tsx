@@ -17,7 +17,7 @@ interface KpiCardProps {
   className?: string;
   trend?: 'up' | 'down' | 'neutral';
   badgeText?: string;
-  badgeVariant?: 'default' | 'success' | 'warning' | 'destructive' | 'info';
+  badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info';
   clickable?: boolean;
   onClick?: () => void;
 }

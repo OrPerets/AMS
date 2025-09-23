@@ -166,62 +166,82 @@ Implement comprehensive financial management including budgets, expenses, revenu
 ### Tasks
 
 #### Backend Tasks
-- [ ] **Budget Management**
-  - [ ] Implement budget creation and management
-  - [ ] Add budget vs actual tracking
-  - [ ] Create budget alerts and notifications
-  - [ ] Implement budget approval workflow
-  - [ ] Add budget variance analysis
+- [x] **Budget Management**
+  - [x] Implement budget creation and management
+  - [x] Add budget vs actual tracking
+  - [x] Create budget alerts and notifications
+  - [x] Implement budget approval workflow
+  - [x] Add budget variance analysis
 
-- [ ] **Expense Management**
-  - [ ] Implement expense tracking and categorization
-  - [ ] Add expense approval workflow
-  - [ ] Create expense reporting
-  - [ ] Add expense receipt management
-  - [ ] Implement expense budget allocation
+- [x] **Expense Management**
+  - [x] Implement expense tracking and categorization
+  - [x] Add expense approval workflow
+  - [x] Create expense reporting
+  - [x] Add expense receipt management
+  - [x] Implement expense budget allocation
 
-- [ ] **Revenue Management**
-  - [ ] Enhance invoice system with detailed line items
-  - [ ] Add recurring invoice generation
-  - [ ] Implement payment tracking and reconciliation
-  - [ ] Add late payment penalties
-  - [ ] Create revenue forecasting
+- [x] **Revenue Management**
+  - [x] Enhance invoice system with detailed line items
+  - [x] Add recurring invoice generation
+  - [x] Implement payment tracking and reconciliation
+  - [x] Add late payment penalties
+  - [x] Create revenue forecasting
 
-- [ ] **Financial Reporting**
-  - [ ] Create profit & loss reports
-  - [ ] Add cash flow reports
-  - [ ] Implement budget variance reports
-  - [ ] Create expense analysis reports
-  - [ ] Add financial dashboard data
+- [x] **Financial Reporting**
+  - [x] Create profit & loss reports
+  - [x] Add cash flow reports
+  - [x] Implement budget variance reports
+  - [x] Create expense analysis reports
+  - [x] Add financial dashboard data
 
 #### Frontend Tasks
-- [ ] **Financial Dashboard**
-  - [ ] Create financial overview dashboard
-  - [ ] Add budget vs actual charts
-  - [ ] Create expense tracking charts
-  - [ ] Add revenue trend visualization
-  - [ ] Create financial KPI cards
+- [x] **Financial Dashboard**
+  - [x] Create financial overview dashboard
+  - [x] Add budget vs actual charts
+  - [x] Create expense tracking charts
+  - [x] Add revenue trend visualization
+  - [x] Create financial KPI cards
 
-- [ ] **Financial Forms**
-  - [ ] Create budget creation form
-  - [ ] Create expense entry form
-  - [ ] Enhance invoice creation form
-  - [ ] Create payment recording form
-  - [ ] Add financial approval forms
+- [x] **Financial Forms**
+  - [x] Create budget creation form
+  - [x] Create expense entry form
+  - [x] Enhance invoice creation form
+  - [x] Create payment recording form
+  - [x] Add financial approval forms
 
-- [ ] **Financial Views**
-  - [ ] Create budget detail page
-  - [ ] Create expense detail page
-  - [ ] Create financial reports page
-  - [ ] Add financial search and filtering
-  - [ ] Create financial export functionality
+- [x] **Financial Views**
+  - [x] Create budget detail page
+  - [x] Create expense detail page
+  - [x] Create financial reports page
+  - [x] Add financial search and filtering
+  - [x] Create financial export functionality
 
 ### Acceptance Criteria
-- [ ] Budget management system is fully operational
-- [ ] Expense tracking and categorization works correctly
-- [ ] Revenue management is enhanced and functional
-- [ ] Financial reporting provides accurate data
-- [ ] Financial dashboard displays key metrics clearly
+- [x] Budget management system is fully operational
+- [x] Expense tracking and categorization works correctly
+- [x] Revenue management is enhanced and functional
+- [x] Financial reporting provides accurate data
+- [x] Financial dashboard displays key metrics clearly
+
+### How to Use
+- **Budget APIs**: Manage budgets and expenses via `/api/v1/budgets`. Summary per building at `/api/v1/budgets/building/:buildingId/summary`. Add expenses with `POST /api/v1/budgets/expenses` or scoped to a budget with `POST /api/v1/budgets/:id/expenses`.
+- **Financial Reports APIs**: Access reports at `/api/v1/reports/financial/*` including `summary`, `pnl`, `cash-flow`, `variance`, and `forecast`.
+- **Revenue & Payments**: Create invoices at `POST /api/v1/invoices`, list unpaid at `GET /api/v1/invoices/unpaid`, initiate resident payment at `POST /api/v1/invoices/:id/pay`, confirm admin payment at `POST /api/v1/invoices/:id/confirm`, and view receipts at `GET /api/v1/invoices/:id/receipt`.
+- **Frontend Navigation**: Finance pages available under `/finance/budgets` and `/finance/reports`. Unpaid invoices management at `/admin/unpaid-invoices`, resident and accountant overview at `/payments`.
+
+#### Additional in Sprint 3
+- **Expense approvals**: Approve or reject pending expenses via `POST /api/v1/budgets/expenses/:expenseId/approve|reject`. Only approved expenses affect budget actuals and utilization alerts.
+- **List expenses by status**: `GET /api/v1/budgets/expenses?status=PENDING|APPROVED|REJECTED` for review queues.
+- **Invoice line items**: When creating invoices, omit `amount` to auto-compute from `items` (each item supports `description`, `quantity`, `unitPrice`).
+- **Recurring invoices**: Create via `POST /api/v1/recurring-invoices` with `residentId`, `items`, and `recurrence` (`monthly`, `quarterly`, etc.). Manage with `GET /api/v1/recurring-invoices`, toggle with `POST /api/v1/recurring-invoices/:id/toggle`, run all due with `POST /api/v1/recurring-invoices/run-due`, or run specific now with `POST /api/v1/recurring-invoices/:id/run`.
+- **Frontend**: Pending expense approvals on `/finance/budgets`; invoice creation and recurring setup on `/payments`.
+
+#### New in Sprint 3
+- **Budget approval**: `POST /api/v1/budgets/:id/approve` and `POST /api/v1/budgets/:id/reject` (roles: ADMIN, ACCOUNTANT).
+- **Budget alerts**: Automatic notifications at 80% and 100% utilization when adding expenses to a budget.
+- **Late payment penalties**: `POST /api/v1/invoices/:id/penalty` with `{ amount }` to add a penalty amount to an unpaid invoice.
+- **Frontend forms**: Budget creation and expense entry forms available on `/finance/budgets`.
+- **Reports filtering**: Variance report can be filtered by building via the input on `/finance/reports`.
 
 ---
 

@@ -86,6 +86,12 @@ const getNavigationItems = (role: string, t: (key: string) => string) => {
       roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
     },
     {
+      title: 'דוחות פיננסיים',
+      href: '/finance/reports',
+      icon: BarChart3,
+      roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
+    },
+    {
       title: 'מסמכים',
       href: '/documents',
       icon: Folder,

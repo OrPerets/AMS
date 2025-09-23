@@ -4,10 +4,11 @@ import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { Prisma } from '@prisma/client';
+import { NotificationService, NotificationTemplate } from '../notifications/notification.service';
 
 @Injectable()
 export class BudgetService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private notifications: NotificationService) {}
 
   private mapBudgetCreate(dto: CreateBudgetDto): Prisma.BudgetCreateInput {
     const { buildingId, ...rest } = dto;
@@ -70,18 +71,7 @@ export class BudgetService {
       },
       include: { building: true, budget: true, documents: true },
     });
-
-    if (budgetId) {
-      const aggregate = await this.prisma.expense.aggregate({
-        _sum: { amount: true },
-        where: { budgetId },
-      });
-      await this.prisma.budget.update({
-        where: { id: budgetId },
-        data: { actualSpent: aggregate._sum.amount ?? 0 },
-      });
-    }
-
+    // Do not update budget actuals until approved
     return expense;
   }
 
@@ -116,5 +106,96 @@ export class BudgetService {
       },
       expensesByCategory,
     };
+  }
+
+  async approve(id: number) {
+    const budget = await this.prisma.budget.update({
+      where: { id },
+      data: { status: 'ACTIVE' as any },
+    });
+    // Notify building users
+    try {
+      await this.notifications.notifyBuilding(budget.buildingId, NotificationTemplate.ANNOUNCEMENT, {
+        title: 'אישור תקציב',
+        message: `התקציב "${budget.name}" לשנת ${budget.year} אושר והופעל.`,
+      });
+    } catch (e) {
+      console.warn('Budget approval notification failed', e);
+    }
+    return budget;
+  }
+
+  async reject(id: number) {
+    const budget = await this.prisma.budget.update({
+      where: { id },
+      data: { status: 'PLANNED' as any },
+    });
+    try {
+      await this.notifications.notifyBuilding(budget.buildingId, NotificationTemplate.ANNOUNCEMENT, {
+        title: 'דחיית תקציב',
+        message: `התקציב "${budget.name}" לשנת ${budget.year} נדחה ונותר בתכנון.`,
+      });
+    } catch (e) {
+      console.warn('Budget rejection notification failed', e);
+    }
+    return budget;
+  }
+
+  private async updateBudgetActualsAndAlert(budgetId: number) {
+    const aggregate = await this.prisma.expense.aggregate({
+      _sum: { amount: true },
+      where: { budgetId, status: 'APPROVED' as any },
+    });
+    const updated = await this.prisma.budget.update({
+      where: { id: budgetId },
+      data: { actualSpent: aggregate._sum.amount ?? 0 },
+    });
+    try {
+      if (updated.amount > 0) {
+        const utilization = (updated.actualSpent / updated.amount) * 100;
+        if (utilization >= 100) {
+          await this.notifications.notifyBuilding(updated.buildingId, NotificationTemplate.ANNOUNCEMENT, {
+            title: 'חריגת תקציב',
+            message: `התקציב "${updated.name}" לשנת ${updated.year} חרג ב-₪${(updated.actualSpent - updated.amount).toLocaleString()}`,
+          });
+        } else if (utilization >= 80) {
+          await this.notifications.notifyBuilding(updated.buildingId, NotificationTemplate.ANNOUNCEMENT, {
+            title: 'התראה על ניצול תקציב',
+            message: `התקציב "${updated.name}" לשנת ${updated.year} הגיע ל-${utilization.toFixed(0)}% ניצול.`,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Budget alert notification failed', e);
+    }
+    return updated;
+  }
+
+  async approveExpense(expenseId: number, approverUserId?: number) {
+    const expense = await this.prisma.expense.update({
+      where: { id: expenseId },
+      data: { status: 'APPROVED' as any, approvedById: approverUserId, approvedAt: new Date() },
+      include: { budget: true },
+    });
+    if (expense.budgetId) {
+      await this.updateBudgetActualsAndAlert(expense.budgetId);
+    }
+    return expense;
+  }
+
+  async rejectExpense(expenseId: number, approverUserId?: number) {
+    const expense = await this.prisma.expense.update({
+      where: { id: expenseId },
+      data: { status: 'REJECTED' as any, approvedById: approverUserId, approvedAt: new Date() },
+    });
+    return expense;
+  }
+
+  listExpenses(status?: 'PENDING' | 'APPROVED' | 'REJECTED') {
+    return this.prisma.expense.findMany({
+      where: status ? { status: status as any } : {},
+      orderBy: [{ incurredAt: 'desc' }],
+      include: { building: true, budget: true },
+    });
   }
 }

@@ -1,7 +1,7 @@
 import { AuthService } from '../auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../../users/user.service';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 describe('AuthService', () => {
   const userService: Partial<UserService> = {

@@ -15,6 +15,7 @@ import { BudgetModule } from './budgets/budget.module';
 import { DocumentModule } from './documents/document.module';
 import { AssetModule } from './assets/asset.module';
 import { CommunicationModule } from './communications/communication.module';
+import { FinancialModule } from './reports/financial/financial.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { CommunicationModule } from './communications/communication.module';
     CommunicationModule,
     DashboardModule,
     AdminModule,
+    FinancialModule,
   ],
   controllers: [HealthController],
 })

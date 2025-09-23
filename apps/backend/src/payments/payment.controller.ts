@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Query, UseGuards, Res } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Query, UseGuards, Res, Delete } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -14,7 +14,7 @@ export class PaymentController {
 
   @Post('invoices')
   @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
-  createInvoice(@Body() dto: { residentId: number; items: any[]; amount: number }) {
+  createInvoice(@Body() dto: { residentId: number; items: any[]; amount?: number }) {
     return this.payments.createInvoice(dto);
   }
 
@@ -44,6 +44,12 @@ export class PaymentController {
     return this.payments.confirmPayment(+id);
   }
 
+  @Post('invoices/:id/penalty')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  addPenalty(@Param('id') id: string, @Body() body: { amount: number }) {
+    return this.payments.applyLatePenalty(+id, body.amount);
+  }
+
   @Post('payments/webhook')
   @Public()
   webhook(@Body() body: { invoiceId: number; status: string }) {
@@ -60,5 +66,36 @@ export class PaymentController {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename=invoice-${id}.pdf`);
     return res.send(pdf);
+  }
+
+  // Recurring invoices
+  @Post('recurring-invoices')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  createRecurring(@Body() dto: { residentId: number; items: any[]; amount?: number; recurrence: string; startAt?: string }) {
+    return this.payments.createRecurringInvoice(dto);
+  }
+
+  @Get('recurring-invoices')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  listRecurring(@Query('residentId') residentId?: string) {
+    return this.payments.listRecurring(residentId ? +residentId : undefined);
+  }
+
+  @Post('recurring-invoices/:id/toggle')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  toggleRecurring(@Param('id') id: string, @Body() body: { active: boolean }) {
+    return this.payments.toggleRecurring(+id, body.active);
+  }
+
+  @Post('recurring-invoices/:id/run')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  runRecurringNow(@Param('id') id: string) {
+    return this.payments.runRecurringNow(+id);
+  }
+
+  @Post('recurring-invoices/run-due')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  runDue() {
+    return this.payments.runDueRecurring();
   }
 }
