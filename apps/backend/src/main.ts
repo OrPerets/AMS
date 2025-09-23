@@ -2,6 +2,8 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import * as express from 'express';
+import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -10,6 +12,10 @@ async function bootstrap() {
   app.enableCors({ origin: origins });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+
+  // Serve uploaded files statically
+  const uploadsPath = join(__dirname, '..', 'uploads');
+  app.use('/uploads', express.static(uploadsPath));
 
   const requiredEnv = ['JWT_SECRET', 'JWT_REFRESH_SECRET'];
   for (const key of requiredEnv) {

@@ -34,15 +34,30 @@ export class DocumentService {
     };
   }
 
-  create(dto: CreateDocumentDto) {
+  create(dto: CreateDocumentDto & { fileSize?: number; mimeType?: string }) {
     return this.prisma.document.create({
       data: this.mapCreate(dto),
       include: { building: true, unit: true, contract: true, asset: true, expense: true, uploadedBy: true },
     });
   }
 
-  findAll() {
+  findAll(opts?: { search?: string; type?: string; buildingId?: number }) {
+    const where: Prisma.DocumentWhereInput = {};
+    if (opts?.search) {
+      where.OR = [
+        { name: { contains: opts.search, mode: 'insensitive' } },
+        { category: { contains: opts.search, mode: 'insensitive' } },
+        { tags: { has: opts.search } },
+        { description: { contains: opts.search, mode: 'insensitive' } },
+      ];
+    }
+    if (opts?.type && opts.type !== 'all') {
+      where.category = { equals: opts.type, mode: 'insensitive' } as any;
+    }
+    if (opts?.buildingId) where.buildingId = opts.buildingId;
+
     return this.prisma.document.findMany({
+      where,
       include: { building: true, unit: true, contract: true, asset: true, expense: true, uploadedBy: true },
       orderBy: { uploadedAt: 'desc' },
     });
@@ -105,5 +120,47 @@ export class DocumentService {
 
   remove(id: number) {
     return this.prisma.document.delete({ where: { id } });
+  }
+
+  share(documentId: number, input: { userId: number; permission?: string; expiresAt?: string }) {
+    return this.prisma.documentShare.upsert({
+      where: { documentId_userId: { documentId, userId: input.userId } },
+      update: { permission: input.permission as any, expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined },
+      create: { documentId, userId: input.userId, permission: (input.permission as any) ?? 'VIEW', expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined },
+    });
+  }
+
+  listShares(documentId: number) {
+    return this.prisma.documentShare.findMany({ where: { documentId }, include: { user: true } });
+  }
+
+  async createVersion(parentId: number, dto: Partial<UpdateDocumentDto> & { url: string; name?: string }) {
+    // Mark previous latest as not latest
+    await this.prisma.document.updateMany({ where: { id: parentId }, data: { isLatest: false } });
+
+    const parent = await this.prisma.document.findUnique({ where: { id: parentId } });
+    if (!parent) throw new Error('Parent document not found');
+
+    const nextVersion = (parent.version ?? 1) + 1;
+    return this.prisma.document.create({
+      data: {
+        name: dto.name ?? parent.name,
+        url: dto.url,
+        category: dto.category ?? parent.category,
+        description: dto['description' as keyof typeof dto] as any,
+        tags: (dto['tags' as keyof typeof dto] as any) ?? (parent as any).tags,
+        fileSize: (dto as any).fileSize,
+        mimeType: (dto as any).mimeType,
+        version: nextVersion,
+        isLatest: true,
+        parent: { connect: { id: parentId } },
+        building: parent.buildingId ? { connect: { id: parent.buildingId } } : undefined,
+        unit: parent.unitId ? { connect: { id: parent.unitId } } : undefined,
+        contract: parent.contractId ? { connect: { id: parent.contractId } } : undefined,
+        asset: parent.assetId ? { connect: { id: parent.assetId } } : undefined,
+        expense: parent.expenseId ? { connect: { id: parent.expenseId } } : undefined,
+        uploadedBy: parent.uploadedById ? { connect: { id: parent.uploadedById } } : undefined,
+      },
+    });
   }
 }

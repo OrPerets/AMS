@@ -52,4 +52,22 @@ export class NotificationController {
   markAsRead(@Param('id') id: string) {
     return this.notifications.markAsRead(+id);
   }
+
+  @Get('user/:id/preferences')
+  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT)
+  getNotificationPreferences(@Param('id') id: string) {
+    return this.notifications.getUserNotificationPreferences(+id);
+  }
+
+  @Post('user/:id/preferences')
+  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT)
+  updateNotificationPreferences(@Param('id') id: string, @Body() preferences: any) {
+    return this.notifications.updateNotificationPreferences(+id, preferences);
+  }
+
+  @Post('user/:id/subscribe')
+  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT)
+  subscribeToNotifications(@Param('id') id: string, @Body() callback: (notification: any) => void) {
+    return this.notifications.subscribeToNotifications(+id, callback);
+  }
 }

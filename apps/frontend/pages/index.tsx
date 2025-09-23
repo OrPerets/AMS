@@ -237,24 +237,54 @@ export default function LandingPage() {
               מערכת ניהול אחזקות מתקדמת המשלבת טכנולוגיות חדשניות לניהול יעיל ומקצועי של נכסים ואחזקה
             </motion.p>
 
-            {/* CTA Button */}
+            {/* CTA Buttons */}
             <motion.div 
               variants={fadeInUp}
               className="flex items-center justify-center"
             >
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button 
-                  onClick={handleLoginClick}
-                  size="lg" 
-                  className="h-14 px-8 text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-xl group"
+              <div className="flex flex-col sm:flex-row gap-4">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  כניסה למערכת
-                  <ArrowRight className="mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </motion.div>
+                  <Button 
+                    onClick={handleLoginClick}
+                    size="lg" 
+                    className="h-14 px-8 text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-xl group"
+                  >
+                    כניסה למערכת ניהול
+                    <ArrowRight className="mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </motion.div>
+
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    onClick={() => router.push('/supervision-report')}
+                    size="lg"
+                    className="h-14 px-8 text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-xl group"
+                  >
+                    מעבר לדו״ח פיקוח
+                    <ArrowRight className="mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </motion.div>
+
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    onClick={() => router.push('/gardeners-management')}
+                    size="lg"
+                    className="h-14 px-8 text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-xl group"
+                  >
+                    מעבר לניהול גננים
+                    <ArrowRight className="mr-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </motion.div>
+              </div>
             </motion.div>
 
             {/* Scroll indicator */}

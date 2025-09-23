@@ -20,22 +20,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Skeleton } from '../components/ui/skeleton';
 import { useLocale } from '../lib/providers';
 import { toast } from '../components/ui/use-toast';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog'
+import { Label } from '../components/ui/label'
 
 interface Document {
   id: number;
-  title: string;
-  type: string;
-  size: number;
+  name: string; // align with backend
+  category?: string;
   uploadedAt: string;
-  uploadedBy: string;
+  uploadedBy?: { email?: string } | string;
   buildingId?: number;
-  buildingName?: string;
   unitId?: number;
-  unitNumber?: string;
   assetId?: number;
-  assetName?: string;
   contractId?: number;
   expenseId?: number;
+  url: string;
+  fileSize?: number;
+  mimeType?: string;
 }
 
 export default function DocumentsPage() {
@@ -44,6 +45,14 @@ export default function DocumentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterBuilding, setFilterBuilding] = useState('all');
+  const [open, setOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [category, setCategory] = useState('');
+  const [name, setName] = useState('');
+  const [shareOpen, setShareOpen] = useState<number | null>(null);
+  const [shareUserId, setShareUserId] = useState('');
+  const [sharePermission, setSharePermission] = useState<'VIEW'|'DOWNLOAD'|'EDIT'|'DELETE'>('VIEW');
+  const [shareExpiresAt, setShareExpiresAt] = useState('');
   const { t } = useLocale();
 
   async function loadDocuments() {
@@ -52,23 +61,15 @@ export default function DocumentsPage() {
       if (searchTerm) query.append('search', searchTerm);
       if (filterType !== 'all') query.append('type', filterType);
       if (filterBuilding !== 'all') query.append('buildingId', filterBuilding);
-      
       const res = await authFetch(`/api/v1/documents?${query.toString()}`);
       if (res.ok) {
-        setDocuments(await res.json());
+        const data = await res.json();
+        setDocuments(data);
       } else {
-        toast({
-          title: "שגיאה בטעינת מסמכים",
-          description: "לא ניתן לטעון את רשימת המסמכים",
-          variant: "destructive",
-        });
+        toast({ title: 'שגיאה בטעינת מסמכים', description: 'לא ניתן לטעון את רשימת המסמכים', variant: 'destructive' });
       }
-    } catch (error) {
-      toast({
-        title: "שגיאה בטעינת מסמכים",
-        description: "אירעה שגיאה בעת טעינת המסמכים",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: 'שגיאה בטעינת מסמכים', description: 'אירעה שגיאה בעת טעינת המסמכים', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -78,13 +79,32 @@ export default function DocumentsPage() {
     loadDocuments();
   }, [searchTerm, filterType, filterBuilding]);
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes || bytes === 0) return '—';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
+
+  async function onUpload() {
+    if (!file) return;
+    const form = new FormData();
+    form.append('file', file);
+    if (category) form.append('category', category);
+    if (name) form.append('name', name);
+    const res = await authFetch('/api/v1/documents/upload', { method: 'POST', body: form });
+    if (res.ok) {
+      toast({ title: 'העלאה הצליחה' });
+      setOpen(false);
+      setFile(null);
+      setCategory('');
+      setName('');
+      loadDocuments();
+    } else {
+      toast({ title: 'העלאה נכשלה', variant: 'destructive' });
+    }
+  }
 
   const getFileIcon = (type: string) => {
     switch (type.toLowerCase()) {
@@ -127,15 +147,37 @@ export default function DocumentsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">מסמכים</h1>
-          <p className="text-muted-foreground">
-            ניהול מסמכים ומשאבי מידע
-          </p>
+          <p className="text-muted-foreground">ניהול מסמכים ומשאבי מידע</p>
         </div>
-        
-        <Button>
-          <Upload className="me-2 h-4 w-4" />
-          העלה מסמך
-        </Button>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Upload className="me-2 h-4 w-4" /> העלה מסמך
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>העלה מסמך</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>שם</Label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="שם קובץ" />
+              </div>
+              <div>
+                <Label>קטגוריה</Label>
+                <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="למשל: חוזה, חשבונית" />
+              </div>
+              <div>
+                <Label>קובץ</Label>
+                <Input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={onUpload} disabled={!file}>העלה</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Filters */}
@@ -192,56 +234,77 @@ export default function DocumentsPage() {
           <Card key={doc.id} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{getFileIcon(doc.type)}</span>
-                  <div>
-                    <CardTitle className="text-sm font-medium line-clamp-1">
-                      {doc.title}
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      {doc.type.toUpperCase()} • {formatFileSize(doc.size)}
-                    </CardDescription>
-                  </div>
+                <div>
+                  <CardTitle className="text-sm font-medium line-clamp-1">{doc.name}</CardTitle>
+                  <CardDescription className="text-xs">{doc.category ?? '—'} • {formatFileSize(doc.fileSize)}</CardDescription>
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-2 text-sm text-muted-foreground">
-                {doc.buildingName && (
-                  <div className="flex items-center gap-2">
-                    <Building className="h-3 w-3" />
-                    <span>{doc.buildingName}</span>
-                    {doc.unitNumber && <span>יחידה {doc.unitNumber}</span>}
-                  </div>
-                )}
-                
-                <div className="flex items-center gap-2">
-                  <User className="h-3 w-3" />
-                  <span>{doc.uploadedBy}</span>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-3 w-3" />
-                  <span>{new Date(doc.uploadedAt).toLocaleDateString('he-IL')}</span>
-                </div>
+                <div>תאריך: {new Date(doc.uploadedAt).toLocaleDateString('he-IL')}</div>
               </div>
-              
               <div className="flex gap-2 mt-4">
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Download className="me-2 h-3 w-3" />
-                  הורד
-                </Button>
-                <Button variant="outline" size="sm">
-                  צפה
-                </Button>
+                <a href={doc.url} target="_blank" rel="noreferrer">
+                  <Button variant="outline" size="sm">צפה/הורד</Button>
+                </a>
+                <Button variant="secondary" size="sm" onClick={() => setShareOpen(doc.id)}>שתף</Button>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      <Dialog open={shareOpen !== null} onOpenChange={(o) => !o && setShareOpen(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>שיתוף מסמך</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>מזהה משתמש</Label>
+              <Input value={shareUserId} onChange={(e) => setShareUserId(e.target.value)} placeholder="לדוגמה: 12" />
+            </div>
+            <div>
+              <Label>הרשאה</Label>
+              <select className="border rounded px-2 py-1 w-full" value={sharePermission} onChange={(e) => setSharePermission(e.target.value as any)}>
+                <option value="VIEW">צפייה</option>
+                <option value="DOWNLOAD">הורדה</option>
+                <option value="EDIT">עריכה</option>
+                <option value="DELETE">מחיקה</option>
+              </select>
+            </div>
+            <div>
+              <Label>תאריך תפוגה (אופציונלי)</Label>
+              <Input type="datetime-local" value={shareExpiresAt} onChange={(e) => setShareExpiresAt(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={async () => {
+                if (!shareOpen) return;
+                const res = await authFetch(`/api/v1/documents/${shareOpen}/share`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ userId: Number(shareUserId), permission: sharePermission, expiresAt: shareExpiresAt || undefined })
+                });
+                if (res.ok) {
+                  toast({ title: 'שיתוף נוצר' });
+                  setShareOpen(null);
+                  setShareUserId('');
+                  setSharePermission('VIEW');
+                  setShareExpiresAt('');
+                } else {
+                  toast({ title: 'שיתוף נכשל', variant: 'destructive' });
+                }
+              }}
+              disabled={!shareUserId}
+            >
+              שתף
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {documents.length === 0 && !loading && (
         <Card>

@@ -9,6 +9,7 @@ import { useTheme, useDirection, useLocale } from '../../lib/providers';
 import { cn } from '../../lib/utils';
 import RoleSwitcher from '../RoleSwitcher';
 import UserMenu from './UserMenu';
+import { authFetch } from '../../lib/auth';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,35 +36,47 @@ export default function Header({
   const { direction, setDirection } = useDirection();
   const { locale, setLocale } = useLocale();
   const [mounted, setMounted] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const notifications = useMemo(
-    () => [
-      {
-        id: 1,
-        title: 'תזכורת תחזוקה',
-        description: 'בדיקת מעליות מתוכננת לשעה 14:00',
-        time: 'לפני שעה',
-      },
-      {
-        id: 2,
-        title: 'חשבונית חדשה',
-        description: 'התקבלה חשבונית מתאגיד החשמל',
-        time: 'לפני שעתיים',
-      },
-      {
-        id: 3,
-        title: 'בקשה מדייר',
-        description: 'דייר מבניין אבן גבירול 12 ביקש עדכון על תיקון נזילה',
-        time: 'לפני יום',
-      },
-    ],
-    []
-  );
+  const unreadCount = notifications.filter(n => !n.read).length;
 
-  const unreadCount = notifications.length;
+  // Load notifications for current user
+  const loadNotifications = async () => {
+    try {
+      setLoading(true);
+      const response = await authFetch('/api/v1/notifications/user/1'); // TODO: Get actual user ID
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data.slice(0, 5)); // Show only latest 5 in header
+      }
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markNotificationAsRead = async (notificationId: number) => {
+    try {
+      await authFetch(`/api/v1/notifications/${notificationId}/read`, {
+        method: 'POST',
+      });
+      setNotifications(prev => 
+        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+      );
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
+    loadNotifications();
+    
+    // Refresh notifications every 30 seconds
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const toggleTheme = () => {
@@ -161,21 +174,51 @@ export default function Header({
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-72">
+            <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto sm:w-80 w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)]">
               <DropdownMenuLabel className="text-sm font-semibold">
                 התראות אחרונות
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {notifications.map((notification) => (
-                <DropdownMenuItem key={notification.id} className="flex flex-col items-start gap-1">
-                  <span className="text-sm font-medium">{notification.title}</span>
-                  <span className="text-xs text-muted-foreground">{notification.description}</span>
-                  <span className="text-[11px] text-muted-foreground">{notification.time}</span>
-                </DropdownMenuItem>
-              ))}
+              {loading ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  טוען התראות...
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  אין התראות חדשות
+                </div>
+              ) : (
+                notifications.map((notification) => (
+                  <DropdownMenuItem 
+                    key={notification.id} 
+                    className={`flex flex-col items-start gap-1 p-3 ${!notification.read ? 'bg-primary/5' : ''}`}
+                    onClick={() => !notification.read && markNotificationAsRead(notification.id)}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-sm font-medium">{notification.title}</span>
+                      {!notification.read && (
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground line-clamp-2">
+                      {notification.message}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {new Date(notification.createdAt).toLocaleDateString('he-IL', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </DropdownMenuItem>
+                ))
+              )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="justify-center text-sm font-medium text-primary">
-                הצג את כל ההתראות
+              <DropdownMenuItem asChild className="justify-center text-sm font-medium text-primary">
+                <Link href="/notifications">
+                  הצג את כל ההתראות
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

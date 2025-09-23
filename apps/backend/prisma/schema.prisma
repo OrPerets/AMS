@@ -88,6 +88,9 @@ model User {
   tenantId      Int
   role          Role
   refreshTokenHash String?
+  notificationPreferences Json?
+  phone            String?
+  pushToken        String?
   createdAt     DateTime @default(now())
   resident      Resident?
   assignedTickets Ticket[] @relation("TicketAssignee")
@@ -104,6 +107,7 @@ model User {
   verifiedMaintenanceSchedules MaintenanceSchedule[] @relation("MaintenanceVerifications")
   approvedWorkOrders WorkOrder[] @relation("WorkOrderApprover")
   approvedExpenses  Expense[]   @relation("ExpenseApprover")
+  documentShares    DocumentShare[] @relation("DocumentShares")
 }
 
 model Building {
@@ -332,6 +336,45 @@ model Document {
   url          String
   category     String?
   uploadedAt   DateTime  @default(now())
+  // Enhanced fields for Sprint 5
+  description  String?
+  tags         String[]
+  fileSize     Int?
+  mimeType     String?
+  version      Int       @default(1)
+  isLatest     Boolean   @default(true)
+  parentId     Int?
+  parent       Document? @relation("DocumentVersions", fields: [parentId], references: [id])
+  versions     Document[] @relation("DocumentVersions")
+  accessLevel  DocumentAccessLevel @default(PRIVATE)
+  sharedWith   DocumentShare[]
+  updatedAt    DateTime  @updatedAt
+}
+
+enum DocumentAccessLevel {
+  PUBLIC
+  PRIVATE
+  RESTRICTED
+}
+
+model DocumentShare {
+  id         Int      @id @default(autoincrement())
+  documentId Int
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId     Int
+  user       User     @relation("DocumentShares", fields: [userId], references: [id], onDelete: Cascade)
+  permission DocumentPermission @default(VIEW)
+  sharedAt   DateTime @default(now())
+  expiresAt  DateTime?
+  
+  @@unique([documentId, userId])
+}
+
+enum DocumentPermission {
+  VIEW
+  DOWNLOAD
+  EDIT
+  DELETE
 }
 
 model Notification {
