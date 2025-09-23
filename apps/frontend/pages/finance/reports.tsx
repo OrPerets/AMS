@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { authFetch } from '../../lib/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
 
 export default function FinancialReportsPage() {
   const [summary, setSummary] = useState<any>(null);
@@ -9,6 +10,9 @@ export default function FinancialReportsPage() {
   const [variance, setVariance] = useState<any[]>([]);
   const [forecast, setForecast] = useState<any>(null);
   const [buildingId, setBuildingId] = useState<string>('');
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('summary');
+  const [format, setFormat] = useState<'csv'|'xlsx'|'pdf'>('csv');
 
   const load = async () => {
     try {
@@ -75,6 +79,22 @@ export default function FinancialReportsPage() {
 
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    authFetch('/api/v1/reports/financial/templates').then(r => r.json()).then(setTemplates).catch(() => setTemplates([
+      { id: 'summary', name: 'Financial Summary' },
+      { id: 'pnl', name: 'Profit & Loss' },
+      { id: 'cash-flow', name: 'Cash Flow' },
+      { id: 'variance', name: 'Variance' },
+    ]));
+  }, []);
+
+  const exportUrl = useMemo(() => {
+    const qs = new URLSearchParams();
+    qs.set('format', format);
+    if (selectedTemplate === 'variance' && buildingId) qs.set('buildingId', buildingId);
+    return `/api/v1/reports/financial/export/${selectedTemplate}?${qs.toString()}`;
+  }, [selectedTemplate, format, buildingId]);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-2">
@@ -82,6 +102,17 @@ export default function FinancialReportsPage() {
         <div className="ms-auto flex items-center gap-2">
           <input className="border rounded px-2 py-1" placeholder="מזהה בניין (לסינון סטיות)" value={buildingId} onChange={(e) => setBuildingId(e.target.value)} />
           <button className="border rounded px-3 py-1" onClick={load}>סנן</button>
+          <select className="border rounded px-2 py-1" value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)}>
+            {templates.map(t => <option key={t.id} value={t.id}>{t.name ?? t.id}</option>)}
+          </select>
+          <select className="border rounded px-2 py-1" value={format} onChange={(e) => setFormat(e.target.value as any)}>
+            <option value="csv">CSV</option>
+            <option value="xlsx">Excel</option>
+            <option value="pdf">PDF</option>
+          </select>
+          <a href={exportUrl}>
+            <Button size="sm">ייצא</Button>
+          </a>
         </div>
       </div>
 

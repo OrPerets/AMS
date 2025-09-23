@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import PDFDocument = require('pdfkit');
 import { PrismaService } from '../../prisma.service';
 
 @Injectable()
@@ -85,6 +86,112 @@ export class FinancialService {
     const avgRevenue = byMonth(invoices.map((i) => ({ amount: i.amount, date: new Date(i.createdAt) })));
     const avgExpense = byMonth(expenses.map((e) => ({ amount: e.amount, date: new Date(e.incurredAt) })));
     return { forecastedMonthlyRevenue: avgRevenue, forecastedMonthlyExpense: avgExpense, forecastedMonthlyProfit: avgRevenue - avgExpense };
+  }
+
+  async getTemplates() {
+    // Static templates for now; can be moved to DB later
+    return [
+      { id: 'summary', name: 'Financial Summary', description: 'Planned vs Actual with variance' },
+      { id: 'pnl', name: 'Profit & Loss', description: 'Revenue, Expenses and Profit' },
+      { id: 'cash-flow', name: 'Cash Flow', description: 'Monthly inflow/outflow and net' },
+      { id: 'variance', name: 'Variance Report', description: 'Budgets by variance' },
+    ];
+  }
+
+  async export(type: 'summary' | 'pnl' | 'cash-flow' | 'variance', format: 'csv' | 'xlsx' | 'pdf', opts: { buildingId?: number } = {}) {
+    // Build data by type
+    let filename = `${type}.${format}`;
+    if (format === 'xlsx') {
+      // For now return CSV content with XLSX content-type fallback
+      format = 'csv';
+      filename = `${type}.xlsx`;
+    }
+
+    if (format === 'pdf') {
+      const buffer = await this.exportPdf(type, opts);
+      return { filename, contentType: 'application/pdf', buffer };
+    }
+
+    const csv = await this.exportCsv(type, opts);
+    const buffer = Buffer.from(csv, 'utf8');
+    const contentType = 'text/csv';
+    return { filename, contentType, buffer };
+  }
+
+  private async exportCsv(type: 'summary' | 'pnl' | 'cash-flow' | 'variance', opts: { buildingId?: number }) {
+    switch (type) {
+      case 'summary': {
+        const s = await this.getSummary();
+        const lines = [
+          'planned,actual,variance',
+          `${s.planned},${s.actual},${s.variance}`,
+        ];
+        return lines.join('\n');
+      }
+      case 'pnl': {
+        const p = await this.getProfitAndLoss();
+        const lines = [
+          'revenue,expenses,profit',
+          `${p.revenue},${p.expenses},${p.profit}`,
+        ];
+        return lines.join('\n');
+      }
+      case 'cash-flow': {
+        const rows = await this.getCashFlow();
+        const lines = ['month,inflow,outflow,net', ...rows.map(r => `${r.month},${r.inflow},${r.outflow},${r.net}`)];
+        return lines.join('\n');
+      }
+      case 'variance': {
+        const rows = await this.getVarianceReport(opts.buildingId);
+        const lines = ['id,year,name,planned,actual,variance', ...rows.map(r => `${r.id},${r.year},"${r.name}",${r.planned},${r.actual},${r.variance}`)];
+        return lines.join('\n');
+      }
+    }
+  }
+
+  private async exportPdf(type: 'summary' | 'pnl' | 'cash-flow' | 'variance', opts: { buildingId?: number }) {
+    const doc = new PDFDocument({ margin: 40 });
+    const chunks: Buffer[] = [];
+    doc.fontSize(18).text(`Report: ${type}`, { underline: true });
+    doc.moveDown();
+
+    if (type === 'summary') {
+      const s = await this.getSummary();
+      doc.fontSize(12).text(`Planned: ${s.planned}`);
+      doc.text(`Actual: ${s.actual}`);
+      doc.text(`Variance: ${s.variance}`);
+    } else if (type === 'pnl') {
+      const p = await this.getProfitAndLoss();
+      doc.fontSize(12).text(`Revenue: ${p.revenue}`);
+      doc.text(`Expenses: ${p.expenses}`);
+      doc.text(`Profit: ${p.profit}`);
+    } else if (type === 'cash-flow') {
+      const rows = await this.getCashFlow();
+      doc.fontSize(12).text('Month, Inflow, Outflow, Net');
+      doc.moveDown(0.5);
+      for (const r of rows) {
+        doc.text(`${r.month}: ${r.inflow} / ${r.outflow} / ${r.net}`);
+      }
+    } else if (type === 'variance') {
+      const rows = await this.getVarianceReport(opts.buildingId);
+      doc.fontSize(12).text('Year, Name, Planned, Actual, Variance');
+      doc.moveDown(0.5);
+      for (const r of rows) {
+        doc.text(`${r.year}, ${r.name}, ${r.planned}, ${r.actual}, ${r.variance}`);
+      }
+    }
+
+    doc.end();
+    const buffer = await new Promise<Buffer>((resolve) => {
+      doc.on('data', (c) => chunks.push(c as Buffer));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+    });
+    return buffer;
+  }
+
+  async scheduleReport(body: { type: 'summary' | 'pnl' | 'cash-flow' | 'variance'; cron: string; recipients: string[] }) {
+    // Minimal stub: In real implementation, persist to DB and background job
+    return { id: Date.now(), status: 'SCHEDULED', ...body };
   }
 }
 

@@ -96,42 +96,81 @@ export default function CommunicationsPage() {
 
   const handleSendMessage = async () => {
     try {
-      const payload = {
-        ...composeData,
-        targetId: composeData.targetId ? parseInt(composeData.targetId) : undefined,
-        scheduledFor: composeData.scheduledFor || undefined
-      };
+      // If it's an announcement, use the announcement endpoint
+      if (composeData.type === 'ANNOUNCEMENT' && composeData.targetType === 'ALL') {
+        const payload = {
+          senderId: 1, // TODO: Get actual user ID
+          subject: composeData.title,
+          message: composeData.content,
+          priority: composeData.priority,
+        };
 
-      const res = await authFetch('/api/v1/communications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+        const res = await authFetch('/api/v1/communications/announcement', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
 
-      if (res.ok) {
-        toast({
-          title: "הודעה נשלחה",
-          description: "ההודעה נשלחה בהצלחה",
-        });
-        setShowCompose(false);
-        setComposeData({
-          title: '',
-          content: '',
-          type: 'ANNOUNCEMENT',
-          priority: 'MEDIUM',
-          targetType: 'ALL',
-          targetId: '',
-          scheduledFor: ''
-        });
-        loadCommunications();
+        if (res.ok) {
+          toast({
+            title: "הכרזה נשלחה",
+            description: "ההכרזה נשלחה לכל הדיירים בהצלחה",
+          });
+        } else {
+          const error = await res.text();
+          toast({
+            title: "שגיאה בשליחת הכרזה",
+            description: error,
+            variant: "destructive",
+          });
+        }
       } else {
-        const error = await res.text();
-        toast({
-          title: "שגיאה בשליחת הודעה",
-          description: error,
-          variant: "destructive",
+        // Regular communication
+        const payload = {
+          senderId: 1, // TODO: Get actual user ID
+          recipientId: composeData.targetId ? parseInt(composeData.targetId) : undefined,
+          buildingId: composeData.targetType === 'BUILDING' ? parseInt(composeData.targetId) : undefined,
+          subject: composeData.title,
+          message: composeData.content,
+          channel: composeData.type,
+          metadata: {
+            priority: composeData.priority,
+            scheduledFor: composeData.scheduledFor || undefined
+          }
+        };
+
+        const res = await authFetch('/api/v1/communications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
         });
+
+        if (res.ok) {
+          toast({
+            title: "הודעה נשלחה",
+            description: "ההודעה נשלחה בהצלחה",
+          });
+        } else {
+          const error = await res.text();
+          toast({
+            title: "שגיאה בשליחת הודעה",
+            description: error,
+            variant: "destructive",
+          });
+        }
       }
+
+      setShowCompose(false);
+      setComposeData({
+        title: '',
+        content: '',
+        type: 'ANNOUNCEMENT',
+        priority: 'MEDIUM',
+        targetType: 'ALL',
+        targetId: '',
+        scheduledFor: ''
+      });
+      loadCommunications();
     } catch (error) {
       toast({
         title: "שגיאה בשליחת הודעה",

@@ -57,4 +57,38 @@ export class CommunicationController {
   remove(@Param('id') id: string) {
     return this.communications.remove(+id);
   }
+
+  @Post('announcement')
+  @Roles(Role.ADMIN, Role.PM)
+  createAnnouncement(@Body() dto: {
+    senderId: number;
+    buildingId?: number;
+    subject: string;
+    message: string;
+    priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  }) {
+    return this.communications.createAnnouncement(dto);
+  }
+
+  @Get('conversation/:user1Id/:user2Id')
+  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT)
+  getConversation(
+    @Param('user1Id') user1Id: string,
+    @Param('user2Id') user2Id: string,
+    @Body() body?: { buildingId?: number }
+  ) {
+    return this.communications.getConversation(+user1Id, +user2Id, body?.buildingId);
+  }
+
+  @Get('search')
+  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT)
+  searchCommunications(
+    @Body() query: { 
+      query: string; 
+      userId?: number; 
+      buildingId?: number 
+    }
+  ) {
+    return this.communications.searchCommunications(query.query, query.userId, query.buildingId);
+  }
 }
