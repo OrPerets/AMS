@@ -1,12 +1,5 @@
 import { MaintenanceCategory } from '@prisma/client';
-import {
-  IsDateString,
-  IsEnum,
-  IsInt,
-  IsNumber,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateAssetDto {
   @IsInt()
@@ -41,6 +34,28 @@ export class CreateAssetDto {
   @IsOptional()
   @IsNumber()
   value?: number;
+
+  @IsOptional()
+  @IsNumber()
+  salvageValue?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  quantity?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  usefulLifeYears?: number;
+
+  @IsOptional()
+  @IsString()
+  depreciationMethod?: string;
+
+  @IsOptional()
+  @IsDateString()
+  lastInventoryCheck?: string;
 
   @IsOptional()
   @IsString()

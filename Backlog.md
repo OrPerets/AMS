@@ -96,58 +96,65 @@ Implement comprehensive maintenance management system with scheduling, tracking,
 ### Tasks
 
 #### Backend Tasks
-- [ ] **Maintenance Management**
-  - [ ] Implement `MaintenanceController` with full CRUD operations
-  - [ ] Add maintenance scheduling logic with recurring patterns
-  - [ ] Implement preventive maintenance alerts
-  - [ ] Add maintenance history tracking
-  - [ ] Create maintenance cost estimation
-  - [ ] Add maintenance priority levels
-  - [ ] Implement maintenance team assignment
-  - [ ] Add maintenance completion verification
+- [x] **Maintenance Management**
+  - [x] Implement `MaintenanceController` with full CRUD operations
+  - [x] Add maintenance scheduling logic with recurring patterns
+  - [x] Implement preventive maintenance alerts
+  - [x] Add maintenance history tracking
+  - [x] Create maintenance cost estimation
+  - [x] Add maintenance priority levels
+  - [x] Implement maintenance team assignment
+  - [x] Add maintenance completion verification
 
-- [ ] **Work Order Enhancement**
-  - [ ] Extend work orders with detailed cost breakdown
-  - [ ] Add work order status tracking (pending, approved, in-progress, completed, invoiced)
-  - [ ] Implement work order approval workflow
-  - [ ] Add work order photo documentation
-  - [ ] Create work order reporting
+- [x] **Work Order Enhancement**
+  - [x] Extend work orders with detailed cost breakdown
+  - [x] Add work order status tracking (pending, approved, in-progress, completed, invoiced)
+  - [x] Implement work order approval workflow
+  - [x] Add work order photo documentation
+  - [x] Create work order reporting
 
-- [ ] **Asset Management**
-  - [ ] Implement asset tracking and inventory
-  - [ ] Add asset maintenance history
-  - [ ] Create asset depreciation calculation
-  - [ ] Add asset warranty tracking
-  - [ ] Implement asset location tracking
+- [x] **Asset Management**
+  - [x] Implement asset tracking and inventory
+  - [x] Add asset maintenance history
+  - [x] Create asset depreciation calculation
+  - [x] Add asset warranty tracking
+  - [x] Implement asset location tracking
 
 #### Frontend Tasks
-- [ ] **Maintenance Dashboard**
-  - [ ] Create maintenance overview dashboard
-  - [ ] Add maintenance calendar view
-  - [ ] Create maintenance task list
-  - [ ] Add maintenance history timeline
-  - [ ] Create maintenance cost tracking charts
+- [x] **Maintenance Dashboard**
+  - [x] Create maintenance overview dashboard
+  - [x] Add maintenance calendar view
+  - [x] Create maintenance task list
+  - [x] Add maintenance history timeline
+  - [x] Create maintenance cost tracking charts
 
-- [ ] **Maintenance Forms**
-  - [ ] Create maintenance request form
-  - [ ] Create maintenance schedule form
-  - [ ] Create work order creation form
-  - [ ] Create asset registration form
-  - [ ] Add maintenance photo upload functionality
+- [x] **Maintenance Forms**
+  - [x] Create maintenance request form
+  - [x] Create maintenance schedule form
+  - [x] Create work order creation form
+  - [x] Create asset registration form
+  - [x] Add maintenance photo upload functionality
 
-- [ ] **Maintenance Views**
-  - [ ] Create maintenance detail page
-  - [ ] Create work order detail page
-  - [ ] Create asset detail page
-  - [ ] Add maintenance search and filtering
-  - [ ] Create maintenance reports page
+- [x] **Maintenance Views**
+  - [x] Create maintenance detail page
+  - [x] Create work order detail page
+  - [x] Create asset detail page
+  - [x] Add maintenance search and filtering
+  - [x] Create maintenance reports page
 
 ### Acceptance Criteria
-- [ ] Maintenance scheduling system is fully functional
-- [ ] Work orders can be created, tracked, and completed
-- [ ] Asset management system is operational
-- [ ] Maintenance dashboard provides comprehensive overview
-- [ ] All maintenance-related forms are user-friendly and validated
+- [x] Maintenance scheduling system is fully functional
+- [x] Work orders can be created, tracked, and completed
+- [x] Asset management system is operational
+- [x] Maintenance dashboard provides comprehensive overview
+- [x] All maintenance-related forms are user-friendly and validated
+
+### How to Use
+- **API Enhancements**: New maintenance endpoints are available under `api/v1/maintenance`, including `/alerts`, `/cost-projection`, `/:id/history`, `/:id/complete`, and `/:id/verify` for alerting, budgeting, history, completion, and verification workflows.
+- **Work Order API**: Work orders now support `/api/v1/work-orders` filters, detailed cost updates (`/:id/costs`), status management (`/:id/status`), approval (`/:id/approve`), and photo updates (`/:id/photos`).
+- **Asset API**: Assets expose inventory summaries at `/api/v1/assets/building/:buildingId/inventory`, maintenance history at `/:id/history`, depreciation calculations at `/:id/depreciation`, warranty snapshots at `/:id/warranty`, and location updates at `/:id/location`.
+- **Frontend Navigation**: The main maintenance dashboard is accessible via `/maintenance`, with detail pages under `/maintenance/[id]`, `/work-orders/[id]`, `/assets/[id]`, and analytic reports at `/maintenance/reports`.
+- **Setup Reminder**: After installing dependencies (`npm install`), run `npx prisma generate --schema apps/backend/prisma/schema.prisma` to ensure the Prisma client reflects the latest schema updates.
 
 ---
 

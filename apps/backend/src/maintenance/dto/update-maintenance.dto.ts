@@ -1,11 +1,5 @@
-import {
-  IsDateString,
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-} from 'class-validator';
-import { MaintenanceCategory, MaintenanceType } from '@prisma/client';
+import { IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
+import { MaintenanceCategory, MaintenancePriority, MaintenanceType } from '@prisma/client';
 
 export class UpdateMaintenanceDto {
   @IsOptional()
@@ -37,6 +31,10 @@ export class UpdateMaintenanceDto {
   frequency?: string;
 
   @IsOptional()
+  @IsString()
+  recurrenceRule?: string;
+
+  @IsOptional()
   @IsDateString()
   startDate?: string;
 
@@ -47,4 +45,33 @@ export class UpdateMaintenanceDto {
   @IsOptional()
   @IsInt()
   assignedToId?: number;
+
+  @IsOptional()
+  @IsEnum(MaintenancePriority)
+  priority?: MaintenancePriority;
+
+  @IsOptional()
+  @IsNumber()
+  estimatedCost?: number;
+
+  @IsOptional()
+  @IsString()
+  completionNotes?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  completionVerified?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  verifiedAt?: string;
+
+  @IsOptional()
+  @IsInt()
+  verifiedById?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  teamMemberIds?: number[];
 }

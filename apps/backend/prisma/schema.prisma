@@ -33,6 +33,13 @@ enum MaintenanceType {
   EMERGENCY
 }
 
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 enum TicketSeverity {
   LOW
   MEDIUM
@@ -44,6 +51,14 @@ enum TicketStatus {
   ASSIGNED
   IN_PROGRESS
   RESOLVED
+}
+
+enum WorkOrderStatus {
+  PENDING
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  INVOICED
 }
 
 enum BudgetStatus {
@@ -77,6 +92,11 @@ model User {
   sentCommunications Communication[] @relation("CommunicationSender")
   receivedCommunications Communication[] @relation("CommunicationRecipient")
   maintenanceAssignments MaintenanceSchedule[] @relation("MaintenanceAssignments")
+  maintenanceTeamMemberships MaintenanceTeamMember[]
+  performedMaintenance MaintenanceHistory[] @relation("MaintenanceHistoryPerformer")
+  verifiedMaintenance MaintenanceHistory[] @relation("MaintenanceHistoryVerifier")
+  verifiedMaintenanceSchedules MaintenanceSchedule[] @relation("MaintenanceVerifications")
+  approvedWorkOrders WorkOrder[] @relation("WorkOrderApprover")
 }
 
 model Building {
@@ -159,7 +179,22 @@ model WorkOrder {
   ticketId     Int
   supplierId   Int
   costEstimate Float?
+  laborCost    Float?
+  materialCost Float?
+  equipmentCost Float?
+  tax          Float?
+  totalCost    Float?
+  costNotes    String?
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  status       WorkOrderStatus @default(PENDING)
+  approvedById Int?
+  approvedBy   User?    @relation("WorkOrderApprover", fields: [approvedById], references: [id])
+  approvedAt   DateTime?
+  scheduledStart DateTime?
+  scheduledEnd DateTime?
+  completedAt  DateTime?
+  photos       String[]
   ticket       Ticket   @relation(fields: [ticketId], references: [id])
   supplier     Supplier @relation(fields: [supplierId], references: [id])
 }
@@ -203,13 +238,24 @@ model MaintenanceSchedule {
   category       MaintenanceCategory
   type           MaintenanceType
   frequency      String
+  recurrenceRule String?
   startDate      DateTime
   nextOccurrence DateTime?
   assignedToId   Int?
   assignedTo     User?               @relation("MaintenanceAssignments", fields: [assignedToId], references: [id])
+  priority       MaintenancePriority @default(MEDIUM)
+  estimatedCost  Float?
+  lastCompleted  DateTime?
+  completionNotes String?
+  completionVerified Boolean @default(false)
+  verifiedById   Int?
+  verifiedBy     User?               @relation("MaintenanceVerifications", fields: [verifiedById], references: [id])
+  verifiedAt     DateTime?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
   communications Communication[]
+  teamMembers    MaintenanceTeamMember[]
+  histories      MaintenanceHistory[]
 }
 
 model Budget {
@@ -307,11 +353,18 @@ model Asset {
   purchaseDate DateTime?
   warrantyExpiry DateTime?
   value       Float?
+  salvageValue Float?
+  quantity    Int                  @default(1)
+  usefulLifeYears Int?
+  depreciationMethod String?
   status      String?
+  lastInventoryCheck DateTime?
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   maintenanceSchedules MaintenanceSchedule[]
   documents   Document[]          @relation("AssetDocuments")
+  maintenanceHistories MaintenanceHistory[]
+  locationHistory AssetLocationHistory[]
 }
 
 model Communication {
@@ -332,4 +385,43 @@ model Communication {
   metadata      Json?
   readAt        DateTime?
   createdAt     DateTime   @default(now())
+}
+
+model MaintenanceTeamMember {
+  scheduleId Int
+  userId     Int
+  role       String?
+  assignedAt DateTime @default(now())
+  schedule   MaintenanceSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([scheduleId, userId])
+}
+
+model MaintenanceHistory {
+  id            Int      @id @default(autoincrement())
+  scheduleId    Int
+  schedule      MaintenanceSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  assetId       Int?
+  asset         Asset?  @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  performedAt   DateTime
+  notes         String?
+  cost          Float?
+  performedById Int?
+  performedBy   User?   @relation("MaintenanceHistoryPerformer", fields: [performedById], references: [id])
+  verified      Boolean @default(false)
+  verifiedById  Int?
+  verifiedBy    User?   @relation("MaintenanceHistoryVerifier", fields: [verifiedById], references: [id])
+  verifiedAt    DateTime?
+  verificationNotes String?
+  createdAt     DateTime @default(now())
+}
+
+model AssetLocationHistory {
+  id        Int      @id @default(autoincrement())
+  assetId   Int
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  location  String
+  notes     String?
+  changedAt DateTime @default(now())
 }
