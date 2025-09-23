@@ -19,6 +19,8 @@ import { DataTable } from '../components/ui/data-table';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { FormField, FormLabel } from '../components/ui/form-field';
+import { Input } from '../components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
-import { Skeleton } from '../components/ui/skeleton';
+import { Skeleton, SkeletonCard, SkeletonTable } from '../components/ui/skeleton';
 import { 
   Select,
   SelectContent,
@@ -334,15 +336,35 @@ export default function Tickets() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-10 w-32" />
+        {/* Header skeleton */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-9 w-48" variant="shimmer" />
+            <Skeleton className="h-5 w-72" variant="shimmer" />
+          </div>
+          <Skeleton className="h-10 w-40" variant="shimmer" />
         </div>
-        <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-16" />
+
+        {/* Stats cards skeleton */}
+        <div className="grid gap-4 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} />
           ))}
         </div>
+
+        {/* Filters skeleton */}
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-4 w-12" variant="shimmer" />
+          <Skeleton className="h-10 w-32" variant="shimmer" />
+          <Skeleton className="h-10 w-32" variant="shimmer" />
+        </div>
+
+        {/* Table skeleton */}
+        <Card>
+          <CardContent className="p-0">
+            <SkeletonTable rows={8} columns={7} />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -357,30 +379,62 @@ export default function Tickets() {
             ניהול וטיפול בקריאות שירות במערכת
           </p>
         </div>
-        <form onSubmit={handleCreateTicket} className="flex flex-wrap items-center gap-2">
-          <input
-            name="unitId"
-            type="number"
-            placeholder="יחידה"
-            className="w-24 rounded border p-2"
-            required
-          />
-          <select name="severity" className="rounded border p-2">
-            <option value="LOW">נמוך</option>
-            <option value="MEDIUM">בינוני</option>
-            <option value="HIGH">גבוה</option>
-          </select>
-          <input
-            name="description"
-            placeholder="תיאור"
-            className="flex-1 rounded border p-2"
-          />
-          <input name="photos" type="file" multiple className="flex-1" />
-          <Button type="submit">
-            <Plus className="me-2 h-4 w-4" />
-            צור קריאה
-          </Button>
-        </form>
+        <Card className="p-4 bg-muted/30">
+          <form onSubmit={handleCreateTicket} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            <FormField
+              label="מספר יחידה"
+              required
+            >
+              <Input
+                name="unitId"
+                type="number"
+                placeholder="הכנס מספר יחידה"
+                inputSize="default"
+                required
+              />
+            </FormField>
+            
+            <FormField
+              label="רמת חומרה"
+              required
+            >
+              <select name="severity" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <option value="LOW">נמוך</option>
+                <option value="MEDIUM">בינוני</option>
+                <option value="HIGH">גבוה</option>
+              </select>
+            </FormField>
+            
+            <FormField
+              label="תיאור הבעיה"
+              description="תאר בקצרה את הבעיה שצריכה טיפול"
+            >
+              <Input
+                name="description"
+                placeholder="תיאור הקריאה"
+                className="md:col-span-2"
+              />
+            </FormField>
+            
+            <FormField
+              label="צירוף תמונות"
+              description="ניתן לצרף תמונות של הבעיה"
+            >
+              <Input
+                name="photos"
+                type="file"
+                multiple
+                accept="image/*"
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+              />
+            </FormField>
+            
+            <Button type="submit" className="w-full">
+              <Plus className="me-2 h-4 w-4" />
+              צור קריאה
+            </Button>
+          </form>
+        </Card>
       </div>
 
       {/* Stats Cards */}

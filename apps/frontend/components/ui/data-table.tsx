@@ -43,6 +43,7 @@ import {
 } from "./select";
 import { cn } from "../../lib/utils";
 import { Badge } from "./badge";
+import { EmptyState, EmptySearchResults } from "./empty-state";
 
 interface FilterOption {
   label: string;
@@ -363,11 +364,18 @@ export function DataTable<TData, TValue>({
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    אין תוצאות.
+                  <td colSpan={columns.length} className="p-0">
+                    <div className="py-12">
+                      {hasActiveFilters || globalFilter ? (
+                        <EmptySearchResults />
+                      ) : (
+                        <EmptyState
+                          title="אין נתונים להצגה"
+                          description="לא נמצאו רשומות במערכת."
+                          type="empty"
+                        />
+                      )}
+                    </div>
                   </td>
                 </tr>
               )}

@@ -7,6 +7,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator seed {
+  provider = "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+}
+
 enum Role {
   ADMIN
   PM
@@ -158,6 +162,7 @@ model Resident {
   units   Unit[]
   invoices Invoice[]
   recurringInvoices RecurringInvoice[]
+  paymentMethods PaymentMethod[]
 }
 
 model Ticket {
@@ -224,6 +229,8 @@ model Invoice {
   amount     Float
   status     InvoiceStatus @default(UNPAID)
   createdAt  DateTime      @default(now())
+  paymentIntents PaymentIntent[]
+  ledgerEntries LedgerEntry[]
 }
 
 model RecurringInvoice {
@@ -493,4 +500,103 @@ model AssetLocationHistory {
   location  String
   notes     String?
   changedAt DateTime @default(now())
+}
+
+// =======================
+// Sprint 6: Payments Models
+// =======================
+
+enum PaymentIntentStatus {
+  REQUIRES_PAYMENT_METHOD
+  REQUIRES_CONFIRMATION
+  PROCESSING
+  SUCCEEDED
+  CANCELED
+  REQUIRES_ACTION
+  FAILED
+}
+
+model PaymentMethod {
+  id           Int      @id @default(autoincrement())
+  residentId   Int
+  resident     Resident @relation(fields: [residentId], references: [id])
+  provider     String   // tranzila | stripe
+  token        String   // provider tokenized reference
+  brand        String?
+  last4        String?
+  expMonth     Int?
+  expYear      Int?
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  paymentIntents PaymentIntent[]
+}
+
+model PaymentIntent {
+  id            Int                 @id @default(autoincrement())
+  invoiceId     Int
+  invoice       Invoice             @relation(fields: [invoiceId], references: [id])
+  amount        Float
+  currency      String              @default("NIS")
+  status        PaymentIntentStatus @default(REQUIRES_PAYMENT_METHOD)
+  provider      String              // tranzila | stripe
+  providerIntentId String?          // provider reference
+  clientSecret  String?             // for client-side confirmation if needed
+  paymentMethodId Int?
+  paymentMethod PaymentMethod?      @relation(fields: [paymentMethodId], references: [id])
+  idempotencyKey String?
+  metadata      Json?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  refunds       Refund[]
+  transactions  ProviderTransaction[]
+  ledgerEntries LedgerEntry[]
+}
+
+model Refund {
+  id           Int           @id @default(autoincrement())
+  paymentIntentId Int
+  paymentIntent PaymentIntent @relation(fields: [paymentIntentId], references: [id])
+  amount       Float
+  reason       String?
+  providerRefundId String?
+  createdAt    DateTime      @default(now())
+}
+
+model ProviderTransaction {
+  id              Int           @id @default(autoincrement())
+  paymentIntentId Int
+  paymentIntent   PaymentIntent @relation(fields: [paymentIntentId], references: [id])
+  provider        String
+  type            String        // authorization | capture | refund | webhook
+  status          String?
+  code            String?
+  raw             Json?
+  createdAt       DateTime      @default(now())
+}
+
+model WebhookEvent {
+  id         Int      @id @default(autoincrement())
+  provider   String
+  eventId    String
+  signature  String?
+  payload    Json
+  processed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@unique([provider, eventId])
+}
+
+// Simple double-entry style ledger entries
+model LedgerEntry {
+  id          Int      @id @default(autoincrement())
+  invoiceId   Int?
+  invoice     Invoice? @relation(fields: [invoiceId], references: [id])
+  paymentIntentId Int?
+  paymentIntent   PaymentIntent? @relation(fields: [paymentIntentId], references: [id])
+  entryType   String   // payment | fee | refund | net | adjustment
+  amount      Float
+  debit       String   // account name
+  credit      String   // account name
+  createdAt   DateTime @default(now())
 }

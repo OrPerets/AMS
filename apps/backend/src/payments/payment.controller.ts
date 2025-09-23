@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Query, UseGuards, Res, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Query, UseGuards, Res } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -52,8 +52,9 @@ export class PaymentController {
 
   @Post('payments/webhook')
   @Public()
-  webhook(@Body() body: { invoiceId: number; status: string }) {
-    if (body.status === 'paid') {
+  webhook(@Body() body: any) {
+    // Accept generic webhook payload for sandbox; production should verify signature and provider
+    if (body?.invoiceId && body?.status === 'paid') {
       return this.payments.confirmPayment(body.invoiceId);
     }
     return { ok: true };
@@ -97,5 +98,30 @@ export class PaymentController {
   @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
   runDue() {
     return this.payments.runDueRecurring();
+  }
+
+  // Sprint 6 Payments API (v1)
+  @Post('payments/intents')
+  @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  createIntent(@Body() body: { invoiceId: number }) {
+    return this.payments.createPaymentIntentFromInvoice(body.invoiceId);
+  }
+
+  @Post('payments/intents/:id/confirm')
+  @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  confirmIntent(@Param('id') id: string) {
+    return this.payments.confirmPayment(+id);
+  }
+
+  @Post('payments/:id/refund')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  refund(@Param('id') id: string, @Body() body: { amount?: number }) {
+    return this.payments.refund(+id, body?.amount);
+  }
+
+  @Get('payments/:id')
+  @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  getPayment(@Param('id') id: string) {
+    return this.payments.getPayment(+id);
   }
 }
