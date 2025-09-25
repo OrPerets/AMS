@@ -1,5 +1,5 @@
-# Multi-stage build for AMS Frontend
-FROM node:18-alpine AS base
+# Multi-stage build for AMS Frontend (Railway Compatible)
+FROM --platform=linux/amd64 node:18-alpine AS base
 
 # Install dependencies for building
 RUN apk add --no-cache libc6-compat
