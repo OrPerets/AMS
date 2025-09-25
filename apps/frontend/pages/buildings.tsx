@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { authFetch } from '../lib/auth';
 import { DataTable } from '../components/ui/data-table';
+import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -64,6 +65,7 @@ export default function Buildings() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [search, setSearch] = useState('');
   const router = useRouter();
 
   const loadBuildings = async () => {
@@ -162,11 +164,15 @@ export default function Buildings() {
   };
 
   const filteredBuildings = useMemo(() => {
+    const term = search.trim().toLowerCase();
     return buildings.filter(building => {
       const statusMatch = statusFilter === 'all' || building.status === statusFilter;
-      return statusMatch;
+      const searchMatch = !term ||
+        building.name?.toLowerCase().includes(term) ||
+        building.address?.toLowerCase().includes(term);
+      return statusMatch && searchMatch;
     });
-  }, [buildings, statusFilter]);
+  }, [buildings, statusFilter, search]);
 
   // Calculate KPIs
   const kpis = useMemo(() => {
@@ -295,6 +301,20 @@ export default function Buildings() {
                 <Edit className="me-2 h-4 w-4" />
                 ערוך בניין
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => {
+                if (!confirm('למחוק את הבניין? פעולה זו בלתי הפיכה.')) return;
+                try {
+                  const res = await authFetch(`/api/v1/buildings/${building.id}`, { method: 'DELETE' });
+                  if (!res.ok) throw new Error('מחיקה נכשלה');
+                  toast({ title: 'הבניין נמחק' });
+                  loadBuildings();
+                } catch (e: any) {
+                  toast({ title: 'שגיאה במחיקה', description: e?.message, variant: 'destructive' });
+                }
+              }}>
+                <MoreHorizontal className="me-2 h-4 w-4" />
+                מחק בניין
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <Users className="me-2 h-4 w-4" />
@@ -340,6 +360,14 @@ export default function Buildings() {
         </div>
         
         <div className="flex items-center gap-2">
+          <div className="relative hidden sm:block">
+            <Input
+              placeholder="חיפוש בניינים..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-[220px]"
+            />
+          </div>
           <Button 
             variant="outline" 
             size="icon"

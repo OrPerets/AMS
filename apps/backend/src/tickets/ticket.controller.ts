@@ -9,11 +9,15 @@ import {
   UploadedFiles,
   Param,
   Patch,
+  Delete,
+  Request,
 } from '@nestjs/common';
 import { TicketService } from './ticket.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { AssignTicketDto } from './dto/assign-ticket.dto';
 import { UpdateTicketStatusDto } from './dto/update-ticket-status.dto';
+import { CreateTicketCommentDto } from './dto/create-ticket-comment.dto';
+import { UpdateTicketCommentDto } from './dto/update-ticket-comment.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -59,5 +63,34 @@ export class TicketController {
   @Roles(Role.ADMIN, Role.PM, Role.TECH)
   updateStatus(@Param('id') id: string, @Body() dto: UpdateTicketStatusDto) {
     return this.tickets.updateStatus(+id, dto.status);
+  }
+
+  @Post(':id/comments')
+  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT)
+  addComment(
+    @Param('id') id: string,
+    @Body() dto: CreateTicketCommentDto,
+    @Request() req: any
+  ) {
+    return this.tickets.addComment(+id, req.user.id, dto.content);
+  }
+
+  @Patch('comments/:commentId')
+  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT)
+  updateComment(
+    @Param('commentId') commentId: string,
+    @Body() dto: UpdateTicketCommentDto,
+    @Request() req: any
+  ) {
+    return this.tickets.updateComment(+commentId, req.user.id, dto.content);
+  }
+
+  @Delete('comments/:commentId')
+  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT)
+  deleteComment(
+    @Param('commentId') commentId: string,
+    @Request() req: any
+  ) {
+    return this.tickets.deleteComment(+commentId, req.user.id);
   }
 }

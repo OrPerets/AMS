@@ -56,6 +56,95 @@ export class TicketService {
   }
 
   findOne(id: number) {
-    return this.prisma.ticket.findUnique({ where: { id } });
+    return this.prisma.ticket.findUnique({ 
+      where: { id },
+      include: {
+        comments: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                email: true,
+                role: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'asc'
+          }
+        },
+        unit: {
+          include: {
+            building: true
+          }
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            email: true,
+            role: true
+          }
+        }
+      }
+    });
+  }
+
+  async addComment(ticketId: number, authorId: number, content: string) {
+    return this.prisma.ticketComment.create({
+      data: {
+        ticketId,
+        authorId,
+        content
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            email: true,
+            role: true
+          }
+        }
+      }
+    });
+  }
+
+  async updateComment(commentId: number, authorId: number, content: string) {
+    // Verify the comment belongs to the author
+    const comment = await this.prisma.ticketComment.findFirst({
+      where: { id: commentId, authorId }
+    });
+    
+    if (!comment) {
+      throw new Error('Comment not found or unauthorized');
+    }
+
+    return this.prisma.ticketComment.update({
+      where: { id: commentId },
+      data: { content },
+      include: {
+        author: {
+          select: {
+            id: true,
+            email: true,
+            role: true
+          }
+        }
+      }
+    });
+  }
+
+  async deleteComment(commentId: number, authorId: number) {
+    // Verify the comment belongs to the author
+    const comment = await this.prisma.ticketComment.findFirst({
+      where: { id: commentId, authorId }
+    });
+    
+    if (!comment) {
+      throw new Error('Comment not found or unauthorized');
+    }
+
+    return this.prisma.ticketComment.delete({
+      where: { id: commentId }
+    });
   }
 }

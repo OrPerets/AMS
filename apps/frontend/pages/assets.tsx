@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Skeleton } from '../components/ui/skeleton';
 import { useLocale } from '../lib/providers';
 import { toast } from '../components/ui/use-toast';
+import Link from 'next/link';
 
 interface Asset {
   id: number;
@@ -172,9 +173,11 @@ export default function AssetsPage() {
           </p>
         </div>
         
-        <Button>
-          <Plus className="me-2 h-4 w-4" />
-          הוסף נכס
+        <Button asChild>
+          <Link href="/assets/new">
+            <Plus className="me-2 h-4 w-4" />
+            הוסף נכס
+          </Link>
         </Button>
       </div>
 
@@ -312,12 +315,16 @@ export default function AssetsPage() {
               </div>
               
               <div className="flex gap-2 mt-4">
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Edit className="me-2 h-3 w-3" />
-                  ערוך
+                <Button asChild variant="outline" size="sm" className="flex-1">
+                  <Link href={`/assets/${asset.id}/edit`}>
+                    <Edit className="me-2 h-3 w-3" />
+                    ערוך
+                  </Link>
                 </Button>
-                <Button variant="outline" size="sm">
-                  צפה
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/assets/${asset.id}`}>
+                    צפה
+                  </Link>
                 </Button>
               </div>
             </CardContent>
@@ -333,9 +340,11 @@ export default function AssetsPage() {
             <p className="text-muted-foreground text-center mb-4">
               לא נמצאו נכסים התואמים לקריטריונים שלך
             </p>
-            <Button>
-              <Plus className="me-2 h-4 w-4" />
-              הוסף נכס ראשון
+            <Button asChild>
+              <Link href="/assets/new">
+                <Plus className="me-2 h-4 w-4" />
+                הוסף נכס ראשון
+              </Link>
             </Button>
           </CardContent>
         </Card>

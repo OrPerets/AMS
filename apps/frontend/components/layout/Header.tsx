@@ -7,7 +7,6 @@ import { Menu, Sun, Moon, Globe, ChevronLeft, ChevronRight, Bell } from 'lucide-
 import { Button } from '../ui/button';
 import { useTheme, useDirection, useLocale } from '../../lib/providers';
 import { cn } from '../../lib/utils';
-import RoleSwitcher from '../RoleSwitcher';
 import UserMenu from './UserMenu';
 import { authFetch } from '../../lib/auth';
 import {
@@ -133,10 +132,8 @@ export default function Header({
           </Link>
         </div>
 
-        {/* Center section: Role Switcher */}
-        <div className="flex-1 flex justify-center">
-          <RoleSwitcher />
-        </div>
+        {/* Center section: Empty for now */}
+        <div className="flex-1"></div>
 
         {/* Right section: Controls & User Menu */}
         <div className="flex items-center gap-2">

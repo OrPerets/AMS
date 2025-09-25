@@ -7,10 +7,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-generator seed {
-  provider = "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
-}
-
 enum Role {
   ADMIN
   PM
@@ -112,6 +108,7 @@ model User {
   approvedWorkOrders WorkOrder[] @relation("WorkOrderApprover")
   approvedExpenses  Expense[]   @relation("ExpenseApprover")
   documentShares    DocumentShare[] @relation("DocumentShares")
+  ticketComments    TicketComment[] @relation("TicketCommentAuthor")
 }
 
 model Building {
@@ -177,6 +174,18 @@ model Ticket {
   assignedTo   User?          @relation("TicketAssignee", fields: [assignedToId], references: [id])
   createdAt    DateTime       @default(now())
   workOrders   WorkOrder[]
+  comments     TicketComment[]
+}
+
+model TicketComment {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  Int
+  author    User     @relation("TicketCommentAuthor", fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Supplier {

@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { login, getDefaultRoute } from '../lib/auth';
+import { login, getDefaultRoute, getTokenPayload } from '../lib/auth';
 import { useRouter } from 'next/router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -9,7 +9,7 @@ import { AlertCircle, LogIn, Building } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@example.com');
+  const [email, setEmail] = useState('master@demo.com');
   const [password, setPassword] = useState('password');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -20,6 +20,16 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(email, password);
+      
+      // Check if user is master - redirect to role selection
+      const payload = getTokenPayload();
+      if (payload && payload.role === 'MASTER') {
+        const next = typeof router.query.next === 'string' ? router.query.next : undefined;
+        router.replace(`/role-selection${next ? `?next=${encodeURIComponent(next)}` : ''}`);
+        return;
+      }
+      
+      // For non-master users, proceed with normal flow
       const next = typeof router.query.next === 'string' ? router.query.next : getDefaultRoute();
       router.replace(next);
     } catch (err: any) {

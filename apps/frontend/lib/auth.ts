@@ -156,9 +156,9 @@ export function routeForRole(role?: string | null): string {
   }
 }
 
-export function getDefaultRoute(): string {
-  const role = getEffectiveRole();
-  return routeForRole(role);
+export function getDefaultRoute(role?: string | null): string {
+  const effectiveRole = role || getEffectiveRole();
+  return routeForRole(effectiveRole);
 }
 
 

@@ -4,16 +4,19 @@
   "main": "dist/main.js",
   "scripts": {
     "start": "node -r dotenv/config dist/src/main.js",
-    "start:prod": "npm run prisma:deploy && npm run start",
+    "start:prod": "npm run start",
+    "start:prod:with-db": "npm run prisma:deploy && npm run start",
     "start:dev": "ts-node -r dotenv/config src/main.ts",
     "prisma:seed": "ts-node -r dotenv/config prisma/seed.ts",
+    "prisma:seed:prod": "ts-node -r dotenv/config scripts/production-seed.ts",
     "user:create": "ts-node -r dotenv/config scripts/create-user.ts",
     "users:upsert:prod": "ts-node -r dotenv/config scripts/upsert-demo-users.ts",
     "buildings:upsert:prod": "ts-node -r dotenv/config scripts/upsert-buildings.ts",
     "prisma:reset": "prisma migrate reset --force --skip-generate",
     "prisma:deploy": "prisma migrate deploy && prisma generate",
     "test": "jest",
-    "build": "tsc -p tsconfig.json && prisma generate"
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "build:prod": "prisma generate && tsc -p tsconfig.json"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.0.0",
