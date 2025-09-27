@@ -1,0 +1,57 @@
+# Railway Final Dockerfile - Maximum compatibility
+FROM node:18-alpine
+
+# Install system dependencies
+RUN apk add --no-cache libc6-compat openssl curl
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY apps/backend/package*.json ./apps/backend/
+COPY tsconfig*.json ./
+
+# Install ALL dependencies (including dev dependencies for build)
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Build the application
+WORKDIR /app/apps/backend
+RUN npx prisma generate
+RUN npx tsc -p tsconfig.json
+
+# Create production structure
+WORKDIR /app
+RUN mkdir -p dist/uploads
+RUN cp -r apps/backend/dist/* dist/
+RUN cp -r apps/backend/prisma ./prisma
+RUN cp apps/backend/package*.json ./
+
+# Create user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nestjs
+RUN chown -R nestjs:nodejs /app
+
+USER nestjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# Start command with extensive logging
+CMD ["sh", "-c", "\
+echo '=== AMS Backend Starting ===' && \
+echo 'NODE_ENV:' $NODE_ENV && \
+echo 'PORT:' $PORT && \
+echo 'DATABASE_URL:' ${DATABASE_URL:0:50}... && \
+echo 'JWT_SECRET:' ${JWT_SECRET:0:10}... && \
+echo 'Generating Prisma client...' && \
+npx prisma generate && \
+echo 'Starting application...' && \
+PORT=${PORT:-3000} node -r dotenv/config dist/src/main.js \
+"]

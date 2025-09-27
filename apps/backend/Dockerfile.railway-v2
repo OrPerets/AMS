@@ -1,0 +1,63 @@
+# Railway-optimized Dockerfile v2 for NestJS backend
+FROM node:18-alpine
+
+# Install system dependencies
+RUN apk add --no-cache libc6-compat openssl wget curl
+
+WORKDIR /app
+
+# Copy package files for workspace setup
+COPY package*.json ./
+COPY apps/backend/package*.json ./apps/backend/
+COPY tsconfig*.json ./
+
+# Install all dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Generate Prisma client and build the backend application
+WORKDIR /app/apps/backend
+RUN npx prisma generate
+RUN npx tsc -p tsconfig.json
+
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nestjs
+
+# Set up production directory structure
+WORKDIR /app
+RUN mkdir -p dist/uploads
+RUN cp -r apps/backend/dist/* dist/
+RUN cp -r apps/backend/prisma ./prisma
+RUN cp apps/backend/package*.json ./
+# Use the root node_modules (already installed)
+
+# Create uploads directory with proper permissions
+RUN mkdir -p uploads && chown -R nestjs:nodejs uploads dist
+
+# Add startup script for better error handling
+RUN echo '#!/bin/sh\n\
+echo "Starting AMS Backend..."\n\
+echo "NODE_ENV: $NODE_ENV"\n\
+echo "PORT: $PORT"\n\
+echo "DATABASE_URL: ${DATABASE_URL:0:50}..."\n\
+echo "JWT_SECRET: ${JWT_SECRET:0:10}..."\n\
+echo "Generating Prisma client..."\n\
+npx prisma generate\n\
+echo "Starting application on port ${PORT:-3000}..."\n\
+exec node -r dotenv/config dist/src/main.js\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
+USER nestjs
+
+# Expose port (Railway will set PORT dynamically)
+EXPOSE 3000
+
+# Health check for Railway with better error handling
+HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:${PORT:-3000}/health || exit 1
+
+# Start the application with the startup script
+CMD ["/app/start.sh"]
