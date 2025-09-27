@@ -20,6 +20,10 @@ RUN npm ci --only=production --frozen-lockfile && npm cache clean --force
 FROM base AS builder
 WORKDIR /app
 
+# Accept build argument for API base URL
+ARG NEXT_PUBLIC_API_BASE=http://localhost:3000
+ENV NEXT_PUBLIC_API_BASE=$NEXT_PUBLIC_API_BASE
+
 # Copy package files
 COPY package*.json ./
 COPY apps/frontend/package*.json ./apps/frontend/
@@ -41,7 +45,6 @@ WORKDIR /app
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
 # Create non-root user
@@ -50,17 +53,17 @@ RUN adduser --system --uid 1001 nextjs
 
 # Copy built application
 COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/frontend/.next/static ./apps/frontend/.next/static
 
 # Switch to non-root user
 USER nextjs
 
-# Expose port
-EXPOSE 3001
+# Expose port (Railway will set PORT dynamically)
+EXPOSE $PORT
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/ || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:$PORT/ || exit 1
 
 # Start the application
-CMD ["node", "server.js"]
+CMD ["node", "apps/frontend/server.js"]
