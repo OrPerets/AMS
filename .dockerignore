@@ -4,10 +4,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Production builds
+# Build outputs
 dist
-build
 .next
+build
 
 # Environment files
 .env
@@ -31,17 +31,17 @@ Thumbs.db
 .gitignore
 
 # Documentation
+README.md
 *.md
 docs/
 
 # Test files
-coverage
-.nyc_output
 __tests__
 *.test.js
 *.test.ts
 *.spec.js
 *.spec.ts
+coverage/
 
 # Logs
 logs
@@ -54,9 +54,10 @@ pids
 *.pid.lock
 
 # Coverage directory used by tools like istanbul
-coverage
+coverage/
 
 # Dependency directories
+node_modules/
 jspm_packages/
 
 # Optional npm cache directory
@@ -71,43 +72,21 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# next.js build output
-.next
-
-# nuxt.js build output
-.nuxt
-
-# vuepress build output
-.vuepress/dist
-
-# Serverless directories
-.serverless
-
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
-.dynamodb/
-
-# TernJS port file
-.tern-port
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
 
 # Railway specific
-.railway
-
-# Docker
-Dockerfile*
-docker-compose*
-.dockerignore
+railway.json
+railway.toml
+nixpacks.toml
 
 # Deployment scripts
 deploy*.sh
-*.sh
+set-env*.sh
+setup-env.sh
 
-# Backup files
-*.bak
-*.backup
+# Test scripts
+test*.sh
+test*.md

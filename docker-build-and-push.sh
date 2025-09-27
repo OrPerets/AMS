@@ -32,6 +32,7 @@ print_error() {
 DOCKERHUB_USERNAME=""
 IMAGE_TAG="latest"
 VERSION_TAG=""
+PUSH_IMAGES="y"
 
 # Get user input
 echo "🐳 AMS Docker Build and Push Script"
@@ -43,6 +44,8 @@ read -p "Image Tag (default: latest): " IMAGE_TAG
 IMAGE_TAG=${IMAGE_TAG:-latest}
 
 read -p "Version Tag (optional, e.g., v1.0.0): " VERSION_TAG
+read -p "Push to DockerHub? (y/n, default: y): " PUSH_IMAGES
+PUSH_IMAGES=${PUSH_IMAGES:-y}
 
 # Validate inputs
 if [ -z "$DOCKERHUB_USERNAME" ]; then
@@ -56,6 +59,7 @@ echo "  Image Tag: $IMAGE_TAG"
 if [ ! -z "$VERSION_TAG" ]; then
     echo "  Version Tag: $VERSION_TAG"
 fi
+echo "  Push to DockerHub: $PUSH_IMAGES"
 echo ""
 
 # Check if Docker is running
@@ -64,11 +68,15 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
-# Check if user is logged in to DockerHub
-if ! docker info | grep -q "Username"; then
+# Check if user is logged in to DockerHub (only if pushing)
+if [ "$PUSH_IMAGES" = "y" ] && ! docker info | grep -q "Username"; then
     print_warning "You may need to login to DockerHub:"
     echo "docker login"
     echo ""
+    read -p "Continue anyway? (y/n): " CONTINUE
+    if [ "$CONTINUE" != "y" ]; then
+        exit 1
+    fi
 fi
 
 # Build Backend Image
@@ -97,31 +105,37 @@ fi
 
 print_success "Frontend image built: $FRONTEND_IMAGE"
 
-# Push Backend Image
-print_status "Pushing Backend Image to DockerHub..."
-docker push "$BACKEND_IMAGE"
+# Push images if requested
+if [ "$PUSH_IMAGES" = "y" ]; then
+    # Push Backend Image
+    print_status "Pushing Backend Image to DockerHub..."
+    docker push "$BACKEND_IMAGE"
 
-if [ ! -z "$VERSION_TAG" ]; then
-    docker push "$BACKEND_VERSION_IMAGE"
-    print_success "Pushed backend version image: $BACKEND_VERSION_IMAGE"
+    if [ ! -z "$VERSION_TAG" ]; then
+        docker push "$BACKEND_VERSION_IMAGE"
+        print_success "Pushed backend version image: $BACKEND_VERSION_IMAGE"
+    fi
+
+    print_success "Backend image pushed: $BACKEND_IMAGE"
+
+    # Push Frontend Image
+    print_status "Pushing Frontend Image to DockerHub..."
+    docker push "$FRONTEND_IMAGE"
+
+    if [ ! -z "$VERSION_TAG" ]; then
+        docker push "$FRONTEND_VERSION_IMAGE"
+        print_success "Pushed frontend version image: $FRONTEND_VERSION_IMAGE"
+    fi
+
+    print_success "Frontend image pushed: $FRONTEND_IMAGE"
 fi
-
-print_success "Backend image pushed: $BACKEND_IMAGE"
-
-# Push Frontend Image
-print_status "Pushing Frontend Image to DockerHub..."
-docker push "$FRONTEND_IMAGE"
-
-if [ ! -z "$VERSION_TAG" ]; then
-    docker push "$FRONTEND_VERSION_IMAGE"
-    print_success "Pushed frontend version image: $FRONTEND_VERSION_IMAGE"
-fi
-
-print_success "Frontend image pushed: $FRONTEND_IMAGE"
 
 # Summary
 echo ""
-print_success "🎉 All images built and pushed successfully!"
+print_success "🎉 All images built successfully!"
+if [ "$PUSH_IMAGES" = "y" ]; then
+    print_success "All images pushed to DockerHub!"
+fi
 echo ""
 print_status "Docker Images:"
 echo "  Backend:  $BACKEND_IMAGE"
@@ -132,11 +146,11 @@ if [ ! -z "$VERSION_TAG" ]; then
 fi
 echo ""
 print_status "Next steps:"
-echo "1. Deploy backend to Railway using: $BACKEND_IMAGE"
-echo "2. Deploy frontend to Railway using: $FRONTEND_IMAGE"
-echo "3. Set environment variables in Railway"
+echo "1. Deploy using Docker Compose or your preferred container orchestration"
+echo "2. Set environment variables for production"
+echo "3. Configure your database connection"
 echo "4. Test your deployment"
 echo ""
-print_status "Railway deployment commands:"
-echo "  Backend:  railway up --dockerfile $BACKEND_IMAGE"
-echo "  Frontend: railway up --dockerfile $FRONTEND_IMAGE"
+print_status "Example Docker Compose usage:"
+echo "  Backend:  $BACKEND_IMAGE"
+echo "  Frontend: $FRONTEND_IMAGE"
