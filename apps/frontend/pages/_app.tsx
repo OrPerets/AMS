@@ -6,6 +6,8 @@ import 'react-day-picker/dist/style.css';
 import Layout from '../components/Layout';
 import { AppProviders } from '../lib/providers';
 import { cn } from '../lib/utils';
+import { Toaster } from '../components/ui/toaster';
+import { Toaster as SonnerToaster } from 'sonner';
 
 // Font configuration
 const inter = Inter({
@@ -27,6 +29,8 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         <Layout>
           <Component {...pageProps} />
         </Layout>
+        <Toaster />
+        <SonnerToaster position="top-center" richColors />
       </AppProviders>
     </div>
   );

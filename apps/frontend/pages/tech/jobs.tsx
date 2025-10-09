@@ -32,7 +32,7 @@ interface WorkOrder {
     buildingId?: number;
     title?: string;
     description?: string;
-    severity: 'LOW' | 'MEDIUM' | 'HIGH';
+    severity: 'NORMAL' | 'HIGH' | 'URGENT';
     status: 'OPEN' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED';
     residentName?: string;
     residentPhone?: string;
@@ -51,9 +51,9 @@ interface WorkOrder {
 }
 
 const severityConfig = {
-  LOW: { label: 'נמוך', variant: 'outline' as const, color: 'text-muted-foreground' },
-  MEDIUM: { label: 'בינוני', variant: 'info' as const, color: 'text-info' },
-  HIGH: { label: 'גבוה', variant: 'warning' as const, color: 'text-warning' },
+  NORMAL: { label: 'רגילה', variant: 'outline' as const, color: 'text-muted-foreground' },
+  HIGH: { label: 'דחופה', variant: 'warning' as const, color: 'text-warning' },
+  URGENT: { label: 'בהולה', variant: 'destructive' as const, color: 'text-destructive' },
 };
 
 export default function Jobs() {
@@ -82,7 +82,7 @@ export default function Jobs() {
               buildingId: 1,
               title: 'דליפת מים בחדר אמבטיה',
               description: 'דליפה מתמשכת מהברז הראשי בחדר האמבטיה הראשי',
-              severity: 'HIGH',
+              severity: 'URGENT',
               status: 'ASSIGNED',
               residentName: 'דניאל לוי',
               residentPhone: '050-1234567',
@@ -107,7 +107,7 @@ export default function Jobs() {
               buildingId: 1,
               title: 'תיקון מעלית',
               description: 'המעלית תקועה בקומה השנייה ולא מגיבה',
-              severity: 'HIGH',
+              severity: 'URGENT',
               status: 'IN_PROGRESS',
               residentName: 'משה דוד',
               residentPhone: '052-9876543',
@@ -132,7 +132,7 @@ export default function Jobs() {
               buildingId: 2,
               title: 'תיקון דלת כניסה',
               description: 'המנעול לא פועל כראוי',
-              severity: 'MEDIUM',
+              severity: 'HIGH',
               status: 'ASSIGNED',
               residentName: 'שרה אברהם',
               residentPhone: '054-5555444',
@@ -206,7 +206,7 @@ export default function Jobs() {
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
-      case 'HIGH':
+      case 'URGENT':
         return <AlertTriangle className="h-4 w-4" />;
       default:
         return <Wrench className="h-4 w-4" />;
@@ -249,7 +249,7 @@ export default function Jobs() {
     total: orders.length,
     assigned: assignedJobs.length,
     inProgress: inProgressJobs.length,
-    urgent: orders.filter(o => o.ticket.severity === 'HIGH').length
+    urgent: orders.filter(o => o.ticket.severity === 'URGENT').length
   };
 
   return (
@@ -345,7 +345,7 @@ export default function Jobs() {
                 className={cn(
                   "transition-all duration-200 hover:shadow-md",
                   order.status === 'IN_PROGRESS' && "ring-2 ring-info/20",
-                  order.ticket.severity === 'HIGH' && "ring-2 ring-destructive/20"
+                  order.ticket.severity === 'URGENT' && "ring-2 ring-destructive/20"
                 )}
               >
                 <CardHeader className="pb-3">

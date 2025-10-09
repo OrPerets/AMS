@@ -5,7 +5,7 @@ import { UpdateAssetDto } from './dto/update-asset.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { Role } from '@prisma/client';
+import { Role } from '../auth/roles.decorator';
 import { UpdateAssetLocationDto } from './dto/update-asset-location.dto';
 import { AssetDepreciationOptionsDto } from './dto/asset-depreciation-options.dto';
 

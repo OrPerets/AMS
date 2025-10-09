@@ -48,7 +48,7 @@ interface Ticket {
   unitId: number;
   buildingId?: number;
   status: 'OPEN' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED';
-  severity: 'LOW' | 'MEDIUM' | 'HIGH';
+  severity: 'NORMAL' | 'HIGH' | 'URGENT';
   title?: string;
   description?: string;
   assignedTo?: string;
@@ -62,9 +62,9 @@ interface Ticket {
 }
 
 const severityConfig = {
-  LOW: { label: 'נמוך', variant: 'outline' as const },
-  MEDIUM: { label: 'בינוני', variant: 'info' as const },
-  HIGH: { label: 'גבוה', variant: 'warning' as const },
+  NORMAL: { label: 'רגילה', variant: 'info' as const },
+  HIGH: { label: 'דחופה', variant: 'warning' as const },
+  URGENT: { label: 'בהולה', variant: 'destructive' as const },
 };
 
 const statusConfig = {
@@ -110,7 +110,7 @@ export default function Tickets() {
             unitId: 12,
             buildingId: 1,
             status: 'OPEN',
-            severity: 'HIGH',
+            severity: 'URGENT',
             title: 'דליפת מים בחדר אמבטיה',
             description: 'דליפה מתמשכת מהברז הראשי',
             assignedTo: 'tech1',
@@ -127,7 +127,7 @@ export default function Tickets() {
             unitId: 25,
             buildingId: 1,
             status: 'IN_PROGRESS',
-            severity: 'MEDIUM',
+            severity: 'HIGH',
             title: 'תיקון מעלית',
             description: 'המעלית תקועה בקומה השנייה',
             assignedTo: 'tech2',
@@ -143,7 +143,7 @@ export default function Tickets() {
             unitId: 8,
             buildingId: 2,
             status: 'RESOLVED',
-            severity: 'LOW',
+            severity: 'NORMAL',
             title: 'החלפת נורה בחדר מדרגות',
             description: 'נורה שרופה בקומה 3',
             assignedTo: 'tech1',
@@ -382,7 +382,7 @@ export default function Tickets() {
         <Card className="p-4 bg-muted/30">
           <form onSubmit={handleCreateTicket} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <FormField
-              label="מספר יחידה"
+              label="בניין"
               required
             >
               <Input
@@ -399,14 +399,14 @@ export default function Tickets() {
               required
             >
               <select name="severity" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                <option value="LOW">נמוך</option>
-                <option value="MEDIUM">בינוני</option>
-                <option value="HIGH">גבוה</option>
+                <option value="NORMAL">רגילה</option>
+                <option value="HIGH">דחופה</option>
+                <option value="URGENT">בהולה</option>
               </select>
             </FormField>
             
             <FormField
-              label="תיאור הבעיה"
+              label="פתיחת קריאה"
               description="תאר בקצרה את הבעיה שצריכה טיפול"
             >
               <Input
@@ -519,9 +519,9 @@ export default function Tickets() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">כל החומרות</SelectItem>
-            <SelectItem value="LOW">נמוך</SelectItem>
-            <SelectItem value="MEDIUM">בינוני</SelectItem>
-            <SelectItem value="HIGH">גבוה</SelectItem>
+            <SelectItem value="NORMAL">רגילה</SelectItem>
+            <SelectItem value="HIGH">דחופה</SelectItem>
+            <SelectItem value="URGENT">בהולה</SelectItem>
           </SelectContent>
         </Select>
 

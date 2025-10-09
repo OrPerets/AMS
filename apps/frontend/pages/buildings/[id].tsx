@@ -6,6 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Button } from '../../components/ui/button';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Badge } from '../../components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Plus } from 'lucide-react';
+import BuildingCodesTable from '../../components/buildings/BuildingCodesTable';
+import AddCodeDialog from '../../components/buildings/AddCodeDialog';
+import EditCodeDialog from '../../components/buildings/EditCodeDialog';
+import { toast } from 'sonner';
 
 type Unit = {
   id: number;
@@ -33,12 +39,32 @@ type BuildingDetails = {
   documents?: { id: number; title?: string }[];
 };
 
+type BuildingCode = {
+  id: number;
+  codeType: string;
+  code: string;
+  description?: string;
+  isActive: boolean;
+  validFrom: string;
+  validUntil?: string;
+  createdAt: string;
+  creator?: {
+    id: number;
+    email: string;
+  };
+};
+
 export default function BuildingDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const [loading, setLoading] = useState(true);
   const [building, setBuilding] = useState<Building | null>(null);
   const [details, setDetails] = useState<BuildingDetails | null>(null);
+  const [codes, setCodes] = useState<BuildingCode[]>([]);
+  const [codesLoading, setCodesLoading] = useState(false);
+  const [addCodeOpen, setAddCodeOpen] = useState(false);
+  const [editCodeOpen, setEditCodeOpen] = useState(false);
+  const [selectedCode, setSelectedCode] = useState<BuildingCode | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -61,6 +87,49 @@ export default function BuildingDetailPage() {
     }
     void load();
   }, [id]);
+
+  const loadCodes = async () => {
+    if (!id) return;
+    setCodesLoading(true);
+    try {
+      const res = await authFetch(`/api/v1/buildings/${id}/codes`);
+      if (res.ok) {
+        const data = await res.json();
+        setCodes(data);
+      }
+    } catch (error) {
+      console.error('Error loading codes:', error);
+      toast.error('שגיאה בטעינת קודים');
+    } finally {
+      setCodesLoading(false);
+    }
+  };
+
+  const handleDeleteCode = async (codeId: number) => {
+    if (!confirm('האם אתה בטוח שברצונך למחוק את הקוד?')) return;
+
+    try {
+      const res = await authFetch(
+        `/api/v1/buildings/codes/${codeId}`,
+        { method: 'DELETE' }
+      );
+
+      if (res.ok) {
+        toast.success('הקוד נמחק בהצלחה');
+        loadCodes();
+      } else {
+        throw new Error('Failed to delete code');
+      }
+    } catch (error) {
+      console.error('Error deleting code:', error);
+      toast.error('שגיאה במחיקת הקוד');
+    }
+  };
+
+  const handleEditCode = (code: BuildingCode) => {
+    setSelectedCode(code);
+    setEditCodeOpen(true);
+  };
 
   if (loading) {
     return (
@@ -101,7 +170,16 @@ export default function BuildingDetailPage() {
         </div>
       </header>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">סקירה</TabsTrigger>
+          <TabsTrigger value="codes" onClick={() => loadCodes()}>
+            קודי גישה
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">נתוני מבנה</CardTitle>
@@ -174,6 +252,51 @@ export default function BuildingDetailPage() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="codes" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>קודי גישה ובניין</CardTitle>
+                <Button onClick={() => setAddCodeOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  הוסף קוד
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {codesLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : (
+                <BuildingCodesTable
+                  codes={codes}
+                  onEdit={handleEditCode}
+                  onDelete={handleDeleteCode}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <AddCodeDialog
+        open={addCodeOpen}
+        onOpenChange={setAddCodeOpen}
+        buildingId={Number(id)}
+        onSuccess={loadCodes}
+      />
+
+      <EditCodeDialog
+        open={editCodeOpen}
+        onOpenChange={setEditCodeOpen}
+        code={selectedCode}
+        onSuccess={loadCodes}
+      />
     </div>
   );
 }

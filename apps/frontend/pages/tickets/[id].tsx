@@ -24,7 +24,7 @@ interface Ticket {
   id: number;
   unitId: number;
   status: 'OPEN' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED';
-  severity: 'LOW' | 'MEDIUM' | 'HIGH';
+  severity: 'NORMAL' | 'HIGH' | 'URGENT';
   description?: string;
   photos: string[];
   comments: TicketComment[];

@@ -2,9 +2,7 @@ import { Controller, Post, Body, Get, Param, Query, UseGuards, Res } from '@nest
 import { PaymentService } from './payment.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
-import { Role } from '@prisma/client';
-import { Public } from '../auth/roles.decorator';
+import { Roles, Role, Public } from '../auth/roles.decorator';
 import { Response } from 'express';
 
 @Controller('api/v1')

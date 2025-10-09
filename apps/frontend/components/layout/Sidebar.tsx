@@ -20,7 +20,9 @@ import {
   Folder,
   Box,
   MessageCircle,
-  X
+  X,
+  Vote,
+  ClipboardList
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
@@ -66,6 +68,12 @@ const getNavigationGroups = (role: string, t: (key: string) => string): Navigati
           icon: BarChart3,
           roles: ['ADMIN', 'PM'],
         },
+        {
+          title: 'לוח קריאות - מאיה',
+          href: '/maya-dashboard',
+          icon: Ticket,
+          roles: ['PM'],
+        },
       ]
     },
     {
@@ -77,6 +85,12 @@ const getNavigationGroups = (role: string, t: (key: string) => string): Navigati
           href: '/tickets',
           icon: Ticket,
           roles: ['ADMIN', 'PM', 'TECH', 'RESIDENT'],
+        },
+        {
+          title: 'פתיחת קריאה חדשה',
+          href: '/create-call',
+          icon: Ticket,
+          roles: ['RESIDENT'],
         },
         {
           title: 'תחזוקה מתוכננת',
@@ -94,6 +108,18 @@ const getNavigationGroups = (role: string, t: (key: string) => string): Navigati
           title: 'מרכז תקשורת',
           href: '/communications',
           icon: MessageCircle,
+          roles: ['ADMIN', 'PM', 'TECH'],
+        },
+        {
+          title: 'הצבעות',
+          href: '/votes',
+          icon: Vote,
+          roles: ['ADMIN', 'PM', 'RESIDENT'],
+        },
+        {
+          title: 'לוחות זמנים',
+          href: '/schedules',
+          icon: ClipboardList,
           roles: ['ADMIN', 'PM', 'TECH'],
         },
       ]
@@ -180,6 +206,12 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
     const payload = getTokenPayload();
     setUserRole(payload?.actAsRole || payload?.role || 'RESIDENT');
   }, []);
+
+  // Listen for route changes to re-read token payload (for role changes)
+  useEffect(() => {
+    const payload = getTokenPayload();
+    setUserRole(payload?.actAsRole || payload?.role || 'RESIDENT');
+  }, [router.pathname]);
   
   const navigationGroups = getNavigationGroups(userRole, t);
 

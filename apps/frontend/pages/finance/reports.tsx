@@ -1,205 +1,386 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { authFetch } from '../../lib/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { MonthlyReportCard } from '../../components/finance/MonthlyReportCard';
+import { ExpenseBreakdownChart } from '../../components/finance/ExpenseBreakdownChart';
+import { TrendChart } from '../../components/finance/TrendChart';
+
+interface MonthlyReport {
+  month: string;
+  year: number;
+  expenses: Array<{ category: string; items: any[]; total: number }>;
+  income: Array<{ source: string; items: any[]; total: number }>;
+  totalExpenses: number;
+  totalIncome: number;
+  balance: number;
+  buildingId?: number;
+  buildingName?: string;
+}
+
+interface YearlyReport {
+  year: number;
+  months: MonthlyReport[];
+  totalIncome: number;
+  totalExpenses: number;
+  totalBalance: number;
+  buildingId?: number;
+  buildingName?: string;
+}
 
 export default function FinancialReportsPage() {
-  const [summary, setSummary] = useState<any>(null);
-  const [pnl, setPnl] = useState<any>(null);
-  const [cashFlow, setCashFlow] = useState<any[]>([]);
-  const [variance, setVariance] = useState<any[]>([]);
-  const [forecast, setForecast] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'monthly' | 'yearly'>('monthly');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [buildingId, setBuildingId] = useState<string>('');
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('summary');
-  const [format, setFormat] = useState<'csv'|'xlsx'|'pdf'>('csv');
+  const [monthlyReport, setMonthlyReport] = useState<MonthlyReport | null>(null);
+  const [yearlyReport, setYearlyReport] = useState<YearlyReport | null>(null);
+  const [previousMonthReport, setPreviousMonthReport] = useState<MonthlyReport | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [format, setFormat] = useState<'csv' | 'xlsx' | 'pdf'>('xlsx');
 
-  const load = async () => {
+  const loadMonthlyReport = async () => {
+    setLoading(true);
     try {
-      const [s, p, c, v, f] = await Promise.all([
-        authFetch('/api/v1/reports/financial/summary').then(r => r.ok ? r.json() : {
-          planned: 150000,
-          actual: 142000,
-          variance: -8000
-        }),
-        authFetch('/api/v1/reports/financial/pnl').then(r => r.ok ? r.json() : {
-          revenue: 180000,
-          expenses: 120000,
-          profit: 60000
-        }),
-        authFetch(`/api/v1/reports/financial/variance${buildingId ? `?buildingId=${buildingId}` : ''}`).then(r => r.ok ? r.json() : [
-          { id: 1, year: 2024, name: 'תחזוקה כללית', planned: 50000, actual: 45000, variance: -5000 },
-          { id: 2, year: 2024, name: 'חשמל', planned: 30000, actual: 32000, variance: 2000 },
-          { id: 3, year: 2024, name: 'מים', planned: 20000, actual: 19000, variance: -1000 }
-        ]),
-        authFetch('/api/v1/reports/financial/cash-flow').then(r => r.ok ? r.json() : [
-          { month: 'ינואר', inflow: 150000, outflow: 120000, net: 30000 },
-          { month: 'פברואר', inflow: 160000, outflow: 130000, net: 30000 },
-          { month: 'מרץ', inflow: 155000, outflow: 125000, net: 30000 },
-          { month: 'אפריל', inflow: 170000, outflow: 140000, net: 30000 }
-        ]),
-        authFetch('/api/v1/reports/financial/forecast').then(r => r.ok ? r.json() : {
-          forecastedMonthlyRevenue: 165000,
-          forecastedMonthlyExpense: 135000,
-          forecastedMonthlyProfit: 30000
-        }),
-      ]);
-      setSummary(s); setPnl(p); setCashFlow(c); setVariance(v); setForecast(f);
+      const params = new URLSearchParams({
+        year: selectedYear.toString(),
+        month: selectedMonth.toString(),
+      });
+      if (buildingId) params.append('buildingId', buildingId);
+
+      const report = await authFetch(`/api/v1/reports/financial/monthly?${params}`)
+        .then(r => r.ok ? r.json() : null);
+      
+      setMonthlyReport(report);
+
+      // Load previous month for comparison
+      const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
+      const prevYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
+      const prevParams = new URLSearchParams({
+        year: prevYear.toString(),
+        month: prevMonth.toString(),
+      });
+      if (buildingId) prevParams.append('buildingId', buildingId);
+
+      const prevReport = await authFetch(`/api/v1/reports/financial/monthly?${prevParams}`)
+        .then(r => r.ok ? r.json() : null);
+      
+      setPreviousMonthReport(prevReport);
     } catch (error) {
-      console.error('Error loading financial reports:', error);
-      // Set default values to prevent crashes
-      setSummary({
-        planned: 150000,
-        actual: 142000,
-        variance: -8000
-      });
-      setPnl({
-        revenue: 180000,
-        expenses: 120000,
-        profit: 60000
-      });
-      setCashFlow([
-        { month: 'ינואר', inflow: 150000, outflow: 120000, net: 30000 },
-        { month: 'פברואר', inflow: 160000, outflow: 130000, net: 30000 },
-        { month: 'מרץ', inflow: 155000, outflow: 125000, net: 30000 },
-        { month: 'אפריל', inflow: 170000, outflow: 140000, net: 30000 }
-      ]);
-      setVariance([
-        { id: 1, year: 2024, name: 'תחזוקה כללית', planned: 50000, actual: 45000, variance: -5000 },
-        { id: 2, year: 2024, name: 'חשמל', planned: 30000, actual: 32000, variance: 2000 },
-        { id: 3, year: 2024, name: 'מים', planned: 20000, actual: 19000, variance: -1000 }
-      ]);
-      setForecast({
-        forecastedMonthlyRevenue: 165000,
-        forecastedMonthlyExpense: 135000,
-        forecastedMonthlyProfit: 30000
-      });
+      console.error('Error loading monthly report:', error);
     }
+    setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  const loadYearlyReport = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        year: selectedYear.toString(),
+      });
+      if (buildingId) params.append('buildingId', buildingId);
+
+      const report = await authFetch(`/api/v1/reports/financial/yearly?${params}`)
+        .then(r => r.ok ? r.json() : null);
+      
+      setYearlyReport(report);
+    } catch (error) {
+      console.error('Error loading yearly report:', error);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    authFetch('/api/v1/reports/financial/templates').then(r => r.json()).then(setTemplates).catch(() => setTemplates([
-      { id: 'summary', name: 'Financial Summary' },
-      { id: 'pnl', name: 'Profit & Loss' },
-      { id: 'cash-flow', name: 'Cash Flow' },
-      { id: 'variance', name: 'Variance' },
-    ]));
-  }, []);
+    if (viewMode === 'monthly') {
+      loadMonthlyReport();
+    } else {
+      loadYearlyReport();
+    }
+  }, [viewMode, selectedYear, selectedMonth, buildingId]);
 
-  const exportUrl = useMemo(() => {
-    const qs = new URLSearchParams();
-    qs.set('format', format);
-    if (selectedTemplate === 'variance' && buildingId) qs.set('buildingId', buildingId);
-    return `/api/v1/reports/financial/export/${selectedTemplate}?${qs.toString()}`;
-  }, [selectedTemplate, format, buildingId]);
+  const getExportUrl = () => {
+    const params = new URLSearchParams();
+    params.set('format', format);
+    if (viewMode === 'monthly') {
+      params.set('year', selectedYear.toString());
+      params.set('month', selectedMonth.toString());
+    } else {
+      params.set('year', selectedYear.toString());
+    }
+    if (buildingId) params.set('buildingId', buildingId);
+    
+    return `/api/v1/reports/financial/export/monthly?${params}`;
+  };
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+  const months = [
+    { value: 1, label: 'ינואר' },
+    { value: 2, label: 'פברואר' },
+    { value: 3, label: 'מרץ' },
+    { value: 4, label: 'אפריל' },
+    { value: 5, label: 'מאי' },
+    { value: 6, label: 'יוני' },
+    { value: 7, label: 'יולי' },
+    { value: 8, label: 'אוגוסט' },
+    { value: 9, label: 'ספטמבר' },
+    { value: 10, label: 'אוקטובר' },
+    { value: 11, label: 'נובמבר' },
+    { value: 12, label: 'דצמבר' },
+  ];
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-semibold">דוחות פיננסיים</h1>
-        <div className="ms-auto flex items-center gap-2">
-          <input className="border rounded px-2 py-1" placeholder="מזהה בניין (לסינון סטיות)" value={buildingId} onChange={(e) => setBuildingId(e.target.value)} />
-          <button className="border rounded px-3 py-1" onClick={load}>סנן</button>
-          <select className="border rounded px-2 py-1" value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)}>
-            {templates.map(t => <option key={t.id} value={t.id}>{t.name ?? t.id}</option>)}
-          </select>
-          <select className="border rounded px-2 py-1" value={format} onChange={(e) => setFormat(e.target.value as any)}>
-            <option value="csv">CSV</option>
-            <option value="xlsx">Excel</option>
-            <option value="pdf">PDF</option>
-          </select>
-          <a href={exportUrl}>
-            <Button size="sm">ייצא</Button>
+      {/* Header and Filters */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">דוחות פיננסיים</h1>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={viewMode === 'monthly' ? 'default' : 'outline'}
+              onClick={() => setViewMode('monthly')}
+            >
+              חודשי
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === 'yearly' ? 'default' : 'outline'}
+              onClick={() => setViewMode('yearly')}
+            >
+              שנתי
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">שנה</label>
+            <select
+              className="border rounded px-3 py-2"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(+e.target.value)}
+            >
+              {years.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+
+          {viewMode === 'monthly' && (
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700">חודש</label>
+              <select
+                className="border rounded px-3 py-2"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(+e.target.value)}
+              >
+                {months.map(month => (
+                  <option key={month.value} value={month.value}>{month.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">בניין (אופציונלי)</label>
+            <input
+              className="border rounded px-3 py-2"
+              placeholder="מזהה בניין"
+              value={buildingId}
+              onChange={(e) => setBuildingId(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">פורמט ייצוא</label>
+            <select
+              className="border rounded px-2 py-2"
+              value={format}
+              onChange={(e) => setFormat(e.target.value as any)}
+            >
+              <option value="csv">CSV</option>
+              <option value="xlsx">Excel</option>
+              <option value="pdf">PDF</option>
+            </select>
+          </div>
+
+          <a href={getExportUrl()} download>
+            <Button size="sm">ייצא דוח</Button>
           </a>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card><CardHeader><CardTitle>תכנון</CardTitle></CardHeader><CardContent>₪{(summary?.planned||0).toLocaleString()}</CardContent></Card>
-        <Card><CardHeader><CardTitle>בפועל</CardTitle></CardHeader><CardContent>₪{(summary?.actual||0).toLocaleString()}</CardContent></Card>
-        <Card><CardHeader><CardTitle>סטייה</CardTitle></CardHeader><CardContent><span className={(summary?.variance||0) < 0 ? 'text-red-600' : 'text-green-700'}>₪{(summary?.variance||0).toLocaleString()}</span></CardContent></Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader><CardTitle>רווח והפסד</CardTitle></CardHeader>
-          <CardContent>
-            <div>הכנסות: ₪{(pnl?.revenue||0).toLocaleString()}</div>
-            <div>הוצאות: ₪{(pnl?.expenses||0).toLocaleString()}</div>
-            <div>רווח: ₪{(pnl?.profit||0).toLocaleString()}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle>תחזית</CardTitle></CardHeader>
-          <CardContent>
-            <div>הכנסה חודשית חזויה: ₪{(forecast?.forecastedMonthlyRevenue||0).toLocaleString()}</div>
-            <div>הוצאה חודשית חזויה: ₪{(forecast?.forecastedMonthlyExpense||0).toLocaleString()}</div>
-            <div>רווח חודשי חזוי: ₪{(forecast?.forecastedMonthlyProfit||0).toLocaleString()}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader><CardTitle>תזרים מזומנים חודשי</CardTitle></CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left">
-                  <th className="p-2">חודש</th>
-                  <th className="p-2">תקבולים</th>
-                  <th className="p-2">תשלומים</th>
-                  <th className="p-2">יתרה</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cashFlow.map(row => (
-                  <tr key={row.month} className="border-t">
-                    <td className="p-2">{row.month}</td>
-                    <td className="p-2">₪{(row.inflow || 0).toLocaleString()}</td>
-                    <td className="p-2">₪{(row.outflow || 0).toLocaleString()}</td>
-                    <td className="p-2">₪{(row.net || 0).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">טוען נתונים...</div>
+        </div>
+      ) : viewMode === 'monthly' && monthlyReport ? (
+        <>
+          {/* Monthly Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <MonthlyReportCard
+              title="סה״כ הכנסות"
+              value={monthlyReport.totalIncome}
+              previousValue={previousMonthReport?.totalIncome}
+              colorScheme="income"
+            />
+            <MonthlyReportCard
+              title="סה״כ הוצאות"
+              value={monthlyReport.totalExpenses}
+              previousValue={previousMonthReport?.totalExpenses}
+              colorScheme="expense"
+            />
+            <MonthlyReportCard
+              title="יתרה"
+              value={monthlyReport.balance}
+              previousValue={previousMonthReport?.balance}
+              colorScheme="balance"
+            />
           </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader><CardTitle>דוח סטיות</CardTitle></CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left">
-                  <th className="p-2">שנה</th>
-                  <th className="p-2">שם</th>
-                  <th className="p-2">מתוכנן</th>
-                  <th className="p-2">בפועל</th>
-                  <th className="p-2">סטייה</th>
-                </tr>
-              </thead>
-              <tbody>
-                {variance.map((v: any) => (
-                  <tr key={v.id} className="border-t">
-                    <td className="p-2">{v.year}</td>
-                    <td className="p-2">{v.name}</td>
-                    <td className="p-2">₪{(v.planned || 0).toLocaleString()}</td>
-                    <td className="p-2">₪{(v.actual || 0).toLocaleString()}</td>
-                    <td className={`p-2 ${(v.variance || 0) < 0 ? 'text-red-600' : ''}`}>₪{(v.variance || 0).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Expense Breakdown */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ExpenseBreakdownChart
+              expenses={monthlyReport.expenses}
+              title={`פילוח הוצאות - ${monthlyReport.month} ${monthlyReport.year}`}
+            />
+
+            {/* Income Breakdown */}
+            <Card>
+              <CardHeader>
+                <CardTitle>פירוט הכנסות</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {monthlyReport.income.map((src, idx) => (
+                    <div key={idx} className="flex justify-between items-center pb-2 border-b">
+                      <span className="text-gray-700">{src.source}</span>
+                      <span className="font-semibold text-green-600">
+                        ₪{src.total.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                  {monthlyReport.income.length === 0 && (
+                    <div className="text-center text-gray-500 py-8">
+                      אין נתוני הכנסות להצגה
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Detailed Expense Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>פירוט הוצאות לפי קטגוריה</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-right border-b">
+                      <th className="p-2 font-semibold">קטגוריה</th>
+                      <th className="p-2 font-semibold">פריטים</th>
+                      <th className="p-2 font-semibold">סכום</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthlyReport.expenses.map((cat, idx) => (
+                      <tr key={idx} className="border-b hover:bg-gray-50">
+                        <td className="p-2">{cat.category}</td>
+                        <td className="p-2">{cat.items.length}</td>
+                        <td className="p-2 font-medium text-red-600">
+                          ₪{cat.total.toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="font-bold border-t-2">
+                      <td className="p-2">סה״כ</td>
+                      <td className="p-2">{monthlyReport.expenses.reduce((sum, cat) => sum + cat.items.length, 0)}</td>
+                      <td className="p-2 text-red-600">₪{monthlyReport.totalExpenses.toLocaleString()}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      ) : viewMode === 'yearly' && yearlyReport ? (
+        <>
+          {/* Yearly Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <MonthlyReportCard
+              title={`סה״כ הכנסות ${yearlyReport.year}`}
+              value={yearlyReport.totalIncome}
+              colorScheme="income"
+            />
+            <MonthlyReportCard
+              title={`סה״כ הוצאות ${yearlyReport.year}`}
+              value={yearlyReport.totalExpenses}
+              colorScheme="expense"
+            />
+            <MonthlyReportCard
+              title={`יתרה ${yearlyReport.year}`}
+              value={yearlyReport.totalBalance}
+              colorScheme="balance"
+            />
+          </div>
+
+          {/* 12-Month Trend */}
+          <TrendChart data={yearlyReport.months} />
+
+          {/* Monthly Breakdown Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>פירוט חודשי - {yearlyReport.year}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-right border-b">
+                      <th className="p-2 font-semibold">חודש</th>
+                      <th className="p-2 font-semibold">הכנסות</th>
+                      <th className="p-2 font-semibold">הוצאות</th>
+                      <th className="p-2 font-semibold">יתרה</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {yearlyReport.months.map((month, idx) => (
+                      <tr key={idx} className="border-b hover:bg-gray-50">
+                        <td className="p-2">{month.month}</td>
+                        <td className="p-2 text-green-600">₪{month.totalIncome.toLocaleString()}</td>
+                        <td className="p-2 text-red-600">₪{month.totalExpenses.toLocaleString()}</td>
+                        <td className={`p-2 font-medium ${month.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          ₪{month.balance.toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="font-bold border-t-2">
+                      <td className="p-2">סה״כ</td>
+                      <td className="p-2 text-green-600">₪{yearlyReport.totalIncome.toLocaleString()}</td>
+                      <td className="p-2 text-red-600">₪{yearlyReport.totalExpenses.toLocaleString()}</td>
+                      <td className={`p-2 ${yearlyReport.totalBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ₪{yearlyReport.totalBalance.toLocaleString()}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      ) : (
+        <div className="flex items-center justify-center h-64 text-gray-500">
+          לא נמצאו נתונים
+        </div>
+      )}
     </div>
   );
 }
-
-

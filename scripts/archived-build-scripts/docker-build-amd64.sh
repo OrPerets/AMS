@@ -30,7 +30,8 @@ print_error() {
 
 # Configuration
 DOCKERHUB_USERNAME="orperetz"
-IMAGE_TAG="latest"
+BACKEND_TAG="railway-fixed"
+FRONTEND_TAG="latest"
 PLATFORM="linux/amd64"
 
 print_status "Building AMS Docker Images for AMD64 Architecture"
@@ -39,7 +40,8 @@ echo ""
 
 print_status "Configuration:"
 echo "  DockerHub Username: $DOCKERHUB_USERNAME"
-echo "  Image Tag: $IMAGE_TAG"
+echo "  Backend Tag: $BACKEND_TAG"
+echo "  Frontend Tag: $FRONTEND_TAG"
 echo "  Platform: $PLATFORM"
 echo ""
 
@@ -58,16 +60,16 @@ fi
 
 # Build Backend Image for AMD64
 print_status "Building Backend Docker Image for AMD64..."
-BACKEND_IMAGE="$DOCKERHUB_USERNAME/ams-backend:$IMAGE_TAG"
+BACKEND_IMAGE="$DOCKERHUB_USERNAME/ams-backend:$BACKEND_TAG"
 
 # Use buildx to build for specific platform
-docker buildx build --platform $PLATFORM -f apps/backend/Dockerfile -t "$BACKEND_IMAGE" --push .
+docker buildx build --platform $PLATFORM -f apps/backend/Dockerfile.railway-simple -t "$BACKEND_IMAGE" --push .
 
 print_success "Backend image built and pushed: $BACKEND_IMAGE"
 
 # Build Frontend Image for AMD64
 print_status "Building Frontend Docker Image for AMD64..."
-FRONTEND_IMAGE="$DOCKERHUB_USERNAME/ams-frontend:$IMAGE_TAG"
+FRONTEND_IMAGE="$DOCKERHUB_USERNAME/ams-frontend:$FRONTEND_TAG"
 
 # Use buildx to build for specific platform
 docker buildx build --platform $PLATFORM -f apps/frontend/Dockerfile -t "$FRONTEND_IMAGE" --push .

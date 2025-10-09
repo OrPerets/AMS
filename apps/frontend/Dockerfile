@@ -21,7 +21,7 @@ FROM base AS builder
 WORKDIR /app
 
 # Accept build argument for API base URL
-ARG NEXT_PUBLIC_API_BASE=http://localhost:3000
+ARG NEXT_PUBLIC_API_BASE=https://ams-backend-production-fb77.up.railway.app
 ENV NEXT_PUBLIC_API_BASE=$NEXT_PUBLIC_API_BASE
 
 # Copy package files

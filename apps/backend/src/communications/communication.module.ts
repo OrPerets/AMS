@@ -4,10 +4,11 @@ import { CommunicationController } from './communication.controller';
 import { PrismaService } from '../prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
-import { NotificationService } from '../notifications/notification.service';
+import { NotificationModule } from '../notifications/notification.module';
 
 @Module({
-  providers: [PrismaService, CommunicationService, NotificationService, JwtAuthGuard, RolesGuard],
+  imports: [NotificationModule],
+  providers: [PrismaService, CommunicationService, JwtAuthGuard, RolesGuard],
   controllers: [CommunicationController],
   exports: [CommunicationService],
 })

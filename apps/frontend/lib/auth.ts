@@ -49,21 +49,39 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
-  let res = await fetch(input, { ...init, headers });
-  if (res.status === 401 && isBrowser()) {
-    const refreshed = await refreshTokens();
-    if (refreshed) {
-      const newToken = getAccessToken();
-      if (newToken) headers.set('Authorization', `Bearer ${newToken}`);
-      res = await fetch(input, { ...init, headers });
+  
+  try {
+    let res = await fetch(input, { ...init, headers });
+    if (res.status === 401 && isBrowser()) {
+      const refreshed = await refreshTokens();
+      if (refreshed) {
+        const newToken = getAccessToken();
+        if (newToken) headers.set('Authorization', `Bearer ${newToken}`);
+        res = await fetch(input, { ...init, headers });
+      }
+      if (res.status === 401) {
+        clearTokens();
+        const next = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/login?next=${next}`;
+      }
     }
-    if (res.status === 401) {
-      clearTokens();
-      const next = encodeURIComponent(window.location.pathname + window.location.search);
-      window.location.href = `/login?next=${next}`;
-    }
+    return res;
+  } catch (error) {
+    // Handle network errors, connection timeouts, etc.
+    console.error('Network error in authFetch:', error);
+    
+    // Create a mock response for connection errors
+    const mockResponse = new Response(
+      JSON.stringify({ error: 'Connection failed', message: 'Backend server is unavailable' }),
+      {
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+    
+    return mockResponse;
   }
-  return res;
 }
 
 export async function refreshTokens(): Promise<boolean> {
@@ -142,9 +160,10 @@ export function isAuthenticated(): boolean {
 export function routeForRole(role?: string | null): string {
   switch (role) {
     case 'ADMIN':
-    case 'PM':
     case 'MASTER':
       return '/admin/dashboard';
+    case 'PM':
+      return '/tickets';
     case 'TECH':
       return '/tech/jobs';
     case 'ACCOUNTANT':

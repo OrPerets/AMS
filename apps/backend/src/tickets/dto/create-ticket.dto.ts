@@ -1,5 +1,5 @@
 import { TicketSeverity } from '@prisma/client';
-import { IsEnum, IsInt, IsOptional, IsDateString } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsDateString, IsString } from 'class-validator';
 
 export class CreateTicketDto {
   @IsInt()
@@ -11,4 +11,8 @@ export class CreateTicketDto {
   @IsOptional()
   @IsDateString()
   slaDue?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }

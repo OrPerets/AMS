@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
-import { Role } from '@prisma/client';
+import { Role } from '../auth/roles.decorator';
 import { ImpersonateDto } from './dto/impersonate.dto';
 
 @Injectable()

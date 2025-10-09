@@ -1,9 +1,8 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { NotificationService, NotificationTemplate } from './notification.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Roles } from '../auth/roles.decorator';
+import { Roles, Role } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
-import { Role } from '@prisma/client';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 
 @Controller('api/v1/notifications')

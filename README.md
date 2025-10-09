@@ -14,6 +14,20 @@ A comprehensive Property Management System built with NestJS backend and Next.js
 - Node.js 18+ and npm
 - Docker and Docker Compose (for containerized deployment)
 - PostgreSQL database (or use Docker)
+- Make (for simplified commands)
+
+### Using Make Commands (Recommended)
+
+The project includes a comprehensive Makefile for simplified development workflow:
+
+```bash
+make help              # Show all available commands
+make install           # Install all dependencies
+make dev               # Run both backend and frontend
+make docker-push       # Build and push Docker images
+```
+
+See all available commands with `make help`.
 
 ### Local Development
 
@@ -21,7 +35,7 @@ A comprehensive Property Management System built with NestJS backend and Next.js
    ```bash
    git clone <repository-url>
    cd AMS
-   npm install
+   make install
    ```
 
 2. **Environment Setup**
@@ -30,24 +44,27 @@ A comprehensive Property Management System built with NestJS backend and Next.js
    cp backend.env.example apps/backend/.env
    # Edit apps/backend/.env with your database URL and JWT secrets
    
-   # Frontend environment
+   # Frontend environment (optional)
    cp frontend.env.example apps/frontend/.env
-   # Edit apps/frontend/.env with your backend URL
+   
+   # Check environment files
+   make check-env
    ```
 
 3. **Database Setup**
    ```bash
-   npm run db:reset
-   npm run seed:test
+   make db-reset    # Reset database
+   make db-seed     # Seed with test data
    ```
 
 4. **Start Development Servers**
    ```bash
-   # Terminal 1 - Backend
-   npm run dev:backend
+   # Run both servers
+   make dev
    
-   # Terminal 2 - Frontend
-   npm run dev:frontend
+   # Or run separately:
+   make dev-backend   # Terminal 1 - Backend only
+   make dev-frontend  # Terminal 2 - Frontend only
    ```
 
 5. **Access the Application**
@@ -57,38 +74,33 @@ A comprehensive Property Management System built with NestJS backend and Next.js
 
 ## Docker Deployment
 
-### Building and Pushing Images
+### Building and Pushing Images (Using Make)
 
-1. **Quick Build & Push**
+1. **Build and Push Everything**
    ```bash
-   chmod +x docker-build-and-push.sh
-   ./docker-build-and-push.sh
+   make docker-push
    ```
-   
-   The script will prompt for:
-   - DockerHub username
-   - Image tag (default: latest)
-   - Version tag (optional)
-   - Whether to push to DockerHub
+   This builds both backend and frontend images for AMD64 (Railway compatible) and pushes them to Docker Hub.
 
-2. **Manual Build**
+2. **Build or Push Individual Services**
    ```bash
-   # Build backend image
-   docker build -f apps/backend/Dockerfile -t your-username/ams-backend:latest .
-   
-   # Build frontend image
-   docker build -f apps/frontend/Dockerfile -t your-username/ams-frontend:latest .
-   
-   # Push to DockerHub
-   docker push your-username/ams-backend:latest
-   docker push your-username/ams-frontend:latest
+   make docker-build            # Build both images
+   make docker-build-backend    # Build only backend
+   make docker-build-frontend   # Build only frontend
+   make docker-push-backend     # Build and push backend
+   make docker-push-frontend    # Build and push frontend
+   ```
+
+3. **View Deployment Info**
+   ```bash
+   make deploy-info
    ```
 
 ### Local Docker Testing
 
 1. **Full Stack with Database**
    ```bash
-   docker-compose up -d
+   make docker-run-local
    ```
    
    This starts:
@@ -96,7 +108,17 @@ A comprehensive Property Management System built with NestJS backend and Next.js
    - Backend API
    - Frontend application
 
-2. **Access Services**
+2. **View Logs**
+   ```bash
+   make docker-logs
+   ```
+
+3. **Stop Containers**
+   ```bash
+   make docker-stop
+   ```
+
+4. **Access Services**
    - Frontend: http://localhost:3001
    - Backend: http://localhost:3000
    - Database: localhost:5432

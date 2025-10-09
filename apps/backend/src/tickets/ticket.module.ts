@@ -4,11 +4,12 @@ import { TicketController } from './ticket.controller';
 import { PrismaService } from '../prisma.service';
 import { PhotoService } from './photo.service';
 import { NotificationModule } from '../notifications/notification.module';
+import { WebSocketModule } from '../websocket/websocket.module';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 
 @Module({
-  imports: [NotificationModule],
+  imports: [NotificationModule, WebSocketModule],
   providers: [PrismaService, PhotoService, TicketService, JwtAuthGuard, RolesGuard],
   controllers: [TicketController],
 })
