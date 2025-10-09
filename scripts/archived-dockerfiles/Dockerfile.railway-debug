@@ -1,0 +1,70 @@
+# Railway Debug Dockerfile - Step by step debugging
+FROM node:18-alpine
+
+# Install system dependencies with verbose output
+RUN apk add --no-cache \
+    libc6-compat \
+    openssl \
+    curl \
+    python3 \
+    make \
+    g++ \
+    && echo "System dependencies installed"
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY apps/backend/package*.json ./apps/backend/
+COPY tsconfig*.json ./
+
+# Install dependencies with verbose output
+RUN npm install --verbose
+
+# Copy Prisma schema
+COPY apps/backend/prisma ./apps/backend/prisma
+
+# Debug Prisma generation
+WORKDIR /app/apps/backend
+RUN echo "Current directory: $(pwd)"
+RUN echo "Prisma schema exists: $(ls -la prisma/)"
+RUN echo "Node version: $(node --version)"
+RUN echo "NPM version: $(npm --version)"
+
+# Try Prisma generate with different approaches
+RUN echo "Attempting Prisma generate..."
+RUN npx prisma --version
+RUN npx prisma generate --schema=./prisma/schema.prisma
+
+# Copy the rest of the source code
+WORKDIR /app
+COPY . .
+
+# Build TypeScript
+WORKDIR /app/apps/backend
+RUN npx tsc -p tsconfig.json
+
+# Create production structure
+WORKDIR /app
+RUN mkdir -p dist/uploads
+RUN cp -r apps/backend/dist/* dist/
+RUN cp -r apps/backend/prisma ./prisma
+RUN cp -r apps/backend/node_modules/.prisma ./node_modules/.prisma 2>/dev/null || echo "No .prisma directory found"
+RUN cp apps/backend/package*.json ./
+
+# Create user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nestjs
+RUN chown -R nestjs:nodejs /app
+
+USER nestjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# Start command
+CMD ["sh", "-c", "PORT=${PORT:-3000} node -r dotenv/config dist/src/main.js"]

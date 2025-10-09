@@ -16,6 +16,9 @@ import { DocumentModule } from './documents/document.module';
 import { AssetModule } from './assets/asset.module';
 import { CommunicationModule } from './communications/communication.module';
 import { FinancialModule } from './reports/financial/financial.module';
+import { WebSocketModule } from './websocket/websocket.module';
+import { VoteModule } from './votes/vote.module';
+import { ScheduleModule } from './schedules/schedule.module';
 
 @Module({
   imports: [
@@ -35,6 +38,9 @@ import { FinancialModule } from './reports/financial/financial.module';
     DashboardModule,
     AdminModule,
     FinancialModule,
+    WebSocketModule,
+    VoteModule,
+    ScheduleModule,
   ],
   controllers: [HealthController],
 })

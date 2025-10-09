@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { Prisma, Building, TicketStatus } from '@prisma/client';
+import { Prisma, Building, TicketStatus, BuildingCode } from '@prisma/client';
+import { CreateBuildingCodeDto, UpdateBuildingCodeDto } from './dto/building-code.dto';
 
 @Injectable()
 export class BuildingService {
@@ -162,5 +163,95 @@ export class BuildingService {
 
   remove(id: number): Promise<Building> {
     return this.prisma.building.delete({ where: { id } });
+  }
+
+  // Building Code Management
+  async getBuildingCodes(buildingId: number): Promise<BuildingCode[]> {
+    return this.prisma.buildingCode.findMany({
+      where: { buildingId },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: [{ isActive: 'desc' }, { codeType: 'asc' }],
+    });
+  }
+
+  async createBuildingCode(
+    buildingId: number,
+    dto: CreateBuildingCodeDto,
+    createdBy: number,
+  ): Promise<BuildingCode> {
+    return this.prisma.buildingCode.create({
+      data: {
+        buildingId,
+        codeType: dto.codeType,
+        code: dto.code,
+        description: dto.description,
+        validFrom: dto.validFrom ? new Date(dto.validFrom) : new Date(),
+        validUntil: dto.validUntil ? new Date(dto.validUntil) : undefined,
+        createdBy,
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
+
+  async updateBuildingCode(
+    codeId: number,
+    dto: UpdateBuildingCodeDto,
+  ): Promise<BuildingCode> {
+    const updateData: Prisma.BuildingCodeUpdateInput = {};
+    
+    if (dto.code !== undefined) updateData.code = dto.code;
+    if (dto.description !== undefined) updateData.description = dto.description;
+    if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
+    if (dto.validUntil !== undefined) {
+      updateData.validUntil = dto.validUntil ? new Date(dto.validUntil) : null;
+    }
+
+    return this.prisma.buildingCode.update({
+      where: { id: codeId },
+      data: updateData,
+      include: {
+        creator: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
+
+  async deleteBuildingCode(codeId: number): Promise<BuildingCode> {
+    return this.prisma.buildingCode.delete({
+      where: { id: codeId },
+    });
+  }
+
+  async deactivateExpiredCodes(): Promise<number> {
+    const result = await this.prisma.buildingCode.updateMany({
+      where: {
+        isActive: true,
+        validUntil: {
+          lt: new Date(),
+        },
+      },
+      data: {
+        isActive: false,
+      },
+    });
+    return result.count;
   }
 }

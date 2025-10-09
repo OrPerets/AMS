@@ -79,6 +79,14 @@ export default function LandingPage() {
     }
   };
 
+  const handleSupervisionReportClick = () => {
+    window.open('https://amit-ex.vercel.app/', '_blank');
+  };
+
+  const handleGardenersManagementClick = () => {
+    window.open("https://amit-gardens.vercel.app/", '_blank');
+  };
+
   if (!mounted) return null;
 
   const features = [
@@ -262,7 +270,7 @@ export default function LandingPage() {
                   whileTap={{ scale: 0.95 }}
                 >
                   <Button
-                    onClick={() => router.push('/supervision-report')}
+                    onClick={handleSupervisionReportClick}
                     size="lg"
                     className="h-14 px-8 text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-xl group"
                   >
@@ -276,7 +284,7 @@ export default function LandingPage() {
                   whileTap={{ scale: 0.95 }}
                 >
                   <Button
-                    onClick={() => router.push('/gardeners-management')}
+                    onClick={handleGardenersManagementClick}
                     size="lg"
                     className="h-14 px-8 text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 shadow-xl group"
                   >

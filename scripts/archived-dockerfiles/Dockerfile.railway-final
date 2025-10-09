@@ -1,0 +1,62 @@
+# Railway Final Dockerfile - Proper Prisma handling with architecture support
+FROM node:18-alpine
+
+# Install system dependencies including build tools for Prisma
+RUN apk add --no-cache \
+    libc6-compat \
+    openssl \
+    curl \
+    python3 \
+    make \
+    g++
+
+WORKDIR /app
+
+# Copy package files first for better caching
+COPY package*.json ./
+COPY apps/backend/package*.json ./apps/backend/
+COPY tsconfig*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy Prisma schema first
+COPY apps/backend/prisma ./apps/backend/prisma
+
+# Generate Prisma client with proper binary targets for multi-arch
+WORKDIR /app/apps/backend
+ENV PRISMA_CLI_BINARY_TARGETS=linux-musl-openssl-3.0.x
+RUN npx prisma generate
+
+# Copy the rest of the source code
+WORKDIR /app
+COPY . .
+
+# Build the application
+WORKDIR /app/apps/backend
+RUN npx tsc -p tsconfig.json
+
+# Create production structure
+WORKDIR /app
+RUN mkdir -p dist/uploads
+RUN cp -r apps/backend/dist/* dist/
+RUN cp -r apps/backend/prisma ./prisma
+RUN cp -r apps/backend/node_modules/.prisma ./node_modules/.prisma
+RUN cp apps/backend/package*.json ./
+
+# Create user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nestjs
+RUN chown -R nestjs:nodejs /app
+
+USER nestjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# Start command
+CMD ["sh", "-c", "PORT=${PORT:-3000} node -r dotenv/config dist/src/main.js"]

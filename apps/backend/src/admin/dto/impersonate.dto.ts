@@ -1,4 +1,4 @@
-import { Role } from '@prisma/client';
+import { Role } from '../../auth/roles.decorator';
 import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class ImpersonateDto {

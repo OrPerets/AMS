@@ -209,9 +209,9 @@ async function main() {
   ];
 
   const severities = [
-    TicketSeverity.LOW,
-    TicketSeverity.MEDIUM,
+    TicketSeverity.NORMAL,
     TicketSeverity.HIGH,
+    TicketSeverity.URGENT,
   ];
   const statuses = [
     TicketStatus.OPEN,

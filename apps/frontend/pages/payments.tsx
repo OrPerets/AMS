@@ -79,12 +79,23 @@ export default function Payments() {
 
   const loadInvoices = async () => {
     try {
-      const res = await authFetch('/api/v1/invoices/unpaid');
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 10000); // 10 second timeout
+      });
+
+      // Race between the API call and timeout
+      const res = await Promise.race([
+        authFetch('/api/v1/invoices/unpaid'),
+        timeoutPromise
+      ]) as Response;
+
       if (res.ok) {
         const data = await res.json();
         setInvoices(Array.isArray(data) ? data : []);
-      } else {
-        // Mock data for demo
+      } else if (res.status === 503) {
+        // Backend server is unavailable, show mock data
+        console.log('Backend server unavailable, showing mock data');
         setInvoices([
           {
             id: 2001,
@@ -142,11 +153,147 @@ export default function Payments() {
             receiptNumber: 'REC-2024-001'
           }
         ]);
+        
+        toast({
+          title: "מצב אופליין",
+          description: "השרת לא זמין כרגע. מוצגים נתונים לדוגמה.",
+          variant: "default",
+        });
+      } else {
+        // Mock data for demo when API fails
+        setInvoices([
+          {
+            id: 2001,
+            amount: 850,
+            unitId: 12,
+            buildingId: 1,
+            residentName: 'דניאל לוי',
+            description: 'דמי אחזקה חודשי',
+            dueDate: '2024-01-31T23:59:59Z',
+            issueDate: '2024-01-01T00:00:00Z',
+            status: 'PENDING',
+            type: 'MAINTENANCE',
+            category: 'דמי אחזקה'
+          },
+          {
+            id: 2002,
+            amount: 320,
+            unitId: 25,
+            buildingId: 1,
+            residentName: 'משה דוד',
+            description: 'חשבון חשמל',
+            dueDate: '2024-01-15T23:59:59Z',
+            issueDate: '2024-01-01T00:00:00Z',
+            status: 'OVERDUE',
+            type: 'UTILITIES',
+            category: 'חשמל'
+          },
+          {
+            id: 2003,
+            amount: 1200,
+            unitId: 8,
+            buildingId: 2,
+            residentName: 'שרה אברהם',
+            description: 'דמי ניהול רבעוני',
+            dueDate: '2024-02-15T23:59:59Z',
+            issueDate: '2024-01-01T00:00:00Z',
+            status: 'PENDING',
+            type: 'MANAGEMENT',
+            category: 'דמי ניהול'
+          },
+          {
+            id: 2004,
+            amount: 450,
+            unitId: 15,
+            buildingId: 1,
+            residentName: 'יוסי רוזן',
+            description: 'אגרת חניה חודשית',
+            dueDate: '2024-01-31T23:59:59Z',
+            issueDate: '2024-01-01T00:00:00Z',
+            status: 'PAID',
+            type: 'PARKING',
+            category: 'חניה',
+            paymentMethod: 'CREDIT_CARD',
+            paidAt: '2024-01-20T14:30:00Z',
+            receiptNumber: 'REC-2024-001'
+          }
+        ]);
+        
+        toast({
+          title: "מצב דמו",
+          description: "השרת לא זמין כרגע. מוצגים נתונים לדוגמה.",
+          variant: "default",
+        });
       }
     } catch (error) {
+      console.error('Error loading invoices:', error);
+      
+      // Show mock data even on error
+      setInvoices([
+        {
+          id: 2001,
+          amount: 850,
+          unitId: 12,
+          buildingId: 1,
+          residentName: 'דניאל לוי',
+          description: 'דמי אחזקה חודשי',
+          dueDate: '2024-01-31T23:59:59Z',
+          issueDate: '2024-01-01T00:00:00Z',
+          status: 'PENDING',
+          type: 'MAINTENANCE',
+          category: 'דמי אחזקה'
+        },
+        {
+          id: 2002,
+          amount: 320,
+          unitId: 25,
+          buildingId: 1,
+          residentName: 'משה דוד',
+          description: 'חשבון חשמל',
+          dueDate: '2024-01-15T23:59:59Z',
+          issueDate: '2024-01-01T00:00:00Z',
+          status: 'OVERDUE',
+          type: 'UTILITIES',
+          category: 'חשמל'
+        },
+        {
+          id: 2003,
+          amount: 1200,
+          unitId: 8,
+          buildingId: 2,
+          residentName: 'שרה אברהם',
+          description: 'דמי ניהול רבעוני',
+          dueDate: '2024-02-15T23:59:59Z',
+          issueDate: '2024-01-01T00:00:00Z',
+          status: 'PENDING',
+          type: 'MANAGEMENT',
+          category: 'דמי ניהול'
+        },
+        {
+          id: 2004,
+          amount: 450,
+          unitId: 15,
+          buildingId: 1,
+          residentName: 'יוסי רוזן',
+          description: 'אגרת חניה חודשית',
+          dueDate: '2024-01-31T23:59:59Z',
+          issueDate: '2024-01-01T00:00:00Z',
+          status: 'PAID',
+          type: 'PARKING',
+          category: 'חניה',
+          paymentMethod: 'CREDIT_CARD',
+          paidAt: '2024-01-20T14:30:00Z',
+          receiptNumber: 'REC-2024-001'
+        }
+      ]);
+
+      const errorMessage = error instanceof Error && error.message === 'Request timeout' 
+        ? "הבקשה ארכה יותר מדי זמן. נסה שוב מאוחר יותר."
+        : "לא ניתן לטעון את החשבוניות. נסה שוב מאוחר יותר.";
+
       toast({
         title: "שגיאה בטעינת תשלומים",
-        description: "לא ניתן לטעון את רשימת התשלומים",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -159,9 +306,9 @@ export default function Payments() {
     loadInvoices();
   }, []);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    loadInvoices();
+    await loadInvoices();
   };
 
   const filteredInvoices = useMemo(() => {
@@ -369,15 +516,53 @@ export default function Payments() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-32" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-32" />
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              <span>טוען תשלומים...</span>
+            </div>
+          </div>
           <Skeleton className="h-10 w-32" />
         </div>
         <div className="grid gap-4 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24" />
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
-        <Skeleton className="h-96" />
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+              <Skeleton className="h-8 w-24" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-8 w-20" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -393,7 +578,15 @@ export default function Payments() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {refreshing && (
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+            <RefreshCw className="h-4 w-4 animate-spin" />
+            <span>מעדכן נתונים...</span>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

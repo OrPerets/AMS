@@ -41,9 +41,9 @@ enum MaintenancePriority {
 }
 
 enum TicketSeverity {
-  LOW
-  MEDIUM
+  NORMAL
   HIGH
+  URGENT
 }
 
 enum TicketStatus {
@@ -81,6 +81,56 @@ enum ExpenseStatus {
   REJECTED
 }
 
+enum CodeType {
+  ENTRANCE      // Main door code
+  SERVICE       // Service entrance
+  ELEVATOR      // Elevator code
+  GATE          // Gate code
+  PARKING       // Parking barrier
+  WIFI          // WiFi password
+  ALARM         // Alarm system
+  OTHER         // Other codes
+}
+
+enum VoteType {
+  YES_NO          // Simple yes/no vote
+  MULTIPLE_CHOICE // Choose one option
+  RATING          // Rate 1-5 stars
+}
+
+enum ScheduleStatus {
+  DRAFT       // Being created
+  PUBLISHED   // Visible to assignees
+  IN_PROGRESS // Work started
+  COMPLETED   // All tasks done
+  CANCELLED   // Schedule cancelled
+}
+
+enum TaskType {
+  MAINTENANCE     // Regular maintenance
+  INSPECTION      // Inspection rounds
+  REPAIR          // Repair work
+  CLEANING        // Cleaning tasks
+  EMERGENCY       // Emergency response
+  MEETING         // Meetings
+  OTHER           // Other tasks
+}
+
+enum TaskStatus {
+  PENDING         // Not started
+  IN_PROGRESS     // Currently working on
+  COMPLETED       // Finished
+  SKIPPED         // Skipped/postponed
+  CANCELLED       // Cancelled
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 model User {
   id            Int      @id @default(autoincrement())
   email         String   @unique
@@ -109,6 +159,11 @@ model User {
   approvedExpenses  Expense[]   @relation("ExpenseApprover")
   documentShares    DocumentShare[] @relation("DocumentShares")
   ticketComments    TicketComment[] @relation("TicketCommentAuthor")
+  createdBuildingCodes BuildingCode[] @relation("BuildingCodeCreator")
+  createdVotes      Vote[]          @relation("VoteCreator")
+  voteResponses     VoteResponse[]
+  createdSchedules  WorkSchedule[]  @relation("ScheduleCreator")
+  assignedTasks     ScheduledTask[] @relation("TaskAssignee")
 }
 
 model Building {
@@ -134,6 +189,28 @@ model Building {
   contracts Contract[]
   notifications Notification[]
   communications Communication[]
+  codes     BuildingCode[]
+  votes     Vote[]
+  schedules WorkSchedule[]
+}
+
+model BuildingCode {
+  id          Int      @id @default(autoincrement())
+  buildingId  Int
+  building    Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  codeType    CodeType @default(ENTRANCE)
+  code        String   // The actual code/password
+  description String?  // e.g., "Main entrance", "Service entrance", "Elevator"
+  isActive    Boolean  @default(true)
+  validFrom   DateTime @default(now())
+  validUntil  DateTime?
+  createdBy   Int?
+  creator     User?    @relation("BuildingCodeCreator", fields: [createdBy], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([buildingId])
+  @@index([isActive])
 }
 
 model Unit {
@@ -175,6 +252,7 @@ model Ticket {
   createdAt    DateTime       @default(now())
   workOrders   WorkOrder[]
   comments     TicketComment[]
+  scheduledTasks ScheduledTask[]
 }
 
 model TicketComment {
@@ -223,6 +301,7 @@ model WorkOrder {
   photos       String[]
   ticket       Ticket   @relation(fields: [ticketId], references: [id])
   supplier     Supplier @relation(fields: [supplierId], references: [id])
+  scheduledTasks ScheduledTask[]
 }
 
 enum InvoiceStatus {
@@ -608,4 +687,119 @@ model LedgerEntry {
   debit       String   // account name
   credit      String   // account name
   createdAt   DateTime @default(now())
+}
+
+// =======================
+// Sprint 5: Voting System Models
+// =======================
+
+model Vote {
+  id          Int          @id @default(autoincrement())
+  buildingId  Int
+  building    Building     @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  question    String       // The actual question being voted on
+  voteType    VoteType     @default(YES_NO)
+  options     VoteOption[] // For multiple choice votes
+  createdBy   Int
+  creator     User         @relation("VoteCreator", fields: [createdBy], references: [id])
+  startDate   DateTime     @default(now())
+  endDate     DateTime     // Voting deadline
+  isActive    Boolean      @default(true)
+  isClosed    Boolean      @default(false)
+  requireAllVotes Boolean  @default(false) // Whether all tenants must vote
+  responses   VoteResponse[]
+  results     Json?        // Cached results
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  @@index([buildingId])
+  @@index([isActive])
+  @@index([endDate])
+}
+
+model VoteOption {
+  id          Int            @id @default(autoincrement())
+  voteId      Int
+  vote        Vote           @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  optionText  String
+  order       Int            @default(0)
+  responses   VoteResponse[]
+  
+  @@index([voteId])
+}
+
+model VoteResponse {
+  id          Int         @id @default(autoincrement())
+  voteId      Int
+  vote        Vote        @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User        @relation(fields: [userId], references: [id])
+  optionId    Int?        // For multiple choice
+  option      VoteOption? @relation(fields: [optionId], references: [id])
+  response    Boolean?    // For YES_NO votes
+  rating      Int?        // For RATING votes (1-5)
+  comment     String?     // Optional comment
+  votedAt     DateTime    @default(now())
+  
+  @@unique([voteId, userId]) // Each user can only vote once
+  @@index([voteId])
+  @@index([userId])
+}
+
+// =======================
+// Sprint 6: Work Schedule Models
+// =======================
+
+model WorkSchedule {
+  id          Int                @id @default(autoincrement())
+  date        DateTime           // The schedule date
+  buildingId  Int?
+  building    Building?          @relation(fields: [buildingId], references: [id])
+  title       String?            // e.g., "Daily Rounds", "Emergency Repairs"
+  description String?
+  createdBy   Int
+  creator     User               @relation("ScheduleCreator", fields: [createdBy], references: [id])
+  tasks       ScheduledTask[]
+  status      ScheduleStatus     @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  
+  @@index([date])
+  @@index([buildingId])
+  @@index([status])
+}
+
+model ScheduledTask {
+  id             Int            @id @default(autoincrement())
+  scheduleId     Int
+  schedule       WorkSchedule   @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  assignedTo     Int?
+  assignee       User?          @relation("TaskAssignee", fields: [assignedTo], references: [id])
+  taskType       TaskType       @default(MAINTENANCE)
+  title          String
+  description    String?
+  location       String?        // Building/unit location
+  estimatedTime  Int?           // In minutes
+  priority       Priority       @default(MEDIUM)
+  status         TaskStatus     @default(PENDING)
+  startTime      DateTime?      // Planned start time
+  endTime        DateTime?      // Planned end time
+  actualStart    DateTime?      // Actual start time
+  actualEnd      DateTime?      // Actual completion time
+  notes          String?        // Completion notes
+  ticketId       Int?           // Link to related ticket
+  ticket         Ticket?        @relation(fields: [ticketId], references: [id])
+  workOrderId    Int?           // Link to related work order
+  workOrder      WorkOrder?     @relation(fields: [workOrderId], references: [id])
+  order          Int            @default(0) // Order in schedule
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  
+  @@index([scheduleId])
+  @@index([assignedTo])
+  @@index([status])
+  @@index([taskType])
 }

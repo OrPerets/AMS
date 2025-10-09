@@ -1,0 +1,42 @@
+# Railway Runtime AMD64 Dockerfile - Everything at runtime (cross-platform compatible)
+FROM node:18-bullseye-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    openssl \
+    curl \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY apps/backend/package*.json ./apps/backend/
+COPY tsconfig*.json ./
+
+# Install dependencies (including dev dependencies for TypeScript compilation)
+RUN npm install
+
+# Copy source code and prisma schema
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p /app/uploads /app/dist
+
+# Create user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nestjs
+RUN chown -R nestjs:nodejs /app
+
+# Set user
+USER nestjs
+
+EXPOSE 3000
+
+# Command to generate Prisma, compile TypeScript, and run at runtime
+# This avoids cross-platform build issues
+WORKDIR /app/apps/backend
+CMD ["sh", "-c", "npx prisma generate && npx tsc -p tsconfig.json && PORT=${PORT:-3000} node dist/src/main.js"]

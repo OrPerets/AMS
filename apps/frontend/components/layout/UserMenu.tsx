@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import { User, LogOut, Settings } from 'lucide-react';
 import { Button } from '../ui/button';
 import {
@@ -17,6 +18,7 @@ import { getTokenPayload, logout } from '../../lib/auth';
 import { useLocale } from '../../lib/providers';
 
 export default function UserMenu() {
+  const router = useRouter();
   const { t } = useLocale();
   const [payload, setPayload] = useState<any | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -25,6 +27,11 @@ export default function UserMenu() {
     setMounted(true);
     setPayload(getTokenPayload());
   }, []);
+
+  // Listen for route changes to re-read token payload (for role changes)
+  useEffect(() => {
+    setPayload(getTokenPayload());
+  }, [router.pathname]);
 
   // Don't render on server or before mount to prevent hydration mismatch
   if (!mounted || !payload) {

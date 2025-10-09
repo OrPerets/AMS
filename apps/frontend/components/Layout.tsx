@@ -1,7 +1,7 @@
 // /Users/orperetz/Documents/AMS/apps/frontend/components/Layout.tsx
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useDirection } from '../lib/providers';
 import Header from './layout/Header';
@@ -10,6 +10,9 @@ import Breadcrumbs from './layout/Breadcrumbs';
 import Footer from './layout/Footer';
 import { ErrorBoundary, CompactErrorFallback } from './ui/error-boundary';
 import { cn } from '../lib/utils';
+import { websocketService } from '../lib/websocket';
+import { toast } from './ui/use-toast';
+import { Bell } from 'lucide-react';
 
 interface Props {
   children: React.ReactNode;
@@ -20,6 +23,73 @@ export default function Layout({ children }: Props) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { direction } = useDirection();
   const router = useRouter();
+
+  // WebSocket connection and notification handling
+  useEffect(() => {
+    // Only connect WebSocket when user is logged in (not on login or landing page)
+    if (router.pathname !== '/login' && router.pathname !== '/') {
+      const token = localStorage.getItem('token');
+      
+      if (token && !websocketService.isConnected()) {
+        // Connect to WebSocket
+        websocketService.connect(token);
+
+        // Listen for new ticket notifications
+        const handleNewTicket = (data: any) => {
+          const ticket = data.ticket;
+          const buildingName = ticket?.unit?.building?.name || 'בניין';
+          
+          toast({
+            title: "קריאה חדשה נפתחה",
+            description: `קריאה מספר ${ticket?.id} נפתחה בבניין ${buildingName}`,
+            duration: 10000,
+          });
+
+          // Play notification sound (optional)
+          try {
+            const audio = new Audio('/notification.mp3');
+            audio.play().catch(() => {
+              // Ignore if sound fails to play
+            });
+          } catch (error) {
+            // Ignore audio errors
+          }
+        };
+
+        // Listen for ticket updates
+        const handleTicketUpdate = (data: any) => {
+          const ticket = data.ticket;
+          toast({
+            title: "עדכון בקריאה",
+            description: `קריאה מספר ${ticket?.id} עודכנה - סטטוס: ${ticket?.status}`,
+            duration: 5000,
+          });
+        };
+
+        // Listen for general notifications
+        const handleNewNotification = (data: any) => {
+          const notification = data.notification;
+          toast({
+            title: notification?.title || "התראה חדשה",
+            description: notification?.message,
+            duration: 5000,
+          });
+        };
+
+        // Register event listeners
+        websocketService.on('new_ticket', handleNewTicket);
+        websocketService.on('ticket_updated', handleTicketUpdate);
+        websocketService.on('new_notification', handleNewNotification);
+
+        // Cleanup on unmount
+        return () => {
+          websocketService.off('new_ticket', handleNewTicket);
+          websocketService.off('ticket_updated', handleTicketUpdate);
+          websocketService.off('new_notification', handleNewNotification);
+        };
+      }
+    }
+  }, [router.pathname, router]);
 
   // Don't show layout on login page and landing page
   if (router.pathname === '/login' || router.pathname === '/') {

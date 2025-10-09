@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { Ticket, User } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import sgMail from '@sendgrid/mail';
 import twilio from 'twilio';
 import { CreateNotificationDto } from './dto/create-notification.dto';
+import { WebSocketGateway } from '../websocket/websocket.gateway';
 
 if (process.env.SENDGRID_API_KEY && process.env.SENDGRID_API_KEY.startsWith('SG.')) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -79,7 +80,11 @@ const templates: Record<NotificationTemplate, { subject: string; body: string }>
 
 @Injectable()
 export class NotificationService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => WebSocketGateway))
+    private websocketGateway: WebSocketGateway,
+  ) {}
 
   // Real-time notification broadcasting
   private notificationSubscribers = new Map<number, Set<(notification: any) => void>>();
@@ -249,9 +254,14 @@ export class NotificationService {
       },
     });
 
-    // Broadcast to real-time subscribers
+    // Broadcast to real-time subscribers (in-memory)
     if (data.userId) {
       this.broadcastNotification(data.userId, notification);
+    }
+
+    // Broadcast via WebSocket to connected clients
+    if (data.userId) {
+      this.websocketGateway.notifyNewNotification(notification, data.userId);
     }
 
     return notification;

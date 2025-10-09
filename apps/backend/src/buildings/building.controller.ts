@@ -1,12 +1,11 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Patch, Req } from '@nestjs/common';
 import { BuildingService } from './building.service';
 import { CreateBuildingDto } from './dto/create-building.dto';
 import { UpdateBuildingDto } from './dto/update-building.dto';
+import { CreateBuildingCodeDto, UpdateBuildingCodeDto } from './dto/building-code.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
-import { Role } from '@prisma/client';
-import { Public } from '../auth/roles.decorator';
+import { Roles, Role, Public } from '../auth/roles.decorator';
 
 @Controller('api/v1/buildings')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -59,5 +58,37 @@ export class BuildingController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.buildings.remove(+id);
+  }
+
+  // Building Code Management Endpoints
+  @Get(':id/codes')
+  @Roles(Role.ADMIN, Role.PM, Role.TECH)
+  getBuildingCodes(@Param('id') id: string) {
+    return this.buildings.getBuildingCodes(+id);
+  }
+
+  @Post(':id/codes')
+  @Roles(Role.ADMIN, Role.PM)
+  createBuildingCode(
+    @Param('id') id: string,
+    @Body() dto: CreateBuildingCodeDto,
+    @Req() req: any,
+  ) {
+    return this.buildings.createBuildingCode(+id, dto, req.user.userId);
+  }
+
+  @Patch('codes/:codeId')
+  @Roles(Role.ADMIN, Role.PM)
+  updateBuildingCode(
+    @Param('codeId') codeId: string,
+    @Body() dto: UpdateBuildingCodeDto,
+  ) {
+    return this.buildings.updateBuildingCode(+codeId, dto);
+  }
+
+  @Delete('codes/:codeId')
+  @Roles(Role.ADMIN, Role.PM)
+  deleteBuildingCode(@Param('codeId') codeId: string) {
+    return this.buildings.deleteBuildingCode(+codeId);
   }
 }

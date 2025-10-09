@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma.service';
 import { Prisma, TicketStatus, Ticket } from '@prisma/client';
 import { PhotoService } from './photo.service';
 import { NotificationService } from '../notifications/notification.service';
+import { WebSocketGateway } from '../websocket/websocket.gateway';
 
 @Injectable()
 export class TicketService {
@@ -10,11 +11,71 @@ export class TicketService {
     private prisma: PrismaService,
     private photos: PhotoService,
     private notifications: NotificationService,
+    private websocketGateway: WebSocketGateway,
   ) {}
 
-  async create(data: Prisma.TicketCreateInput, files: Express.Multer.File[]): Promise<Ticket> {
+  async create(data: Prisma.TicketCreateInput, files: Express.Multer.File[], description?: string, authorId?: number): Promise<Ticket> {
     const photoUrls = await Promise.all((files || []).map((f) => this.photos.upload(f)));
-    return this.prisma.ticket.create({ data: { ...data, photos: photoUrls } });
+    const ticket = await this.prisma.ticket.create({ 
+      data: { ...data, photos: photoUrls },
+      include: {
+        unit: {
+          include: {
+            building: true
+          }
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            email: true,
+            role: true
+          }
+        }
+      }
+    });
+
+    // Create initial comment with description if provided
+    if (description && authorId) {
+      await this.prisma.ticketComment.create({
+        data: {
+          ticketId: ticket.id,
+          authorId: authorId,
+          content: description
+        }
+      });
+    }
+
+    // Get users who should be notified (admins, PMs, assigned users)
+    const usersToNotify = await this.prisma.user.findMany({
+      where: {
+        OR: [
+          { role: 'ADMIN' },
+          { role: 'PM' },
+          { role: 'MASTER' },
+          ...(ticket.assignedToId ? [{ id: ticket.assignedToId }] : [])
+        ]
+      },
+      select: { id: true }
+    });
+
+    const userIds = usersToNotify.map(u => u.id);
+
+    // Emit WebSocket event for new ticket
+    this.websocketGateway.notifyNewTicket(ticket, userIds);
+    
+    // Create notifications for all relevant users
+    await Promise.all(userIds.map(userId => 
+      this.notifications.create({
+        tenantId: 1,
+        userId,
+        title: 'קריאה חדשה נפתחה',
+        message: `קריאה מספר ${ticket.id} נפתחה בבניין ${ticket.unit.building.name}`,
+        type: 'TICKET_CREATED',
+        metadata: { ticketId: ticket.id, buildingId: ticket.unit.building.id }
+      })
+    ));
+
+    return ticket;
   }
 
   findAll(filter: { status?: TicketStatus; buildingId?: number }) {
@@ -50,8 +111,30 @@ export class TicketService {
   }
 
   async updateStatus(id: number, status: TicketStatus) {
-    const ticket = await this.prisma.ticket.update({ where: { id }, data: { status } });
+    const ticket = await this.prisma.ticket.update({ 
+      where: { id }, 
+      data: { status },
+      include: {
+        unit: {
+          include: {
+            building: true
+          }
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            email: true,
+            role: true
+          }
+        }
+      }
+    });
+    
     await this.notifications.ticketStatusChanged(ticket);
+    
+    // Emit WebSocket event for ticket update
+    this.websocketGateway.notifyTicketUpdate(ticket);
+    
     return ticket;
   }
 

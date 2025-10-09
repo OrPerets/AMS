@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
-// Updated for new backend URL: ams-backend-production-9b9d.up.railway.app
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
+// Updated for new backend URL: ams-backend-production-fb77.up.railway.app
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://ams-backend-production-fb77.up.railway.app';
 
 const nextConfig = {
   reactStrictMode: true,

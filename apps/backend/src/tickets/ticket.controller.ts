@@ -20,8 +20,8 @@ import { CreateTicketCommentDto } from './dto/create-ticket-comment.dto';
 import { UpdateTicketCommentDto } from './dto/update-ticket-comment.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
-import { Role, TicketStatus } from '@prisma/client';
+import { Roles, Role } from '../auth/roles.decorator';
+import { TicketStatus } from '@prisma/client';
 import { FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('api/v1/tickets')
@@ -32,12 +32,12 @@ export class TicketController {
   @Post()
   @Roles(Role.RESIDENT)
   @UseInterceptors(FilesInterceptor('photos'))
-  create(@Body() dto: CreateTicketDto, @UploadedFiles() photos: Express.Multer.File[]) {
+  create(@Body() dto: CreateTicketDto, @UploadedFiles() photos: Express.Multer.File[], @Request() req: any) {
     return this.tickets.create({
       unit: { connect: { id: dto.unitId } },
       severity: dto.severity,
       slaDue: dto.slaDue ? new Date(dto.slaDue) : undefined,
-    }, photos);
+    }, photos, dto.description, req.user.id);
   }
 
   @Get()

@@ -88,9 +88,10 @@ export default function RoleSelectionPage() {
   function getDefaultRoute(role: string): string {
     switch (role) {
       case 'ADMIN':
-      case 'PM':
       case 'MASTER':
         return '/admin/dashboard';
+      case 'PM':
+        return '/tickets';
       case 'TECH':
         return '/tech/jobs';
       case 'ACCOUNTANT':

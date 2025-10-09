@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { 
   Building, 
   Ticket, 
@@ -62,6 +63,7 @@ const quickActions = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   const [userRole, setUserRole] = useState<string>('RESIDENT');
   const [mounted, setMounted] = useState(false);
   const { t } = useLocale();
@@ -71,6 +73,12 @@ export default function Home() {
     const payload = getTokenPayload();
     setUserRole(payload?.actAsRole || payload?.role || 'RESIDENT');
   }, []);
+
+  // Listen for route changes to re-read token payload (for role changes)
+  useEffect(() => {
+    const payload = getTokenPayload();
+    setUserRole(payload?.actAsRole || payload?.role || 'RESIDENT');
+  }, [router.pathname]);
 
   if (!mounted) {
     return (
