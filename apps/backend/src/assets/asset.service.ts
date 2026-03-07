@@ -10,6 +10,7 @@ import { AssetDepreciationOptionsDto } from './dto/asset-depreciation-options.dt
 export class AssetService {
   private readonly include = {
     building: true,
+    unit: true,
     maintenanceSchedules: {
       include: { assignedTo: true },
       orderBy: { nextOccurrence: 'asc' },
@@ -27,6 +28,7 @@ export class AssetService {
   private mapCreate(dto: CreateAssetDto): Prisma.AssetCreateInput {
     const {
       buildingId,
+      unitId,
       purchaseDate,
       warrantyExpiry,
       lastInventoryCheck,
@@ -41,12 +43,14 @@ export class AssetService {
       lastInventoryCheck: lastInventoryCheck ? new Date(lastInventoryCheck) : undefined,
       quantity: quantity ?? undefined,
       building: { connect: { id: buildingId } },
+      unit: unitId ? { connect: { id: unitId } } : undefined,
     };
   }
 
   private mapUpdate(dto: UpdateAssetDto): Prisma.AssetUpdateInput {
     const {
       buildingId,
+      unitId,
       purchaseDate,
       warrantyExpiry,
       lastInventoryCheck,
@@ -61,6 +65,12 @@ export class AssetService {
       lastInventoryCheck: lastInventoryCheck ? new Date(lastInventoryCheck) : undefined,
       quantity: quantity ?? undefined,
       building: buildingId ? { connect: { id: buildingId } } : undefined,
+      unit:
+        unitId === undefined
+          ? undefined
+          : unitId
+            ? { connect: { id: unitId } }
+            : { disconnect: true },
     };
   }
 
@@ -149,6 +159,7 @@ export class AssetService {
       select: {
         id: true,
         buildingId: true,
+        unitId: true,
         quantity: true,
         status: true,
         category: true,
@@ -188,6 +199,7 @@ export class AssetService {
       totalAssets: assets.length,
       totalQuantity,
       totalValue,
+      assignedToUnits: assets.filter((asset) => asset.unitId !== null).length,
       byStatus,
       byCategory,
     };

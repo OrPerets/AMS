@@ -13,18 +13,18 @@ export class FinancialController {
   constructor(private reports: FinancialService) {}
 
   @Get('summary')
-  summary(@Query('tenantId') tenantId?: string) {
-    return this.reports.getSummary(tenantId ? +tenantId : undefined);
+  summary(@Query('tenantId') tenantId?: string, @Query('buildingId') buildingId?: string) {
+    return this.reports.getSummary(tenantId ? +tenantId : undefined, buildingId ? +buildingId : undefined);
   }
 
   @Get('pnl')
-  pnl() {
-    return this.reports.getProfitAndLoss();
+  pnl(@Query('buildingId') buildingId?: string) {
+    return this.reports.getProfitAndLoss(buildingId ? +buildingId : undefined);
   }
 
   @Get('cash-flow')
-  cashFlow() {
-    return this.reports.getCashFlow();
+  cashFlow(@Query('buildingId') buildingId?: string) {
+    return this.reports.getCashFlow(buildingId ? +buildingId : undefined);
   }
 
   @Get('variance')
@@ -33,8 +33,8 @@ export class FinancialController {
   }
 
   @Get('forecast')
-  forecast() {
-    return this.reports.getForecast();
+  forecast(@Query('buildingId') buildingId?: string) {
+    return this.reports.getForecast(buildingId ? +buildingId : undefined);
   }
 
   @Get('monthly')
@@ -80,7 +80,7 @@ export class FinancialController {
 
   @Get('export/:type')
   async export(
-    @Param('type') type: 'summary' | 'pnl' | 'cash-flow' | 'variance' | 'monthly',
+    @Param('type') type: 'summary' | 'pnl' | 'cash-flow' | 'variance' | 'monthly' | 'yearly',
     @Query('format') format: 'csv' | 'xlsx' | 'pdf' = 'csv',
     @Query('buildingId') buildingId: string | undefined,
     @Query('year') year: string | undefined,
@@ -102,5 +102,4 @@ export class FinancialController {
     return this.reports.scheduleReport(body);
   }
 }
-
 

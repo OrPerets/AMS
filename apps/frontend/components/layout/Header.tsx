@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { useTheme, useDirection, useLocale } from '../../lib/providers';
 import { cn } from '../../lib/utils';
 import UserMenu from './UserMenu';
-import { authFetch } from '../../lib/auth';
+import { authFetch, getCurrentUserId } from '../../lib/auth';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,12 +39,18 @@ export default function Header({
   const [loading, setLoading] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const currentUserId = getCurrentUserId();
 
   // Load notifications for current user
   const loadNotifications = async () => {
+    if (!currentUserId) {
+      setNotifications([]);
+      return;
+    }
+
     try {
       setLoading(true);
-      const response = await authFetch('/api/v1/notifications/user/1'); // TODO: Get actual user ID
+      const response = await authFetch(`/api/v1/notifications/user/${currentUserId}`);
       if (response.ok) {
         const data = await response.json();
         setNotifications(data.slice(0, 5)); // Show only latest 5 in header
@@ -76,7 +82,7 @@ export default function Header({
     // Refresh notifications every 30 seconds
     const interval = setInterval(loadNotifications, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [currentUserId]);
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');

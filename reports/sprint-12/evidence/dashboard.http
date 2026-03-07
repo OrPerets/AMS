@@ -1,0 +1,15 @@
+HTTP/1.1 403 Forbidden
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Cross-Origin-Resource-Policy: same-site
+Vary: Origin
+Access-Control-Allow-Credentials: true
+Content-Type: application/json; charset=utf-8
+Content-Length: 135
+ETag: W/"87-7IgqtF1nVIeVTVpkJMF0MOoeJMY"
+Date: Sat, 07 Mar 2026 10:39:50 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"statusCode":403,"error":"Forbidden","message":"Forbidden resource","timestamp":"2026-03-07T10:39:50.101Z","path":"/api/v1/dashboard"}

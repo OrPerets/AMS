@@ -38,9 +38,10 @@ export default function UserMenu() {
     return null;
   }
 
-  const userInitials = payload.email 
+  const displayName = payload.email || `משתמש #${payload.sub}`;
+  const userInitials = payload.email
     ? payload.email.substring(0, 2).toUpperCase()
-    : 'U';
+    : `#${String(payload.sub || 'U').slice(0, 1)}`;
 
   const currentRole = payload.actAsRole || payload.role;
   const isImpersonating = !!payload.actAsRole;
@@ -64,7 +65,7 @@ export default function UserMenu() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {payload.email}
+              {displayName}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
               {currentRole}

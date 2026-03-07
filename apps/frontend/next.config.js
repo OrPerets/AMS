@@ -4,10 +4,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://ams-backend-produc
 
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: false,
   output: 'standalone',
   compiler: {
-    // Disable SWC and use Babel for JSX transformation
     styledComponents: true,
   },
   env: {

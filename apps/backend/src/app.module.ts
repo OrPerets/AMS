@@ -19,6 +19,7 @@ import { FinancialModule } from './reports/financial/financial.module';
 import { WebSocketModule } from './websocket/websocket.module';
 import { VoteModule } from './votes/vote.module';
 import { ScheduleModule } from './schedules/schedule.module';
+import { SupportModule } from './support/support.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { ScheduleModule } from './schedules/schedule.module';
     WebSocketModule,
     VoteModule,
     ScheduleModule,
+    SupportModule,
   ],
   controllers: [HealthController],
 })

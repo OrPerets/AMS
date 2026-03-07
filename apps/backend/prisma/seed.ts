@@ -7,7 +7,7 @@ import {
   MaintenanceType,
   BudgetStatus,
   ExpenseCategory,
-} from '.prisma/client';
+} from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -23,6 +23,12 @@ async function main() {
     prisma.maintenanceSchedule.deleteMany(),
     prisma.document.deleteMany(),
     prisma.notification.deleteMany(),
+    prisma.ledgerEntry.deleteMany(),
+    prisma.providerTransaction.deleteMany(),
+    prisma.refund.deleteMany(),
+    prisma.paymentIntent.deleteMany(),
+    prisma.paymentMethod.deleteMany(),
+    prisma.recurringInvoice.deleteMany(),
     prisma.contract.deleteMany(),
     prisma.asset.deleteMany(),
     prisma.expense.deleteMany(),
@@ -61,6 +67,7 @@ async function main() {
     { email: 'amit.magen@demo.com', role: Role.ADMIN },
     { email: 'or.peretz@demo.com', role: Role.ADMIN },
     { email: 'maya@demo.com', role: Role.PM },
+    { email: 'finance@demo.com', role: Role.ACCOUNTANT },
     { email: 'client@demo.com', role: Role.RESIDENT },
     { email: 'tech1@demo.com', role: Role.TECH },
     { email: 'tech2@demo.com', role: Role.TECH },
@@ -359,6 +366,81 @@ async function main() {
     },
   });
 
+  const recentInvoice = await prisma.invoice.create({
+    data: {
+      residentId: resident.id,
+      items: [
+        { description: 'Monthly management fee', quantity: 1, unitPrice: 850 },
+        { description: 'Parking fee', quantity: 1, unitPrice: 120 },
+      ],
+      amount: 970,
+      createdAt: new Date(now.getFullYear(), now.getMonth(), 1),
+    },
+  });
+
+  const overdueInvoice = await prisma.invoice.create({
+    data: {
+      residentId: resident.id,
+      items: [
+        { description: 'Utility reimbursement', quantity: 1, unitPrice: 430 },
+      ],
+      amount: 430,
+      createdAt: new Date(now.getFullYear(), now.getMonth() - 2, 5),
+    },
+  });
+
+  const paidInvoice = await prisma.invoice.create({
+    data: {
+      residentId: resident.id,
+      items: [
+        { description: 'Maintenance service charge', quantity: 1, unitPrice: 650 },
+      ],
+      amount: 650,
+      status: 'PAID',
+      createdAt: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+    },
+  });
+
+  const paymentMethod = await prisma.paymentMethod.create({
+    data: {
+      residentId: resident.id,
+      provider: 'tranzila',
+      token: 'pm_demo_visa',
+      brand: 'Visa',
+      last4: '4242',
+      expMonth: 12,
+      expYear: now.getFullYear() + 2,
+      isDefault: true,
+    },
+  });
+
+  await prisma.paymentIntent.create({
+    data: {
+      invoiceId: paidInvoice.id,
+      amount: paidInvoice.amount,
+      currency: 'NIS',
+      provider: 'tranzila',
+      status: 'SUCCEEDED',
+      providerIntentId: `pi_${paidInvoice.id}`,
+      paymentMethodId: paymentMethod.id,
+      createdAt: new Date(now.getFullYear(), now.getMonth() - 1, 3),
+    },
+  });
+
+  await prisma.recurringInvoice.create({
+    data: {
+      residentId: resident.id,
+      items: [
+        { description: 'Monthly management fee', quantity: 1, unitPrice: 850 },
+      ],
+      amount: 850,
+      recurrence: 'monthly',
+      nextRunAt: new Date(now.getFullYear(), now.getMonth() + 1, 1),
+      lastRunAt: new Date(now.getFullYear(), now.getMonth(), 1),
+      active: true,
+    },
+  });
+
   // documents
   await prisma.document.create({
     data: {
@@ -454,4 +536,3 @@ async function main() {
 main().finally(async () => {
   await prisma.$disconnect();
 });
-

@@ -1,9 +1,10 @@
 import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class UpdateWorkOrderPhotosDto {
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  photos!: string[];
+  photos?: string[];
 
   @IsOptional()
   @IsBoolean()

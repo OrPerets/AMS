@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MaintenancePriority, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { NotificationService, NotificationTemplate } from '../notifications/notification.service';
 import { CreateMaintenanceDto } from './dto/create-maintenance.dto';
 import { UpdateMaintenanceDto } from './dto/update-maintenance.dto';
 import { CompleteMaintenanceDto } from './dto/complete-maintenance.dto';
@@ -24,7 +25,57 @@ export class MaintenanceService {
     },
   };
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationService,
+  ) {}
+
+  private async notifyScheduleParticipants(
+    scheduleId: number,
+    title: string,
+    description: string,
+    date: Date | null | undefined,
+  ) {
+    const schedule = await this.prisma.maintenanceSchedule.findUnique({
+      where: { id: scheduleId },
+      include: {
+        building: true,
+        assignedTo: true,
+        teamMembers: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!schedule) {
+      return;
+    }
+
+    const userIds = Array.from(
+      new Set([
+        ...(schedule.assignedToId ? [schedule.assignedToId] : []),
+        ...schedule.teamMembers.map((member) => member.userId),
+      ]),
+    );
+
+    const when = date ?? schedule.nextOccurrence ?? schedule.startDate;
+    const formattedDate = when.toLocaleDateString('he-IL');
+    const formattedTime = when.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+    await Promise.all(
+      userIds.map((userId) =>
+        this.notifications.notifyUser(userId, NotificationTemplate.MAINTENANCE_REMINDER, {
+          title,
+          description,
+          date: formattedDate,
+          time: formattedTime,
+          buildingName: schedule.building.name,
+        }),
+      ),
+    );
+  }
 
   private normalizeRule(recurrenceRule?: string, frequency?: string) {
     const source = recurrenceRule?.trim() || frequency?.trim();
@@ -231,8 +282,14 @@ export class MaintenanceService {
       });
 
       await this.syncTeamMembers(tx, schedule.id, dto.teamMemberIds);
-
-      return this.findOneWithClient(schedule.id, tx);
+      const fullSchedule = await this.findOneWithClient(schedule.id, tx);
+      await this.notifyScheduleParticipants(
+        schedule.id,
+        fullSchedule.title,
+        fullSchedule.description ?? `משימת תחזוקה ${fullSchedule.category}`,
+        fullSchedule.nextOccurrence ?? fullSchedule.startDate,
+      );
+      return fullSchedule;
     });
   }
 
@@ -341,7 +398,14 @@ export class MaintenanceService {
         },
       });
 
-      return this.findOneWithClient(id, tx);
+      const updated = await this.findOneWithClient(id, tx);
+      await this.notifyScheduleParticipants(
+        id,
+        `${updated.title} הושלמה`,
+        dto.notes ?? updated.description ?? 'משימת התחזוקה הושלמה וממתינה לאימות',
+        nextOccurrence ?? updated.nextOccurrence ?? updated.startDate,
+      );
+      return updated;
     });
   }
 
@@ -383,7 +447,16 @@ export class MaintenanceService {
         },
       });
 
-      return this.findOneWithClient(id, tx);
+      const updated = await this.findOneWithClient(id, tx);
+      if (verified) {
+        await this.notifyScheduleParticipants(
+          id,
+          `${updated.title} אומתה`,
+          dto.notes ?? 'השלמת התחזוקה אומתה בהצלחה',
+          updated.nextOccurrence ?? updated.startDate,
+        );
+      }
+      return updated;
     });
   }
 

@@ -1,0 +1,3 @@
+documents_status=200
+documents_method=GET
+documents_path=/api/v1/documents

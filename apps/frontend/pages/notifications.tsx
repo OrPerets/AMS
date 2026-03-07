@@ -1,16 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { Bell, Settings, Search, Filter, CheckCircle2, AlertCircle } from 'lucide-react';
-import { authFetch } from '../lib/auth';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Bell, Radio, RefreshCw, Settings } from 'lucide-react';
+import { authFetch, getAccessToken, getCurrentUserId } from '../lib/auth';
+import { websocketService } from '../lib/websocket';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
 import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { NotificationCenter, NotificationItem } from '../components/ui/notification-center';
-import { useLocale } from '../lib/providers';
 import { toast } from '../components/ui/use-toast';
 
 interface NotificationPreferences {
@@ -26,181 +25,240 @@ interface NotificationPreferences {
   general: boolean;
 }
 
+const defaultPreferences: NotificationPreferences = {
+  email: true,
+  sms: true,
+  push: true,
+  ticketUpdates: true,
+  maintenanceReminders: true,
+  paymentReminders: true,
+  announcements: true,
+  emergencyAlerts: true,
+  workOrderUpdates: true,
+  general: true,
+};
+
 export default function NotificationsPage() {
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'unread' | 'read'>('all');
-  const [preferences, setPreferences] = useState<NotificationPreferences>({
-    email: true,
-    sms: true,
-    push: true,
-    ticketUpdates: true,
-    maintenanceReminders: true,
-    paymentReminders: true,
-    announcements: true,
-    emergencyAlerts: true,
-    workOrderUpdates: true,
-    general: true,
-  });
+  const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
   const [preferencesLoading, setPreferencesLoading] = useState(false);
-  const { t } = useLocale();
+  const [liveConnected, setLiveConnected] = useState(false);
 
-  // Load notifications
-  const loadNotifications = async () => {
+  useEffect(() => {
+    setCurrentUserId(getCurrentUserId());
+  }, []);
+
+  const normalizeNotifications = (items: any[]): NotificationItem[] =>
+    items.map((item) => ({
+      id: item.id,
+      title: item.title,
+      message: item.message,
+      type: item.type,
+      createdAt: item.createdAt,
+      read: item.read,
+      metadata: item.metadata,
+    }));
+
+  const loadNotifications = async (userId = currentUserId) => {
+    if (!userId) {
+      setNotifications([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const response = await authFetch('/api/v1/notifications/user/1'); // TODO: Get actual user ID
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(data.map((n: any) => ({
-          id: n.id,
-          title: n.title,
-          message: n.message,
-          type: n.type,
-          createdAt: n.createdAt,
-          read: n.read,
-          metadata: n.metadata,
-        })));
-      }
-    } catch (error) {
+      const response = await authFetch(`/api/v1/notifications/user/${userId}`);
+      if (!response.ok) throw new Error(await response.text());
+      setNotifications(normalizeNotifications(await response.json()));
+    } catch {
       toast({
-        title: "שגיאה בטעינת התראות",
-        description: "לא ניתן לטעון את ההתראות",
-        variant: "destructive",
+        title: 'שגיאה בטעינת התראות',
+        description: 'לא ניתן לטעון את רשימת ההתראות.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // Load notification preferences
-  const loadPreferences = async () => {
+  const loadPreferences = async (userId = currentUserId) => {
+    if (!userId) return;
     try {
       setPreferencesLoading(true);
-      const response = await authFetch('/api/v1/notifications/user/1/preferences'); // TODO: Get actual user ID
-      if (response.ok) {
-        const data = await response.json();
-        setPreferences(data);
-      }
-    } catch (error) {
-      console.error('Failed to load preferences:', error);
-    } finally {
-      setPreferencesLoading(false);
-    }
-  };
-
-  // Update notification preferences
-  const updatePreferences = async (newPreferences: NotificationPreferences) => {
-    try {
-      setPreferencesLoading(true);
-      const response = await authFetch('/api/v1/notifications/user/1/preferences', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newPreferences),
-      });
-      if (response.ok) {
-        setPreferences(newPreferences);
-        toast({
-          title: "העדפות עודכנו",
-          description: "העדפות ההתראות נשמרו בהצלחה",
-        });
-      }
-    } catch (error) {
+      const response = await authFetch(`/api/v1/notifications/user/${userId}/preferences`);
+      if (!response.ok) throw new Error(await response.text());
+      const data = await response.json();
+      setPreferences({ ...defaultPreferences, ...data });
+    } catch {
       toast({
-        title: "שגיאה בשמירת העדפות",
-        description: "לא ניתן לשמור את העדפות ההתראות",
-        variant: "destructive",
+        title: 'טעינת העדפות נכשלה',
+        description: 'לא ניתן לטעון את העדפות ההתראה כרגע.',
+        variant: 'destructive',
       });
     } finally {
       setPreferencesLoading(false);
-    }
-  };
-
-  // Mark notification as read
-  const markAsRead = async (id: number | string) => {
-    try {
-      await authFetch(`/api/v1/notifications/${id}/read`, {
-        method: 'POST',
-      });
-      setNotifications(prev => 
-        prev.map(n => n.id === id ? { ...n, read: true } : n)
-      );
-    } catch (error) {
-      toast({
-        title: "שגיאה",
-        description: "לא ניתן לסמן את ההתראה כנקראה",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Mark all as read
-  const markAllAsRead = async () => {
-    try {
-      const unreadNotifications = notifications.filter(n => !n.read);
-      await Promise.all(
-        unreadNotifications.map(n => 
-          authFetch(`/api/v1/notifications/${n.id}/read`, { method: 'POST' })
-        )
-      );
-      setNotifications(prev => 
-        prev.map(n => ({ ...n, read: true }))
-      );
-      toast({
-        title: "התראות סומנו כנקראות",
-        description: "כל ההתראות סומנו כנקראות",
-      });
-    } catch (error) {
-      toast({
-        title: "שגיאה",
-        description: "לא ניתן לסמן את כל ההתראות כנקראות",
-        variant: "destructive",
-      });
     }
   };
 
   useEffect(() => {
-    loadNotifications();
-    loadPreferences();
-  }, []);
+    if (!currentUserId) return;
+    loadNotifications(currentUserId);
+    loadPreferences(currentUserId);
 
-  const filteredNotifications = notifications.filter(notification => {
-    const matchesSearch = !searchTerm || 
-      notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      notification.message.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesType = typeFilter === 'all' || notification.type === typeFilter;
-    
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'read' && notification.read) ||
-      (statusFilter === 'unread' && !notification.read);
-    
-    return matchesSearch && matchesType && matchesStatus;
-  });
+    const token = getAccessToken();
+    if (!token) return;
 
-  const notificationTypes = Array.from(new Set(notifications.map(n => n.type).filter((type): type is string => Boolean(type))));
+    websocketService.connect(token);
+    setLiveConnected(websocketService.isConnected());
+
+    const handleNewNotification = (event: { notification?: any }) => {
+      const notification = event.notification;
+      if (!notification) return;
+      setNotifications((current) => {
+        const next = [normalizeNotifications([notification])[0], ...current.filter((item) => item.id !== notification.id)];
+        return next;
+      });
+      toast({
+        title: 'התקבלה התראה חדשה',
+        description: notification.title,
+      });
+    };
+
+    websocketService.on('new_notification', handleNewNotification);
+
+    const refreshStatus = window.setInterval(() => {
+      setLiveConnected(websocketService.isConnected());
+    }, 5000);
+
+    return () => {
+      websocketService.off('new_notification', handleNewNotification);
+      window.clearInterval(refreshStatus);
+    };
+  }, [currentUserId]);
+
+  const updatePreferences = async (nextPreferences: NotificationPreferences) => {
+    if (!currentUserId) return;
+    try {
+      setPreferencesLoading(true);
+      const response = await authFetch(`/api/v1/notifications/user/${currentUserId}/preferences`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nextPreferences),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      setPreferences(nextPreferences);
+      toast({
+        title: 'ההעדפות נשמרו',
+        description: 'ערוצי ההתראה והסיווגים עודכנו.',
+      });
+    } catch {
+      toast({
+        title: 'שמירת העדפות נכשלה',
+        description: 'לא ניתן לעדכן כעת את ההעדפות.',
+        variant: 'destructive',
+      });
+    } finally {
+      setPreferencesLoading(false);
+    }
+  };
+
+  const markAsRead = async (id: number | string) => {
+    try {
+      const response = await authFetch(`/api/v1/notifications/${id}/read`, { method: 'POST' });
+      if (!response.ok) throw new Error(await response.text());
+      setNotifications((current) => current.map((item) => (item.id === id ? { ...item, read: true } : item)));
+    } catch {
+      toast({
+        title: 'לא ניתן לסמן כנקרא',
+        description: 'השרת לא אישר את עדכון ההתראה.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const markAllAsRead = async () => {
+    const unreadIds = notifications.filter((item) => !item.read).map((item) => item.id);
+    try {
+      await Promise.all(unreadIds.map((id) => authFetch(`/api/v1/notifications/${id}/read`, { method: 'POST' })));
+      setNotifications((current) => current.map((item) => ({ ...item, read: true })));
+      toast({ title: 'כל ההתראות סומנו כנקראו' });
+    } catch {
+      toast({
+        title: 'עדכון קבוצתי נכשל',
+        description: 'לא ניתן לסמן את כל ההתראות כנקראו.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const filteredNotifications = useMemo(() => {
+    return notifications.filter((notification) => {
+      const matchesSearch =
+        !searchTerm ||
+        notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        notification.message.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = typeFilter === 'all' || notification.type === typeFilter;
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'read' && notification.read) ||
+        (statusFilter === 'unread' && !notification.read);
+      return matchesSearch && matchesType && matchesStatus;
+    });
+  }, [notifications, searchTerm, statusFilter, typeFilter]);
+
+  const notificationTypes = useMemo(() => {
+    return Array.from(new Set(notifications.map((notification) => notification.type).filter(Boolean))) as string[];
+  }, [notifications]);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">התראות</h1>
-          <p className="text-muted-foreground mt-2">
-            ניהול התראות והעדפות תקשורת
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">התראות</h1>
+          <p className="text-muted-foreground">רשימת התראות אישיות, חיבור חי בזמן אמת והעדפות משלוח.</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button variant="outline" onClick={loadNotifications} className="w-full sm:w-auto">
-            רענן
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => loadNotifications()}>
+            <RefreshCw className="me-2 h-4 w-4" />
+            רענון
           </Button>
-          {notifications.some(n => !n.read) && (
-            <Button onClick={markAllAsRead} className="w-full sm:w-auto">
-              סמן הכל כנקרא
-            </Button>
+          {notifications.some((notification) => !notification.read) && (
+            <Button onClick={markAllAsRead}>סמן הכל כנקרא</Button>
           )}
         </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>סה"כ התראות</CardDescription>
+            <CardTitle>{notifications.length}</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">התראות שנשמרו למשתמש המחובר</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>לא נקראו</CardDescription>
+            <CardTitle>{notifications.filter((notification) => !notification.read).length}</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">זמינות לסימון כנקראו ממסך זה</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>חיבור חי</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Radio className={`h-4 w-4 ${liveConnected ? 'text-emerald-500' : 'text-amber-500'}`} />
+              {liveConnected ? 'מחובר' : 'לא מחובר'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">קבלת `new_notification` דרך WebSocket</CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="notifications" className="space-y-6">
@@ -216,177 +274,88 @@ export default function NotificationsPage() {
         </TabsList>
 
         <TabsContent value="notifications" className="space-y-4">
-          {/* Filters */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">סינון התראות</CardTitle>
+              <CardTitle>חיפוש וסינון</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-4">
-                <div className="flex-1 min-w-[200px]">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="חפש בהתראות..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="סוג התראה" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">כל הסוגים</SelectItem>
-                    {notificationTypes.map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="סטטוס" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">כל ההתראות</SelectItem>
-                    <SelectItem value="unread">לא נקראו</SelectItem>
-                    <SelectItem value="read">נקראו</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <CardContent className="grid gap-4 lg:grid-cols-3">
+              <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="חיפוש בהתראות" />
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="כל הסוגים" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל הסוגים</SelectItem>
+                  {notificationTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={(value: 'all' | 'unread' | 'read') => setStatusFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="כל הסטטוסים" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל ההתראות</SelectItem>
+                  <SelectItem value="unread">לא נקראו</SelectItem>
+                  <SelectItem value="read">נקראו</SelectItem>
+                </SelectContent>
+              </Select>
             </CardContent>
           </Card>
 
-          {/* Notifications */}
-          <NotificationCenter
-            notifications={filteredNotifications}
-            onMarkAsRead={markAsRead}
-            className="min-h-[400px]"
-          />
+          <NotificationCenter notifications={filteredNotifications} onMarkAsRead={markAsRead} className={loading ? 'opacity-60' : ''} />
         </TabsContent>
 
-        <TabsContent value="preferences" className="space-y-4">
+        <TabsContent value="preferences">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">העדפות התראות</CardTitle>
-              <CardDescription>
-                בחר איך תרצה לקבל התראות
-              </CardDescription>
+              <CardTitle>העדפות מסירה</CardTitle>
+              <CardDescription>ערוצי שליחה והפעלה או השבתה של סוגי התראה.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Communication Channels */}
+            <CardContent className="grid gap-8 lg:grid-cols-2">
               <div className="space-y-4">
-                <h3 className="text-md font-semibold">ערוצי תקשורת</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="email">אימייל</Label>
+                <h3 className="text-sm font-semibold">ערוצים</h3>
+                {[
+                  ['email', 'אימייל'],
+                  ['sms', 'SMS'],
+                  ['push', 'התראות דחיפה'],
+                ].map(([key, label]) => (
+                  <div key={key} className="flex items-center justify-between">
+                    <Label htmlFor={key}>{label}</Label>
                     <Switch
-                      id="email"
-                      checked={preferences.email}
-                      onCheckedChange={(checked) => 
-                        updatePreferences({ ...preferences, email: checked })
-                      }
+                      id={key}
+                      checked={preferences[key as keyof NotificationPreferences] as boolean}
+                      onCheckedChange={(checked) => updatePreferences({ ...preferences, [key]: checked })}
                       disabled={preferencesLoading}
                     />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="sms">SMS</Label>
-                    <Switch
-                      id="sms"
-                      checked={preferences.sms}
-                      onCheckedChange={(checked) => 
-                        updatePreferences({ ...preferences, sms: checked })
-                      }
-                      disabled={preferencesLoading}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="push">התראות דחיפה</Label>
-                    <Switch
-                      id="push"
-                      checked={preferences.push}
-                      onCheckedChange={(checked) => 
-                        updatePreferences({ ...preferences, push: checked })
-                      }
-                      disabled={preferencesLoading}
-                    />
-                  </div>
-                </div>
+                ))}
               </div>
 
-              {/* Notification Types */}
               <div className="space-y-4">
-                <h3 className="text-md font-semibold">סוגי התראות</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="ticketUpdates">עדכוני כרטיסים</Label>
+                <h3 className="text-sm font-semibold">סוגי התראות</h3>
+                {[
+                  ['ticketUpdates', 'עדכוני קריאות'],
+                  ['maintenanceReminders', 'תזכורות תחזוקה'],
+                  ['paymentReminders', 'תזכורות תשלום'],
+                  ['announcements', 'הכרזות'],
+                  ['emergencyAlerts', 'התראות חירום'],
+                  ['workOrderUpdates', 'עדכוני הזמנות עבודה'],
+                  ['general', 'התראות כלליות'],
+                ].map(([key, label]) => (
+                  <div key={key} className="flex items-center justify-between">
+                    <Label htmlFor={key}>{label}</Label>
                     <Switch
-                      id="ticketUpdates"
-                      checked={preferences.ticketUpdates}
-                      onCheckedChange={(checked) => 
-                        updatePreferences({ ...preferences, ticketUpdates: checked })
-                      }
+                      id={key}
+                      checked={preferences[key as keyof NotificationPreferences] as boolean}
+                      onCheckedChange={(checked) => updatePreferences({ ...preferences, [key]: checked })}
                       disabled={preferencesLoading}
                     />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="maintenanceReminders">תזכורות תחזוקה</Label>
-                    <Switch
-                      id="maintenanceReminders"
-                      checked={preferences.maintenanceReminders}
-                      onCheckedChange={(checked) => 
-                        updatePreferences({ ...preferences, maintenanceReminders: checked })
-                      }
-                      disabled={preferencesLoading}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="paymentReminders">תזכורות תשלום</Label>
-                    <Switch
-                      id="paymentReminders"
-                      checked={preferences.paymentReminders}
-                      onCheckedChange={(checked) => 
-                        updatePreferences({ ...preferences, paymentReminders: checked })
-                      }
-                      disabled={preferencesLoading}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="announcements">הכרזות</Label>
-                    <Switch
-                      id="announcements"
-                      checked={preferences.announcements}
-                      onCheckedChange={(checked) => 
-                        updatePreferences({ ...preferences, announcements: checked })
-                      }
-                      disabled={preferencesLoading}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="emergencyAlerts">התראות חירום</Label>
-                    <Switch
-                      id="emergencyAlerts"
-                      checked={preferences.emergencyAlerts}
-                      onCheckedChange={(checked) => 
-                        updatePreferences({ ...preferences, emergencyAlerts: checked })
-                      }
-                      disabled={preferencesLoading}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="workOrderUpdates">עדכוני הזמנות עבודה</Label>
-                    <Switch
-                      id="workOrderUpdates"
-                      checked={preferences.workOrderUpdates}
-                      onCheckedChange={(checked) => 
-                        updatePreferences({ ...preferences, workOrderUpdates: checked })
-                      }
-                      disabled={preferencesLoading}
-                    />
-                  </div>
-                </div>
+                ))}
               </div>
             </CardContent>
           </Card>

@@ -66,7 +66,22 @@ export class DocumentService {
   findOne(id: number) {
     return this.prisma.document.findUnique({
       where: { id },
-      include: { building: true, unit: true, contract: true, asset: true, expense: true, uploadedBy: true },
+      include: {
+        building: true,
+        unit: true,
+        contract: true,
+        asset: true,
+        expense: true,
+        uploadedBy: true,
+        parent: true,
+        versions: {
+          orderBy: { version: 'desc' },
+        },
+        sharedWith: {
+          include: { user: true },
+          orderBy: { sharedAt: 'desc' },
+        },
+      },
     });
   }
 

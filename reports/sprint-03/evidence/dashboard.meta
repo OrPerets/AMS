@@ -1,0 +1,3 @@
+dashboard_status=200
+dashboard_method=GET
+dashboard_path=/api/v1/dashboard

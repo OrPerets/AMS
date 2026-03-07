@@ -1,0 +1,3 @@
+users_status=200
+users_method=GET
+users_path=/users

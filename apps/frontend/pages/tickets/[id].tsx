@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { authFetch } from '../../lib/auth';
+import { authFetch, getCurrentUserId } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Textarea } from '../../components/ui/textarea';
@@ -73,11 +73,16 @@ export default function TicketDetails() {
   };
 
   const assignToMe = async () => {
+    const currentUserId = getCurrentUserId();
+    if (!currentUserId) {
+      toast({ title: 'לא נמצא משתמש מחובר', variant: 'destructive' });
+      return;
+    }
     try {
       await authFetch(`/api/v1/tickets/${id}/assign`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assigneeId: 1 }),
+        body: JSON.stringify({ assigneeId: currentUserId }),
       });
       toast({ title: 'הקריאה הוקצתה' });
       load();
@@ -156,7 +161,7 @@ export default function TicketDetails() {
             בניין: {ticket.unit.building.name}
           </p>
         )}
-        <p>{ticket.description}</p>
+        <p>{ticket.description ?? ticket.comments?.[0]?.content ?? 'לא סופק תיאור לקריאה זו.'}</p>
         <div>סטטוס נוכחי: {getStatusLabel(ticket.status)}</div>
         {ticket.assignedTo && (
           <div className="text-sm text-muted-foreground">

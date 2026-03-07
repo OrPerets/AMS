@@ -1,18 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  Send, 
-  Search, 
-  Filter, 
-  MessageCircle, 
-  Users,
-  Building,
-  Calendar,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Plus
-} from 'lucide-react';
-import { authFetch } from '../lib/auth';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Building2, Clock3, Inbox, Mail, MessageCircle, Plus, Send, User2, Users } from 'lucide-react';
+import { authFetch, getCurrentUserId } from '../lib/auth';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -20,278 +8,371 @@ import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { Skeleton } from '../components/ui/skeleton';
-import { useLocale } from '../lib/providers';
 import { toast } from '../components/ui/use-toast';
+
+type Scope = 'all' | 'inbox' | 'outbox';
+type TargetType = 'ALL' | 'BUILDING' | 'UNIT' | 'USER';
+
+interface UserRef {
+  id: number;
+  email: string;
+}
+
+interface BuildingRef {
+  id: number;
+  name: string;
+}
 
 interface Communication {
   id: number;
-  title: string;
-  content: string;
-  type: 'ANNOUNCEMENT' | 'TICKET_UPDATE' | 'PAYMENT_REMINDER' | 'MAINTENANCE_NOTICE';
-  status: 'DRAFT' | 'SENT' | 'SCHEDULED';
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  subject?: string | null;
+  message: string;
+  channel?: string | null;
+  metadata?: Record<string, any> | null;
+  readAt?: string | null;
   createdAt: string;
-  scheduledFor?: string;
-  sentAt?: string;
   senderId: number;
-  senderName: string;
-  targetType: 'ALL' | 'BUILDING' | 'UNIT' | 'USER';
-  targetId?: number;
-  targetName?: string;
-  readCount: number;
-  totalRecipients: number;
+  recipientId?: number | null;
+  buildingId?: number | null;
+  unitId?: number | null;
+  sender?: UserRef | null;
+  recipient?: UserRef | null;
+  building?: BuildingRef | null;
 }
 
+const emptyCompose = {
+  subject: '',
+  message: '',
+  channel: 'PORTAL',
+  priority: 'MEDIUM',
+  targetType: 'ALL' as TargetType,
+  targetId: '',
+};
+
 export default function CommunicationsPage() {
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [communications, setCommunications] = useState<Communication[]>([]);
+  const [threadMessages, setThreadMessages] = useState<Communication[]>([]);
   const [loading, setLoading] = useState(true);
+  const [threadLoading, setThreadLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [channelFilter, setChannelFilter] = useState('all');
+  const [scope, setScope] = useState<Scope>('all');
   const [showCompose, setShowCompose] = useState(false);
-  const { t } = useLocale();
+  const [selectedThreadUserId, setSelectedThreadUserId] = useState<number | null>(null);
+  const [composeData, setComposeData] = useState(emptyCompose);
 
-  // Compose form state
-  const [composeData, setComposeData] = useState({
-    title: '',
-    content: '',
-    type: 'ANNOUNCEMENT',
-    priority: 'MEDIUM',
-    targetType: 'ALL',
-    targetId: '',
-    scheduledFor: ''
-  });
+  useEffect(() => {
+    setCurrentUserId(getCurrentUserId());
+  }, []);
 
-  async function loadCommunications() {
+  async function loadCommunications(nextScope: Scope = scope, userId = currentUserId) {
+    if (!userId) {
+      setLoading(false);
+      setCommunications([]);
+      return;
+    }
+
     try {
-      const query = new URLSearchParams();
-      if (searchTerm) query.append('search', searchTerm);
-      if (filterType !== 'all') query.append('type', filterType);
-      if (filterStatus !== 'all') query.append('status', filterStatus);
-      
-      const res = await authFetch(`/api/v1/communications?${query.toString()}`);
-      if (res.ok) {
-        setCommunications(await res.json());
-      } else {
-        toast({
-          title: "שגיאה בטעינת הודעות",
-          description: "לא ניתן לטעון את רשימת ההודעות",
-          variant: "destructive",
-        });
-      }
+      setLoading(true);
+      const endpoint =
+        nextScope === 'inbox'
+          ? `/api/v1/communications/inbox/${userId}`
+          : nextScope === 'outbox'
+            ? `/api/v1/communications/outbox/${userId}`
+            : '/api/v1/communications';
+      const res = await authFetch(endpoint);
+      if (!res.ok) throw new Error(await res.text());
+      setCommunications(await res.json());
     } catch (error) {
       toast({
-        title: "שגיאה בטעינת הודעות",
-        description: "אירעה שגיאה בעת טעינת ההודעות",
-        variant: "destructive",
+        title: 'שגיאה בטעינת הודעות',
+        description: 'לא ניתן לטעון את מרכז התקשורת כרגע.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    loadCommunications();
-  }, [searchTerm, filterType, filterStatus]);
-
-  const handleSendMessage = async () => {
+  async function loadThread(counterpartyId: number) {
+    if (!currentUserId) return;
     try {
-      // If it's an announcement, use the announcement endpoint
-      if (composeData.type === 'ANNOUNCEMENT' && composeData.targetType === 'ALL') {
-        const payload = {
-          senderId: 1, // TODO: Get actual user ID
-          subject: composeData.title,
-          message: composeData.content,
-          priority: composeData.priority,
-        };
+      setThreadLoading(true);
+      const res = await authFetch(`/api/v1/communications/conversation/${currentUserId}/${counterpartyId}`);
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setThreadMessages(data);
+      setSelectedThreadUserId(counterpartyId);
+    } catch {
+      toast({
+        title: 'שגיאה בטעינת שרשור',
+        description: 'לא ניתן לטעון את ההיסטוריה מול המשתמש שנבחר.',
+        variant: 'destructive',
+      });
+    } finally {
+      setThreadLoading(false);
+    }
+  }
 
-        const res = await authFetch('/api/v1/communications/announcement', {
+  useEffect(() => {
+    if (currentUserId) {
+      loadCommunications(scope, currentUserId);
+    }
+  }, [currentUserId, scope]);
+
+  const filteredCommunications = useMemo(() => {
+    return communications.filter((communication) => {
+      const haystack = [
+        communication.subject,
+        communication.message,
+        communication.sender?.email,
+        communication.recipient?.email,
+        communication.building?.name,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      const matchesSearch = !searchTerm || haystack.includes(searchTerm.toLowerCase());
+      const matchesChannel =
+        channelFilter === 'all' || (communication.channel ?? 'PORTAL').toUpperCase() === channelFilter;
+      return matchesSearch && matchesChannel;
+    });
+  }, [communications, searchTerm, channelFilter]);
+
+  const threadCandidates = useMemo(() => {
+    if (!currentUserId) return [];
+    const unique = new Map<number, UserRef>();
+    for (const communication of communications) {
+      const isOutgoing = communication.senderId === currentUserId;
+      const counterparty = isOutgoing ? communication.recipient : communication.sender;
+      if (counterparty?.id) {
+        unique.set(counterparty.id, counterparty);
+      }
+    }
+    return Array.from(unique.values());
+  }, [communications, currentUserId]);
+
+  const bulkCount = useMemo(() => {
+    return communications.filter((item) => item.channel === 'ANNOUNCEMENT' || !item.recipientId).length;
+  }, [communications]);
+
+  async function handleSendMessage() {
+    if (!currentUserId || !composeData.message.trim()) {
+      toast({
+        title: 'פרטים חסרים',
+        description: 'נדרש משתמש מחובר והודעה עם תוכן כדי לשלוח.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const targetId = composeData.targetId ? Number(composeData.targetId) : undefined;
+      const isAnnouncement = composeData.channel === 'ANNOUNCEMENT';
+      let res: Response;
+
+      if (isAnnouncement && (composeData.targetType === 'ALL' || composeData.targetType === 'BUILDING')) {
+        res = await authFetch('/api/v1/communications/announcement', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-          toast({
-            title: "הכרזה נשלחה",
-            description: "ההכרזה נשלחה לכל הדיירים בהצלחה",
-          });
-        } else {
-          const error = await res.text();
-          toast({
-            title: "שגיאה בשליחת הכרזה",
-            description: error,
-            variant: "destructive",
-          });
-        }
-      } else {
-        // Regular communication
-        const payload = {
-          senderId: 1, // TODO: Get actual user ID
-          recipientId: composeData.targetId ? parseInt(composeData.targetId) : undefined,
-          buildingId: composeData.targetType === 'BUILDING' ? parseInt(composeData.targetId) : undefined,
-          subject: composeData.title,
-          message: composeData.content,
-          channel: composeData.type,
-          metadata: {
+          body: JSON.stringify({
+            senderId: currentUserId,
+            buildingId: composeData.targetType === 'BUILDING' ? targetId : undefined,
+            subject: composeData.subject,
+            message: composeData.message,
             priority: composeData.priority,
-            scheduledFor: composeData.scheduledFor || undefined
-          }
-        };
-
-        const res = await authFetch('/api/v1/communications', {
+          }),
+        });
+      } else {
+        res = await authFetch('/api/v1/communications', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            senderId: currentUserId,
+            recipientId: composeData.targetType === 'USER' ? targetId : undefined,
+            buildingId: composeData.targetType === 'BUILDING' ? targetId : undefined,
+            unitId: composeData.targetType === 'UNIT' ? targetId : undefined,
+            subject: composeData.subject,
+            message: composeData.message,
+            channel: composeData.channel,
+            metadata: {
+              priority: composeData.priority,
+              targetType: composeData.targetType,
+            },
+          }),
         });
-
-        if (res.ok) {
-          toast({
-            title: "הודעה נשלחה",
-            description: "ההודעה נשלחה בהצלחה",
-          });
-        } else {
-          const error = await res.text();
-          toast({
-            title: "שגיאה בשליחת הודעה",
-            description: error,
-            variant: "destructive",
-          });
-        }
       }
 
-      setShowCompose(false);
-      setComposeData({
-        title: '',
-        content: '',
-        type: 'ANNOUNCEMENT',
-        priority: 'MEDIUM',
-        targetType: 'ALL',
-        targetId: '',
-        scheduledFor: ''
-      });
-      loadCommunications();
-    } catch (error) {
+      if (!res.ok) throw new Error(await res.text());
+
       toast({
-        title: "שגיאה בשליחת הודעה",
-        description: "אירעה שגיאה בעת שליחת ההודעה",
-        variant: "destructive",
+        title: 'הודעה נשלחה',
+        description:
+          composeData.targetType === 'ALL' || composeData.targetType === 'BUILDING'
+            ? 'ההודעה נשלחה בערוץ קבוצתי.'
+            : 'ההודעה נשלחה לנמען שנבחר.',
+      });
+      setComposeData(emptyCompose);
+      setShowCompose(false);
+      await loadCommunications(scope);
+      if (selectedThreadUserId && composeData.targetType === 'USER' && Number(composeData.targetId) === selectedThreadUserId) {
+        await loadThread(selectedThreadUserId);
+      }
+    } catch {
+      toast({
+        title: 'שליחת ההודעה נכשלה',
+        description: 'המערכת לא הצליחה להשלים את שליחת ההודעה.',
+        variant: 'destructive',
       });
     }
-  };
+  }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'URGENT': return 'destructive';
-      case 'HIGH': return 'warning';
-      case 'MEDIUM': return 'default';
-      case 'LOW': return 'secondary';
-      default: return 'default';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'SENT': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'SCHEDULED': return <Clock className="h-4 w-4 text-blue-500" />;
-      case 'DRAFT': return <AlertCircle className="h-4 w-4 text-yellow-500" />;
-      default: return null;
-    }
-  };
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'ANNOUNCEMENT': return 'הודעה כללית';
-      case 'TICKET_UPDATE': return 'עדכון קריאה';
-      case 'PAYMENT_REMINDER': return 'תזכורת תשלום';
-      case 'MAINTENANCE_NOTICE': return 'הודעת תחזוקה';
-      default: return type;
-    }
-  };
+  const scopeLabel = {
+    all: 'כל ההודעות',
+    inbox: 'דואר נכנס',
+    outbox: 'הודעות שנשלחו',
+  }[scope];
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-10 w-24" />
-        </div>
-        <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-24" />
+        <Skeleton className="h-10 w-56" />
+        <div className="grid gap-4 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Skeleton key={index} className="h-32" />
           ))}
         </div>
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">מרכז תקשורת</h1>
-          <p className="text-muted-foreground">
-            ניהול הודעות ותקשורת עם דיירים
-          </p>
+          <p className="text-muted-foreground">רשימת הודעות, היסטוריית שיחות ושליחה מרוכזת של עדכונים לדיירים ולצוות.</p>
         </div>
-        
-        <Button onClick={() => setShowCompose(true)}>
+        <Button onClick={() => setShowCompose((open) => !open)}>
           <Plus className="me-2 h-4 w-4" />
-          הודעה חדשה
+          {showCompose ? 'סגור טופס' : 'הודעה חדשה'}
         </Button>
       </div>
 
-      {/* Compose Modal */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>היקף תקשורת</CardDescription>
+            <CardTitle>{communications.length}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Mail className="h-4 w-4" />
+            {scopeLabel}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>שיחות ישירות</CardDescription>
+            <CardTitle>{threadCandidates.length}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Inbox className="h-4 w-4" />
+            משתמשים עם היסטוריית שיחה
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription>הודעות קבוצתיות</CardDescription>
+            <CardTitle>{bulkCount}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Users className="h-4 w-4" />
+            הכרזות וערוצים מרובי נמענים
+          </CardContent>
+        </Card>
+      </div>
+
       {showCompose && (
         <Card>
           <CardHeader>
-            <CardTitle>הודעה חדשה</CardTitle>
-            <CardDescription>
-              שלח הודעה לדיירים או קבוצות ספציפיות
-            </CardDescription>
+            <CardTitle>שליחת הודעה</CardTitle>
+            <CardDescription>תמיכה בהודעות ישירות, הודעות לבניין, ליחידה או הכרזה קבוצתית.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="text-sm font-medium">כותרת</label>
+                <label className="mb-2 block text-sm font-medium">כותרת</label>
                 <Input
-                  value={composeData.title}
-                  onChange={(e) => setComposeData({...composeData, title: e.target.value})}
-                  placeholder="כותרת ההודעה"
+                  value={composeData.subject}
+                  onChange={(event) => setComposeData((current) => ({ ...current, subject: event.target.value }))}
+                  placeholder="כותרת קצרה"
                 />
               </div>
-              
               <div>
-                <label className="text-sm font-medium">סוג הודעה</label>
-                <Select value={composeData.type} onValueChange={(value) => setComposeData({...composeData, type: value})}>
+                <label className="mb-2 block text-sm font-medium">ערוץ</label>
+                <Select
+                  value={composeData.channel}
+                  onValueChange={(value) => setComposeData((current) => ({ ...current, channel: value }))}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ANNOUNCEMENT">הודעה כללית</SelectItem>
-                    <SelectItem value="TICKET_UPDATE">עדכון קריאה</SelectItem>
-                    <SelectItem value="PAYMENT_REMINDER">תזכורת תשלום</SelectItem>
-                    <SelectItem value="MAINTENANCE_NOTICE">הודעת תחזוקה</SelectItem>
+                    <SelectItem value="PORTAL">פורטל</SelectItem>
+                    <SelectItem value="INTERNAL">פנימי</SelectItem>
+                    <SelectItem value="ANNOUNCEMENT">הכרזה</SelectItem>
+                    <SelectItem value="EMAIL">אימייל</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div>
-              <label className="text-sm font-medium">תוכן ההודעה</label>
+              <label className="mb-2 block text-sm font-medium">תוכן</label>
               <Textarea
-                value={composeData.content}
-                onChange={(e) => setComposeData({...composeData, content: e.target.value})}
-                placeholder="תוכן ההודעה..."
-                rows={4}
+                rows={5}
+                value={composeData.message}
+                onChange={(event) => setComposeData((current) => ({ ...current, message: event.target.value }))}
+                placeholder="כתוב כאן את תוכן ההודעה"
               />
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
               <div>
-                <label className="text-sm font-medium">עדיפות</label>
-                <Select value={composeData.priority} onValueChange={(value) => setComposeData({...composeData, priority: value})}>
+                <label className="mb-2 block text-sm font-medium">יעד</label>
+                <Select
+                  value={composeData.targetType}
+                  onValueChange={(value: TargetType) => setComposeData((current) => ({ ...current, targetType: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">כלל הדיירים</SelectItem>
+                    <SelectItem value="BUILDING">בניין</SelectItem>
+                    <SelectItem value="UNIT">יחידה</SelectItem>
+                    <SelectItem value="USER">משתמש</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">מזהה יעד</label>
+                <Input
+                  value={composeData.targetId}
+                  onChange={(event) => setComposeData((current) => ({ ...current, targetId: event.target.value }))}
+                  placeholder={composeData.targetType === 'ALL' ? 'לא נדרש' : 'לדוגמה: 12'}
+                  disabled={composeData.targetType === 'ALL'}
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">עדיפות</label>
+                <Select
+                  value={composeData.priority}
+                  onValueChange={(value) => setComposeData((current) => ({ ...current, priority: value }))}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -303,174 +384,162 @@ export default function CommunicationsPage() {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div>
-                <label className="text-sm font-medium">יעד</label>
-                <Select value={composeData.targetType} onValueChange={(value) => setComposeData({...composeData, targetType: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">כל הדיירים</SelectItem>
-                    <SelectItem value="BUILDING">בניין ספציפי</SelectItem>
-                    <SelectItem value="UNIT">יחידה ספציפית</SelectItem>
-                    <SelectItem value="USER">משתמש ספציפי</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">תזמון (אופציונלי)</label>
-                <Input
-                  type="datetime-local"
-                  value={composeData.scheduledFor}
-                  onChange={(e) => setComposeData({...composeData, scheduledFor: e.target.value})}
-                />
-              </div>
             </div>
 
-            <div className="flex gap-2 justify-end">
+            <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowCompose(false)}>
                 ביטול
               </Button>
               <Button onClick={handleSendMessage}>
                 <Send className="me-2 h-4 w-4" />
-                שלח הודעה
+                שלח
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>סינון וחיפוש</CardTitle>
+          <CardTitle>חיפוש וסינון</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="חיפוש הודעות..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-10"
-                />
-              </div>
-            </div>
-            
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="סוג הודעה" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל הסוגים</SelectItem>
-                <SelectItem value="ANNOUNCEMENT">הודעה כללית</SelectItem>
-                <SelectItem value="TICKET_UPDATE">עדכון קריאה</SelectItem>
-                <SelectItem value="PAYMENT_REMINDER">תזכורת תשלום</SelectItem>
-                <SelectItem value="MAINTENANCE_NOTICE">הודעת תחזוקה</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="סטטוס" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל הסטטוסים</SelectItem>
-                <SelectItem value="SENT">נשלח</SelectItem>
-                <SelectItem value="SCHEDULED">מתוזמן</SelectItem>
-                <SelectItem value="DRAFT">טיוטה</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <CardContent className="grid gap-4 lg:grid-cols-3">
+          <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="חיפוש לפי נושא, תוכן או משתמש" />
+          <Select value={scope} onValueChange={(value: Scope) => setScope(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">כל ההודעות</SelectItem>
+              <SelectItem value="inbox">דואר נכנס</SelectItem>
+              <SelectItem value="outbox">דואר יוצא</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={channelFilter} onValueChange={setChannelFilter}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">כל הערוצים</SelectItem>
+              <SelectItem value="PORTAL">פורטל</SelectItem>
+              <SelectItem value="INTERNAL">פנימי</SelectItem>
+              <SelectItem value="ANNOUNCEMENT">הכרזה</SelectItem>
+              <SelectItem value="EMAIL">אימייל</SelectItem>
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 
-      {/* Communications List */}
-      <div className="space-y-4">
-        {communications.map((comm) => (
-          <Card key={comm.id} className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CardTitle className="text-lg">{comm.title}</CardTitle>
-                    <Badge variant={getPriorityColor(comm.priority)}>
-                      {comm.priority}
-                    </Badge>
-                    <Badge variant="outline">
-                      {getTypeLabel(comm.type)}
-                    </Badge>
-                    {getStatusIcon(comm.status)}
+      <div className="grid gap-6 xl:grid-cols-[1.4fr_0.9fr]">
+        <div className="space-y-4">
+          {filteredCommunications.map((communication) => {
+            const counterparty =
+              communication.senderId === currentUserId ? communication.recipient : communication.sender;
+            const priority = communication.metadata?.priority ?? 'MEDIUM';
+            return (
+              <Card key={communication.id} className="transition-shadow hover:shadow-md">
+                <CardHeader className="gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <CardTitle className="text-lg">{communication.subject || 'ללא נושא'}</CardTitle>
+                    <Badge variant="outline">{communication.channel || 'PORTAL'}</Badge>
+                    <Badge>{priority}</Badge>
+                    {!communication.readAt && communication.recipientId === currentUserId && (
+                      <Badge variant="secondary">לא נקראה</Badge>
+                    )}
                   </div>
-                  <CardDescription className="line-clamp-2">
-                    {comm.content}
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    <span>{comm.readCount}/{comm.totalRecipients} נקראו</span>
-                  </div>
-                  
-                  {comm.targetName && (
-                    <div className="flex items-center gap-1">
-                      <Building className="h-3 w-3" />
-                      <span>{comm.targetName}</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>
-                      {comm.sentAt 
-                        ? new Date(comm.sentAt).toLocaleDateString('he-IL')
-                        : comm.scheduledFor 
-                          ? `מתוזמן ל-${new Date(comm.scheduledFor).toLocaleDateString('he-IL')}`
-                          : new Date(comm.createdAt).toLocaleDateString('he-IL')
-                      }
+                  <CardDescription className="line-clamp-3">{communication.message}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <span className="inline-flex items-center gap-1">
+                      <User2 className="h-4 w-4" />
+                      {communication.sender?.email || `#${communication.senderId}`}
+                    </span>
+                    {communication.building && (
+                      <span className="inline-flex items-center gap-1">
+                        <Building2 className="h-4 w-4" />
+                        {communication.building.name}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1">
+                      <Clock3 className="h-4 w-4" />
+                      {new Date(communication.createdAt).toLocaleString('he-IL')}
                     </span>
                   </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    צפה
-                  </Button>
-                  {comm.status === 'DRAFT' && (
-                    <Button variant="outline" size="sm">
-                      ערוך
+                  {counterparty?.id && (
+                    <Button variant="outline" size="sm" onClick={() => loadThread(counterparty.id)}>
+                      פתח שרשור
                     </Button>
                   )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                </CardContent>
+              </Card>
+            );
+          })}
 
-      {communications.length === 0 && !loading && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <MessageCircle className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">אין הודעות</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              לא נמצאו הודעות התואמות לקריטריונים שלך
-            </p>
-            <Button onClick={() => setShowCompose(true)}>
-              <Plus className="me-2 h-4 w-4" />
-              שלח הודעה ראשונה
-            </Button>
+          {filteredCommunications.length === 0 && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <MessageCircle className="mb-4 h-12 w-12 text-muted-foreground" />
+                <h3 className="text-lg font-semibold">אין הודעות להצגה</h3>
+                <p className="text-muted-foreground">שנה את הסינון או שלח הודעה חדשה כדי להתחיל היסטוריה.</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle>שרשור והיסטוריה</CardTitle>
+            <CardDescription>בחירת משתמש מציגה את ההתכתבות הישירה המלאה איתו.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Select
+              value={selectedThreadUserId ? String(selectedThreadUserId) : ''}
+              onValueChange={(value) => loadThread(Number(value))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="בחר משתמש עם היסטוריה" />
+              </SelectTrigger>
+              <SelectContent>
+                {threadCandidates.map((candidate) => (
+                  <SelectItem key={candidate.id} value={String(candidate.id)}>
+                    {candidate.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {threadLoading && <Skeleton className="h-60 w-full" />}
+
+            {!threadLoading && selectedThreadUserId && threadMessages.length === 0 && (
+              <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                אין הודעות בשרשור זה.
+              </div>
+            )}
+
+            {!threadLoading && threadMessages.length > 0 && (
+              <div className="space-y-3">
+                {threadMessages.map((message) => {
+                  const outgoing = message.senderId === currentUserId;
+                  return (
+                    <div
+                      key={message.id}
+                      className={`rounded-lg border p-3 ${outgoing ? 'bg-primary/5' : 'bg-muted/40'}`}
+                    >
+                      <div className="mb-1 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                        <span>{outgoing ? 'נשלח על ידך' : message.sender?.email || `#${message.senderId}`}</span>
+                        <span>{new Date(message.createdAt).toLocaleString('he-IL')}</span>
+                      </div>
+                      {message.subject && <div className="mb-1 text-sm font-medium">{message.subject}</div>}
+                      <div className="text-sm">{message.message}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
-      )}
+      </div>
     </div>
   );
 }

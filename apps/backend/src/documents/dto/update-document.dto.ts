@@ -36,4 +36,22 @@ export class UpdateDocumentDto {
   @IsOptional()
   @IsString()
   category?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  tags?: string[];
+
+  @IsOptional()
+  fileSize?: number;
+
+  @IsOptional()
+  @IsString()
+  mimeType?: string;
+
+  @IsOptional()
+  @IsString()
+  accessLevel?: 'PUBLIC' | 'PRIVATE' | 'RESTRICTED';
 }

@@ -14,6 +14,71 @@ export class PaymentService {
     private tranzilaProvider: TranzilaProvider,
   ) {}
 
+  private getInvoiceDescription(items: any[]): string {
+    if (!Array.isArray(items) || items.length === 0) return 'General charge';
+    return items
+      .map((item) => item?.description || item?.name || 'Charge')
+      .filter(Boolean)
+      .join(', ');
+  }
+
+  private getInvoiceType(items: any[]): 'MAINTENANCE' | 'UTILITIES' | 'MANAGEMENT' | 'PARKING' | 'OTHER' {
+    const haystack = JSON.stringify(items || []).toLowerCase();
+    if (haystack.includes('maint') || haystack.includes('repair') || haystack.includes('service')) return 'MAINTENANCE';
+    if (haystack.includes('utility') || haystack.includes('electric') || haystack.includes('water')) return 'UTILITIES';
+    if (haystack.includes('manage') || haystack.includes('hoa') || haystack.includes('fee')) return 'MANAGEMENT';
+    if (haystack.includes('park')) return 'PARKING';
+    return 'OTHER';
+  }
+
+  private getDueDate(createdAt: Date) {
+    return new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+  }
+
+  private mapInvoiceStatus(invoice: { status: InvoiceStatus; createdAt: Date }) {
+    if (invoice.status === InvoiceStatus.PAID) return 'PAID' as const;
+    return this.getDueDate(invoice.createdAt) < new Date() ? ('OVERDUE' as const) : ('PENDING' as const);
+  }
+
+  private mapInvoice(invoice: any) {
+    const latestIntent = [...(invoice.paymentIntents || [])].sort(
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    )[0];
+    const dueDate = this.getDueDate(new Date(invoice.createdAt));
+
+    return {
+      id: invoice.id,
+      residentId: invoice.residentId,
+      residentName: invoice.resident?.user?.email ?? `Resident #${invoice.residentId}`,
+      amount: invoice.amount,
+      description: this.getInvoiceDescription(invoice.items),
+      issueDate: invoice.createdAt,
+      dueDate,
+      status: this.mapInvoiceStatus(invoice),
+      type: this.getInvoiceType(invoice.items),
+      paymentMethod: latestIntent?.paymentMethod?.brand || latestIntent?.provider || null,
+      paidAt: invoice.status === InvoiceStatus.PAID ? latestIntent?.updatedAt ?? invoice.createdAt : null,
+      receiptNumber: invoice.status === InvoiceStatus.PAID ? `REC-${invoice.id}` : null,
+      category: this.getInvoiceType(invoice.items),
+      history: [
+        ...(invoice.paymentIntents || []).map((intent: any) => ({
+          kind: 'PAYMENT',
+          id: intent.id,
+          status: intent.status,
+          amount: intent.amount,
+          createdAt: intent.createdAt,
+        })),
+        ...((latestIntent?.refunds || []) as any[]).map((refund) => ({
+          kind: 'REFUND',
+          id: refund.id,
+          status: 'REFUNDED',
+          amount: refund.amount,
+          createdAt: refund.createdAt,
+        })),
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    };
+  }
+
   createInvoice(data: { residentId: number; items: any[]; amount?: number }) {
     const computedAmount =
       data.amount ??
@@ -33,6 +98,37 @@ export class PaymentService {
         status: InvoiceStatus.UNPAID,
         ...(residentId ? { residentId } : {}),
       },
+      include: {
+        resident: { include: { user: true } },
+        paymentIntents: {
+          include: {
+            paymentMethod: true,
+            refunds: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    }).then((invoices) => invoices.map((invoice) => this.mapInvoice(invoice)));
+  }
+
+  listInvoices(residentId?: number, status?: 'PENDING' | 'PAID' | 'OVERDUE') {
+    return this.prisma.invoice.findMany({
+      where: {
+        ...(residentId ? { residentId } : {}),
+      },
+      include: {
+        resident: { include: { user: true } },
+        paymentIntents: {
+          include: {
+            paymentMethod: true,
+            refunds: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    }).then((invoices) => {
+      const mapped = invoices.map((invoice) => this.mapInvoice(invoice));
+      return status ? mapped.filter((invoice) => invoice.status === status) : mapped;
     });
   }
 
@@ -58,16 +154,74 @@ export class PaymentService {
   }
 
   async confirmPayment(invoiceId: number) {
+    const existing = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        resident: { include: { user: true } },
+        paymentIntents: true,
+      },
+    });
+    if (!existing) throw new Error('Invoice not found');
+    if (existing.status === InvoiceStatus.PAID) {
+      return existing;
+    }
+
     const invoice = await this.prisma.invoice.update({
       where: { id: invoiceId },
       data: { status: InvoiceStatus.PAID },
-      include: { resident: { include: { user: true } } },
+      include: { resident: { include: { user: true } }, paymentIntents: true },
     });
+    const latestIntent = invoice.paymentIntents[0];
+    if (latestIntent) {
+      await this.prisma.paymentIntent.update({
+        where: { id: latestIntent.id },
+        data: { status: PaymentIntentStatus.SUCCEEDED },
+      });
+    }
     // Ledger entries (payment and net/fee simplified)
     await this.prisma.ledgerEntry.create({ data: { invoiceId, entryType: 'payment', amount: invoice.amount, debit: 'Cash', credit: 'Accounts Receivable' } });
     // In a real system, email the receipt
     await this.receipts.generate(invoice);
     return invoice;
+  }
+
+  async settleInvoice(invoiceId: number) {
+    const invoice = await this.prisma.invoice.findUniqueOrThrow({
+      where: { id: invoiceId },
+    });
+
+    const existingIntent = await this.prisma.paymentIntent.findFirst({
+      where: { invoiceId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!existingIntent) {
+      await this.prisma.paymentIntent.create({
+        data: {
+          invoiceId,
+          amount: invoice.amount,
+          currency: 'NIS',
+          provider: 'manual',
+          status: PaymentIntentStatus.PROCESSING,
+        },
+      });
+    }
+
+    await this.confirmPayment(invoiceId);
+
+    const updated = await this.prisma.invoice.findUniqueOrThrow({
+      where: { id: invoiceId },
+      include: {
+        resident: { include: { user: true } },
+        paymentIntents: {
+          include: {
+            paymentMethod: true,
+            refunds: true,
+          },
+        },
+      },
+    });
+    return this.mapInvoice(updated);
   }
 
   async createPaymentIntentFromInvoice(invoiceId: number) {

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import * as bcrypt from 'bcryptjs';
 // Prisma types are generated in runtime; keep signatures lightweight to avoid tight coupling
 
 @Injectable()
@@ -16,5 +17,75 @@ export class UserService {
 
   findAll() {
     return this.prisma.user.findMany();
+  }
+
+  findProfile(userId: number) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        resident: {
+          include: {
+            units: {
+              include: {
+                building: true,
+              },
+            },
+            invoices: {
+              orderBy: { createdAt: 'desc' },
+              take: 5,
+            },
+          },
+        },
+        supplier: true,
+      },
+    });
+  }
+
+  updateProfile(
+    userId: number,
+    data: {
+      email?: string;
+      phone?: string | null;
+      pushToken?: string | null;
+      notificationPreferences?: Record<string, boolean>;
+    },
+  ) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        email: data.email,
+        phone: data.phone,
+        pushToken: data.pushToken,
+        notificationPreferences: data.notificationPreferences as any,
+      },
+      include: {
+        resident: {
+          include: {
+            units: {
+              include: {
+                building: true,
+              },
+            },
+          },
+        },
+        supplier: true,
+      },
+    });
+  }
+
+  async changePassword(userId: number, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const matches = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!matches) {
+      throw new Error('Current password is incorrect');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    return { ok: true };
   }
 }

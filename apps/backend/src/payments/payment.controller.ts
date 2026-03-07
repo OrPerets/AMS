@@ -16,9 +16,19 @@ export class PaymentController {
     return this.payments.createInvoice(dto);
   }
 
+  @Get('invoices')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.RESIDENT)
+  listInvoices(@Query('residentId') residentId?: string, @Query('status') status?: 'PENDING' | 'PAID' | 'OVERDUE') {
+    return this.payments.listInvoices(residentId ? +residentId : undefined, status);
+  }
+
   @Get('invoices/unpaid')
   @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
-  listUnpaid(@Query('residentId') residentId?: string, @Query('format') format?: string, @Res() res?: Response) {
+  listUnpaid(
+    @Query('residentId') residentId?: string,
+    @Query('format') format?: string,
+    @Res({ passthrough: true }) res?: Response,
+  ) {
     const data = this.payments.listUnpaid(residentId ? +residentId : undefined);
     if (format === 'csv' && res) {
       return data.then((invoices) => {
@@ -40,6 +50,12 @@ export class PaymentController {
   @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
   confirm(@Param('id') id: string) {
     return this.payments.confirmPayment(+id);
+  }
+
+  @Post('invoices/:id/settle')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  settle(@Param('id') id: string) {
+    return this.payments.settleInvoice(+id);
   }
 
   @Post('invoices/:id/penalty')
@@ -108,7 +124,7 @@ export class PaymentController {
   @Post('payments/intents/:id/confirm')
   @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.ACCOUNTANT)
   confirmIntent(@Param('id') id: string) {
-    return this.payments.confirmPayment(+id);
+    return this.payments.getPayment(+id).then((intent) => this.payments.confirmPayment(intent.invoiceId));
   }
 
   @Post('payments/:id/refund')

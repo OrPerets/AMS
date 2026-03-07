@@ -108,8 +108,8 @@ export default function FinancialReportsPage() {
       params.set('year', selectedYear.toString());
     }
     if (buildingId) params.set('buildingId', buildingId);
-    
-    return `/api/v1/reports/financial/export/monthly?${params}`;
+
+    return `/api/v1/reports/financial/export/${viewMode}?${params}`;
   };
 
   const currentYear = new Date().getFullYear();
@@ -136,6 +136,9 @@ export default function FinancialReportsPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">דוחות פיננסיים</h1>
           <div className="flex items-center gap-2">
+            <a href="/finance/analytics">
+              <Button size="sm" variant="outline">אנליטיקה</Button>
+            </a>
             <Button
               size="sm"
               variant={viewMode === 'monthly' ? 'default' : 'outline'}

@@ -12,7 +12,7 @@ import { ErrorBoundary, CompactErrorFallback } from './ui/error-boundary';
 import { cn } from '../lib/utils';
 import { websocketService } from '../lib/websocket';
 import { toast } from './ui/use-toast';
-import { Bell } from 'lucide-react';
+import { getAccessToken, isAuthenticated } from '../lib/auth';
 
 interface Props {
   children: React.ReactNode;
@@ -21,81 +21,105 @@ interface Props {
 export default function Layout({ children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { direction } = useDirection();
   const router = useRouter();
+  const publicRoutes = new Set(['/', '/404', '/_error', '/login', '/privacy', '/terms', '/support']);
+  const isPublicRoute = publicRoutes.has(router.pathname);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || isPublicRoute || isAuthenticated()) {
+      return;
+    }
+
+    const next = encodeURIComponent(router.asPath);
+    router.replace(`/login?next=${next}`);
+  }, [isPublicRoute, mounted, router]);
 
   // WebSocket connection and notification handling
   useEffect(() => {
-    // Only connect WebSocket when user is logged in (not on login or landing page)
-    if (router.pathname !== '/login' && router.pathname !== '/') {
-      const token = localStorage.getItem('token');
-      
-      if (token && !websocketService.isConnected()) {
-        // Connect to WebSocket
-        websocketService.connect(token);
-
-        // Listen for new ticket notifications
-        const handleNewTicket = (data: any) => {
-          const ticket = data.ticket;
-          const buildingName = ticket?.unit?.building?.name || 'בניין';
-          
-          toast({
-            title: "קריאה חדשה נפתחה",
-            description: `קריאה מספר ${ticket?.id} נפתחה בבניין ${buildingName}`,
-            duration: 10000,
-          });
-
-          // Play notification sound (optional)
-          try {
-            const audio = new Audio('/notification.mp3');
-            audio.play().catch(() => {
-              // Ignore if sound fails to play
-            });
-          } catch (error) {
-            // Ignore audio errors
-          }
-        };
-
-        // Listen for ticket updates
-        const handleTicketUpdate = (data: any) => {
-          const ticket = data.ticket;
-          toast({
-            title: "עדכון בקריאה",
-            description: `קריאה מספר ${ticket?.id} עודכנה - סטטוס: ${ticket?.status}`,
-            duration: 5000,
-          });
-        };
-
-        // Listen for general notifications
-        const handleNewNotification = (data: any) => {
-          const notification = data.notification;
-          toast({
-            title: notification?.title || "התראה חדשה",
-            description: notification?.message,
-            duration: 5000,
-          });
-        };
-
-        // Register event listeners
-        websocketService.on('new_ticket', handleNewTicket);
-        websocketService.on('ticket_updated', handleTicketUpdate);
-        websocketService.on('new_notification', handleNewNotification);
-
-        // Cleanup on unmount
-        return () => {
-          websocketService.off('new_ticket', handleNewTicket);
-          websocketService.off('ticket_updated', handleTicketUpdate);
-          websocketService.off('new_notification', handleNewNotification);
-        };
-      }
+    if (!mounted || isPublicRoute) {
+      websocketService.disconnect();
+      return;
     }
-  }, [router.pathname, router]);
+
+    const token = getAccessToken();
+    if (!token) {
+      websocketService.disconnect();
+      return;
+    }
+
+    if (!websocketService.isConnected()) {
+      websocketService.connect(token);
+    }
+
+    const handleNewTicket = (data: any) => {
+      const ticket = data.ticket;
+      const buildingName = ticket?.unit?.building?.name || 'בניין';
+
+      toast({
+        title: 'קריאה חדשה נפתחה',
+        description: `קריאה מספר ${ticket?.id} נפתחה בבניין ${buildingName}`,
+        duration: 10000,
+      });
+
+      try {
+        const audio = new Audio('/notification.mp3');
+        audio.play().catch(() => undefined);
+      } catch {
+        // Ignore audio failures.
+      }
+    };
+
+    const handleTicketUpdate = (data: any) => {
+      const ticket = data.ticket;
+      toast({
+        title: 'עדכון בקריאה',
+        description: `קריאה מספר ${ticket?.id} עודכנה - סטטוס: ${ticket?.status}`,
+        duration: 5000,
+      });
+    };
+
+    const handleNewNotification = (data: any) => {
+      const notification = data.notification;
+      toast({
+        title: notification?.title || 'התראה חדשה',
+        description: notification?.message,
+        duration: 5000,
+      });
+    };
+
+    websocketService.on('new_ticket', handleNewTicket);
+    websocketService.on('ticket_updated', handleTicketUpdate);
+    websocketService.on('new_notification', handleNewNotification);
+
+    return () => {
+      websocketService.off('new_ticket', handleNewTicket);
+      websocketService.off('ticket_updated', handleTicketUpdate);
+      websocketService.off('new_notification', handleNewNotification);
+    };
+  }, [isPublicRoute, mounted]);
 
   // Don't show layout on login page and landing page
-  if (router.pathname === '/login' || router.pathname === '/') {
+  if (isPublicRoute) {
     return (
       <div className={cn("min-h-screen bg-background text-foreground")}>
         {children}
+      </div>
+    );
+  }
+
+  if (!mounted || !isAuthenticated()) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+        <div className="text-center">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+          <p className="mt-2 text-sm text-muted-foreground">טוען...</p>
+        </div>
       </div>
     );
   }

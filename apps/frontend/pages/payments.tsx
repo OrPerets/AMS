@@ -1,836 +1,392 @@
-// /Users/orperetz/Documents/AMS/apps/frontend/pages/payments.tsx
-import React, { useEffect, useState, useMemo } from 'react';
-import { ColumnDef } from '@tanstack/react-table';
-import { 
-  CreditCard, 
-  DollarSign, 
-  Calendar, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle,
-  Download,
-  Eye,
-  RefreshCw,
-  Filter,
-  Plus,
-  Receipt,
-  Building,
-  User
-} from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AlertCircle, Download, Plus, Receipt, RefreshCw } from 'lucide-react';
 import { authFetch } from '../lib/auth';
-import { DataTable } from '../components/ui/data-table';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Skeleton } from '../components/ui/skeleton';
 import { Input } from '../components/ui/input';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select';
-import { cn, formatDate, formatCurrency } from '../lib/utils';
-import { useLocale } from '../lib/providers';
+import { Badge } from '../components/ui/badge';
 import { toast } from '../components/ui/use-toast';
+import { formatCurrency, formatDate } from '../lib/utils';
+import { useLocale } from '../lib/providers';
 
-interface Invoice {
+type InvoiceStatus = 'PENDING' | 'PAID' | 'OVERDUE';
+
+interface InvoiceHistoryEntry {
+  kind: 'PAYMENT' | 'REFUND';
   id: number;
+  status: string;
   amount: number;
-  unitId: number;
-  buildingId?: number;
-  residentName?: string;
-  description?: string;
-  dueDate: string;
-  issueDate: string;
-  status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
-  type: 'MAINTENANCE' | 'UTILITIES' | 'MANAGEMENT' | 'PARKING' | 'OTHER';
-  paymentMethod?: 'CASH' | 'CREDIT_CARD' | 'BANK_TRANSFER' | 'CHECK';
-  paidAt?: string;
-  receiptNumber?: string;
-  category?: string;
+  createdAt: string;
 }
 
-const statusConfig = {
-  PENDING: { label: 'ממתין לתשלום', variant: 'warning' as const },
-  PAID: { label: 'שולם', variant: 'success' as const },
-  OVERDUE: { label: 'איחור בתשלום', variant: 'destructive' as const },
-  CANCELLED: { label: 'בוטל', variant: 'outline' as const },
+interface InvoiceRow {
+  id: number;
+  residentId: number;
+  residentName: string;
+  amount: number;
+  description: string;
+  issueDate: string;
+  dueDate: string;
+  status: InvoiceStatus;
+  type: string;
+  paymentMethod: string | null;
+  paidAt: string | null;
+  receiptNumber: string | null;
+  history: InvoiceHistoryEntry[];
+}
+
+const statusLabel: Record<InvoiceStatus, string> = {
+  PENDING: 'ממתין',
+  PAID: 'שולם',
+  OVERDUE: 'באיחור',
 };
 
-const typeConfig = {
-  MAINTENANCE: { label: 'אחזקה', icon: '🔧' },
-  UTILITIES: { label: 'שירותים', icon: '💡' },
-  MANAGEMENT: { label: 'ניהול', icon: '🏢' },
-  PARKING: { label: 'חניה', icon: '🚗' },
-  OTHER: { label: 'אחר', icon: '📋' },
-};
-
-export default function Payments() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [newInvoice, setNewInvoice] = useState<{ residentId: string; items: { description: string; quantity: string; unitPrice: string }[] }>({ residentId: '', items: [{ description: '', quantity: '1', unitPrice: '' }] });
-  const [recurring, setRecurring] = useState<{ residentId: string; recurrence: string; items: { description: string; quantity: string; unitPrice: string }[] }>({ residentId: '', recurrence: 'monthly', items: [{ description: '', quantity: '1', unitPrice: '' }] });
+export default function PaymentsPage() {
   const { locale } = useLocale();
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [settlingId, setSettlingId] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'ALL' | InvoiceStatus>('ALL');
+  const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
+  const [newInvoice, setNewInvoice] = useState({
+    residentId: '',
+    items: [{ description: '', quantity: '1', unitPrice: '' }],
+  });
+  const [recurring, setRecurring] = useState({
+    residentId: '',
+    recurrence: 'monthly',
+    items: [{ description: '', quantity: '1', unitPrice: '' }],
+  });
 
-  const loadInvoices = async () => {
+  async function loadInvoices() {
+    setLoading(true);
     try {
-      // Create a timeout promise
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), 10000); // 10 second timeout
-      });
-
-      // Race between the API call and timeout
-      const res = await Promise.race([
-        authFetch('/api/v1/invoices/unpaid'),
-        timeoutPromise
-      ]) as Response;
-
-      if (res.ok) {
-        const data = await res.json();
-        setInvoices(Array.isArray(data) ? data : []);
-      } else if (res.status === 503) {
-        // Backend server is unavailable, show mock data
-        console.log('Backend server unavailable, showing mock data');
-        setInvoices([
-          {
-            id: 2001,
-            amount: 850,
-            unitId: 12,
-            buildingId: 1,
-            residentName: 'דניאל לוי',
-            description: 'דמי אחזקה חודשי',
-            dueDate: '2024-01-31T23:59:59Z',
-            issueDate: '2024-01-01T00:00:00Z',
-            status: 'PENDING',
-            type: 'MAINTENANCE',
-            category: 'דמי אחזקה'
-          },
-          {
-            id: 2002,
-            amount: 320,
-            unitId: 25,
-            buildingId: 1,
-            residentName: 'משה דוד',
-            description: 'חשבון חשמל',
-            dueDate: '2024-01-15T23:59:59Z',
-            issueDate: '2024-01-01T00:00:00Z',
-            status: 'OVERDUE',
-            type: 'UTILITIES',
-            category: 'חשמל'
-          },
-          {
-            id: 2003,
-            amount: 1200,
-            unitId: 8,
-            buildingId: 2,
-            residentName: 'שרה אברהם',
-            description: 'דמי ניהול רבעוני',
-            dueDate: '2024-02-15T23:59:59Z',
-            issueDate: '2024-01-01T00:00:00Z',
-            status: 'PENDING',
-            type: 'MANAGEMENT',
-            category: 'דמי ניהול'
-          },
-          {
-            id: 2004,
-            amount: 450,
-            unitId: 15,
-            buildingId: 1,
-            residentName: 'יוסי רוזן',
-            description: 'אגרת חניה חודשית',
-            dueDate: '2024-01-31T23:59:59Z',
-            issueDate: '2024-01-01T00:00:00Z',
-            status: 'PAID',
-            type: 'PARKING',
-            category: 'חניה',
-            paymentMethod: 'CREDIT_CARD',
-            paidAt: '2024-01-20T14:30:00Z',
-            receiptNumber: 'REC-2024-001'
-          }
-        ]);
-        
-        toast({
-          title: "מצב אופליין",
-          description: "השרת לא זמין כרגע. מוצגים נתונים לדוגמה.",
-          variant: "default",
-        });
-      } else {
-        // Mock data for demo when API fails
-        setInvoices([
-          {
-            id: 2001,
-            amount: 850,
-            unitId: 12,
-            buildingId: 1,
-            residentName: 'דניאל לוי',
-            description: 'דמי אחזקה חודשי',
-            dueDate: '2024-01-31T23:59:59Z',
-            issueDate: '2024-01-01T00:00:00Z',
-            status: 'PENDING',
-            type: 'MAINTENANCE',
-            category: 'דמי אחזקה'
-          },
-          {
-            id: 2002,
-            amount: 320,
-            unitId: 25,
-            buildingId: 1,
-            residentName: 'משה דוד',
-            description: 'חשבון חשמל',
-            dueDate: '2024-01-15T23:59:59Z',
-            issueDate: '2024-01-01T00:00:00Z',
-            status: 'OVERDUE',
-            type: 'UTILITIES',
-            category: 'חשמל'
-          },
-          {
-            id: 2003,
-            amount: 1200,
-            unitId: 8,
-            buildingId: 2,
-            residentName: 'שרה אברהם',
-            description: 'דמי ניהול רבעוני',
-            dueDate: '2024-02-15T23:59:59Z',
-            issueDate: '2024-01-01T00:00:00Z',
-            status: 'PENDING',
-            type: 'MANAGEMENT',
-            category: 'דמי ניהול'
-          },
-          {
-            id: 2004,
-            amount: 450,
-            unitId: 15,
-            buildingId: 1,
-            residentName: 'יוסי רוזן',
-            description: 'אגרת חניה חודשית',
-            dueDate: '2024-01-31T23:59:59Z',
-            issueDate: '2024-01-01T00:00:00Z',
-            status: 'PAID',
-            type: 'PARKING',
-            category: 'חניה',
-            paymentMethod: 'CREDIT_CARD',
-            paidAt: '2024-01-20T14:30:00Z',
-            receiptNumber: 'REC-2024-001'
-          }
-        ]);
-        
-        toast({
-          title: "מצב דמו",
-          description: "השרת לא זמין כרגע. מוצגים נתונים לדוגמה.",
-          variant: "default",
-        });
-      }
+      const res = await authFetch('/api/v1/invoices');
+      if (!res.ok) throw new Error(await res.text());
+      setInvoices(await res.json());
     } catch (error) {
-      console.error('Error loading invoices:', error);
-      
-      // Show mock data even on error
-      setInvoices([
-        {
-          id: 2001,
-          amount: 850,
-          unitId: 12,
-          buildingId: 1,
-          residentName: 'דניאל לוי',
-          description: 'דמי אחזקה חודשי',
-          dueDate: '2024-01-31T23:59:59Z',
-          issueDate: '2024-01-01T00:00:00Z',
-          status: 'PENDING',
-          type: 'MAINTENANCE',
-          category: 'דמי אחזקה'
-        },
-        {
-          id: 2002,
-          amount: 320,
-          unitId: 25,
-          buildingId: 1,
-          residentName: 'משה דוד',
-          description: 'חשבון חשמל',
-          dueDate: '2024-01-15T23:59:59Z',
-          issueDate: '2024-01-01T00:00:00Z',
-          status: 'OVERDUE',
-          type: 'UTILITIES',
-          category: 'חשמל'
-        },
-        {
-          id: 2003,
-          amount: 1200,
-          unitId: 8,
-          buildingId: 2,
-          residentName: 'שרה אברהם',
-          description: 'דמי ניהול רבעוני',
-          dueDate: '2024-02-15T23:59:59Z',
-          issueDate: '2024-01-01T00:00:00Z',
-          status: 'PENDING',
-          type: 'MANAGEMENT',
-          category: 'דמי ניהול'
-        },
-        {
-          id: 2004,
-          amount: 450,
-          unitId: 15,
-          buildingId: 1,
-          residentName: 'יוסי רוזן',
-          description: 'אגרת חניה חודשית',
-          dueDate: '2024-01-31T23:59:59Z',
-          issueDate: '2024-01-01T00:00:00Z',
-          status: 'PAID',
-          type: 'PARKING',
-          category: 'חניה',
-          paymentMethod: 'CREDIT_CARD',
-          paidAt: '2024-01-20T14:30:00Z',
-          receiptNumber: 'REC-2024-001'
-        }
-      ]);
-
-      const errorMessage = error instanceof Error && error.message === 'Request timeout' 
-        ? "הבקשה ארכה יותר מדי זמן. נסה שוב מאוחר יותר."
-        : "לא ניתן לטעון את החשבוניות. נסה שוב מאוחר יותר.";
-
-      toast({
-        title: "שגיאה בטעינת תשלומים",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      console.error(error);
+      toast({ title: 'טעינת התשלומים נכשלה', variant: 'destructive' });
+      setInvoices([]);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  };
+  }
 
   useEffect(() => {
     loadInvoices();
   }, []);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await loadInvoices();
-  };
+  const filteredInvoices = useMemo(
+    () => invoices.filter((invoice) => statusFilter === 'ALL' || invoice.status === statusFilter),
+    [invoices, statusFilter],
+  );
 
-  const filteredInvoices = useMemo(() => {
-    return invoices.filter(invoice => {
-      const statusMatch = statusFilter === 'all' || invoice.status === statusFilter;
-      const typeMatch = typeFilter === 'all' || invoice.type === typeFilter;
-      return statusMatch && typeMatch;
-    });
-  }, [invoices, statusFilter, typeFilter]);
+  const stats = useMemo(() => {
+    return {
+      total: invoices.length,
+      pendingAmount: invoices.filter((invoice) => invoice.status !== 'PAID').reduce((sum, invoice) => sum + invoice.amount, 0),
+      overdueCount: invoices.filter((invoice) => invoice.status === 'OVERDUE').length,
+      paidAmount: invoices.filter((invoice) => invoice.status === 'PAID').reduce((sum, invoice) => sum + invoice.amount, 0),
+    };
+  }, [invoices]);
 
-  const handlePayNow = async (invoice: Invoice) => {
+  const computeTotal = (items: { quantity: string; unitPrice: string }[]) =>
+    items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unitPrice || 0), 0);
+
+  async function settleInvoice(invoiceId: number) {
+    setSettlingId(invoiceId);
     try {
-      const res = await authFetch(`/api/v1/invoices/${invoice.id}/pay`, { method: 'POST' });
+      const res = await authFetch(`/api/v1/invoices/${invoiceId}/settle`, { method: 'POST' });
       if (!res.ok) throw new Error(await res.text());
-      toast({ title: 'תשלום הושלם', description: `חשבונית #${invoice.id} שולמה בהצלחה` });
-      loadInvoices();
-      window.open(`/api/v1/invoices/${invoice.id}/receipt`, '_blank');
-    } catch (e: any) {
-      toast({ title: 'שגיאה בתשלום', description: e?.message || 'נסו שוב', variant: 'destructive' });
+      toast({ title: `חשבונית #${invoiceId} סולקה` });
+      await loadInvoices();
+      window.open(`/api/v1/invoices/${invoiceId}/receipt`, '_blank');
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'סליקת התשלום נכשלה', variant: 'destructive' });
+    } finally {
+      setSettlingId(null);
     }
-  };
+  }
 
-  const handleViewReceipt = (invoice: Invoice) => {
-    window.open(`/api/v1/invoices/${invoice.id}/receipt`, '_blank');
-  };
-
-  const addInvoiceItem = () => setNewInvoice({ ...newInvoice, items: [...newInvoice.items, { description: '', quantity: '1', unitPrice: '' }] });
-  const addRecurringItem = () => setRecurring({ ...recurring, items: [...recurring.items, { description: '', quantity: '1', unitPrice: '' }] });
-
-  const computeTotal = (items: { quantity: string; unitPrice: string }[]) => items.reduce((s, it) => s + (Number(it.quantity || 0) * Number(it.unitPrice || 0)), 0);
-
-  const submitInvoice = async () => {
-    const payload = {
-      residentId: Number(newInvoice.residentId),
-      items: newInvoice.items.map(i => ({ description: i.description, quantity: Number(i.quantity || 1), unitPrice: Number(i.unitPrice || 0) })),
-    };
-    const res = await authFetch('/api/v1/invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (res.ok) {
-      toast({ title: 'חשבונית נוצרה' });
-      loadInvoices();
+  async function submitInvoice() {
+    setSubmitting(true);
+    try {
+      const res = await authFetch('/api/v1/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          residentId: Number(newInvoice.residentId),
+          items: newInvoice.items.map((item) => ({
+            description: item.description,
+            quantity: Number(item.quantity || 1),
+            unitPrice: Number(item.unitPrice || 0),
+          })),
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast({ title: 'החשבונית נוצרה' });
       setNewInvoice({ residentId: '', items: [{ description: '', quantity: '1', unitPrice: '' }] });
-    } else {
-      toast({ title: 'יצירת חשבונית נכשלה', variant: 'destructive' });
+      await loadInvoices();
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'יצירת החשבונית נכשלה', variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
     }
-  };
+  }
 
-  const submitRecurring = async () => {
-    const payload = {
-      residentId: Number(recurring.residentId),
-      recurrence: recurring.recurrence,
-      items: recurring.items.map(i => ({ description: i.description, quantity: Number(i.quantity || 1), unitPrice: Number(i.unitPrice || 0) })),
-    };
-    const res = await authFetch('/api/v1/recurring-invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (res.ok) {
-      toast({ title: 'חשבונית מחזורית נשמרה' });
+  async function submitRecurring() {
+    setSubmitting(true);
+    try {
+      const res = await authFetch('/api/v1/recurring-invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          residentId: Number(recurring.residentId),
+          recurrence: recurring.recurrence,
+          items: recurring.items.map((item) => ({
+            description: item.description,
+            quantity: Number(item.quantity || 1),
+            unitPrice: Number(item.unitPrice || 0),
+          })),
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast({ title: 'החיוב המחזורי נשמר' });
       setRecurring({ residentId: '', recurrence: 'monthly', items: [{ description: '', quantity: '1', unitPrice: '' }] });
-    } else {
-      toast({ title: 'שמירת מחזורית נכשלה', variant: 'destructive' });
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'שמירת החיוב המחזורי נכשלה', variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
     }
-  };
+  }
 
-  const getDaysOverdue = (dueDate: string) => {
-    const due = new Date(dueDate);
-    const now = new Date();
-    const diffTime = now.getTime() - due.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
-  };
-
-  const columns: ColumnDef<Invoice>[] = [
-    {
-      accessorKey: "id",
-      header: "מס׳ חשבונית",
-      cell: ({ row }) => (
-        <div className="font-medium">#{row.getValue("id")}</div>
-      ),
-    },
-    {
-      accessorKey: "description",
-      header: "תיאור",
-      cell: ({ row }) => {
-        const invoice = row.original;
-        const typeInfo = typeConfig[invoice.type];
-        return (
-          <div className="max-w-[200px]">
-            <div className="font-medium truncate">
-              {invoice.description || 'ללא תיאור'}
-            </div>
-            <div className="text-sm text-muted-foreground truncate">
-              {typeInfo.icon} {typeInfo.label} • יחידה {invoice.unitId}
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "residentName",
-      header: "דייר",
-      cell: ({ row }) => {
-        const residentName = row.getValue("residentName") as string;
-        return (
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <span>{residentName || 'לא ידוע'}</span>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "amount",
-      header: "סכום",
-      cell: ({ row }) => {
-        const amount = row.getValue("amount") as number;
-        return (
-          <div className="font-medium">
-            {formatCurrency(amount)}
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "סטטוס",
-      cell: ({ row }) => {
-        const invoice = row.original;
-        const status = row.getValue("status") as keyof typeof statusConfig;
-        const config = statusConfig[status];
-        const daysOverdue = getDaysOverdue(invoice.dueDate);
-        
-        return (
-          <div className="space-y-1">
-            <Badge variant={config.variant}>
-              {config.label}
-            </Badge>
-            {status === 'OVERDUE' && daysOverdue > 0 && (
-              <div className="text-xs text-destructive">
-                איחור של {daysOverdue} ימים
-              </div>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "dueDate",
-      header: "תאריך פירעון",
-      cell: ({ row }) => {
-        const date = new Date(row.getValue("dueDate"));
-        const invoice = row.original;
-        const isOverdue = invoice.status === 'OVERDUE';
-        
-        return (
-          <div className={cn(
-            "text-sm",
-            isOverdue && "text-destructive font-medium"
-          )}>
-            {formatDate(date, locale)}
-          </div>
-        );
-      },
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        const invoice = row.original;
-
-        if (invoice.status === 'PAID') {
-          return (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => handleViewReceipt(invoice)}
-            >
-              <Receipt className="me-1 h-3 w-3" />
-              קבלה
-            </Button>
-          );
-        }
-
-        if (invoice.status === 'CANCELLED') {
-          return (
-            <Badge variant="outline">
-              בוטל
-            </Badge>
-          );
-        }
-
-        return (
-          <Button 
-            onClick={() => handlePayNow(invoice)}
-            size="sm"
-            className={cn(
-              invoice.status === 'OVERDUE' && "bg-destructive hover:bg-destructive/90"
-            )}
-          >
-            <CreditCard className="me-1 h-3 w-3" />
-            שלם עכשיו
-          </Button>
-        );
-      },
-    },
-  ];
-
-  if (loading) {
+  function renderItemsEditor(
+    items: { description: string; quantity: string; unitPrice: string }[],
+    setItems: (items: { description: string; quantity: string; unitPrice: string }[]) => void,
+  ) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-32" />
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <RefreshCw className="h-4 w-4 animate-spin" />
-              <span>טוען תשלומים...</span>
-            </div>
+      <div className="space-y-2">
+        {items.map((item, index) => (
+          <div key={index} className="grid gap-2 md:grid-cols-5">
+            <Input
+              className="md:col-span-2"
+              placeholder="תיאור"
+              value={item.description}
+              onChange={(event) => {
+                const next = [...items];
+                next[index] = { ...item, description: event.target.value };
+                setItems(next);
+              }}
+            />
+            <Input
+              type="number"
+              placeholder="כמות"
+              value={item.quantity}
+              onChange={(event) => {
+                const next = [...items];
+                next[index] = { ...item, quantity: event.target.value };
+                setItems(next);
+              }}
+            />
+            <Input
+              type="number"
+              placeholder="מחיר יחידה"
+              value={item.unitPrice}
+              onChange={(event) => {
+                const next = [...items];
+                next[index] = { ...item, unitPrice: event.target.value };
+                setItems(next);
+              }}
+            />
+            <div className="flex items-center text-sm font-medium">{formatCurrency(Number(item.quantity || 0) * Number(item.unitPrice || 0))}</div>
           </div>
-          <Skeleton className="h-10 w-32" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-8 w-16" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <Skeleton className="h-6 w-32" />
-                <Skeleton className="h-4 w-48" />
-              </div>
-              <Skeleton className="h-8 w-24" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  <Skeleton className="h-4 w-4 rounded-full" />
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-8 w-20" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        ))}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setItems([...items, { description: '', quantity: '1', unitPrice: '' }])}
+        >
+          <Plus className="me-2 h-4 w-4" />
+          הוסף שורה
+        </Button>
       </div>
     );
   }
 
-  const stats = {
-    total: invoices.length,
-    pending: invoices.filter(i => i.status === 'PENDING').length,
-    overdue: invoices.filter(i => i.status === 'OVERDUE').length,
-    paid: invoices.filter(i => i.status === 'PAID').length,
-    totalAmount: invoices.reduce((sum, i) => sum + i.amount, 0),
-    pendingAmount: invoices.filter(i => i.status === 'PENDING').reduce((sum, i) => sum + i.amount, 0),
-    overdueAmount: invoices.filter(i => i.status === 'OVERDUE').reduce((sum, i) => sum + i.amount, 0),
-  };
-
   return (
-    <div className="space-y-6 relative">
-      {refreshing && (
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <RefreshCw className="h-4 w-4 animate-spin" />
-            <span>מעדכן נתונים...</span>
-          </div>
-        </div>
-      )}
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6 p-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">תשלומים</h1>
-          <p className="text-muted-foreground">
-            ניהול חשבוניות ותשלומים
-          </p>
+          <h1 className="text-3xl font-semibold">תשלומים</h1>
+          <p className="text-sm text-muted-foreground">חשבוניות, סליקה, קבלות והיסטוריית תשלומים במקום אחד.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-          </Button>
-          <Button variant="outline">
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => window.open('/api/v1/invoices/unpaid?format=csv', '_blank')}>
             <Download className="me-2 h-4 w-4" />
-            יצוא Excel
+            יצוא CSV
           </Button>
-          <Button>
-            <Plus className="me-2 h-4 w-4" />
-            חשבונית חדשה
+          <Button variant="outline" onClick={loadInvoices} disabled={loading}>
+            <RefreshCw className="me-2 h-4 w-4" />
+            רענון
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">סה״כ חשבוניות</CardTitle>
-            <Receipt className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">
-              {formatCurrency(stats.totalAmount)} סה״כ
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ממתינות לתשלום</CardTitle>
-            <Clock className="h-4 w-4 text-warning" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pending}</div>
-            <p className="text-xs text-muted-foreground">
-              {formatCurrency(stats.pendingAmount)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">באיחור</CardTitle>
-            <AlertCircle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{stats.overdue}</div>
-            <p className="text-xs text-muted-foreground">
-              {formatCurrency(stats.overdueAmount)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">שולמו</CardTitle>
-            <CheckCircle className="h-4 w-4 text-success" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">{stats.paid}</div>
-            <p className="text-xs text-muted-foreground">
-              החודש הנוכחי
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card><CardHeader><CardTitle>חשבוניות</CardTitle></CardHeader><CardContent>{stats.total}</CardContent></Card>
+        <Card><CardHeader><CardTitle>פתוחות</CardTitle></CardHeader><CardContent>{formatCurrency(stats.pendingAmount)}</CardContent></Card>
+        <Card><CardHeader><CardTitle>באיחור</CardTitle></CardHeader><CardContent>{stats.overdueCount}</CardContent></Card>
+        <Card><CardHeader><CardTitle>שולמו</CardTitle></CardHeader><CardContent>{formatCurrency(stats.paidAmount)}</CardContent></Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">סינון:</span>
-        </div>
-        
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="סטטוס" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">כל הסטטוסים</SelectItem>
-            <SelectItem value="PENDING">ממתין לתשלום</SelectItem>
-            <SelectItem value="OVERDUE">באיחור</SelectItem>
-            <SelectItem value="PAID">שולם</SelectItem>
-            <SelectItem value="CANCELLED">בוטל</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="סוג" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">כל הסוגים</SelectItem>
-            <SelectItem value="MAINTENANCE">אחזקה</SelectItem>
-            <SelectItem value="UTILITIES">שירותים</SelectItem>
-            <SelectItem value="MANAGEMENT">ניהול</SelectItem>
-            <SelectItem value="PARKING">חניה</SelectItem>
-            <SelectItem value="OTHER">אחר</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {(statusFilter !== 'all' || typeFilter !== 'all') && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => {
-              setStatusFilter('all');
-              setTypeFilter('all');
-            }}
-          >
-            נקה סינונים
-          </Button>
-        )}
-      </div>
-
-      {/* Quick Actions for Overdue */}
-      {stats.overdue > 0 && (
+      {stats.overdueCount > 0 && (
         <Card className="border-destructive/20 bg-destructive/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
               <AlertCircle className="h-5 w-5" />
-              תשומת לב: {stats.overdue} חשבוניות באיחור
+              קיימות חשבוניות באיחור
             </CardTitle>
-            <CardDescription>
-              יש {stats.overdue} חשבוניות שעברו את תאריך הפירעון בסכום כולל של {formatCurrency(stats.overdueAmount)}
-            </CardDescription>
+            <CardDescription>סינון וגבייה זמינים ישירות מהטבלה.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-2">
-              <Button variant="destructive" size="sm">
-                שלח תזכורות
-              </Button>
-              <Button variant="outline" size="sm">
-                הצג רק איחורים
-              </Button>
-            </div>
+            <Button variant="outline" onClick={() => setStatusFilter('OVERDUE')}>הצג איחורים בלבד</Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Data Table */}
       <Card>
-        <CardContent className="p-0">
-          <DataTable
-            columns={columns}
-            data={filteredInvoices}
-            searchPlaceholder="חיפוש חשבוניות..."
-          />
+        <CardHeader>
+          <CardTitle>רשימת תשלומים</CardTitle>
+          <CardDescription>
+            היסטוריה מלאה של סטטוסים, אמצעי תשלום וקבלות.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Button variant={statusFilter === 'ALL' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('ALL')}>הכל</Button>
+            <Button variant={statusFilter === 'PENDING' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('PENDING')}>ממתינות</Button>
+            <Button variant={statusFilter === 'OVERDUE' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('OVERDUE')}>באיחור</Button>
+            <Button variant={statusFilter === 'PAID' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('PAID')}>שולמו</Button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left">
+                  <th className="py-2">חשבונית</th>
+                  <th className="py-2">דייר</th>
+                  <th className="py-2">סכום</th>
+                  <th className="py-2">פירעון</th>
+                  <th className="py-2">סטטוס</th>
+                  <th className="py-2">היסטוריה</th>
+                  <th className="py-2">פעולות</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredInvoices.map((invoice) => (
+                  <tr key={invoice.id} className="border-b align-top">
+                    <td className="py-3 pe-4">
+                      <div className="font-medium">#{invoice.id}</div>
+                      <div className="text-muted-foreground">{invoice.description}</div>
+                    </td>
+                    <td className="py-3 pe-4">{invoice.residentName}</td>
+                    <td className="py-3 pe-4">{formatCurrency(invoice.amount)}</td>
+                    <td className="py-3 pe-4">
+                      <div>{formatDate(new Date(invoice.dueDate), locale)}</div>
+                      <div className="text-xs text-muted-foreground">הונפק: {formatDate(new Date(invoice.issueDate), locale)}</div>
+                    </td>
+                    <td className="py-3 pe-4">
+                      <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'warning'}>
+                        {statusLabel[invoice.status]}
+                      </Badge>
+                    </td>
+                    <td className="py-3 pe-4">
+                      {invoice.history.length === 0 ? (
+                        <span className="text-muted-foreground">ללא תנועות</span>
+                      ) : (
+                        <div className="space-y-1">
+                          {invoice.history.slice(0, 2).map((entry) => (
+                            <div key={`${entry.kind}-${entry.id}`} className="text-xs text-muted-foreground">
+                              {entry.kind === 'PAYMENT' ? 'תשלום' : 'החזר'} {formatCurrency(entry.amount)} · {entry.status}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3">
+                      <div className="flex flex-wrap gap-2">
+                        {invoice.status !== 'PAID' && (
+                          <Button size="sm" onClick={() => settleInvoice(invoice.id)} disabled={settlingId === invoice.id}>
+                            {settlingId === invoice.id ? 'מסלק...' : 'סליקה'}
+                          </Button>
+                        )}
+                        <Button variant="outline" size="sm" onClick={() => window.open(`/api/v1/invoices/${invoice.id}/receipt`, '_blank')}>
+                          <Receipt className="me-2 h-4 w-4" />
+                          קבלה
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {!loading && filteredInvoices.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="py-6 text-center text-muted-foreground">אין חשבוניות להצגה.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Create Invoice */}
-      <Card>
-        <CardHeader>
-          <CardTitle>חשבונית חדשה</CardTitle>
-          <CardDescription>יצירת חשבונית עם שורות</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
-            <label>מזהה דייר</label>
-            <Input className="md:col-span-2" value={newInvoice.residentId} onChange={(e) => setNewInvoice({ ...newInvoice, residentId: e.target.value })} />
-          </div>
-          <div className="space-y-2">
-            {newInvoice.items.map((it, idx) => (
-              <div key={idx} className="grid grid-cols-6 gap-2 items-center">
-                <label className="col-span-1">תיאור</label>
-                <Input className="col-span-2" value={it.description} onChange={(e) => {
-                  const items = [...newInvoice.items]; items[idx] = { ...items[idx], description: e.target.value }; setNewInvoice({ ...newInvoice, items });
-                }} />
-                <label>כמות</label>
-                <Input type="number" value={it.quantity} onChange={(e) => {
-                  const items = [...newInvoice.items]; items[idx] = { ...items[idx], quantity: e.target.value }; setNewInvoice({ ...newInvoice, items });
-                }} />
-                <label>מחיר יח׳</label>
-                <Input type="number" value={it.unitPrice} onChange={(e) => {
-                  const items = [...newInvoice.items]; items[idx] = { ...items[idx], unitPrice: e.target.value }; setNewInvoice({ ...newInvoice, items });
-                }} />
-              </div>
-            ))}
-            <Button variant="outline" size="sm" onClick={addInvoiceItem}>הוסף שורה</Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="ms-auto font-medium">סה"כ: {computeTotal(newInvoice.items).toLocaleString('he-IL', { style: 'currency', currency: 'ILS' })}</div>
-            <Button onClick={submitInvoice} disabled={!newInvoice.residentId || newInvoice.items.length === 0}>צור חשבונית</Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>חשבונית חדשה</CardTitle>
+            <CardDescription>הפקת חיוב חד-פעמי כולל שורות ותמחור.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Input
+              placeholder="מזהה דייר"
+              value={newInvoice.residentId}
+              onChange={(event) => setNewInvoice({ ...newInvoice, residentId: event.target.value })}
+            />
+            {renderItemsEditor(newInvoice.items, (items) => setNewInvoice({ ...newInvoice, items }))}
+            <div className="flex items-center justify-between">
+              <div className="font-medium">סה"כ: {formatCurrency(computeTotal(newInvoice.items))}</div>
+              <Button onClick={submitInvoice} disabled={submitting || !newInvoice.residentId}>צור חשבונית</Button>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Recurring Invoice */}
-      <Card>
-        <CardHeader>
-          <CardTitle>חשבונית מחזורית</CardTitle>
-          <CardDescription>הגדרת חיוב חודשי/רבעוני</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
-            <label>מזהה דייר</label>
-            <Input className="md:col-span-2" value={recurring.residentId} onChange={(e) => setRecurring({ ...recurring, residentId: e.target.value })} />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
-            <label>תדירות</label>
-            <Input className="md:col-span-2" placeholder="monthly | quarterly | yearly" value={recurring.recurrence} onChange={(e) => setRecurring({ ...recurring, recurrence: e.target.value })} />
-          </div>
-          <div className="space-y-2">
-            {recurring.items.map((it, idx) => (
-              <div key={idx} className="grid grid-cols-6 gap-2 items-center">
-                <label className="col-span-1">תיאור</label>
-                <Input className="col-span-2" value={it.description} onChange={(e) => {
-                  const items = [...recurring.items]; items[idx] = { ...items[idx], description: e.target.value }; setRecurring({ ...recurring, items });
-                }} />
-                <label>כמות</label>
-                <Input type="number" value={it.quantity} onChange={(e) => {
-                  const items = [...recurring.items]; items[idx] = { ...items[idx], quantity: e.target.value }; setRecurring({ ...recurring, items });
-                }} />
-                <label>מחיר יח׳</label>
-                <Input type="number" value={it.unitPrice} onChange={(e) => {
-                  const items = [...recurring.items]; items[idx] = { ...items[idx], unitPrice: e.target.value }; setRecurring({ ...recurring, items });
-                }} />
-              </div>
-            ))}
-            <Button variant="outline" size="sm" onClick={addRecurringItem}>הוסף שורה</Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="ms-auto font-medium">סה"כ: {computeTotal(recurring.items).toLocaleString('he-IL', { style: 'currency', currency: 'ILS' })}</div>
-            <Button onClick={submitRecurring} disabled={!recurring.residentId || recurring.items.length === 0}>שמור מחזורית</Button>
-          </div>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>חיוב מחזורי</CardTitle>
+            <CardDescription>הגדרת תשלום חודשי, רבעוני או שנתי.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Input
+              placeholder="מזהה דייר"
+              value={recurring.residentId}
+              onChange={(event) => setRecurring({ ...recurring, residentId: event.target.value })}
+            />
+            <Input
+              placeholder="monthly | quarterly | yearly"
+              value={recurring.recurrence}
+              onChange={(event) => setRecurring({ ...recurring, recurrence: event.target.value })}
+            />
+            {renderItemsEditor(recurring.items, (items) => setRecurring({ ...recurring, items }))}
+            <div className="flex items-center justify-between">
+              <div className="font-medium">סה"כ: {formatCurrency(computeTotal(recurring.items))}</div>
+              <Button onClick={submitRecurring} disabled={submitting || !recurring.residentId}>שמור מחזורי</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

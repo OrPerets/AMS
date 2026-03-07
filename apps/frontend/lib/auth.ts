@@ -10,14 +10,36 @@ function isBrowser() {
   return typeof window !== 'undefined';
 }
 
+function decodeBase64Url(value: string): string {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+  return atob(padded);
+}
+
+function getUnixTime() {
+  return Math.floor(Date.now() / 1000);
+}
+
 export function getAccessToken(): string | null {
   if (!isBrowser()) return null;
-  return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+  const token = window.localStorage.getItem(ACCESS_TOKEN_KEY);
+  if (!token) return null;
+  if (isTokenExpired(token)) {
+    window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+    return null;
+  }
+  return token;
 }
 
 export function getRefreshToken(): string | null {
   if (!isBrowser()) return null;
-  return window.localStorage.getItem(REFRESH_TOKEN_KEY);
+  const token = window.localStorage.getItem(REFRESH_TOKEN_KEY);
+  if (!token) return null;
+  if (isTokenExpired(token)) {
+    window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+    return null;
+  }
+  return token;
 }
 
 export function setTokens(tokens: LoginResponse) {
@@ -33,14 +55,25 @@ export function clearTokens() {
 }
 
 export function getTokenPayload(): any | null {
-  const token = getAccessToken();
+  const token = isBrowser() ? window.localStorage.getItem(ACCESS_TOKEN_KEY) : null;
   if (!token) return null;
   try {
     const [, payload] = token.split('.');
-    return JSON.parse(atob(payload));
+    return JSON.parse(decodeBase64Url(payload));
   } catch {
     return null;
   }
+}
+
+export function getCurrentUserId(): number | null {
+  const payload = getTokenPayload();
+  const userId = payload?.sub;
+  if (typeof userId === 'number') return userId;
+  if (typeof userId === 'string') {
+    const parsed = Number(userId);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  return null;
 }
 
 export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
@@ -87,10 +120,16 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
 export async function refreshTokens(): Promise<boolean> {
   const token = getRefreshToken();
   if (!token) return false;
-  const res = await fetch('/auth/refresh', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  let res: Response;
+  try {
+    res = await fetch('/auth/refresh', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    clearTokens();
+    return false;
+  }
   if (!res.ok) {
     clearTokens();
     return false;
@@ -180,4 +219,13 @@ export function getDefaultRoute(role?: string | null): string {
   return routeForRole(effectiveRole);
 }
 
-
+function isTokenExpired(token: string) {
+  try {
+    const [, payload] = token.split('.');
+    const decoded = JSON.parse(decodeBase64Url(payload));
+    const expiresAt = typeof decoded?.exp === 'number' ? decoded.exp : null;
+    return expiresAt !== null && expiresAt <= getUnixTime() + 5;
+  } catch {
+    return true;
+  }
+}

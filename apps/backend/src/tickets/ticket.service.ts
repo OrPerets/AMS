@@ -84,7 +84,40 @@ export class TicketService {
     if (filter.buildingId) {
       where.unit = { buildingId: filter.buildingId };
     }
-    return this.prisma.ticket.findMany({ where });
+    return this.prisma.ticket.findMany({
+      where,
+      include: {
+        comments: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+        unit: {
+          include: {
+            building: true,
+          },
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   }
 
   async assign(id: number, dto: { assigneeId?: number; supplierId?: number; costEstimate?: number }) {

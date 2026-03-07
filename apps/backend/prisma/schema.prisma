@@ -219,6 +219,7 @@ model Unit {
   buildingId Int
   building   Building   @relation(fields: [buildingId], references: [id])
   residents  Resident[]
+  assets     Asset[]
   tickets    Ticket[]
   area       Float?
   bedrooms   Int?
@@ -509,6 +510,8 @@ model Asset {
   id          Int                 @id @default(autoincrement())
   buildingId  Int
   building    Building            @relation(fields: [buildingId], references: [id])
+  unitId      Int?
+  unit        Unit?               @relation(fields: [unitId], references: [id])
   name        String
   category    MaintenanceCategory
   description String?

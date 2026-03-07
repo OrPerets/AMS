@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { WorkOrderService } from './work-order.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -9,6 +10,7 @@ import { UpdateWorkOrderStatusDto } from './dto/update-work-order-status.dto';
 import { UpdateWorkOrderPhotosDto } from './dto/update-work-order-photos.dto';
 import { ApproveWorkOrderDto } from './dto/approve-work-order.dto';
 import { WorkOrderReportQueryDto } from './dto/work-order-report-query.dto';
+import { imageUploadOptions } from '../uploads/upload.utils';
 
 @Controller('api/v1/work-orders')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -67,8 +69,13 @@ export class WorkOrderController {
 
   @Patch(':id/photos')
   @Roles(Role.TECH)
-  updatePhotos(@Param('id') id: string, @Body() dto: UpdateWorkOrderPhotosDto) {
-    return this.orders.updatePhotos(+id, dto);
+  @UseInterceptors(FilesInterceptor('photos', 10, imageUploadOptions))
+  updatePhotos(
+    @Param('id') id: string,
+    @Body() dto: UpdateWorkOrderPhotosDto,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    return this.orders.updatePhotos(+id, dto, files);
   }
 
   @Patch(':id/status')

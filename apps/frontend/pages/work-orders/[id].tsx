@@ -8,7 +8,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { authFetch } from "../../lib/auth";
+import { authFetch, getCurrentUserId } from "../../lib/auth";
 import { toast } from "../../components/ui/use-toast";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -194,12 +194,17 @@ export default function WorkOrderDetailPage() {
   };
 
   const approveWorkOrder = async () => {
+    const currentUserId = getCurrentUserId();
+    if (!currentUserId) {
+      toast({ title: 'לא נמצא משתמש מחובר', variant: 'destructive' });
+      return;
+    }
     try {
       const res = await authFetch(`/api/v1/work-orders/${id}/approve`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          approvedById: 1 // This should come from the current user context
+          approvedById: currentUserId
         })
       });
       

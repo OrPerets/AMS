@@ -15,10 +15,22 @@ export class AuthService {
     return user;
   }
 
-  async login(user: { id: number; email: string; role: string; tenantId: number }) {
-    const payload = { sub: user.id, role: user.role, tenantId: user.tenantId };
-    const accessToken = await this.jwt.signAsync(payload, { expiresIn: '15m' });
-    const refreshToken = await this.jwt.signAsync(payload, { expiresIn: '7d' });
+  async login(user: { id?: number; sub?: number; email?: string; role: string; tenantId: number }) {
+    const subject = user.id ?? user.sub;
+    const payload = {
+      sub: subject,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId,
+    };
+    const accessToken = await this.jwt.signAsync(payload, {
+      secret: process.env.JWT_SECRET || 'secret',
+      expiresIn: '15m',
+    });
+    const refreshToken = await this.jwt.signAsync(payload, {
+      secret: process.env.JWT_REFRESH_SECRET || 'refresh_secret',
+      expiresIn: '7d',
+    });
     return { accessToken, refreshToken };
   }
 }

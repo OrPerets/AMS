@@ -1,5 +1,8 @@
 node_modules
 .env
+apps/backend/.env
+apps/frontend/.env
+apps/frontend/.env.local
 *.log
 dist
 dev.db

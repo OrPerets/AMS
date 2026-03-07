@@ -1,141 +1,229 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Box, 
+import {
+  Plus,
+  Search,
+  Box,
   Building,
   Calendar,
   DollarSign,
   AlertTriangle,
   CheckCircle,
   Clock,
-  MoreVertical,
-  Edit,
-  Trash2
 } from 'lucide-react';
+import Link from 'next/link';
 import { authFetch } from '../lib/auth';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Skeleton } from '../components/ui/skeleton';
-import { useLocale } from '../lib/providers';
 import { toast } from '../components/ui/use-toast';
-import Link from 'next/link';
 
-interface Asset {
+interface BuildingOption {
   id: number;
   name: string;
-  type: 'HVAC' | 'ELEVATOR' | 'PLUMBING' | 'ELECTRICAL' | 'SECURITY' | 'OTHER';
-  status: 'ACTIVE' | 'MAINTENANCE' | 'OUT_OF_ORDER' | 'RETIRED';
+}
+
+interface AssetApiRecord {
+  id: number;
+  name: string;
+  category: string;
+  status?: string | null;
+  location?: string | null;
+  purchaseDate?: string | null;
+  warrantyExpiry?: string | null;
+  value?: number | null;
+  description?: string | null;
+  buildingId: number;
+  unitId?: number | null;
+  building?: { id: number; name: string } | null;
+  unit?: { id: number; number?: string | null } | null;
+  maintenanceSchedules?: Array<{ nextOccurrence?: string | null; startDate?: string | null }>;
+}
+
+interface AssetCardView {
+  id: number;
+  name: string;
+  category: string;
+  status: string;
   location: string;
   buildingId: number;
   buildingName: string;
   unitId?: number;
   unitNumber?: string;
-  purchaseDate: string;
+  purchaseDate?: string;
   warrantyExpiry?: string;
-  lastMaintenance?: string;
   nextMaintenance?: string;
   value: number;
-  supplier?: string;
-  model?: string;
-  serialNumber?: string;
   description?: string;
 }
 
 export default function AssetsPage() {
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [assets, setAssets] = useState<AssetCardView[]>([]);
+  const [buildings, setBuildings] = useState<BuildingOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterBuilding, setFilterBuilding] = useState('all');
-  const { t } = useLocale();
 
-  async function loadAssets() {
+  useEffect(() => {
+    void loadBuildings();
+    void loadAssets();
+  }, []);
+
+  const loadBuildings = async () => {
     try {
-      const query = new URLSearchParams();
-      if (searchTerm) query.append('search', searchTerm);
-      if (filterType !== 'all') query.append('type', filterType);
-      if (filterStatus !== 'all') query.append('status', filterStatus);
-      if (filterBuilding !== 'all') query.append('buildingId', filterBuilding);
-      
-      const res = await authFetch(`/api/v1/assets?${query.toString()}`);
-      if (res.ok) {
-        setAssets(await res.json());
-      } else {
-        toast({
-          title: "שגיאה בטעינת נכסים",
-          description: "לא ניתן לטעון את רשימת הנכסים",
-          variant: "destructive",
-        });
+      const res = await authFetch('/api/v1/buildings');
+      if (!res.ok) {
+        return;
       }
-    } catch (error) {
+
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : [];
+      setBuildings(list.map((building) => ({ id: building.id, name: building.name })));
+    } catch {
+      setBuildings([]);
+    }
+  };
+
+  const loadAssets = async () => {
+    try {
+      const res = await authFetch('/api/v1/assets');
+      if (!res.ok) {
+        throw new Error('Failed to load assets');
+      }
+
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : [];
+      setAssets(list.map(mapAssetRecord));
+    } catch (error: any) {
       toast({
-        title: "שגיאה בטעינת נכסים",
-        description: "אירעה שגיאה בעת טעינת הנכסים",
-        variant: "destructive",
+        title: 'שגיאה בטעינת נכסים',
+        description: error?.message || 'לא ניתן לטעון את רשימת הנכסים',
+        variant: 'destructive',
       });
+      setAssets([]);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  useEffect(() => {
-    loadAssets();
-  }, [searchTerm, filterType, filterStatus, filterBuilding]);
+  const mapAssetRecord = (asset: AssetApiRecord): AssetCardView => {
+    const nextMaintenance = asset.maintenanceSchedules?.find(
+      (schedule) => schedule.nextOccurrence || schedule.startDate,
+    );
+
+    return {
+      id: asset.id,
+      name: asset.name,
+      category: asset.category,
+      status: asset.status ?? 'ACTIVE',
+      location: asset.location ?? '',
+      buildingId: asset.buildingId,
+      buildingName: asset.building?.name ?? `בניין #${asset.buildingId}`,
+      unitId: asset.unitId ?? asset.unit?.id ?? undefined,
+      unitNumber: asset.unit?.number ?? undefined,
+      purchaseDate: asset.purchaseDate ?? undefined,
+      warrantyExpiry: asset.warrantyExpiry ?? undefined,
+      nextMaintenance: nextMaintenance?.nextOccurrence ?? nextMaintenance?.startDate ?? undefined,
+      value: asset.value ?? 0,
+      description: asset.description ?? undefined,
+    };
+  };
+
+  const filteredAssets = assets.filter((asset) => {
+    const term = searchTerm.trim().toLowerCase();
+    const matchesSearch =
+      !term ||
+      asset.name.toLowerCase().includes(term) ||
+      asset.buildingName.toLowerCase().includes(term) ||
+      asset.location.toLowerCase().includes(term) ||
+      (asset.unitNumber ?? '').toLowerCase().includes(term);
+
+    const matchesCategory = filterCategory === 'all' || asset.category === filterCategory;
+    const matchesStatus = filterStatus === 'all' || asset.status === filterStatus;
+    const matchesBuilding =
+      filterBuilding === 'all' || asset.buildingId === Number(filterBuilding);
+
+    return matchesSearch && matchesCategory && matchesStatus && matchesBuilding;
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ACTIVE': return 'success';
-      case 'MAINTENANCE': return 'warning';
-      case 'OUT_OF_ORDER': return 'destructive';
-      case 'RETIRED': return 'secondary';
-      default: return 'default';
+      case 'ACTIVE':
+        return 'success';
+      case 'MAINTENANCE':
+        return 'warning';
+      case 'OUT_OF_ORDER':
+        return 'destructive';
+      case 'RETIRED':
+        return 'secondary';
+      default:
+        return 'default';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'ACTIVE': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'MAINTENANCE': return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'OUT_OF_ORDER': return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      case 'RETIRED': return <Box className="h-4 w-4 text-gray-500" />;
-      default: return null;
+      case 'ACTIVE':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'MAINTENANCE':
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'OUT_OF_ORDER':
+        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+      case 'RETIRED':
+        return <Box className="h-4 w-4 text-gray-500" />;
+      default:
+        return null;
     }
   };
 
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'HVAC': return 'מיזוג אוויר';
-      case 'ELEVATOR': return 'מעלית';
-      case 'PLUMBING': return 'אינסטלציה';
-      case 'ELECTRICAL': return 'חשמל';
-      case 'SECURITY': return 'אבטחה';
-      case 'OTHER': return 'אחר';
-      default: return type;
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case 'HVAC':
+        return 'מיזוג אוויר';
+      case 'ELEVATORS':
+      case 'ELEVATOR':
+        return 'מעלית';
+      case 'PLUMBING':
+        return 'אינסטלציה';
+      case 'ELECTRICAL':
+        return 'חשמל';
+      case 'SAFETY':
+      case 'SECURITY':
+        return 'אבטחה';
+      case 'LANDSCAPING':
+        return 'גינון';
+      case 'GENERAL':
+      case 'OTHER':
+        return 'כללי';
+      default:
+        return category;
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'ACTIVE': return 'פעיל';
-      case 'MAINTENANCE': return 'בתחזוקה';
-      case 'OUT_OF_ORDER': return 'מקולקל';
-      case 'RETIRED': return 'לא פעיל';
-      default: return status;
+      case 'ACTIVE':
+        return 'פעיל';
+      case 'MAINTENANCE':
+        return 'בתחזוקה';
+      case 'OUT_OF_ORDER':
+        return 'מקולקל';
+      case 'RETIRED':
+        return 'יצא משימוש';
+      default:
+        return status;
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('he-IL', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('he-IL', {
       style: 'currency',
-      currency: 'ILS'
+      currency: 'ILS',
     }).format(amount);
-  };
 
   const isMaintenanceDue = (nextMaintenance?: string) => {
     if (!nextMaintenance) return false;
@@ -143,7 +231,7 @@ export default function AssetsPage() {
     const today = new Date();
     const diffTime = nextDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 30; // Due within 30 days
+    return diffDays <= 30;
   };
 
   if (loading) {
@@ -164,15 +252,12 @@ export default function AssetsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">ציוד ונכסים</h1>
-          <p className="text-muted-foreground">
-            ניהול ציוד ונכסים בבניינים
-          </p>
+          <p className="text-muted-foreground">ניהול ציוד ונכסים בבניינים</p>
         </div>
-        
+
         <Button asChild>
           <Link href="/assets/new">
             <Plus className="me-2 h-4 w-4" />
@@ -181,7 +266,6 @@ export default function AssetsPage() {
         </Button>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardHeader>
           <CardTitle>סינון וחיפוש</CardTitle>
@@ -199,22 +283,23 @@ export default function AssetsPage() {
                 />
               </div>
             </div>
-            
-            <Select value={filterType} onValueChange={setFilterType}>
+
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="סוג נכס" />
+                <SelectValue placeholder="קטגוריה" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">כל הסוגים</SelectItem>
+                <SelectItem value="all">כל הקטגוריות</SelectItem>
+                <SelectItem value="GENERAL">כללי</SelectItem>
                 <SelectItem value="HVAC">מיזוג אוויר</SelectItem>
-                <SelectItem value="ELEVATOR">מעלית</SelectItem>
-                <SelectItem value="PLUMBING">אינסטלציה</SelectItem>
                 <SelectItem value="ELECTRICAL">חשמל</SelectItem>
-                <SelectItem value="SECURITY">אבטחה</SelectItem>
-                <SelectItem value="OTHER">אחר</SelectItem>
+                <SelectItem value="PLUMBING">אינסטלציה</SelectItem>
+                <SelectItem value="SAFETY">אבטחה</SelectItem>
+                <SelectItem value="LANDSCAPING">גינון</SelectItem>
+                <SelectItem value="ELEVATORS">מעליות</SelectItem>
               </SelectContent>
             </Select>
-            
+
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="סטטוס" />
@@ -224,107 +309,82 @@ export default function AssetsPage() {
                 <SelectItem value="ACTIVE">פעיל</SelectItem>
                 <SelectItem value="MAINTENANCE">בתחזוקה</SelectItem>
                 <SelectItem value="OUT_OF_ORDER">מקולקל</SelectItem>
-                <SelectItem value="RETIRED">לא פעיל</SelectItem>
+                <SelectItem value="RETIRED">יצא משימוש</SelectItem>
               </SelectContent>
             </Select>
-            
+
             <Select value={filterBuilding} onValueChange={setFilterBuilding}>
-              <SelectTrigger className="w-full sm:w-48">
+              <SelectTrigger className="w-full sm:w-56">
                 <SelectValue placeholder="בניין" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">כל הבניינים</SelectItem>
-                <SelectItem value="1">בניין 1</SelectItem>
-                <SelectItem value="2">בניין 2</SelectItem>
-                <SelectItem value="3">בניין 3</SelectItem>
+                {buildings.map((building) => (
+                  <SelectItem key={building.id} value={String(building.id)}>
+                    {building.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
         </CardContent>
       </Card>
 
-      {/* Assets Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {assets.map((asset) => (
-          <Card key={asset.id} className="hover:shadow-md transition-shadow">
+        {filteredAssets.map((asset) => (
+          <Card key={asset.id} className="transition-shadow hover:shadow-md">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   <Box className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <CardTitle className="text-sm font-medium line-clamp-1">
-                      {asset.name}
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      {getTypeLabel(asset.type)}
-                    </CardDescription>
+                    <CardTitle className="text-sm font-medium line-clamp-1">{asset.name}</CardTitle>
+                    <div className="text-xs text-muted-foreground">{getCategoryLabel(asset.category)}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  {getStatusIcon(asset.status)}
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </div>
+                <div className="flex items-center gap-1">{getStatusIcon(asset.status)}</div>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <Badge variant={getStatusColor(asset.status)}>
-                    {getStatusLabel(asset.status)}
-                  </Badge>
-                  {isMaintenanceDue(asset.nextMaintenance) && (
-                    <Badge variant="warning">
-                      תחזוקה קרובה
-                    </Badge>
-                  )}
+                  <Badge variant={getStatusColor(asset.status)}>{getStatusLabel(asset.status)}</Badge>
+                  {isMaintenanceDue(asset.nextMaintenance) && <Badge variant="warning">תחזוקה קרובה</Badge>}
                 </div>
-                
+
                 <div className="space-y-1 text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Building className="h-3 w-3" />
                     <span>{asset.buildingName}</span>
                     {asset.unitNumber && <span>יחידה {asset.unitNumber}</span>}
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-3 w-3" />
                     <span>{formatCurrency(asset.value)}</span>
                   </div>
-                  
+
+                  {asset.location && (
+                    <div className="text-xs">
+                      מיקום: {asset.location}
+                    </div>
+                  )}
+
                   {asset.nextMaintenance && (
                     <div className="flex items-center gap-2">
                       <Calendar className="h-3 w-3" />
                       <span>תחזוקה הבאה: {new Date(asset.nextMaintenance).toLocaleDateString('he-IL')}</span>
                     </div>
                   )}
-                  
-                  {asset.supplier && (
-                    <div className="text-xs">
-                      ספק: {asset.supplier}
-                    </div>
-                  )}
-                  
-                  {asset.model && (
-                    <div className="text-xs">
-                      דגם: {asset.model}
-                    </div>
-                  )}
                 </div>
               </div>
-              
-              <div className="flex gap-2 mt-4">
+
+              <div className="mt-4 flex gap-2">
                 <Button asChild variant="outline" size="sm" className="flex-1">
-                  <Link href={`/assets/${asset.id}/edit`}>
-                    <Edit className="me-2 h-3 w-3" />
-                    ערוך
-                  </Link>
+                  <Link href={`/assets/${asset.id}/edit`}>ערוך</Link>
                 </Button>
                 <Button asChild variant="outline" size="sm">
-                  <Link href={`/assets/${asset.id}`}>
-                    צפה
-                  </Link>
+                  <Link href={`/assets/${asset.id}`}>צפה</Link>
                 </Button>
               </div>
             </CardContent>
@@ -332,12 +392,12 @@ export default function AssetsPage() {
         ))}
       </div>
 
-      {assets.length === 0 && !loading && (
+      {filteredAssets.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Box className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">אין נכסים</h3>
-            <p className="text-muted-foreground text-center mb-4">
+            <Box className="mb-4 h-12 w-12 text-muted-foreground" />
+            <h3 className="mb-2 text-lg font-semibold">אין נכסים</h3>
+            <p className="mb-4 text-center text-muted-foreground">
               לא נמצאו נכסים התואמים לקריטריונים שלך
             </p>
             <Button asChild>

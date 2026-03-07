@@ -98,7 +98,15 @@ export class BudgetService {
     });
 
     return {
-      budgets,
+      budgets: budgets.map((budget) => {
+        const utilization = budget.amount > 0 ? (budget.actualSpent / budget.amount) * 100 : 0;
+        return {
+          ...budget,
+          variance: budget.amount - budget.actualSpent,
+          utilization,
+          alertLevel: utilization >= 100 ? 'critical' : utilization >= 80 ? 'warning' : 'normal',
+        };
+      }),
       totals: {
         planned: totals.planned,
         actual: totals.actual,

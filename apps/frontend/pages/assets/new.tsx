@@ -16,6 +16,11 @@ interface Building {
   name: string;
 }
 
+interface UnitOption {
+  id: number;
+  number: string;
+}
+
 interface CreateAssetForm {
   name: string;
   category: string;
@@ -23,6 +28,7 @@ interface CreateAssetForm {
   serialNumber: string;
   location: string;
   buildingId: string;
+  unitId: string;
   purchaseDate: string;
   warrantyExpiry: string;
   value: string;
@@ -37,13 +43,15 @@ export default function CreateAssetPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [buildings, setBuildings] = useState<Building[]>([]);
+  const [units, setUnits] = useState<UnitOption[]>([]);
   const [form, setForm] = useState<CreateAssetForm>({
     name: '',
     category: '',
     description: '',
     serialNumber: '',
     location: '',
-    buildingId: '',
+    buildingId: typeof router.query.buildingId === 'string' ? router.query.buildingId : '',
+    unitId: typeof router.query.unitId === 'string' ? router.query.unitId : 'none',
     purchaseDate: '',
     warrantyExpiry: '',
     value: '',
@@ -55,8 +63,29 @@ export default function CreateAssetPage() {
   });
 
   useEffect(() => {
-    loadBuildings();
+    void loadBuildings();
   }, []);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+
+    setForm((current) => ({
+      ...current,
+      buildingId:
+        typeof router.query.buildingId === 'string' ? router.query.buildingId : current.buildingId,
+      unitId: typeof router.query.unitId === 'string' ? router.query.unitId : current.unitId,
+    }));
+  }, [router.isReady, router.query.buildingId, router.query.unitId]);
+
+  useEffect(() => {
+    if (!form.buildingId) {
+      setUnits([]);
+      setForm((current) => ({ ...current, unitId: 'none' }));
+      return;
+    }
+
+    void loadUnits(form.buildingId);
+  }, [form.buildingId]);
 
   const loadBuildings = async () => {
     try {
@@ -70,6 +99,26 @@ export default function CreateAssetPage() {
     }
   };
 
+  const loadUnits = async (buildingId: string) => {
+    try {
+      const res = await authFetch(`/api/v1/units?buildingId=${buildingId}`);
+      if (!res.ok) {
+        throw new Error('Failed to load units');
+      }
+
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : [];
+      setUnits(
+        list.map((unit) => ({
+          id: unit.id,
+          number: unit.number || String(unit.id),
+        })),
+      );
+    } catch {
+      setUnits([]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -78,6 +127,7 @@ export default function CreateAssetPage() {
       const payload = {
         ...form,
         buildingId: parseInt(form.buildingId),
+        unitId: form.unitId !== 'none' ? parseInt(form.unitId) : undefined,
         value: form.value ? parseFloat(form.value) : undefined,
         salvageValue: form.salvageValue ? parseFloat(form.salvageValue) : undefined,
         quantity: form.quantity ? parseInt(form.quantity) : undefined,
@@ -159,12 +209,13 @@ export default function CreateAssetPage() {
                     <SelectValue placeholder="בחר קטגוריה" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="GENERAL">כללי</SelectItem>
                     <SelectItem value="HVAC">מיזוג אוויר</SelectItem>
-                    <SelectItem value="ELEVATOR">מעלית</SelectItem>
+                    <SelectItem value="ELEVATORS">מעליות</SelectItem>
                     <SelectItem value="PLUMBING">אינסטלציה</SelectItem>
                     <SelectItem value="ELECTRICAL">חשמל</SelectItem>
-                    <SelectItem value="SECURITY">אבטחה</SelectItem>
-                    <SelectItem value="OTHER">אחר</SelectItem>
+                    <SelectItem value="SAFETY">אבטחה</SelectItem>
+                    <SelectItem value="LANDSCAPING">גינון</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -179,6 +230,27 @@ export default function CreateAssetPage() {
                     {buildings.map((building) => (
                       <SelectItem key={building.id} value={building.id.toString()}>
                         {building.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="unitId">שיוך ליחידה</Label>
+                <Select
+                  value={form.unitId}
+                  onValueChange={(value) => handleInputChange('unitId', value)}
+                  disabled={!form.buildingId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="ללא שיוך ליחידה" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">ללא שיוך ליחידה</SelectItem>
+                    {units.map((unit) => (
+                      <SelectItem key={unit.id} value={String(unit.id)}>
+                        יחידה {unit.number}
                       </SelectItem>
                     ))}
                   </SelectContent>

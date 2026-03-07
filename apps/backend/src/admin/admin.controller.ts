@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { Roles, Role } from '../auth/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -9,6 +9,12 @@ import { ImpersonateDto } from './dto/impersonate.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminController {
   constructor(private admin: AdminService) {}
+
+  @Get('overview')
+  @Roles(Role.ADMIN, Role.MASTER)
+  overview() {
+    return this.admin.overview();
+  }
 
   @Post('impersonate')
   @Roles(Role.MASTER)

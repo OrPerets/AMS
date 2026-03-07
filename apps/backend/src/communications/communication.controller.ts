@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { CommunicationService } from './communication.service';
 import { CreateCommunicationDto } from './dto/create-communication.dto';
 import { UpdateCommunicationDto } from './dto/update-communication.dto';
@@ -75,20 +75,18 @@ export class CommunicationController {
   getConversation(
     @Param('user1Id') user1Id: string,
     @Param('user2Id') user2Id: string,
-    @Body() body?: { buildingId?: number }
+    @Query('buildingId') buildingId?: string
   ) {
-    return this.communications.getConversation(+user1Id, +user2Id, body?.buildingId);
+    return this.communications.getConversation(+user1Id, +user2Id, buildingId ? +buildingId : undefined);
   }
 
   @Get('search')
   @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT)
   searchCommunications(
-    @Body() query: { 
-      query: string; 
-      userId?: number; 
-      buildingId?: number 
-    }
+    @Query('query') query?: string,
+    @Query('userId') userId?: string,
+    @Query('buildingId') buildingId?: string,
   ) {
-    return this.communications.searchCommunications(query.query, query.userId, query.buildingId);
+    return this.communications.searchCommunications(query ?? '', userId ? +userId : undefined, buildingId ? +buildingId : undefined);
   }
 }

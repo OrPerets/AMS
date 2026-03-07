@@ -7,6 +7,10 @@ export class UpdateAssetDto {
   buildingId?: number;
 
   @IsOptional()
+  @IsInt()
+  unitId?: number;
+
+  @IsOptional()
   @IsString()
   name?: string;
 

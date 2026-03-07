@@ -6,6 +6,26 @@ import { Prisma, Unit } from '@prisma/client';
 export class UnitService {
   constructor(private prisma: PrismaService) {}
 
+  private readonly include = {
+    building: true,
+    residents: {
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
+    },
+    assets: {
+      include: {
+        building: true,
+      },
+      orderBy: { name: 'asc' as const },
+    },
+  };
+
   create(data: Prisma.UnitCreateInput, residentIds?: number[]): Promise<Unit> {
     return this.prisma.unit.create({
       data: {
@@ -14,17 +34,22 @@ export class UnitService {
           ? { connect: residentIds.map((id) => ({ id })) }
           : undefined,
       },
+      include: this.include,
     });
   }
 
-  findAll(): Promise<Unit[]> {
-    return this.prisma.unit.findMany({ include: { residents: true } });
+  findAll(buildingId?: number): Promise<Unit[]> {
+    return this.prisma.unit.findMany({
+      where: buildingId ? { buildingId } : undefined,
+      include: this.include,
+      orderBy: [{ buildingId: 'asc' }, { number: 'asc' }],
+    });
   }
 
   findOne(id: number): Promise<Unit | null> {
     return this.prisma.unit.findUnique({
       where: { id },
-      include: { residents: true },
+      include: this.include,
     });
   }
 
@@ -37,7 +62,7 @@ export class UnitService {
           ? { set: residentIds.map((id) => ({ id })) }
           : undefined,
       },
-      include: { residents: true },
+      include: this.include,
     });
   }
 

@@ -1,0 +1,19 @@
+# Environment file presence
+-rw-r--r--@ 1 orperetz  staff  169 Mar  7 10:51 apps/backend/.env
+-rw-r--r--  1 orperetz  staff  160 Mar  7 10:47 apps/backend/.env.example
+-rw-r--r--@ 1 orperetz  staff   43 Mar  7 10:51 apps/frontend/.env
+-rw-r--r--  1 orperetz  staff   71 Mar  7 10:47 apps/frontend/.env.example
+-rw-r--r--  1 orperetz  staff   43 Mar  7 10:47 apps/frontend/.env.local
+
+# Required key presence
+[apps/backend/.env]
+DATABASE_URL=present
+JWT_SECRET=present
+JWT_REFRESH_SECRET=present
+AWS_ACCESS_KEY_ID=N/A
+SENDGRID_API_KEY=N/A
+TWILIO_ACCOUNT_SID=N/A
+
+[apps/frontend/.env]
+NEXT_PUBLIC_API_BASE=present
+

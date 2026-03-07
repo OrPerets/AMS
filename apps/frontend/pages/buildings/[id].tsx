@@ -75,11 +75,31 @@ export default function BuildingDetailPage() {
           authFetch(`/api/v1/buildings/${id}/details`),
           authFetch(`/api/v1/units?buildingId=${id}`),
         ]);
-        if (bRes.ok) setBuilding(await bRes.json());
-        if (dRes.ok) setDetails(await dRes.json());
+        let buildingRecord: Building | null = null;
+        let detailsRecord: BuildingDetails | null = null;
+
+        if (bRes.ok) {
+          buildingRecord = await bRes.json();
+          setBuilding(buildingRecord);
+        }
+        if (dRes.ok) {
+          detailsRecord = await dRes.json();
+          setDetails(detailsRecord);
+        }
         if (unitsRes.ok) {
           const unitsData = await unitsRes.json();
-          setDetails(prev => prev ? { ...prev, units: unitsData } : null);
+          setDetails((prev) =>
+            prev
+              ? { ...prev, units: unitsData }
+              : {
+                  id: buildingRecord?.id ?? Number(id),
+                  name: buildingRecord?.name ?? '',
+                  address: buildingRecord?.address,
+                  units: unitsData,
+                  assets: detailsRecord?.assets ?? [],
+                  documents: detailsRecord?.documents ?? [],
+                },
+          );
         }
       } finally {
         setLoading(false);
@@ -245,8 +265,8 @@ export default function BuildingDetailPage() {
           ) : (
             <div className="text-center py-8">
               <p className="text-sm text-muted-foreground mb-4">אין יחידות להצגה.</p>
-              <Button size="sm">
-                הוסף יחידה
+              <Button size="sm" asChild>
+                <Link href={`/units/new?buildingId=${building.id}`}>הוסף יחידה</Link>
               </Button>
             </div>
           )}
@@ -300,5 +320,4 @@ export default function BuildingDetailPage() {
     </div>
   );
 }
-
 

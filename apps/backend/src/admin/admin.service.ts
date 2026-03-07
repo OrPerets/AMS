@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { InvoiceStatus, Role as PrismaRole, TicketStatus } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { Role } from '../auth/roles.decorator';
 import { ImpersonateDto } from './dto/impersonate.dto';
@@ -8,12 +9,88 @@ import { ImpersonateDto } from './dto/impersonate.dto';
 export class AdminService {
   constructor(private jwt: JwtService, private prisma: PrismaService) {}
 
+  async overview() {
+    const [openTickets, unpaidInvoices, users, buildings, recentImpersonationEvents, recentNotifications, userRoleCounts] =
+      await Promise.all([
+        this.prisma.ticket.count({ where: { status: { not: TicketStatus.RESOLVED } } }),
+        this.prisma.invoice.count({ where: { status: InvoiceStatus.UNPAID } }),
+        this.prisma.user.findMany({
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            tenantId: true,
+            phone: true,
+            createdAt: true,
+          },
+          take: 12,
+        }),
+        this.prisma.building.count(),
+        this.prisma.impersonationEvent.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 8,
+        }),
+        this.prisma.notification.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 8,
+          select: {
+            id: true,
+            title: true,
+            message: true,
+            type: true,
+            userId: true,
+            buildingId: true,
+            createdAt: true,
+            read: true,
+          },
+        }),
+        this.prisma.user.groupBy({
+          by: ['role'],
+          _count: { _all: true },
+        }),
+      ]);
+
+    const roleCounts = Object.values(PrismaRole).reduce(
+      (acc, roleName) => ({ ...acc, [roleName]: 0 }),
+      {} as Record<string, number>,
+    );
+    for (const entry of userRoleCounts) {
+      roleCounts[entry.role] = entry._count._all;
+    }
+
+    return {
+      stats: {
+        totalUsers: await this.prisma.user.count(),
+        totalBuildings: buildings,
+        openTickets,
+        unpaidInvoices,
+        activeTechs: await this.prisma.user.count({ where: { role: PrismaRole.TECH } }),
+      },
+      health: {
+        database: 'connected',
+        auth: 'healthy',
+        notifications: 'healthy',
+      },
+      roleCounts,
+      users,
+      recentImpersonationEvents,
+      recentNotifications,
+      navigation: [
+        { label: 'התראות מנהל', href: '/admin/notifications' },
+        { label: 'חשבוניות ממתינות', href: '/admin/unpaid-invoices' },
+        { label: 'הגדרות משתמש', href: '/settings' },
+      ],
+    };
+  }
+
   async impersonate(user: any, dto: ImpersonateDto, ip: string, userAgent: string) {
     if (dto.role === Role.MASTER || !Object.values(Role).includes(dto.role)) {
       throw new BadRequestException('Invalid role');
     }
     const payload = {
       sub: user.sub,
+      email: user.email,
       role: user.role,
       actAsRole: dto.role,
       tenantId: dto.tenantId,
@@ -43,6 +120,7 @@ export class AdminService {
   async stopImpersonation(user: any, ip: string, userAgent: string) {
     const payload = {
       sub: user.sub,
+      email: user.email,
       role: user.role,
       tenantId: user.tenantId,
     };

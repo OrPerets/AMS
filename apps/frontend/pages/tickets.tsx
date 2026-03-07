@@ -14,7 +14,7 @@ import {
   Filter,
   MoreHorizontal
 } from 'lucide-react';
-import { authFetch } from '../lib/auth';
+import { authFetch, getCurrentUserId } from '../lib/auth';
 import { DataTable } from '../components/ui/data-table';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -51,7 +51,6 @@ interface Ticket {
   severity: 'NORMAL' | 'HIGH' | 'URGENT';
   title?: string;
   description?: string;
-  assignedTo?: string;
   assignedToName?: string;
   createdAt: string;
   updatedAt: string;
@@ -59,6 +58,19 @@ interface Ticket {
   hasPhotos?: boolean;
   residentName?: string;
   category?: string;
+  photos?: string[];
+  comments?: Array<{ id: number; content: string; createdAt: string }>;
+  unit?: {
+    building?: {
+      id: number;
+      name: string;
+    };
+  };
+  assignedTo?: {
+    id: number;
+    email: string;
+    role: string;
+  };
 }
 
 const severityConfig = {
@@ -82,6 +94,32 @@ export default function Tickets() {
   const { locale } = useLocale();
   const router = useRouter();
 
+  const mapTicket = (ticket: any): Ticket => {
+    const descriptionComment = Array.isArray(ticket.comments)
+      ? ticket.comments.find((comment: any) => typeof comment?.content === 'string' && comment.content.trim().length > 0)
+      : undefined;
+
+    return {
+      id: ticket.id,
+      unitId: ticket.unitId,
+      buildingId: ticket.unit?.building?.id,
+      status: ticket.status,
+      severity: ticket.severity,
+      title: descriptionComment?.content?.slice(0, 50) || `קריאה #${ticket.id}`,
+      description: descriptionComment?.content,
+      assignedToName: ticket.assignedTo?.email,
+      createdAt: ticket.createdAt,
+      updatedAt: ticket.updatedAt,
+      dueDate: ticket.slaDue,
+      hasPhotos: Array.isArray(ticket.photos) && ticket.photos.length > 0,
+      photos: ticket.photos ?? [],
+      residentName: ticket.unit?.building?.name,
+      category: ticket.unit?.building?.name,
+      comments: ticket.comments ?? [],
+      unit: ticket.unit,
+    };
+  };
+
   const handleCreateTicket = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -101,7 +139,7 @@ export default function Tickets() {
       const res = await authFetch('/api/v1/tickets');
       if (res.ok) {
         const data = await res.json();
-        setTickets(Array.isArray(data) ? data : []);
+        setTickets(Array.isArray(data) ? data.map(mapTicket) : []);
       } else {
         // Mock data for demo
         setTickets([
@@ -113,7 +151,6 @@ export default function Tickets() {
             severity: 'URGENT',
             title: 'דליפת מים בחדר אמבטיה',
             description: 'דליפה מתמשכת מהברז הראשי',
-            assignedTo: 'tech1',
             assignedToName: 'אבי כהן',
             createdAt: '2024-01-15T10:30:00Z',
             updatedAt: '2024-01-15T10:30:00Z',
@@ -130,7 +167,6 @@ export default function Tickets() {
             severity: 'HIGH',
             title: 'תיקון מעלית',
             description: 'המעלית תקועה בקומה השנייה',
-            assignedTo: 'tech2',
             assignedToName: 'רינה שמש',
             createdAt: '2024-01-14T14:20:00Z',
             updatedAt: '2024-01-15T09:15:00Z',
@@ -146,7 +182,6 @@ export default function Tickets() {
             severity: 'NORMAL',
             title: 'החלפת נורה בחדר מדרגות',
             description: 'נורה שרופה בקומה 3',
-            assignedTo: 'tech1',
             assignedToName: 'אבי כהן',
             createdAt: '2024-01-13T16:45:00Z',
             updatedAt: '2024-01-14T11:30:00Z',
@@ -184,11 +219,16 @@ export default function Tickets() {
   };
 
   const handleAssignTicket = async (ticket: Ticket) => {
+    const currentUserId = getCurrentUserId();
+    if (!currentUserId) {
+      toast({ title: 'לא נמצא משתמש מחובר', variant: 'destructive' });
+      return;
+    }
     try {
       await authFetch(`/api/v1/tickets/${ticket.id}/assign`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assigneeId: 1 }),
+        body: JSON.stringify({ assigneeId: currentUserId }),
       });
       toast({ title: 'הקריאה הוקצתה' });
       loadTickets();

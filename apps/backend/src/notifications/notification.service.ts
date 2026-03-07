@@ -138,6 +138,8 @@ export class NotificationService {
       paymentReminders: true,
       announcements: true,
       emergencyAlerts: true,
+      workOrderUpdates: true,
+      general: true,
     };
 
     return {
@@ -393,4 +395,3 @@ export class NotificationService {
     });
   }
 }
-

@@ -1,0 +1,15 @@
+HTTP/1.1 200 OK
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Cross-Origin-Resource-Policy: same-site
+Vary: Origin
+Access-Control-Allow-Credentials: true
+Content-Type: application/json; charset=utf-8
+Content-Length: 15
+ETag: W/"f-VaSQ4oDUiZblZNAEkkN+sX+q3Sg"
+Date: Sat, 07 Mar 2026 10:39:28 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"status":"ok"}

@@ -5,6 +5,10 @@ export class CreateAssetDto {
   @IsInt()
   buildingId!: number;
 
+  @IsOptional()
+  @IsInt()
+  unitId?: number;
+
   @IsString()
   name!: string;
 

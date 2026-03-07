@@ -246,10 +246,17 @@ export class FinancialService {
     };
   }
 
-  async getSummary(tenantId?: number) {
+  async getSummary(tenantId?: number, buildingId?: number) {
     const [budgets, expenses] = await Promise.all([
-      this.prisma.budget.aggregate({ _sum: { amount: true, actualSpent: true } }),
-      this.prisma.expense.groupBy({ by: ['category'], _sum: { amount: true } }),
+      this.prisma.budget.aggregate({
+        _sum: { amount: true, actualSpent: true },
+        where: buildingId ? { buildingId } : undefined,
+      }),
+      this.prisma.expense.groupBy({
+        by: ['category'],
+        _sum: { amount: true },
+        where: buildingId ? { buildingId } : undefined,
+      }),
     ]);
     const planned = budgets._sum.amount ?? 0;
     const actual = budgets._sum.actualSpent ?? 0;
@@ -261,21 +268,49 @@ export class FinancialService {
     };
   }
 
-  async getProfitAndLoss() {
+  async getProfitAndLoss(buildingId?: number) {
     // Revenue: sum of PAID invoices; Expenses: sum of all expenses
     const [revenueAgg, expenseAgg] = await Promise.all([
-      this.prisma.invoice.aggregate({ _sum: { amount: true } }),
-      this.prisma.expense.aggregate({ _sum: { amount: true } }),
+      this.prisma.invoice.aggregate({
+        _sum: { amount: true },
+        where: buildingId
+          ? {
+              resident: {
+                units: {
+                  some: { buildingId },
+                },
+              },
+            }
+          : undefined,
+      }),
+      this.prisma.expense.aggregate({
+        _sum: { amount: true },
+        where: buildingId ? { buildingId } : undefined,
+      }),
     ]);
     const revenue = revenueAgg._sum.amount ?? 0;
     const expenses = expenseAgg._sum.amount ?? 0;
     return { revenue, expenses, profit: revenue - expenses };
   }
 
-  async getCashFlow() {
+  async getCashFlow(buildingId?: number) {
     // Simplified: invoices as inflow, expenses as outflow grouped by month
-    const invoices = await this.prisma.invoice.findMany({ select: { amount: true, createdAt: true } });
-    const expenses = await this.prisma.expense.findMany({ select: { amount: true, incurredAt: true } });
+    const invoices = await this.prisma.invoice.findMany({
+      where: buildingId
+        ? {
+            resident: {
+              units: {
+                some: { buildingId },
+              },
+            },
+          }
+        : undefined,
+      select: { amount: true, createdAt: true },
+    });
+    const expenses = await this.prisma.expense.findMany({
+      where: buildingId ? { buildingId } : undefined,
+      select: { amount: true, incurredAt: true },
+    });
     const bucket = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const map: Record<string, { inflow: number; outflow: number; net: number }> = {};
     for (const inv of invoices) {
@@ -309,10 +344,24 @@ export class FinancialService {
     }));
   }
 
-  async getForecast() {
+  async getForecast(buildingId?: number) {
     // Naive forecast: average last 3 months expenses and revenue
-    const invoices = await this.prisma.invoice.findMany({ select: { amount: true, createdAt: true } });
-    const expenses = await this.prisma.expense.findMany({ select: { amount: true, incurredAt: true } });
+    const invoices = await this.prisma.invoice.findMany({
+      where: buildingId
+        ? {
+            resident: {
+              units: {
+                some: { buildingId },
+              },
+            },
+          }
+        : undefined,
+      select: { amount: true, createdAt: true },
+    });
+    const expenses = await this.prisma.expense.findMany({
+      where: buildingId ? { buildingId } : undefined,
+      select: { amount: true, incurredAt: true },
+    });
     const byMonth = (items: { amount: number; date: Date }[]) => {
       const map: Record<string, number> = {};
       for (const it of items) {
@@ -338,7 +387,7 @@ export class FinancialService {
     ];
   }
 
-  async export(type: 'summary' | 'pnl' | 'cash-flow' | 'variance' | 'monthly', format: 'csv' | 'xlsx' | 'pdf', opts: { buildingId?: number; year?: number; month?: number } = {}) {
+  async export(type: 'summary' | 'pnl' | 'cash-flow' | 'variance' | 'monthly' | 'yearly', format: 'csv' | 'xlsx' | 'pdf', opts: { buildingId?: number; year?: number; month?: number } = {}) {
     // Build data by type
     const filename = `${type}.${format}`;
 
@@ -358,7 +407,7 @@ export class FinancialService {
     return { filename, contentType, buffer };
   }
 
-  private async exportExcel(type: 'summary' | 'pnl' | 'cash-flow' | 'variance' | 'monthly', opts: { buildingId?: number; year?: number; month?: number }) {
+  private async exportExcel(type: 'summary' | 'pnl' | 'cash-flow' | 'variance' | 'monthly' | 'yearly', opts: { buildingId?: number; year?: number; month?: number }) {
     // Using a simple approach without external library for now
     // In production, you'd want to use exceljs
     const ExcelJS = require('exceljs');
@@ -372,21 +421,21 @@ export class FinancialService {
 
     switch (type) {
       case 'summary': {
-        const s = await this.getSummary();
+        const s = await this.getSummary(undefined, opts.buildingId);
         worksheet.addRow({ field: 'Planned', value: s.planned });
         worksheet.addRow({ field: 'Actual', value: s.actual });
         worksheet.addRow({ field: 'Variance', value: s.variance });
         break;
       }
       case 'pnl': {
-        const p = await this.getProfitAndLoss();
+        const p = await this.getProfitAndLoss(opts.buildingId);
         worksheet.addRow({ field: 'Revenue', value: p.revenue });
         worksheet.addRow({ field: 'Expenses', value: p.expenses });
         worksheet.addRow({ field: 'Profit', value: p.profit });
         break;
       }
       case 'cash-flow': {
-        const rows = await this.getCashFlow();
+        const rows = await this.getCashFlow(opts.buildingId);
         worksheet.columns = [
           { header: 'Month', key: 'month', width: 15 },
           { header: 'Inflow', key: 'inflow', width: 15 },
@@ -436,6 +485,25 @@ export class FinancialService {
         });
         break;
       }
+      case 'yearly': {
+        const year = opts.year || new Date().getFullYear();
+        const report = await this.getYearlyReport(year, opts.buildingId);
+        worksheet.columns = [
+          { header: 'Month', key: 'month', width: 18 },
+          { header: 'Income', key: 'income', width: 15 },
+          { header: 'Expenses', key: 'expenses', width: 15 },
+          { header: 'Balance', key: 'balance', width: 15 },
+        ];
+        report.months.forEach((month) =>
+          worksheet.addRow({
+            month: month.month,
+            income: month.totalIncome,
+            expenses: month.totalExpenses,
+            balance: month.balance,
+          }),
+        );
+        break;
+      }
     }
 
     // Style header row
@@ -450,10 +518,10 @@ export class FinancialService {
     return Buffer.from(buffer);
   }
 
-  private async exportCsv(type: 'summary' | 'pnl' | 'cash-flow' | 'variance' | 'monthly', opts: { buildingId?: number; year?: number; month?: number }) {
+  private async exportCsv(type: 'summary' | 'pnl' | 'cash-flow' | 'variance' | 'monthly' | 'yearly', opts: { buildingId?: number; year?: number; month?: number }) {
     switch (type) {
       case 'summary': {
-        const s = await this.getSummary();
+        const s = await this.getSummary(undefined, opts.buildingId);
         const lines = [
           'planned,actual,variance',
           `${s.planned},${s.actual},${s.variance}`,
@@ -461,7 +529,7 @@ export class FinancialService {
         return lines.join('\n');
       }
       case 'pnl': {
-        const p = await this.getProfitAndLoss();
+        const p = await this.getProfitAndLoss(opts.buildingId);
         const lines = [
           'revenue,expenses,profit',
           `${p.revenue},${p.expenses},${p.profit}`,
@@ -469,7 +537,7 @@ export class FinancialService {
         return lines.join('\n');
       }
       case 'cash-flow': {
-        const rows = await this.getCashFlow();
+        const rows = await this.getCashFlow(opts.buildingId);
         const lines = ['month,inflow,outflow,net', ...rows.map(r => `${r.month},${r.inflow},${r.outflow},${r.net}`)];
         return lines.join('\n');
       }
@@ -491,29 +559,34 @@ export class FinancialService {
         lines.push('Balance,' + report.balance);
         return lines.join('\n');
       }
+      case 'yearly': {
+        const year = opts.year || new Date().getFullYear();
+        const report = await this.getYearlyReport(year, opts.buildingId);
+        return ['month,totalIncome,totalExpenses,balance', ...report.months.map((month) => `${month.month},${month.totalIncome},${month.totalExpenses},${month.balance}`)].join('\n');
+      }
       default:
         return '';
     }
   }
 
-  private async exportPdf(type: 'summary' | 'pnl' | 'cash-flow' | 'variance' | 'monthly', opts: { buildingId?: number; year?: number; month?: number }) {
+  private async exportPdf(type: 'summary' | 'pnl' | 'cash-flow' | 'variance' | 'monthly' | 'yearly', opts: { buildingId?: number; year?: number; month?: number }) {
     const doc = new PDFDocument({ margin: 40 });
     const chunks: Buffer[] = [];
     doc.fontSize(18).text(`Report: ${type}`, { underline: true });
     doc.moveDown();
 
     if (type === 'summary') {
-      const s = await this.getSummary();
+      const s = await this.getSummary(undefined, opts.buildingId);
       doc.fontSize(12).text(`Planned: ${s.planned}`);
       doc.text(`Actual: ${s.actual}`);
       doc.text(`Variance: ${s.variance}`);
     } else if (type === 'pnl') {
-      const p = await this.getProfitAndLoss();
+      const p = await this.getProfitAndLoss(opts.buildingId);
       doc.fontSize(12).text(`Revenue: ${p.revenue}`);
       doc.text(`Expenses: ${p.expenses}`);
       doc.text(`Profit: ${p.profit}`);
     } else if (type === 'cash-flow') {
-      const rows = await this.getCashFlow();
+      const rows = await this.getCashFlow(opts.buildingId);
       doc.fontSize(12).text('Month, Inflow, Outflow, Net');
       doc.moveDown(0.5);
       for (const r of rows) {
@@ -525,6 +598,25 @@ export class FinancialService {
       doc.moveDown(0.5);
       for (const r of rows) {
         doc.text(`${r.year}, ${r.name}, ${r.planned}, ${r.actual}, ${r.variance}`);
+      }
+    } else if (type === 'monthly') {
+      const year = opts.year || new Date().getFullYear();
+      const month = opts.month || new Date().getMonth() + 1;
+      const report = await this.getMonthlyReport(year, month, opts.buildingId);
+      doc.fontSize(12).text(`${report.month} ${report.year}`);
+      doc.text(`Income: ${report.totalIncome}`);
+      doc.text(`Expenses: ${report.totalExpenses}`);
+      doc.text(`Balance: ${report.balance}`);
+    } else if (type === 'yearly') {
+      const year = opts.year || new Date().getFullYear();
+      const report = await this.getYearlyReport(year, opts.buildingId);
+      doc.fontSize(12).text(`Year: ${report.year}`);
+      doc.text(`Income: ${report.totalIncome}`);
+      doc.text(`Expenses: ${report.totalExpenses}`);
+      doc.text(`Balance: ${report.totalBalance}`);
+      doc.moveDown(0.5);
+      for (const month of report.months) {
+        doc.text(`${month.month}: ${month.totalIncome} / ${month.totalExpenses} / ${month.balance}`);
       }
     }
 
@@ -541,5 +633,3 @@ export class FinancialService {
     return { id: Date.now(), status: 'SCHEDULED', ...body };
   }
 }
-
-

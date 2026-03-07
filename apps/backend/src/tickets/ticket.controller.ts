@@ -23,6 +23,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles, Role } from '../auth/roles.decorator';
 import { TicketStatus } from '@prisma/client';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { imageUploadOptions } from '../uploads/upload.utils';
 
 @Controller('api/v1/tickets')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -31,7 +32,7 @@ export class TicketController {
 
   @Post()
   @Roles(Role.RESIDENT)
-  @UseInterceptors(FilesInterceptor('photos'))
+  @UseInterceptors(FilesInterceptor('photos', 10, imageUploadOptions))
   create(@Body() dto: CreateTicketDto, @UploadedFiles() photos: Express.Multer.File[], @Request() req: any) {
     return this.tickets.create({
       unit: { connect: { id: dto.unitId } },

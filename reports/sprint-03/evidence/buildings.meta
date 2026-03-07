@@ -1,0 +1,3 @@
+buildings_status=200
+buildings_method=GET
+buildings_path=/api/v1/buildings

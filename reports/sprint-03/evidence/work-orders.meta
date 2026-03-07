@@ -1,0 +1,3 @@
+work-orders_status=200
+work-orders_method=GET
+work-orders_path=/api/v1/work-orders

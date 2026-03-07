@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { ArrowLeft, CalendarClock, MapPin, Wrench, DollarSign, TrendingDown, Edit, Save, X } from "lucide-react";
+import { ArrowLeft, MapPin, Wrench, DollarSign, TrendingDown, Edit, Save, X } from "lucide-react";
 import { assetSummaries, maintenanceHistory, maintenanceEvents } from "../../components/maintenance/data";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
@@ -24,7 +24,8 @@ interface Asset {
   serialNumber?: string;
   location?: string;
   buildingId: number;
-  buildingName?: string;
+  building?: { id: number; name: string };
+  unit?: { id: number; number?: string };
   purchaseDate?: string;
   warrantyExpiry?: string;
   value?: number;
@@ -91,7 +92,7 @@ export default function AssetDetailPage() {
         category: mockAsset?.category || 'OTHER',
         location: mockAsset?.location || 'לא ידוע',
         buildingId: 1,
-        buildingName: 'בניין דוגמה',
+        building: { id: 1, name: 'בניין דוגמה' },
         status: 'ACTIVE'
       });
     } finally {
@@ -185,7 +186,10 @@ export default function AssetDetailPage() {
         <div>
           <p className="text-sm text-muted-foreground">פרטי נכס</p>
           <h1 className="text-3xl font-bold text-foreground">{asset.name}</h1>
-          <p className="text-sm text-muted-foreground">{asset.buildingName}</p>
+          <p className="text-sm text-muted-foreground">
+            {asset.building?.name ?? `בניין #${asset.buildingId}`}
+            {asset.unit?.number ? ` • יחידה ${asset.unit.number}` : ''}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline">
@@ -283,8 +287,11 @@ export default function AssetDetailPage() {
             <div className="flex items-center justify-between">
               <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground flex-1">
                 <p className="text-xs font-medium text-foreground">מיקום נוכחי</p>
-                <p>{asset.location || 'לא הוגדר'}</p>
-              </div>
+              <p>{asset.location || 'לא הוגדר'}</p>
+              {asset.unit?.number && (
+                <p className="mt-2 text-xs">משויך ליחידה {asset.unit.number}</p>
+              )}
+            </div>
               <Button 
                 variant="outline" 
                 size="sm" 

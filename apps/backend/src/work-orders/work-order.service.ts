@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, TicketStatus, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { PhotoService } from '../tickets/photo.service';
 import { UpdateWorkOrderCostDto } from './dto/update-work-order-cost.dto';
 import { UpdateWorkOrderStatusDto } from './dto/update-work-order-status.dto';
 import { UpdateWorkOrderPhotosDto } from './dto/update-work-order-photos.dto';
@@ -23,7 +24,10 @@ export class WorkOrderService {
     approvedBy: true,
   } as const;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private photos: PhotoService,
+  ) {}
 
   private calculateTotalCost(costs: {
     laborCost?: number | null;
@@ -155,14 +159,17 @@ export class WorkOrderService {
     });
   }
 
-  async updatePhotos(id: number, dto: UpdateWorkOrderPhotosDto) {
+  async updatePhotos(id: number, dto: UpdateWorkOrderPhotosDto, files?: Express.Multer.File[]) {
     const order = await this.prisma.workOrder.findUnique({ where: { id } });
     if (!order) {
       throw new Error('Work order not found');
     }
 
     const current = order.photos ?? [];
-    const photos = dto.replace ? dto.photos : Array.from(new Set([...current, ...dto.photos]));
+    const uploadedPhotos = await Promise.all((files ?? []).map((file) => this.photos.upload(file)));
+    const requestedPhotos = dto.photos ?? [];
+    const nextPhotos = [...requestedPhotos, ...uploadedPhotos];
+    const photos = dto.replace ? nextPhotos : Array.from(new Set([...current, ...nextPhotos]));
 
     return this.prisma.workOrder.update({
       where: { id },

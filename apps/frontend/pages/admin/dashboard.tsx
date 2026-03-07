@@ -1,344 +1,214 @@
-// /Users/orperetz/Documents/AMS/apps/frontend/pages/admin/dashboard.tsx
-import React, { useEffect, useState } from 'react';
-import { 
-  Ticket, 
-  AlertTriangle, 
-  CreditCard, 
-  Clock, 
-  Wrench, 
-  Building,
-  Download,
-  RefreshCw,
-  Filter,
-  Users
-} from 'lucide-react';
-import { authFetch } from '../../lib/auth';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Building2, CreditCard, ShieldCheck, Ticket, UserCog, Users } from 'lucide-react';
+import { authFetch, startImpersonation } from '../../lib/auth';
 import { KpiCard } from '../../components/ui/kpi-card';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
-import { SimpleBarChart, SimpleLineChart, SimplePieChart } from '../../components/ui/chart';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
-import { useLocale } from '../../lib/providers';
-import { cn, formatNumber } from '../../lib/utils';
 import { toast } from '../../components/ui/use-toast';
 
-interface Kpis {
-  openTickets: number;
-  slaBreaches: number;
-  unpaidInvoices: number;
-  totalBuildings?: number;
-  activeTechs?: number;
-  monthlyRevenue?: number;
-  completedTicketsToday?: number;
-}
-
-interface ChartData {
-  ticketsByStatus: Array<{ name: string; value: number }>;
-  monthlyTrend: Array<{ name: string; value: number }>;
-  techWorkload: Array<{ name: string; value: number }>;
+interface OverviewResponse {
+  stats: {
+    totalUsers: number;
+    totalBuildings: number;
+    openTickets: number;
+    unpaidInvoices: number;
+    activeTechs: number;
+  };
+  health: Record<string, string>;
+  roleCounts: Record<string, number>;
+  users: Array<{
+    id: number;
+    email: string;
+    role: string;
+    tenantId: number;
+    phone?: string | null;
+    createdAt: string;
+  }>;
+  recentImpersonationEvents: Array<{
+    id: number;
+    action: string;
+    targetRole?: string | null;
+    reason?: string | null;
+    createdAt: string;
+  }>;
+  navigation: Array<{ label: string; href: string }>;
 }
 
 export default function Dashboard() {
-  const [kpis, setKpis] = useState<Kpis>({ 
-    openTickets: 0, 
-    slaBreaches: 0, 
-    unpaidInvoices: 0,
-    totalBuildings: 0,
-    activeTechs: 0,
-    monthlyRevenue: 0,
-    completedTicketsToday: 0
-  });
-  const [chartData, setChartData] = useState<ChartData>({
-    ticketsByStatus: [],
-    monthlyTrend: [],
-    techWorkload: []
-  });
-  const [buildingId, setBuildingId] = useState('');
+  const [data, setData] = useState<OverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const { t } = useLocale();
+  const [switchingRole, setSwitchingRole] = useState<string | null>(null);
 
-  async function loadData() {
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function load() {
     try {
-      const query = buildingId ? `?buildingId=${buildingId}` : '';
-      const [kpisRes, chartsRes] = await Promise.all([
-        authFetch(`/api/v1/dashboard${query}`),
-        authFetch(`/api/v1/dashboard/charts${query}`)
-      ]);
-
-      if (kpisRes.ok) {
-        const kpisData = await kpisRes.json();
-        setKpis({
-          openTickets: kpisData.openTickets || 0,
-          slaBreaches: kpisData.slaBreaches || 0,
-          unpaidInvoices: kpisData.unpaidInvoices || 0,
-          totalBuildings: kpisData.totalBuildings || 15,
-          activeTechs: kpisData.activeTechs || 8,
-          monthlyRevenue: kpisData.monthlyRevenue || 125000,
-          completedTicketsToday: kpisData.completedTicketsToday || 12
-        });
+      setLoading(true);
+      const response = await authFetch('/admin/overview');
+      if (!response.ok) {
+        throw new Error(await response.text());
       }
-
-      // Mock chart data if endpoint doesn't exist
-      setChartData({
-        ticketsByStatus: [
-          { name: 'פתוח', value: kpis.openTickets || 15 },
-          { name: 'בתהליך', value: 23 },
-          { name: 'הושלם', value: 45 },
-          { name: 'סגור', value: 12 }
-        ],
-        monthlyTrend: [
-          { name: 'ינואר', value: 65 },
-          { name: 'פברואר', value: 72 },
-          { name: 'מרץ', value: 68 },
-          { name: 'אפריל', value: 81 },
-          { name: 'מאי', value: 79 },
-          { name: 'יוני', value: 88 }
-        ],
-        techWorkload: [
-          { name: 'אבי כהן', value: 12 },
-          { name: 'דנה לוי', value: 8 },
-          { name: 'יוסי דוד', value: 15 },
-          { name: 'רינה שמש', value: 6 }
-        ]
-      });
-
-    } catch (error) {
+      setData(await response.json());
+    } catch {
       toast({
-        title: "שגיאה בטעינת נתונים",
-        description: "לא ניתן לטעון את נתוני הדשבורד",
-        variant: "destructive",
+        title: 'טעינת דשבורד נכשלה',
+        description: 'לא ניתן לטעון את נתוני הניהול כרגע.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }
 
-  useEffect(() => {
-    loadData();
-  }, [buildingId]);
+  async function impersonate(role: string) {
+    try {
+      setSwitchingRole(role);
+      await startImpersonation(role, 1, 'Admin dashboard quick switch');
+      window.location.href =
+        role === 'TECH' ? '/tech/jobs' : role === 'ACCOUNTANT' ? '/payments' : role === 'RESIDENT' ? '/tickets' : '/home';
+    } catch {
+      toast({
+        title: 'החלפת תפקיד נכשלה',
+        description: 'לא ניתן להתחבר לתפקיד המבוקש.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSwitchingRole(null);
+    }
+  }
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    loadData();
-  };
-
-  const handleExport = () => {
-    const query = buildingId ? `?buildingId=${buildingId}` : '';
-    window.open(`/api/v1/dashboard/export${query}`, '_blank');
-  };
-
-  if (loading) {
+  if (loading || !data) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-10 w-24" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24" />
+        <Skeleton className="h-10 w-64" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <Skeleton key={index} className="h-28" />
           ))}
         </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          <Skeleton className="h-80" />
-          <Skeleton className="h-80" />
-        </div>
+        <Skeleton className="h-96" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">דשבורד ניהול</h1>
-          <p className="text-muted-foreground">
-            סקירה כללית של המערכת ופעילות היומית
-          </p>
+          <p className="text-muted-foreground">סטטוס מערכת, ניהול משתמשים, וקיצורי דרך לפעולות ניהוליות.</p>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="מזהה בניין (אופציונלי)"
-            value={buildingId}
-            onChange={(e) => setBuildingId(e.target.value)}
-            className="w-48"
-          />
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-          </Button>
-          <Button onClick={handleExport}>
-            <Download className="me-2 h-4 w-4" />
-            יצוא CSV
-          </Button>
+        <div className="flex flex-wrap gap-2">
+          {data.navigation.map((item) => (
+            <Button key={item.href} variant="outline" asChild>
+              <Link href={item.href}>{item.label}</Link>
+            </Button>
+          ))}
         </div>
       </div>
 
-      {/* Building Filter Badge */}
-      {buildingId && (
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="gap-1">
-            <Building className="h-3 w-3" />
-            בניין {buildingId}
-          </Badge>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setBuildingId('')}
-          >
-            הסר סינון
-          </Button>
-        </div>
-      )}
-
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <KpiCard
-          title="קריאות פתוחות"
-          value={formatNumber(kpis.openTickets)}
-          icon={Ticket}
-          badgeText={kpis.openTickets > 20 ? "דורש תשומת לב" : undefined}
-          badgeVariant={kpis.openTickets > 20 ? "warning" : undefined}
-          changeType={kpis.openTickets > 20 ? "negative" : "positive"}
-          clickable
-        />
-        
-        <KpiCard
-          title="הפרות SLA"
-          value={formatNumber(kpis.slaBreaches)}
-          icon={AlertTriangle}
-          badgeText={kpis.slaBreaches > 0 ? "דחוף" : "תקין"}
-          badgeVariant={kpis.slaBreaches > 0 ? "destructive" : "success"}
-          changeType={kpis.slaBreaches > 0 ? "negative" : "positive"}
-          clickable
-        />
-        
-        <KpiCard
-          title="חשבוניות שלא שולמו"
-          value={formatNumber(kpis.unpaidInvoices)}
-          icon={CreditCard}
-          description="דורש מעקב"
-          changeType="neutral"
-          clickable
-        />
-
-        <KpiCard
-          title="הושלמו היום"
-          value={formatNumber(kpis.completedTicketsToday ?? 0)}
-          icon={Wrench}
-          badgeText="עודכן"
-          badgeVariant="success"
-          changeType="positive"
-          change={12}
-        />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <KpiCard title="משתמשים" value={String(data.stats.totalUsers)} icon={Users} />
+        <KpiCard title="בניינים" value={String(data.stats.totalBuildings)} icon={Building2} />
+        <KpiCard title="קריאות פתוחות" value={String(data.stats.openTickets)} icon={Ticket} />
+        <KpiCard title="חשבוניות פתוחות" value={String(data.stats.unpaidInvoices)} icon={CreditCard} />
+        <KpiCard title="טכנאים" value={String(data.stats.activeTechs)} icon={UserCog} />
       </div>
 
-      {/* Additional KPIs Row */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <KpiCard
-          title="סה״כ בניינים"
-          value={formatNumber(kpis.totalBuildings || 0)}
-          icon={Building}
-          description="בניינים פעילים במערכת"
-        />
-        
-        <KpiCard
-          title="טכנאים פעילים"
-          value={formatNumber(kpis.activeTechs || 0)}
-          icon={Users}
-          description="טכנאים זמינים כעת"
-        />
-        
-        <KpiCard
-          title="הכנסות חודשיות"
-          value={`₪${formatNumber(kpis.monthlyRevenue || 0)}`}
-          icon={CreditCard}
-          changeType="positive"
-          change={8.2}
-          description="לעומת החודש הקודם"
-        />
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Tickets by Status */}
+      <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <Card>
           <CardHeader>
-            <CardTitle>התפלגות קריאות לפי סטטוס</CardTitle>
-            <CardDescription>
-              סקירה של כל הקריאות לפי מצב נוכחי
-            </CardDescription>
+            <CardTitle>ניהול משתמשים</CardTitle>
+            <CardDescription>המשתמשים האחרונים במערכת עם מעבר מהיר לתפקידי בדיקה.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <SimplePieChart data={chartData.ticketsByStatus} height={250} />
+          <CardContent className="space-y-4">
+            {data.users.map((user) => (
+              <div key={user.id} className="flex flex-col gap-3 rounded-lg border p-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{user.email}</p>
+                    <Badge variant="outline">{user.role}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    User #{user.id} • Tenant {user.tenantId} • {user.phone || 'ללא טלפון'}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {['ADMIN', 'PM', 'TECH', 'ACCOUNTANT', 'RESIDENT'].map((role) => (
+                    <Button
+                      key={`${user.id}-${role}`}
+                      variant="outline"
+                      size="sm"
+                      disabled={switchingRole === role}
+                      onClick={() => impersonate(role)}
+                    >
+                      {role}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
 
-        {/* Monthly Trend */}
-        <Card>
-          <CardHeader>
-            <CardTitle>מגמת קריאות חודשית</CardTitle>
-            <CardDescription>
-              מספר קריאות שהתקבלו בחודשים האחרונים
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SimpleLineChart data={chartData.monthlyTrend} height={250} />
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>בריאות מערכת</CardTitle>
+              <CardDescription>חיווי מהיר על שירותי הליבה.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {Object.entries(data.health).map(([key, value]) => (
+                <div key={key} className="flex items-center justify-between rounded-lg border p-3">
+                  <span>{key}</span>
+                  <span className="flex items-center gap-2 text-sm">
+                    <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                    {value}
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
 
-        {/* Tech Workload */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>עומס עבודה טכנאים</CardTitle>
-            <CardDescription>
-              מספר קריאות פעילות לכל טכנאי
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SimpleBarChart data={chartData.techWorkload} height={250} />
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>פילוח תפקידים</CardTitle>
+              <CardDescription>כמה משתמשים משויכים לכל תפקיד.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {Object.entries(data.roleCounts).map(([role, count]) => (
+                <div key={role} className="flex items-center justify-between rounded-lg border p-3 text-sm">
+                  <span>{role}</span>
+                  <span className="font-medium">{count}</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>יומן התחזות אחרון</CardTitle>
+              <CardDescription>מעקב אחר פעולות ניהוליות רגישות.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {data.recentImpersonationEvents.map((event) => (
+                <div key={event.id} className="rounded-lg border p-3 text-sm">
+                  <p className="font-medium">
+                    {event.action} {event.targetRole ? `→ ${event.targetRole}` : ''}
+                  </p>
+                  <p className="text-muted-foreground">{event.reason || 'ללא סיבה מתועדת'}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(event.createdAt).toLocaleString('he-IL')}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      {/* Recent Activity Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>פעילות אחרונה</CardTitle>
-          <CardDescription>
-            עדכונים אחרונים במערכת
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 text-sm">
-              <div className="h-2 w-2 rounded-full bg-success" />
-              <span className="font-medium">קריאה #1234 הושלמה</span>
-              <span className="text-muted-foreground">לפני 5 דקות</span>
-            </div>
-            <div className="flex items-center gap-4 text-sm">
-              <div className="h-2 w-2 rounded-full bg-warning" />
-              <span className="font-medium">קריאה חדשה #1235 נפתחה</span>
-              <span className="text-muted-foreground">לפני 12 דקות</span>
-            </div>
-            <div className="flex items-center gap-4 text-sm">
-              <div className="h-2 w-2 rounded-full bg-info" />
-              <span className="font-medium">טכנאי חדש נרשם למערכת</span>
-              <span className="text-muted-foreground">לפני 1 שעה</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

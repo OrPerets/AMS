@@ -4,9 +4,21 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as express from 'express';
 import { join } from 'path';
+import type { NextFunction, Request, Response } from 'express';
+import { ApiExceptionFilter } from './common/api-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.disable('x-powered-by');
+
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+    next();
+  });
 
   const origins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : true;
   app.enableCors({ 
@@ -16,7 +28,22 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
   });
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      forbidUnknownValues: true,
+      transform: true,
+      validationError: {
+        target: false,
+        value: false,
+      },
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
+  app.useGlobalFilters(new ApiExceptionFilter());
 
   // Serve uploaded files statically
   const uploadsPath = join(__dirname, '..', 'uploads');
@@ -25,7 +52,6 @@ async function bootstrap() {
   const requiredEnv = ['JWT_SECRET', 'JWT_REFRESH_SECRET'];
   for (const key of requiredEnv) {
     if (!process.env[key]) {
-      // eslint-disable-next-line no-console
       console.warn(`[bootstrap] Warning: ${key} is not set.`);
     }
   }
@@ -36,11 +62,9 @@ async function bootstrap() {
   const isInvalidDbPort = envPort === 5432;
   const port = isInvalidDbPort ? fallbackPort : (envPort ?? fallbackPort);
   // Helpful diagnostics in deployment logs
-  // eslint-disable-next-line no-console
   console.log(`[bootstrap] NODE_ENV=${process.env.NODE_ENV} PORT=${process.env.PORT} resolvedPort=${port}`);
 
   await app.listen(port, '0.0.0.0');
-  // eslint-disable-next-line no-console
   console.log(`[bootstrap] Listening on 0.0.0.0:${port}`);
 }
 bootstrap();

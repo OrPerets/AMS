@@ -10,16 +10,33 @@ import { AlertCircle, LogIn, Building } from 'lucide-react';
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('master@demo.com');
-  const [password, setPassword] = useState('password');
+  const [password, setPassword] = useState('master123');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      setError('יש להזין כתובת אימייל');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setError('כתובת האימייל אינה תקינה');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('הסיסמה חייבת להכיל לפחות 6 תווים');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      await login(email, password);
+      await login(normalizedEmail, password);
       
       // Check if user is master - redirect to role selection
       const payload = getTokenPayload();
@@ -138,5 +155,4 @@ export default function LoginPage() {
     </div>
   );
 }
-
 

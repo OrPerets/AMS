@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { DocumentService } from './document.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
@@ -8,13 +8,28 @@ import { Roles } from '../auth/roles.decorator';
 import { Role } from '../auth/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { buildUploadFilename, documentUploadOptions, ensureUploadsDir } from '../uploads/upload.utils';
 
-function ensureUploadsDir() {
-  const dir = join(__dirname, '..', '..', 'uploads');
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  return dir;
+function normalizeDocumentPayload(input: Record<string, unknown>) {
+  const tags = input.tags ?? input['tags[]'];
+  const normalizedTags = Array.isArray(tags)
+    ? tags.map((value) => String(value))
+    : typeof tags === 'string' && tags.length > 0
+      ? [tags]
+      : undefined;
+
+  return {
+    ...input,
+    name: typeof input.name === 'string' ? input.name : undefined,
+    tags: normalizedTags,
+    buildingId: input.buildingId ? Number(input.buildingId) : undefined,
+    unitId: input.unitId ? Number(input.unitId) : undefined,
+    contractId: input.contractId ? Number(input.contractId) : undefined,
+    assetId: input.assetId ? Number(input.assetId) : undefined,
+    expenseId: input.expenseId ? Number(input.expenseId) : undefined,
+    uploadedById: input.uploadedById ? Number(input.uploadedById) : undefined,
+    fileSize: input.fileSize ? Number(input.fileSize) : undefined,
+  };
 }
 
 @Controller('api/v1/documents')
@@ -75,22 +90,50 @@ export class DocumentController {
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file', {
+    ...documentUploadOptions,
     storage: diskStorage({
       destination: (_req, _file, cb) => cb(null, ensureUploadsDir()),
-      filename: (_req, file, cb) => {
-        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, unique + extname(file.originalname));
-      },
+      filename: (_req, file, cb) => cb(null, buildUploadFilename(file.originalname, file.mimetype)),
     }),
-    limits: { fileSize: 20 * 1024 * 1024 },
   }))
   upload(
     @UploadedFile() file: Express.Multer.File,
-    @Body() dto: Omit<CreateDocumentDto, 'url' | 'name'> & { name?: string }
+    @Body() dto: Record<string, unknown>
   ) {
+    if (!file) {
+      throw new BadRequestException('A file is required.');
+    }
+    const payload = normalizeDocumentPayload(dto);
     const url = `/uploads/${file.filename}`;
-    const name = dto.name ?? file.originalname;
-    return this.documents.create({ ...dto, url, name, fileSize: file.size, mimeType: file.mimetype });
+    const name = typeof payload.name === 'string' ? payload.name : file.originalname;
+    return this.documents.create({ ...payload, url, name, fileSize: file.size, mimeType: file.mimetype });
+  }
+
+  @Post(':id/version/upload')
+  @UseInterceptors(FileInterceptor('file', {
+    ...documentUploadOptions,
+    storage: diskStorage({
+      destination: (_req, _file, cb) => cb(null, ensureUploadsDir()),
+      filename: (_req, file, cb) => cb(null, buildUploadFilename(file.originalname, file.mimetype)),
+    }),
+  }))
+  uploadVersion(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: Record<string, unknown>
+  ) {
+    if (!file) {
+      throw new BadRequestException('A file is required.');
+    }
+    const payload = normalizeDocumentPayload(dto);
+    const url = `/uploads/${file.filename}`;
+    return this.documents.createVersion(+id, {
+      ...payload,
+      url,
+      name: typeof payload.name === 'string' ? payload.name : file.originalname,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+    });
   }
 
   @Post(':id/share')

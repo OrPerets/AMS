@@ -4,8 +4,10 @@ import { MaintenanceController } from './maintenance.controller';
 import { PrismaService } from '../prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
+import { NotificationModule } from '../notifications/notification.module';
 
 @Module({
+  imports: [NotificationModule],
   providers: [PrismaService, MaintenanceService, JwtAuthGuard, RolesGuard],
   controllers: [MaintenanceController],
   exports: [MaintenanceService],
