@@ -2,6 +2,7 @@
 
 A comprehensive Property Management System built with NestJS backend and Next.js frontend.
 
+
 ## Architecture
 
 - **Backend**: NestJS API server with Prisma ORM and PostgreSQL
