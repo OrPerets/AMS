@@ -28,7 +28,7 @@ jobs:
               type=raw,value=railway-fixed
           - name: frontend
             image: ams-frontend
-            dockerfile: ./apps/frontend/Dockerfile
+            dockerfile: ./apps/frontend/Dockerfile.railway
             platforms: linux/amd64
             build-args: |
               NEXT_PUBLIC_API_BASE=${{ vars.NEXT_PUBLIC_API_BASE || 'https://ams-backend-production-fb77.up.railway.app' }}
