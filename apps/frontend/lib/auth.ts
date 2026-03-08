@@ -140,7 +140,7 @@ export async function refreshTokens(): Promise<boolean> {
 }
 
 export async function startImpersonation(role: string, tenantId: number, reason?: string) {
-  const res = await authFetch('/admin/impersonate', {
+  const res = await authFetch('/api/admin/impersonate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ role, tenantId, reason }),
@@ -154,7 +154,7 @@ export async function startImpersonation(role: string, tenantId: number, reason?
 }
 
 export async function stopImpersonation() {
-  const res = await authFetch('/admin/impersonate/stop', { method: 'POST' });
+  const res = await authFetch('/api/admin/impersonate/stop', { method: 'POST' });
   if (!res.ok) {
     throw new Error('Stop impersonation failed');
   }

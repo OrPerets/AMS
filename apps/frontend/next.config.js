@@ -23,7 +23,7 @@ const nextConfig = {
     return [
       { source: '/api/v1/:path*', destination: `${API_BASE}/api/v1/:path*` },
       { source: '/auth/:path*', destination: `${API_BASE}/auth/:path*` },
-      { source: '/admin/:path*', destination: `${API_BASE}/admin/:path*` },
+      { source: '/api/admin/:path*', destination: `${API_BASE}/admin/:path*` },
     ];
   },
 }

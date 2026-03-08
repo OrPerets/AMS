@@ -39,7 +39,7 @@ export default function AdminDataQualityPage() {
   async function loadReport() {
     try {
       setLoading(true);
-      const response = await authFetch('/admin/data-quality');
+      const response = await authFetch('/api/admin/data-quality');
       if (!response.ok) {
         throw new Error(await response.text());
       }

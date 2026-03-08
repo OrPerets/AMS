@@ -37,7 +37,7 @@ export default function AdminApprovalsPage() {
   async function loadTasks(nextStatus = status) {
     try {
       setLoading(true);
-      const response = await authFetch(`/admin/approvals?status=${nextStatus}`);
+      const response = await authFetch(`/api/admin/approvals?status=${nextStatus}`);
       if (!response.ok) {
         throw new Error(await response.text());
       }
@@ -53,7 +53,7 @@ export default function AdminApprovalsPage() {
   async function decide(taskId: number, action: 'approve' | 'reject') {
     try {
       setSubmittingId(taskId);
-      const response = await authFetch(`/admin/approvals/${taskId}/${action}`, {
+      const response = await authFetch(`/api/admin/approvals/${taskId}/${action}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ comment: commentById[taskId] || undefined }),

@@ -57,7 +57,7 @@ export default function AdminNotifications() {
   const activeTemplate = useMemo(() => templateDefinitions[template], [template]);
 
   async function loadRecent() {
-    const response = await authFetch('/admin/overview');
+    const response = await authFetch('/api/admin/overview');
     if (response.ok) {
       const data = await response.json();
       setRecentNotifications(data.recentNotifications || []);

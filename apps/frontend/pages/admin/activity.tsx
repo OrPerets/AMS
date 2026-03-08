@@ -33,7 +33,7 @@ export default function AdminActivityPage() {
   async function loadActivity() {
     try {
       setLoading(true);
-      const response = await authFetch('/admin/activity');
+      const response = await authFetch('/api/admin/activity');
       if (!response.ok) {
         throw new Error(await response.text());
       }
@@ -54,7 +54,7 @@ export default function AdminActivityPage() {
           <p className="text-sm text-muted-foreground">מעקב אחרי שינויים פיננסיים, הרשאות, מסמכים ופעולות תפעוליות.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => window.open('/admin/activity/export', '_blank')}>
+          <Button variant="outline" onClick={() => window.open('/api/admin/activity/export', '_blank')}>
             <Download className="me-2 h-4 w-4" />
             יצוא CSV
           </Button>
