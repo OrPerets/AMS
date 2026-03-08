@@ -233,13 +233,13 @@ Allow residents to save tokenized cards and auto-charge recurring invoices secur
    - Add consent records and clear cancellation logic for autopay.
 
 ### TODO checklist
-- [ ] Extend `PaymentMethod` metadata as needed (brand, last4, expiry, default).
-- [ ] Implement payment-method CRUD endpoints for residents.
-- [ ] Add resident UI to manage saved cards and default method.
-- [ ] Add autopay preference fields + API.
-- [ ] Integrate autopay into recurring invoice run pipeline.
-- [ ] Add notifications for charge success/failure and retry schedule.
-- [ ] Add tests for token lifecycle, default switching, and autopay failure recovery.
+- [x] Extend `PaymentMethod` metadata as needed (brand, last4, expiry, default).
+- [x] Implement payment-method CRUD endpoints for residents.
+- [x] Add resident UI to manage saved cards and default method.
+- [x] Add autopay preference fields + API.
+- [x] Integrate autopay into recurring invoice run pipeline.
+- [x] Add notifications for charge success/failure and retry schedule.
+- [x] Add tests for token lifecycle, default switching, and autopay failure recovery.
 
 ---
 
