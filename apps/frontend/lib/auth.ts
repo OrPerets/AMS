@@ -208,7 +208,7 @@ export function routeForRole(role?: string | null): string {
     case 'ACCOUNTANT':
       return '/payments';
     case 'RESIDENT':
-      return '/tickets';
+      return '/resident/account';
     default:
       return '/home';
   }

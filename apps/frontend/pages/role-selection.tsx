@@ -97,7 +97,7 @@ export default function RoleSelectionPage() {
       case 'ACCOUNTANT':
         return '/payments';
       case 'RESIDENT':
-        return '/tickets';
+        return '/resident/account';
       default:
         return '/home';
     }

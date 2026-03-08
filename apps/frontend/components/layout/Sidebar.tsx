@@ -181,7 +181,7 @@ const getNavigationGroups = (role: string, t: (key: string) => string): Navigati
           title: 'תשלומים',
           href: '/payments',
           icon: CreditCard,
-          roles: ['ADMIN', 'PM', 'RESIDENT', 'ACCOUNTANT'],
+          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
         },
         {
           title: 'תקציבים והוצאות',

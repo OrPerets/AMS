@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, Download, Plus, Receipt, RefreshCw } from 'lucide-react';
-import { authFetch } from '../lib/auth';
+import { useRouter } from 'next/router';
+import { authFetch, getEffectiveRole } from '../lib/auth';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -113,7 +114,9 @@ const statusLabel: Record<InvoiceStatus, string> = {
 };
 
 export default function PaymentsPage() {
+  const router = useRouter();
   const { locale } = useLocale();
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [settlingId, setSettlingId] = useState<number | null>(null);
@@ -185,11 +188,27 @@ export default function PaymentsPage() {
   }
 
   useEffect(() => {
+    setRole(getEffectiveRole());
+  }, [router.pathname]);
+
+  useEffect(() => {
+    if (role === null) return;
+
+    if (role === 'RESIDENT') {
+      router.replace('/resident/account');
+      return;
+    }
+
+    if (!['ADMIN', 'PM', 'ACCOUNTANT'].includes(role)) {
+      router.replace('/home');
+      return;
+    }
+
     loadInvoices();
     loadRecurringInvoices();
     loadResidents();
     loadCollectionsSummary();
-  }, []);
+  }, [role, router]);
 
   const filteredInvoices = useMemo(
     () => invoices.filter((invoice) => statusFilter === 'ALL' || invoice.status === statusFilter),
@@ -415,6 +434,10 @@ export default function PaymentsPage() {
       : 'ללא דירה משויכת';
 
     return `${resident.user.email} · ${unitText}`;
+  }
+
+  if (role === null || role === 'RESIDENT' || !['ADMIN', 'PM', 'ACCOUNTANT'].includes(role)) {
+    return <div className="p-6 text-sm text-muted-foreground">טוען תשלומים...</div>;
   }
 
   return (

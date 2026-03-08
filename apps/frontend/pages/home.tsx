@@ -51,7 +51,7 @@ const quickActions = [
     icon: CreditCard,
     href: '/payments',
     color: 'bg-yellow-500',
-    roles: ['ADMIN', 'PM', 'RESIDENT', 'ACCOUNTANT']
+    roles: ['ADMIN', 'PM', 'ACCOUNTANT']
   },
   {
     title: 'ניהול בניינים',
