@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { Bell, CreditCard, FileText, MessageSquare, Ticket, Wrench } from 'lucide-react';
 import { authFetch } from '../../lib/auth';
 import { Badge } from '../../components/ui/badge';
@@ -33,14 +34,135 @@ type ResidentFinance = {
 };
 
 export default function ResidentAccountPage() {
+  const router = useRouter();
   const { locale } = useLocale();
   const [context, setContext] = useState<AccountContext | null>(null);
   const [finance, setFinance] = useState<ResidentFinance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [processingInvoiceId, setProcessingInvoiceId] = useState<number | null>(null);
+  const [paymentAttempts, setPaymentAttempts] = useState<Record<number, { intentId: number; status: string; attemptedAt: string }>>({});
+  const [paymentBanner, setPaymentBanner] = useState<{ title: string; description: string; variant: 'success' | 'warning' | 'destructive' } | null>(null);
 
   useEffect(() => {
     loadAccount();
   }, []);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+
+    const rawIntentId = router.query.intentId || router.query.paymentIntentId || router.query.payment_intent || router.query.paymentId;
+    if (!rawIntentId) return;
+
+    const intentId = Number(Array.isArray(rawIntentId) ? rawIntentId[0] : rawIntentId);
+    if (!Number.isFinite(intentId)) return;
+
+    refreshIntentStatus(intentId, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query.intentId, router.query.paymentIntentId, router.query.payment_intent, router.query.paymentId]);
+
+  const payableStatuses = useMemo(() => new Set(['UNPAID', 'OVERDUE']), []);
+
+  function mapPaymentStatus(status: string) {
+    if (status === 'SUCCEEDED') {
+      return {
+        title: 'התשלום הושלם בהצלחה',
+        description: 'החשבונית סומנה כמשולמת וקבלה תהיה זמינה בעוד רגע.',
+        variant: 'success' as const,
+      };
+    }
+    if (status === 'PROCESSING' || status === 'REQUIRES_ACTION') {
+      return {
+        title: 'התשלום בבדיקה',
+        description: 'קיבלנו את ניסיון התשלום ונעדכן את הסטטוס מיד לאחר אישור חברת האשראי.',
+        variant: 'warning' as const,
+      };
+    }
+    return {
+      title: 'התשלום נכשל',
+      description: 'לא ניתן היה להשלים את התשלום. ניתן לנסות שוב באמצעות הכפתור "שלם עכשיו".',
+      variant: 'destructive' as const,
+    };
+  }
+
+  async function refreshIntentStatus(intentId: number, fromCallback = false) {
+    try {
+      const paymentResponse = await authFetch(`/api/v1/payments/${intentId}`);
+      if (!paymentResponse.ok) {
+        throw new Error(await paymentResponse.text());
+      }
+      const payment = await paymentResponse.json();
+      const nextStatus = String(payment.status || 'PROCESSING');
+
+      setPaymentAttempts((current) => ({
+        ...current,
+        [payment.invoiceId]: {
+          intentId,
+          status: nextStatus,
+          attemptedAt: payment.updatedAt || payment.createdAt || new Date().toISOString(),
+        },
+      }));
+
+      const banner = mapPaymentStatus(nextStatus);
+      setPaymentBanner(banner);
+      toast({ title: banner.title, description: banner.description, variant: banner.variant === 'destructive' ? 'destructive' : 'default' });
+
+      if (fromCallback && payment.invoiceId) {
+        await loadAccount();
+      }
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'עדכון סטטוס תשלום נכשל', variant: 'destructive' });
+    }
+  }
+
+  async function initiatePayment(invoiceId: number) {
+    if (processingInvoiceId === invoiceId) return;
+
+    try {
+      setProcessingInvoiceId(invoiceId);
+      const response = await authFetch(`/api/v1/invoices/${invoiceId}/pay`, { method: 'POST' });
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      const result = await response.json();
+      const attemptedAt = new Date().toISOString();
+      const intentId = Number(result.intentId);
+
+      if (Number.isFinite(intentId)) {
+        setPaymentAttempts((current) => ({
+          ...current,
+          [invoiceId]: { intentId, status: 'PROCESSING', attemptedAt },
+        }));
+      }
+
+      if (result.redirectUrl) {
+        window.location.href = result.redirectUrl;
+        return;
+      }
+
+      if (result.clientSecret) {
+        setPaymentBanner({
+          title: 'נדרש אימות אשראי נוסף',
+          description: 'נפתח בקרוב טופס תשלום מאובטח להשלמת העסקה.',
+          variant: 'warning',
+        });
+        toast({
+          title: 'אימות נוסף נדרש',
+          description: 'כרגע התשלום המוטמע עדיין לא זמין. נסה/י שוב או השלם/י בתשלום המאובטח.',
+        });
+      }
+
+      if (Number.isFinite(intentId)) {
+        await refreshIntentStatus(intentId);
+      }
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'יצירת תשלום נכשלה', variant: 'destructive' });
+    } finally {
+      setProcessingInvoiceId(null);
+    }
+  }
 
   async function loadAccount() {
     try {
@@ -112,6 +234,12 @@ export default function ResidentAccountPage() {
             <CardDescription>סטטוס הגבייה האחרון וקבלות זמינות.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            {paymentBanner ? (
+              <div className={`rounded-lg border p-3 text-sm ${paymentBanner.variant === 'success' ? 'border-green-300 bg-green-50' : paymentBanner.variant === 'destructive' ? 'border-red-300 bg-red-50' : 'border-yellow-300 bg-yellow-50'}`}>
+                <div className="font-medium">{paymentBanner.title}</div>
+                <div className="text-xs text-muted-foreground">{paymentBanner.description}</div>
+              </div>
+            ) : null}
             {(finance?.invoices || []).slice(0, 6).map((invoice) => (
               <div key={invoice.id} className="rounded-lg border p-3">
                 <div className="flex items-center justify-between gap-3">
@@ -128,6 +256,24 @@ export default function ResidentAccountPage() {
                         <div className="mt-2">
                           <Button size="sm" variant="outline" onClick={() => window.open(`/api/v1/invoices/${invoice.id}/receipt`, '_blank')}>
                             הורד קבלה
+                          </Button>
+                        </div>
+                      ) : null}
+                      {paymentAttempts[invoice.id] ? (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          <div>ניסיון תשלום: #{paymentAttempts[invoice.id].intentId}</div>
+                          <div>סטטוס עדכני: {paymentAttempts[invoice.id].status}</div>
+                          <div>עודכן: {formatDate(new Date(paymentAttempts[invoice.id].attemptedAt), locale)}</div>
+                        </div>
+                      ) : null}
+                      {payableStatuses.has(invoice.status) ? (
+                        <div className="mt-2 flex justify-end">
+                          <Button
+                            size="sm"
+                            onClick={() => initiatePayment(invoice.id)}
+                            disabled={processingInvoiceId === invoice.id}
+                          >
+                            {processingInvoiceId === invoice.id ? 'מעבד...' : paymentAttempts[invoice.id]?.status === 'FAILED' ? 'נסה שוב' : 'שלם עכשיו'}
                           </Button>
                         </div>
                       ) : null}
