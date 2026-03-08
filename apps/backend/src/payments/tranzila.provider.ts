@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, OnModuleInit } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import {
   PaymentProvider,
@@ -60,12 +60,22 @@ function sanitizePayload(payload: any): any {
 }
 
 @Injectable()
-export class TranzilaProvider implements PaymentProvider {
+export class TranzilaProvider implements PaymentProvider, OnModuleInit {
   name: 'tranzila' = 'tranzila';
   private readonly logger = new Logger(TranzilaProvider.name);
 
+  onModuleInit() {
+    const config = this.readConfig();
+    if (config.mode === 'production' && !config.webhookSecret) {
+      throw new InternalServerErrorException('Missing TRANZILA_WEBHOOK_SECRET in production mode.');
+    }
+  }
+
   private readConfig(): TranzilaConfig {
     const mode = (process.env.TRANZILA_MODE?.toLowerCase() as ProviderMode | undefined) ?? 'sandbox';
+    if (mode !== 'sandbox' && mode !== 'production') {
+      throw new InternalServerErrorException('TRANZILA_MODE must be either "sandbox" or "production".');
+    }
     const isSandbox = mode === 'sandbox';
     const terminalId = process.env.TRANZILA_TERMINAL_ID;
     const secret = process.env.TRANZILA_SECRET ?? process.env.TRANZILA_PASSWORD;
