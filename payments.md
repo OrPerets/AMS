@@ -52,12 +52,12 @@ Replace placeholder/sandbox payment provider behavior with real provider API cal
    - Redact secrets and PCI-sensitive fields.
 
 ### TODO checklist
-- [ ] Add provider env vars and config validation (startup fail if missing).
-- [ ] Replace placeholder URL construction in `createPayment` with real API call.
-- [ ] Implement status mapping utility (`provider -> PaymentIntentStatus`).
-- [ ] Wire `confirm` and `retrieve` to real provider endpoints.
-- [ ] Wire `refund` to real endpoint and persist refund IDs.
-- [ ] Ensure `confirmPayment` updates invoice only after verified success.
+- [x] Add provider env vars and config validation (startup fail if missing).
+- [x] Replace placeholder URL construction in `createPayment` with real API call.
+- [x] Implement status mapping utility (`provider -> PaymentIntentStatus`).
+- [x] Wire `confirm` and `retrieve` to real provider endpoints.
+- [x] Wire `refund` to real endpoint and persist refund IDs.
+- [x] Ensure `confirmPayment` updates invoice only after verified success.
 - [ ] Add integration tests for success, action-required, failure, and timeout paths.
 
 ---

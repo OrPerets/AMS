@@ -101,6 +101,38 @@ export class PaymentService {
     return `"${normalized.replace(/"/g, '""')}"`;
   }
 
+  private toIntentStatus(status: string): PaymentIntentStatus {
+    switch (status) {
+      case 'requires_payment_method':
+        return PaymentIntentStatus.REQUIRES_PAYMENT_METHOD;
+      case 'requires_action':
+        return PaymentIntentStatus.REQUIRES_ACTION;
+      case 'processing':
+        return PaymentIntentStatus.PROCESSING;
+      case 'succeeded':
+        return PaymentIntentStatus.SUCCEEDED;
+      case 'canceled':
+        return PaymentIntentStatus.CANCELED;
+      case 'failed':
+      default:
+        return PaymentIntentStatus.FAILED;
+    }
+  }
+
+  private async withProviderRetry<T>(operation: () => Promise<T>, maxAttempts = 3, delayMs = 250): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error;
+        if (attempt === maxAttempts) break;
+        await new Promise((resolve) => setTimeout(resolve, delayMs * attempt));
+      }
+    }
+    throw lastError;
+  }
+
   private mapInvoice(invoice: InvoiceWithRelations) {
     const latestIntent = invoice.paymentIntents[0];
     const dueDate = this.getDueDate(new Date(invoice.createdAt), invoice.dueDate);
@@ -729,14 +761,24 @@ export class PaymentService {
         provider: 'tranzila',
       },
     });
-    const result = await this.tranzilaProvider.createPayment({
-      amount: invoice.amount,
-      currency: 'NIS',
-      description: `Invoice #${invoice.id}`,
-    });
+    const result = await this.withProviderRetry(() =>
+      this.tranzilaProvider.createPayment({
+        amount: invoice.amount,
+        currency: 'NIS',
+        description: `Invoice #${invoice.id}`,
+        metadata: { invoiceId: invoice.id, residentId: invoice.residentId },
+      }),
+    );
+
+    const internalStatus = this.toIntentStatus(result.requiresAction ? 'requires_action' : 'processing');
     await this.prisma.paymentIntent.update({
       where: { id: intent.id },
-      data: { providerIntentId: result.providerIntentId || String(intent.id), clientSecret: result.clientSecret || null },
+      data: {
+        providerIntentId: result.providerIntentId || String(intent.id),
+        clientSecret: result.clientSecret || null,
+        status: internalStatus,
+        metadata: result.raw ?? undefined,
+      },
     });
     return { intentId: intent.id, redirectUrl: result.redirectUrl, clientSecret: result.clientSecret };
   }
@@ -751,6 +793,27 @@ export class PaymentService {
       return existing;
     }
 
+    const latestIntent = existing.paymentIntents[0];
+    if (!latestIntent) {
+      throw new BadRequestException('Payment intent not found for invoice.');
+    }
+
+    const providerIntentId = latestIntent.providerIntentId || String(latestIntent.id);
+    const providerResult = await this.withProviderRetry(() => this.tranzilaProvider.retrieve(providerIntentId));
+    const verifiedStatus = this.toIntentStatus(providerResult.status);
+
+    await this.prisma.paymentIntent.update({
+      where: { id: latestIntent.id },
+      data: {
+        status: verifiedStatus,
+        metadata: providerResult.raw ?? undefined,
+      },
+    });
+
+    if (verifiedStatus !== PaymentIntentStatus.SUCCEEDED) {
+      return existing;
+    }
+
     const invoice = await this.prisma.invoice.update({
       where: { id: invoiceId },
       data: {
@@ -760,13 +823,6 @@ export class PaymentService {
       },
       include: this.invoiceInclude,
     });
-    const latestIntent = invoice.paymentIntents[0];
-    if (latestIntent) {
-      await this.prisma.paymentIntent.update({
-        where: { id: latestIntent.id },
-        data: { status: PaymentIntentStatus.SUCCEEDED },
-      });
-    }
     await this.prisma.ledgerEntry.create({
       data: { invoiceId, entryType: 'payment', amount: invoice.amount, debit: 'Cash', credit: 'Accounts Receivable' },
     });
@@ -819,14 +875,22 @@ export class PaymentService {
         provider: 'tranzila',
       },
     });
-    const result = await this.tranzilaProvider.createPayment({
-      amount: invoice.amount,
-      currency: 'NIS',
-      description: `Invoice #${invoice.id}`,
-    });
+    const result = await this.withProviderRetry(() =>
+      this.tranzilaProvider.createPayment({
+        amount: invoice.amount,
+        currency: 'NIS',
+        description: `Invoice #${invoice.id}`,
+        metadata: { invoiceId: invoice.id },
+      }),
+    );
     await this.prisma.paymentIntent.update({
       where: { id: intent.id },
-      data: { providerIntentId: result.providerIntentId || String(intent.id), clientSecret: result.clientSecret || null },
+      data: {
+        providerIntentId: result.providerIntentId || String(intent.id),
+        clientSecret: result.clientSecret || null,
+        status: this.toIntentStatus(result.requiresAction ? 'requires_action' : 'processing'),
+        metadata: result.raw ?? undefined,
+      },
     });
     return { id: intent.id, status: intent.status, redirectUrl: result.redirectUrl, clientSecret: result.clientSecret };
   }
@@ -836,7 +900,9 @@ export class PaymentService {
       where: { id: paymentIntentId },
       include: { invoice: true },
     });
-    const res = await this.tranzilaProvider.refund({ providerIntentId: intent.providerIntentId || String(intent.id), amount });
+    const res = await this.withProviderRetry(() =>
+      this.tranzilaProvider.refund({ providerIntentId: intent.providerIntentId || String(intent.id), amount }),
+    );
     await this.prisma.refund.create({
       data: { paymentIntentId: intent.id, amount: amount ?? intent.amount, providerRefundId: res.providerRefundId || undefined },
     });
