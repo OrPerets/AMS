@@ -68,23 +68,25 @@ jobs:
   railway-redeploy:
     runs-on: ubuntu-latest
     needs: build-and-push
-    if: ${{ secrets.RAILWAY_TOKEN != '' }}
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_BACKEND_SERVICE: ${{ secrets.RAILWAY_BACKEND_SERVICE }}
+      RAILWAY_FRONTEND_SERVICE: ${{ secrets.RAILWAY_FRONTEND_SERVICE }}
     steps:
     - name: Install Railway CLI
       run: npm install -g @railway/cli
+      if: ${{ env.RAILWAY_TOKEN != '' }}
 
     - name: Redeploy backend service
+      if: ${{ env.RAILWAY_TOKEN != '' && env.RAILWAY_BACKEND_SERVICE != '' }}
       env:
-        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        RAILWAY_SERVICE: ${{ secrets.RAILWAY_BACKEND_SERVICE }}
+        RAILWAY_SERVICE: ${{ env.RAILWAY_BACKEND_SERVICE }}
       run: |
-        test -n "$RAILWAY_SERVICE"
         railway redeploy --service "$RAILWAY_SERVICE" --yes
 
     - name: Redeploy frontend service
+      if: ${{ env.RAILWAY_TOKEN != '' && env.RAILWAY_FRONTEND_SERVICE != '' }}
       env:
-        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        RAILWAY_SERVICE: ${{ secrets.RAILWAY_FRONTEND_SERVICE }}
+        RAILWAY_SERVICE: ${{ env.RAILWAY_FRONTEND_SERVICE }}
       run: |
-        test -n "$RAILWAY_SERVICE"
         railway redeploy --service "$RAILWAY_SERVICE" --yes
