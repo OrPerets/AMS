@@ -144,6 +144,22 @@ export class PaymentController {
     return ledger;
   }
 
+
+  @Get('payments/economics/report')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  economicsReport() {
+    return this.payments.getProviderEconomicsReport();
+  }
+
+  @Post('payments/:id/reconcile')
+  @Roles(Role.ADMIN, Role.ACCOUNTANT)
+  reconcile(
+    @Param('id') id: string,
+    @Body() body: { providerFeeActual: number; settlementBatchId: string },
+  ) {
+    return this.payments.reconcilePaymentIntent(+id, body);
+  }
+
   @Post('payments/webhook')
   @Public()
   webhook(@Body() body: any, @Req() req: any) {

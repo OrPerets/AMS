@@ -755,6 +755,12 @@ model PaymentIntent {
   invoiceId     Int
   invoice       Invoice             @relation(fields: [invoiceId], references: [id])
   amount        Float
+  grossAmount   Float?
+  providerFeeEstimated Float?
+  providerFeeActual Float?
+  netAmount     Float?
+  settlementBatchId String?
+  providerLatencyMs Int?
   currency      String              @default("NIS")
   status        PaymentIntentStatus @default(REQUIRES_PAYMENT_METHOD)
   provider      String              // tranzila | stripe

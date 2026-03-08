@@ -1,6 +1,15 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { PaymentProvider, CreatePaymentParams, CreatePaymentResult, ConfirmPaymentParams, RefundParams, WebhookVerifyResult } from './providers/payment-provider';
+import {
+  PaymentProvider,
+  CreatePaymentParams,
+  CreatePaymentResult,
+  ConfirmPaymentParams,
+  RefundParams,
+  WebhookVerifyResult,
+  RoutingContext,
+  FeeEstimate,
+} from './providers/payment-provider';
 
 type ProviderMode = 'sandbox' | 'production';
 
@@ -158,6 +167,15 @@ export class TranzilaProvider implements PaymentProvider {
   async retrieve(providerIntentId: string): Promise<{ status: string; raw?: any }> {
     const raw = await this.request(this.readConfig().retrievePath, 'GET', undefined, providerIntentId);
     return { status: mapProviderStatus(raw?.status), raw: sanitizePayload(raw) };
+  }
+
+
+  estimateFees(context: RoutingContext): FeeEstimate {
+    const fixedFee = 1.0;
+    const variableFeeRate = context.cardType === 'debit' ? 0.011 : 0.016;
+    const estimatedFee = Number((fixedFee + context.amount * variableFeeRate).toFixed(2));
+    const estimatedNet = Number((context.amount - estimatedFee).toFixed(2));
+    return { fixedFee, variableFeeRate, estimatedFee, estimatedNet };
   }
 
   async webhookVerify(signature: string | undefined, payload: any, rawBody?: string): Promise<WebhookVerifyResult> {

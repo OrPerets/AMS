@@ -185,13 +185,13 @@ Support provider routing strategy and capture true payment economics (gross, fee
    - Add dashboard metrics for approval rate and cost per provider.
 
 ### TODO checklist
-- [ ] Create routing strategy abstraction and config toggles.
-- [ ] Add at least one additional provider implementation beyond current default.
-- [ ] Extend schema/migrations for fee and net tracking fields.
-- [ ] Write intent creation logic to store chosen provider + fee estimate.
-- [ ] Add reconciliation job/process to update actual fee/net values.
-- [ ] Add reporting endpoint or export showing provider-level economics.
-- [ ] Add tests for provider failover and fee field persistence.
+- [x] Create routing strategy abstraction and config toggles.
+- [x] Add at least one additional provider implementation beyond current default.
+- [x] Extend schema/migrations for fee and net tracking fields.
+- [x] Write intent creation logic to store chosen provider + fee estimate.
+- [x] Add reconciliation job/process to update actual fee/net values.
+- [x] Add reporting endpoint or export showing provider-level economics.
+- [x] Add tests for provider failover and fee field persistence.
 
 ---
 
