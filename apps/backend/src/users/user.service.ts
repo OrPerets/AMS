@@ -19,6 +19,37 @@ export class UserService {
     return this.prisma.user.findMany();
   }
 
+  listResidents() {
+    return this.prisma.resident.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+          },
+        },
+        units: {
+          include: {
+            building: {
+              select: {
+                id: true,
+                name: true,
+                address: true,
+              },
+            },
+          },
+          orderBy: {
+            id: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        id: 'asc',
+      },
+    });
+  }
+
   findProfile(userId: number) {
     return this.prisma.user.findUnique({
       where: { id: userId },

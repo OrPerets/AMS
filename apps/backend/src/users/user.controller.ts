@@ -15,6 +15,12 @@ export class UserController {
     return this.users.findAll();
   }
 
+  @Get('api/v1/users/residents')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.MASTER)
+  listResidents() {
+    return this.users.listResidents();
+  }
+
   @Get('api/v1/users/profile')
   @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT, Role.MASTER)
   profile(@Req() req: any) {

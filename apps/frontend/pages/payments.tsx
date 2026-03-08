@@ -35,6 +35,24 @@ interface InvoiceRow {
   history: InvoiceHistoryEntry[];
 }
 
+interface ResidentOption {
+  id: number;
+  user: {
+    id: number;
+    email: string;
+    phone: string | null;
+  };
+  units: {
+    id: number;
+    number: string;
+    building: {
+      id: number;
+      name: string;
+      address: string;
+    };
+  }[];
+}
+
 const statusLabel: Record<InvoiceStatus, string> = {
   PENDING: 'ממתין',
   PAID: 'שולם',
@@ -48,6 +66,9 @@ export default function PaymentsPage() {
   const [settlingId, setSettlingId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<'ALL' | InvoiceStatus>('ALL');
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
+  const [residents, setResidents] = useState<ResidentOption[]>([]);
+  const [residentQuery, setResidentQuery] = useState('');
+  const [recurringResidentQuery, setRecurringResidentQuery] = useState('');
   const [newInvoice, setNewInvoice] = useState({
     residentId: '',
     items: [{ description: '', quantity: '1', unitPrice: '' }],
@@ -73,8 +94,21 @@ export default function PaymentsPage() {
     }
   }
 
+  async function loadResidents() {
+    try {
+      const res = await authFetch('/api/v1/users/residents');
+      if (!res.ok) throw new Error(await res.text());
+      setResidents(await res.json());
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'טעינת הדיירים נכשלה', variant: 'destructive' });
+      setResidents([]);
+    }
+  }
+
   useEffect(() => {
     loadInvoices();
+    loadResidents();
   }, []);
 
   const filteredInvoices = useMemo(
@@ -90,6 +124,36 @@ export default function PaymentsPage() {
       paidAmount: invoices.filter((invoice) => invoice.status === 'PAID').reduce((sum, invoice) => sum + invoice.amount, 0),
     };
   }, [invoices]);
+
+  const filteredResidents = useMemo(() => {
+    const query = residentQuery.trim().toLowerCase();
+    if (!query) return residents;
+    return residents.filter((resident) => {
+      const haystack = [
+        resident.user.email,
+        resident.user.phone ?? '',
+        ...resident.units.flatMap((unit) => [unit.number, unit.building.name, unit.building.address]),
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [residentQuery, residents]);
+
+  const filteredRecurringResidents = useMemo(() => {
+    const query = recurringResidentQuery.trim().toLowerCase();
+    if (!query) return residents;
+    return residents.filter((resident) => {
+      const haystack = [
+        resident.user.email,
+        resident.user.phone ?? '',
+        ...resident.units.flatMap((unit) => [unit.number, unit.building.name, unit.building.address]),
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [recurringResidentQuery, residents]);
 
   const computeTotal = (items: { quantity: string; unitPrice: string }[]) =>
     items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unitPrice || 0), 0);
@@ -215,6 +279,14 @@ export default function PaymentsPage() {
         </Button>
       </div>
     );
+  }
+
+  function residentLabel(resident: ResidentOption) {
+    const unitText = resident.units.length
+      ? resident.units.map((unit) => `${unit.building.address} / דירה ${unit.number}`).join(' | ')
+      : 'ללא דירה משויכת';
+
+    return `${resident.user.email} · ${unitText}`;
   }
 
   return (
@@ -351,9 +423,26 @@ export default function PaymentsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Input
-              placeholder="מזהה דייר"
+              placeholder="חיפוש לפי אימייל, כתובת או דירה"
+              value={residentQuery}
+              onChange={(event) => setResidentQuery(event.target.value)}
+            />
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={newInvoice.residentId}
               onChange={(event) => setNewInvoice({ ...newInvoice, residentId: event.target.value })}
+            >
+              <option value="">בחר דייר</option>
+              {filteredResidents.map((resident) => (
+                <option key={resident.id} value={resident.id}>
+                  {residentLabel(resident)}
+                </option>
+              ))}
+            </select>
+            <Input
+              placeholder="מזהה דייר"
+              value={newInvoice.residentId}
+              readOnly
             />
             {renderItemsEditor(newInvoice.items, (items) => setNewInvoice({ ...newInvoice, items }))}
             <div className="flex items-center justify-between">
@@ -370,9 +459,26 @@ export default function PaymentsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Input
-              placeholder="מזהה דייר"
+              placeholder="חיפוש לפי אימייל, כתובת או דירה"
+              value={recurringResidentQuery}
+              onChange={(event) => setRecurringResidentQuery(event.target.value)}
+            />
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={recurring.residentId}
               onChange={(event) => setRecurring({ ...recurring, residentId: event.target.value })}
+            >
+              <option value="">בחר דייר</option>
+              {filteredRecurringResidents.map((resident) => (
+                <option key={resident.id} value={resident.id}>
+                  {residentLabel(resident)}
+                </option>
+              ))}
+            </select>
+            <Input
+              placeholder="מזהה דייר"
+              value={recurring.residentId}
+              readOnly
             />
             <Input
               placeholder="monthly | quarterly | yearly"
