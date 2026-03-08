@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, TicketStatus, WorkOrderStatus } from '@prisma/client';
+import { ApprovalTaskType, Prisma, Role, TicketStatus, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { PhotoService } from '../tickets/photo.service';
 import { UpdateWorkOrderCostDto } from './dto/update-work-order-cost.dto';
@@ -8,6 +8,7 @@ import { UpdateWorkOrderPhotosDto } from './dto/update-work-order-photos.dto';
 import { ApproveWorkOrderDto } from './dto/approve-work-order.dto';
 import { WorkOrderReportQueryDto } from './dto/work-order-report-query.dto';
 import { ActivityService } from '../activity/activity.service';
+import { ApprovalService } from '../approval/approval.service';
 
 @Injectable()
 export class WorkOrderService {
@@ -29,6 +30,7 @@ export class WorkOrderService {
     private prisma: PrismaService,
     private photos: PhotoService,
     private activity: ActivityService,
+    private approvals: ApprovalService,
   ) {}
 
   private calculateTotalCost(costs: {
@@ -213,36 +215,39 @@ export class WorkOrderService {
     return updated;
   }
 
-  async approve(id: number, dto: ApproveWorkOrderDto) {
-    const order = await this.prisma.$transaction(async (tx) => {
+  async approve(id: number, dto: ApproveWorkOrderDto, actorRole?: Role) {
+    const approval = await this.prisma.approvalTask.findFirst({
+      where: {
+        entityType: 'WORK_ORDER',
+        entityId: id,
+        type: ApprovalTaskType.WORK_ORDER_APPROVAL,
+        status: 'PENDING',
+      },
+    });
+
+    if (approval && actorRole) {
+      await this.approvals.approve(approval.id, dto.approvedById, actorRole);
+    } else {
       const approvedAt = dto.approvedAt ? new Date(dto.approvedAt) : new Date();
+      await this.prisma.$transaction(async (tx) => {
+        const updatedOrder = await tx.workOrder.update({
+          where: { id },
+          data: {
+            status: WorkOrderStatus.APPROVED,
+            approvedBy: { connect: { id: dto.approvedById } },
+            approvedAt,
+          },
+          include: this.include,
+        });
 
-      const updatedOrder = await tx.workOrder.update({
-        where: { id },
-        data: {
-          status: WorkOrderStatus.APPROVED,
-          approvedBy: { connect: { id: dto.approvedById } },
-          approvedAt,
-        },
-        include: this.include,
+        await tx.ticket.update({ where: { id: updatedOrder.ticketId }, data: { status: TicketStatus.ASSIGNED } });
       });
+    }
 
-      await tx.ticket.update({ where: { id: updatedOrder.ticketId }, data: { status: TicketStatus.ASSIGNED } });
-
-      return updatedOrder;
+    return this.prisma.workOrder.findUniqueOrThrow({
+      where: { id },
+      include: this.include,
     });
-
-    await this.activity.log({
-      userId: dto.approvedById,
-      buildingId: order.ticket.unit.building.id,
-      entityType: 'WORK_ORDER',
-      entityId: order.id,
-      action: 'WORK_ORDER_APPROVED',
-      summary: `הזמנת עבודה #${order.id} אושרה.`,
-      metadata: { approvedAt: order.approvedAt?.toISOString() ?? null },
-    });
-
-    return order;
   }
 
   async getReport(query: WorkOrderReportQueryDto) {

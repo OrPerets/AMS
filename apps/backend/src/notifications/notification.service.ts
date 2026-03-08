@@ -240,6 +240,12 @@ export class NotificationService {
     return typeMap[notificationType] || 'general';
   }
 
+  private shouldDeliverInApp(preferences: Record<string, any> | null, notificationType?: string) {
+    if (!notificationType || !preferences) return true;
+    const typeKey = this.getPreferenceKey(notificationType);
+    return preferences[typeKey] !== false;
+  }
+
   private async logNotification(data: {
     title: string;
     message: string;
@@ -276,9 +282,13 @@ export class NotificationService {
   async notifyUser(userId: number, template: NotificationTemplate, params: TemplateParams) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (user) {
+      const preferences = await this.getUserNotificationPreferences(user.id);
+      if (!this.shouldDeliverInApp(preferences, template)) {
+        return null;
+      }
       const { subject, body } = this.render(template, params);
       await this.send(user as any, subject, body, template);
-      await this.logNotification({
+      return this.logNotification({
         title: subject,
         message: body,
         type: template,
@@ -287,6 +297,7 @@ export class NotificationService {
         metadata: params,
       });
     }
+    return null;
   }
 
   async notifyBuilding(buildingId: number, template: NotificationTemplate, params: TemplateParams) {
@@ -300,15 +311,20 @@ export class NotificationService {
     await Promise.all(
       users.map((u) =>
         Promise.all([
-          this.send(u as any, subject, body, template),
-          this.logNotification({
-            title: subject,
-            message: body,
-            type: template,
-            tenantId: u.tenantId,
-            userId: u.id,
-            buildingId,
-            metadata: params,
+          this.getUserNotificationPreferences(u.id).then(async (preferences) => {
+            if (!this.shouldDeliverInApp(preferences, template)) {
+              return null;
+            }
+            await this.send(u as any, subject, body, template);
+            return this.logNotification({
+              title: subject,
+              message: body,
+              type: template,
+              tenantId: u.tenantId,
+              userId: u.id,
+              buildingId,
+              metadata: params,
+            });
           }),
         ]),
       ),

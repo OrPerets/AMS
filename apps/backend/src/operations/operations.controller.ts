@@ -11,7 +11,14 @@ export class OperationsController {
   constructor(private readonly operations: OperationsService) {}
 
   @Get('calendar')
-  calendar(@Query('start') start?: string, @Query('end') end?: string, @Query('buildingId') buildingId?: string) {
+  calendar(
+    @Query('start') start?: string,
+    @Query('end') end?: string,
+    @Query('buildingId') buildingId?: string,
+    @Query('type') type?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
     const now = new Date();
     const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const defaultEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
@@ -19,6 +26,9 @@ export class OperationsController {
       start: start || defaultStart,
       end: end || defaultEnd,
       buildingId: buildingId ? Number(buildingId) : undefined,
+      type,
+      status,
+      search,
     });
   }
 }

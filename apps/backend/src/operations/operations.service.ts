@@ -5,12 +5,12 @@ import { PrismaService } from '../prisma.service';
 export class OperationsService {
   constructor(private prisma: PrismaService) {}
 
-  async getCalendar(input: { start: string; end: string; buildingId?: number }) {
+  async getCalendar(input: { start: string; end: string; buildingId?: number; type?: string; status?: string; search?: string }) {
     const start = new Date(input.start);
     const end = new Date(input.end);
     const buildingWhere = input.buildingId ? { buildingId: input.buildingId } : {};
 
-    const [schedules, maintenance, contracts, invoices, notifications, votes] = await Promise.all([
+    const [schedules, maintenance, contracts, invoices, notifications, votes, suppliers] = await Promise.all([
       this.prisma.workSchedule.findMany({
         where: {
           date: { gte: start, lte: end },
@@ -66,9 +66,19 @@ export class OperationsService {
         include: { building: true },
         orderBy: { endDate: 'asc' },
       }),
+      this.prisma.supplier.findMany({
+        where: {
+          isActive: true,
+          OR: [
+            { insuranceExpiry: { gte: start, lte: end } },
+            { complianceDocumentExpiry: { gte: start, lte: end } },
+          ],
+        },
+        orderBy: [{ insuranceExpiry: 'asc' }, { complianceDocumentExpiry: 'asc' }],
+      }),
     ]);
 
-    return [
+    const items = [
       ...schedules.map((item) => ({
         id: `schedule-${item.id}`,
         type: 'SCHEDULE',
@@ -77,6 +87,7 @@ export class OperationsService {
         description: item.description || `${item.tasks.length} משימות`,
         buildingName: item.building?.name ?? 'ללא בניין',
         priority: item.status,
+        href: `/schedules/${item.id}`,
       })),
       ...maintenance.map((item) => ({
         id: `maintenance-${item.id}`,
@@ -86,15 +97,17 @@ export class OperationsService {
         description: item.assignedTo?.email ?? item.description ?? '',
         buildingName: item.building.name,
         priority: item.priority,
+        href: `/maintenance/${item.id}`,
       })),
       ...contracts.map((item) => ({
         id: `contract-${item.id}`,
         type: 'CONTRACT',
-        date: item.endDate?.toISOString(),
+        date: (item.endDate ? new Date(item.endDate.getTime() - item.renewalReminderDays * 24 * 60 * 60 * 1000) : item.startDate).toISOString(),
         title: `חידוש חוזה: ${item.title}`,
-        description: item.supplier?.name ?? item.owner?.email ?? '',
+        description: `${item.supplier?.name ?? item.owner?.email ?? ''}${item.endDate && item.endDate < new Date() ? ' · באיחור' : ''}`,
         buildingName: item.building.name,
-        priority: item.approvalStatus,
+        priority: item.endDate && item.endDate < new Date() ? 'OVERDUE' : item.approvalStatus,
+        href: `/contracts`,
       })),
       ...invoices.map((item) => ({
         id: `invoice-${item.id}`,
@@ -104,6 +117,7 @@ export class OperationsService {
         description: item.resident.user.email,
         buildingName: item.resident.units[0]?.building.name ?? 'ללא בניין',
         priority: item.status,
+        href: `/payments`,
       })),
       ...notifications.map((item) => ({
         id: `notification-${item.id}`,
@@ -113,6 +127,7 @@ export class OperationsService {
         description: item.message,
         buildingName: item.building?.name ?? 'כללי',
         priority: item.type ?? 'NOTICE',
+        href: `/communications`,
       })),
       ...votes.map((item) => ({
         id: `vote-${item.id}`,
@@ -122,9 +137,42 @@ export class OperationsService {
         description: item.question,
         buildingName: item.building.name,
         priority: item.isClosed ? 'CLOSED' : 'OPEN',
+        href: `/votes/${item.id}`,
+      })),
+      ...suppliers.map((item) => ({
+        id: `supplier-${item.id}-insurance`,
+        type: 'COMPLIANCE',
+        date: (item.insuranceExpiry ?? item.complianceDocumentExpiry)?.toISOString(),
+        title: `תזכורת תאימות לספק ${item.name}`,
+        description: item.insuranceExpiry && item.complianceDocumentExpiry
+          ? 'תוקף ביטוח / מסמך תאימות'
+          : item.insuranceExpiry
+            ? 'תוקף ביטוח'
+            : 'תוקף מסמך תאימות',
+        buildingName: 'ספק חיצוני',
+        priority: 'WARNING',
+        href: `/vendors`,
       })),
     ]
       .filter((item) => item.date)
+      .filter((item) => (input.type ? item.type === input.type : true))
+      .filter((item) => (input.status ? String(item.priority).toUpperCase().includes(input.status.toUpperCase()) : true))
+      .filter((item) =>
+        input.search
+          ? `${item.title} ${item.description} ${item.buildingName}`.toLowerCase().includes(input.search.toLowerCase())
+          : true,
+      )
       .sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime());
+
+    return {
+      items,
+      summary: {
+        total: items.length,
+        contracts: items.filter((item) => item.type === 'CONTRACT').length,
+        compliance: items.filter((item) => item.type === 'COMPLIANCE').length,
+        maintenance: items.filter((item) => item.type === 'MAINTENANCE').length,
+        notices: items.filter((item) => item.type === 'NOTICE').length,
+      },
+    };
   }
 }

@@ -2,14 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
-import { Prisma } from '@prisma/client';
+import { ApprovalTaskType, Prisma } from '@prisma/client';
 import { ActivityService } from '../activity/activity.service';
+import { ApprovalService } from '../approval/approval.service';
 
 @Injectable()
 export class DocumentService {
   constructor(
     private prisma: PrismaService,
     private activity: ActivityService,
+    private approvals: ApprovalService,
   ) {}
 
   private mapCreate(dto: CreateDocumentDto): Prisma.DocumentCreateInput {
@@ -138,20 +140,39 @@ export class DocumentService {
   }
 
   async remove(id: number, userId?: number) {
-    const document = await this.prisma.document.delete({
+    const document = await this.prisma.document.findUnique({
       where: { id },
       include: { building: true, unit: true, contract: true },
+    });
+    if (!document) {
+      throw new Error('Document not found');
+    }
+    const task = await this.approvals.createTask({
+      type: ApprovalTaskType.DOCUMENT_DELETE,
+      entityType: 'DOCUMENT',
+      entityId: document.id,
+      buildingId: document.buildingId ?? undefined,
+      requestedById: userId,
+      title: `מחיקת מסמך ${document.name}`,
+      description: document.category ?? 'מחיקת מסמך',
+      metadata: { documentName: document.name, category: document.category ?? null, url: document.url },
     });
     await this.activity.log({
       userId,
       buildingId: document.buildingId ?? undefined,
       entityType: 'DOCUMENT',
       entityId: document.id,
-      action: 'DOCUMENT_DELETED',
-      summary: `המסמך ${document.name} נמחק.`,
-      metadata: { category: document.category ?? null },
+      action: 'DOCUMENT_DELETE_REQUESTED',
+      summary: `נשלחה בקשה למחיקת המסמך ${document.name}.`,
+      metadata: { approvalTaskId: task.id, category: document.category ?? null },
     });
-    return document;
+    return {
+      requested: true,
+      approvalTaskId: task.id,
+      documentId: document.id,
+      title: task.title,
+      status: task.status,
+    };
   }
 
   async share(documentId: number, input: { userId: number; permission?: string; expiresAt?: string }, actorUserId?: number) {

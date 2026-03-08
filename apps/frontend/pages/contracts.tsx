@@ -32,6 +32,7 @@ export default function ContractsPage() {
   const [buildings, setBuildings] = useState<Option[]>([]);
   const [vendors, setVendors] = useState<Option[]>([]);
   const [owners, setOwners] = useState<Option[]>([]);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({
     buildingId: '',
     supplierId: '',
@@ -69,10 +70,10 @@ export default function ContractsPage() {
     }
   }
 
-  async function createContract() {
+  async function saveContract() {
     try {
-      const response = await authFetch('/api/v1/contracts', {
-        method: 'POST',
+      const response = await authFetch(editingId ? `/api/v1/contracts/${editingId}` : '/api/v1/contracts', {
+        method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           buildingId: Number(form.buildingId),
@@ -98,11 +99,24 @@ export default function ContractsPage() {
         renewalReminderDays: '30',
         approvalStatus: 'APPROVED',
       });
-      toast({ title: 'החוזה נשמר' });
+      setEditingId(null);
+      toast({ title: editingId ? 'החוזה עודכן' : 'החוזה נשמר' });
       await loadAll();
     } catch (error) {
       console.error(error);
-      toast({ title: 'שמירת החוזה נכשלה', variant: 'destructive' });
+      toast({ title: editingId ? 'עדכון החוזה נכשל' : 'שמירת החוזה נכשלה', variant: 'destructive' });
+    }
+  }
+
+  async function runReminders() {
+    try {
+      const response = await authFetch('/api/v1/portfolio/reminders/run', { method: 'POST' });
+      if (!response.ok) throw new Error(await response.text());
+      toast({ title: 'תזכורות חידוש חוזים נשלחו' });
+      await loadAll();
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'שליחת התזכורות נכשלה', variant: 'destructive' });
     }
   }
 
@@ -146,7 +160,10 @@ export default function ContractsPage() {
                 <option value="REVIEW">בבדיקה</option>
               </select>
             </div>
-            <Button onClick={createContract} disabled={!form.buildingId || !form.title}>שמור חוזה</Button>
+            <div className="flex gap-2">
+              <Button onClick={saveContract} disabled={!form.buildingId || !form.title}>{editingId ? 'עדכן חוזה' : 'שמור חוזה'}</Button>
+              {editingId ? <Button variant="outline" onClick={() => { setEditingId(null); setForm({ buildingId: '', supplierId: '', ownerUserId: '', title: '', value: '', startDate: new Date().toISOString().split('T')[0], endDate: '', renewalReminderDays: '30', approvalStatus: 'APPROVED' }); }}>בטל</Button> : null}
+            </div>
           </CardContent>
         </Card>
 
@@ -156,8 +173,12 @@ export default function ContractsPage() {
             <CardDescription>רשימת החוזים כוללת בעל אחריות, ספק, מסמכים וסטטוס אישור.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={runReminders}>שלח תזכורות חידוש</Button>
+            </div>
             {contracts.map((contract) => {
               const expiringSoon = contract.endDate && new Date(contract.endDate).getTime() < Date.now() + contract.renewalReminderDays * 24 * 60 * 60 * 1000;
+              const overdue = contract.endDate && new Date(contract.endDate).getTime() < Date.now();
               return (
                 <div key={contract.id} className="rounded-xl border p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -165,7 +186,7 @@ export default function ContractsPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium">{contract.title}</span>
                         <Badge variant={contract.approvalStatus === 'APPROVED' ? 'success' : 'warning'}>{contract.approvalStatus}</Badge>
-                        {expiringSoon ? <Badge variant="warning">קרוב לפקיעה</Badge> : null}
+                        {overdue ? <Badge variant="destructive">פג תוקף</Badge> : expiringSoon ? <Badge variant="warning">קרוב לפקיעה</Badge> : null}
                       </div>
                       <div className="text-sm text-muted-foreground">{contract.building.name} · {contract.supplier?.name || 'ללא ספק'} · {contract.owner?.email || 'ללא בעל אחריות'}</div>
                       <div className="text-xs text-muted-foreground">
@@ -175,7 +196,29 @@ export default function ContractsPage() {
                         {` · מסמכים: ${contract.documents.length}`}
                       </div>
                     </div>
-                    <Badge variant="outline">{contract.status}</Badge>
+                    <div className="flex gap-2">
+                      <Badge variant="outline">{contract.status}</Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingId(contract.id);
+                          setForm({
+                            buildingId: String(contract.building.id),
+                            supplierId: contract.supplier?.id ? String(contract.supplier.id) : '',
+                            ownerUserId: contract.owner?.id ? String(contract.owner.id) : '',
+                            title: contract.title,
+                            value: contract.value ? String(contract.value) : '',
+                            startDate: contract.startDate.slice(0, 10),
+                            endDate: contract.endDate ? contract.endDate.slice(0, 10) : '',
+                            renewalReminderDays: String(contract.renewalReminderDays),
+                            approvalStatus: contract.approvalStatus,
+                          });
+                        }}
+                      >
+                        ערוך
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );

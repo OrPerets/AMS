@@ -42,13 +42,13 @@ export class BudgetController {
   }
 
   @Post(':id/expenses')
-  addExpenseToBudget(@Param('id') id: string, @Body() dto: CreateExpenseDto) {
-    return this.budgets.addExpense({ ...dto, budgetId: +id });
+  addExpenseToBudget(@Param('id') id: string, @Body() dto: CreateExpenseDto, @Req() req: Request) {
+    return this.budgets.addExpense({ ...dto, budgetId: +id }, (req as any).user?.sub);
   }
 
   @Post('expenses')
-  addExpense(@Body() dto: CreateExpenseDto) {
-    return this.budgets.addExpense(dto);
+  addExpense(@Body() dto: CreateExpenseDto, @Req() req: Request) {
+    return this.budgets.addExpense(dto, (req as any).user?.sub);
   }
 
   @Get('building/:buildingId/summary')
@@ -75,15 +75,17 @@ export class BudgetController {
 
   @Post('expenses/:expenseId/approve')
   @Roles(Role.ADMIN, Role.ACCOUNTANT)
-  approveExpense(@Param('expenseId') expenseId: string, @Req() req: Request) {
-    const userId = (req as any).user?.userId as number | undefined;
-    return this.budgets.approveExpense(+expenseId, userId);
+  approveExpense(@Param('expenseId') expenseId: string, @Body() body: { comment?: string }, @Req() req: Request) {
+    const userId = (req as any).user?.sub as number | undefined;
+    const role = ((req as any).user?.actAsRole ?? (req as any).user?.role) as any;
+    return this.budgets.approveExpense(+expenseId, userId, role, body?.comment);
   }
 
   @Post('expenses/:expenseId/reject')
   @Roles(Role.ADMIN, Role.ACCOUNTANT)
-  rejectExpense(@Param('expenseId') expenseId: string, @Req() req: Request) {
-    const userId = (req as any).user?.userId as number | undefined;
-    return this.budgets.rejectExpense(+expenseId, userId);
+  rejectExpense(@Param('expenseId') expenseId: string, @Body() body: { comment?: string }, @Req() req: Request) {
+    const userId = (req as any).user?.sub as number | undefined;
+    const role = ((req as any).user?.actAsRole ?? (req as any).user?.role) as any;
+    return this.budgets.rejectExpense(+expenseId, userId, role, body?.comment);
   }
 }

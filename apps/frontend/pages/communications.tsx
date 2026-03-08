@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Building2, Clock3, Inbox, Mail, MessageCircle, Plus, Send, User2, Users } from 'lucide-react';
-import { authFetch, getCurrentUserId } from '../lib/auth';
+import { authFetch, getCurrentUserId, getEffectiveRole } from '../lib/auth';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -40,6 +40,17 @@ interface Communication {
   building?: BuildingRef | null;
 }
 
+interface ResidentRequestItem {
+  requestKey: string;
+  subject: string;
+  message: string;
+  requestType: string;
+  status: 'SUBMITTED' | 'IN_REVIEW' | 'COMPLETED' | 'CLOSED';
+  statusNotes?: string | null;
+  senderEmail?: string | null;
+  recipientCount: number;
+}
+
 const emptyCompose = {
   subject: '',
   message: '',
@@ -61,9 +72,12 @@ export default function CommunicationsPage() {
   const [showCompose, setShowCompose] = useState(false);
   const [selectedThreadUserId, setSelectedThreadUserId] = useState<number | null>(null);
   const [composeData, setComposeData] = useState(emptyCompose);
+  const [effectiveRole, setEffectiveRole] = useState<string | null>(null);
+  const [residentRequests, setResidentRequests] = useState<ResidentRequestItem[]>([]);
 
   useEffect(() => {
     setCurrentUserId(getCurrentUserId());
+    setEffectiveRole(getEffectiveRole());
   }, []);
 
   async function loadCommunications(nextScope: Scope = scope, userId = currentUserId) {
@@ -120,6 +134,44 @@ export default function CommunicationsPage() {
       loadCommunications(scope, currentUserId);
     }
   }, [currentUserId, scope]);
+
+  useEffect(() => {
+    if (effectiveRole === 'ADMIN' || effectiveRole === 'PM') {
+      void loadResidentRequests();
+    }
+  }, [effectiveRole]);
+
+  async function loadResidentRequests() {
+    try {
+      const res = await authFetch('/api/v1/communications/resident-requests');
+      if (!res.ok) throw new Error(await res.text());
+      setResidentRequests(await res.json());
+    } catch {
+      toast({
+        title: 'טעינת בקשות דייר נכשלה',
+        description: 'לא ניתן לטעון את תור בקשות הדיירים כרגע.',
+        variant: 'destructive',
+      });
+    }
+  }
+
+  async function updateResidentRequest(requestKey: string, status: ResidentRequestItem['status']) {
+    try {
+      const res = await authFetch(`/api/v1/communications/resident-requests/${requestKey}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      await loadResidentRequests();
+    } catch {
+      toast({
+        title: 'עדכון סטטוס הבקשה נכשל',
+        description: 'לא ניתן לעדכן את בקשת הדייר כרגע.',
+        variant: 'destructive',
+      });
+    }
+  }
 
   const filteredCommunications = useMemo(() => {
     return communications.filter((communication) => {
@@ -395,6 +447,36 @@ export default function CommunicationsPage() {
                 שלח
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {(effectiveRole === 'ADMIN' || effectiveRole === 'PM') && (
+        <Card>
+          <CardHeader>
+            <CardTitle>בקשות דייר בטיפול</CardTitle>
+            <CardDescription>עדכון מהיר לסטטוס בקשות מעבר, חניה, מסמכים ופרטי קשר.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {residentRequests.slice(0, 6).map((request) => (
+              <div key={request.requestKey} className="rounded-xl border p-4">
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={request.status === 'COMPLETED' ? 'success' : request.status === 'CLOSED' ? 'secondary' : 'warning'}>{request.status}</Badge>
+                      <Badge variant="outline">{request.requestType}</Badge>
+                      <span className="font-medium">{request.subject.replace(/^[A-Z_]+:\s*/, '')}</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">{request.senderEmail || 'דייר'} · {request.message}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => updateResidentRequest(request.requestKey, 'IN_REVIEW')}>בטיפול</Button>
+                    <Button size="sm" onClick={() => updateResidentRequest(request.requestKey, 'COMPLETED')}>הושלם</Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {!residentRequests.length && <div className="text-sm text-muted-foreground">אין בקשות דייר פעילות.</div>}
           </CardContent>
         </Card>
       )}

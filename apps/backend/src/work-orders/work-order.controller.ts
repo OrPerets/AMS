@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Query, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { WorkOrderService } from './work-order.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -86,8 +86,8 @@ export class WorkOrderController {
 
   @Patch(':id/approve')
   @Roles(Role.ADMIN, Role.PM)
-  approve(@Param('id') id: string, @Body() dto: ApproveWorkOrderDto) {
-    return this.orders.approve(+id, dto);
+  approve(@Param('id') id: string, @Body() dto: ApproveWorkOrderDto, @Req() req: any) {
+    return this.orders.approve(+id, dto, req.user?.actAsRole ?? req.user?.role);
   }
 
   @Patch(':id/start')

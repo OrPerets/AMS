@@ -4,10 +4,12 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { PrismaService } from '../prisma.service';
 import { ActivityModule } from '../activity/activity.module';
+import { ApprovalModule } from '../approval/approval.module';
 
 @Module({
   imports: [
     ActivityModule,
+    ApprovalModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'secret',
     }),

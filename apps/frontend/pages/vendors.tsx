@@ -18,6 +18,7 @@ type Vendor = {
   phone?: string | null;
   isActive: boolean;
   insuranceExpiry?: string | null;
+  complianceDocumentExpiry?: string | null;
   complianceNotes?: string | null;
   rating?: number | null;
   contracts: Array<{ id: number }>;
@@ -28,6 +29,7 @@ export default function VendorsPage() {
   const { locale } = useLocale();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({
     name: '',
     skills: '',
@@ -35,6 +37,7 @@ export default function VendorsPage() {
     email: '',
     phone: '',
     insuranceExpiry: '',
+    complianceDocumentExpiry: '',
     complianceNotes: '',
   });
 
@@ -56,24 +59,38 @@ export default function VendorsPage() {
     }
   }
 
-  async function createVendor() {
+  async function saveVendor() {
     try {
-      const response = await authFetch('/api/v1/vendors', {
-        method: 'POST',
+      const response = await authFetch(editingId ? `/api/v1/vendors/${editingId}` : '/api/v1/vendors', {
+        method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
           skills: form.skills.split(',').map((item) => item.trim()).filter(Boolean),
           insuranceExpiry: form.insuranceExpiry || undefined,
+          complianceDocumentExpiry: form.complianceDocumentExpiry || undefined,
         }),
       });
       if (!response.ok) throw new Error(await response.text());
-      setForm({ name: '', skills: '', contactName: '', email: '', phone: '', insuranceExpiry: '', complianceNotes: '' });
-      toast({ title: 'הספק נשמר' });
+      setForm({ name: '', skills: '', contactName: '', email: '', phone: '', insuranceExpiry: '', complianceDocumentExpiry: '', complianceNotes: '' });
+      setEditingId(null);
+      toast({ title: editingId ? 'הספק עודכן' : 'הספק נשמר' });
       await loadVendors();
     } catch (error) {
       console.error(error);
-      toast({ title: 'שמירת ספק נכשלה', variant: 'destructive' });
+      toast({ title: editingId ? 'עדכון ספק נכשל' : 'שמירת ספק נכשלה', variant: 'destructive' });
+    }
+  }
+
+  async function runReminders() {
+    try {
+      const response = await authFetch('/api/v1/portfolio/reminders/run', { method: 'POST' });
+      if (!response.ok) throw new Error(await response.text());
+      toast({ title: 'תזכורות תאימות וחידוש נשלחו' });
+      await loadVendors();
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'שליחת התזכורות נכשלה', variant: 'destructive' });
     }
   }
 
@@ -112,19 +129,27 @@ export default function VendorsPage() {
             <Input placeholder="טלפון" value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} />
             <Input placeholder="כישורים מופרדים בפסיקים" value={form.skills} onChange={(event) => setForm((current) => ({ ...current, skills: event.target.value }))} />
             <Input type="date" value={form.insuranceExpiry} onChange={(event) => setForm((current) => ({ ...current, insuranceExpiry: event.target.value }))} />
+            <Input type="date" value={form.complianceDocumentExpiry} onChange={(event) => setForm((current) => ({ ...current, complianceDocumentExpiry: event.target.value }))} />
             <Input placeholder="הערות תאימות" value={form.complianceNotes} onChange={(event) => setForm((current) => ({ ...current, complianceNotes: event.target.value }))} />
-            <Button onClick={createVendor} disabled={!form.name}>שמור ספק</Button>
+            <div className="flex gap-2">
+              <Button onClick={saveVendor} disabled={!form.name}>{editingId ? 'עדכן ספק' : 'שמור ספק'}</Button>
+              {editingId ? <Button variant="outline" onClick={() => { setEditingId(null); setForm({ name: '', skills: '', contactName: '', email: '', phone: '', insuranceExpiry: '', complianceDocumentExpiry: '', complianceNotes: '' }); }}>בטל</Button> : null}
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>רשימת ספקים</CardTitle>
-            <CardDescription>כאן אפשר לזהות ספקים לא פעילים או כאלה שביטוחם עומד לפוג.</CardDescription>
+            <CardDescription>כאן אפשר לזהות ספקים לא פעילים או כאלה שביטוחם או מסמכי התאימות שלהם עומדים לפוג.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={runReminders}>שלח תזכורות תאימות</Button>
+            </div>
             {vendors.map((vendor) => {
-              const expiring = vendor.insuranceExpiry && new Date(vendor.insuranceExpiry).getTime() < Date.now() + 30 * 24 * 60 * 60 * 1000;
+              const expiring = (vendor.insuranceExpiry && new Date(vendor.insuranceExpiry).getTime() < Date.now() + 30 * 24 * 60 * 60 * 1000)
+                || (vendor.complianceDocumentExpiry && new Date(vendor.complianceDocumentExpiry).getTime() < Date.now() + 30 * 24 * 60 * 60 * 1000);
               return (
                 <div key={vendor.id} className="rounded-xl border p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -142,9 +167,29 @@ export default function VendorsPage() {
                       <div className="text-xs text-muted-foreground">
                         חוזים: {vendor.contracts.length} · הזמנות עבודה אחרונות: {vendor.workOrders.length}
                         {vendor.insuranceExpiry ? ` · ביטוח עד ${formatDate(new Date(vendor.insuranceExpiry), locale)}` : ''}
+                        {vendor.complianceDocumentExpiry ? ` · מסמך תאימות עד ${formatDate(new Date(vendor.complianceDocumentExpiry), locale)}` : ''}
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingId(vendor.id);
+                          setForm({
+                            name: vendor.name,
+                            skills: vendor.skills.join(', '),
+                            contactName: vendor.contactName || '',
+                            email: vendor.email || '',
+                            phone: vendor.phone || '',
+                            insuranceExpiry: vendor.insuranceExpiry ? vendor.insuranceExpiry.slice(0, 10) : '',
+                            complianceDocumentExpiry: vendor.complianceDocumentExpiry ? vendor.complianceDocumentExpiry.slice(0, 10) : '',
+                            complianceNotes: vendor.complianceNotes || '',
+                          });
+                        }}
+                      >
+                        ערוך
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => toggleVendor(vendor)}>
                         {vendor.isActive ? 'השהה' : 'הפעל'}
                       </Button>

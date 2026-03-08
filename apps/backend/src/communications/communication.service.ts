@@ -28,6 +28,49 @@ export class CommunicationService {
     };
   }
 
+  private async resolveAnnouncementRecipients(data: {
+    buildingId?: number;
+    unitIds?: number[];
+    floor?: number;
+    residentIds?: number[];
+    recipientRole?: 'RESIDENT' | 'PM' | 'ADMIN';
+  }) {
+    const {
+      buildingId,
+      unitIds,
+      floor,
+      residentIds,
+      recipientRole = 'RESIDENT',
+    } = data;
+
+    return this.prisma.user.findMany({
+      where: {
+        role: recipientRole,
+        ...(recipientRole === 'RESIDENT'
+          ? {
+              resident: {
+                units: {
+                  some: {
+                    ...(buildingId ? { buildingId } : {}),
+                    ...(unitIds?.length ? { id: { in: unitIds } } : {}),
+                    ...(floor !== undefined ? { floor } : {}),
+                  },
+                },
+              },
+            }
+          : {}),
+        ...(residentIds?.length ? { id: { in: residentIds } } : {}),
+      },
+      include: {
+        resident: {
+          include: {
+            units: true,
+          },
+        },
+      },
+    });
+  }
+
   private mapUpdate(dto: UpdateCommunicationDto): Prisma.CommunicationUpdateInput {
     const { buildingId, unitId, senderId, recipientId, maintenanceScheduleId, ...rest } = dto;
     return {
@@ -87,25 +130,8 @@ export class CommunicationService {
       priority = 'MEDIUM',
     } = data;
 
-    const residents = await this.prisma.user.findMany({
-      where: {
-        role: recipientRole,
-        ...(recipientRole === 'RESIDENT'
-          ? {
-              resident: {
-                units: {
-                  some: {
-                    ...(buildingId ? { buildingId } : {}),
-                    ...(unitIds?.length ? { id: { in: unitIds } } : {}),
-                    ...(floor !== undefined ? { floor } : {}),
-                  },
-                },
-              },
-            }
-          : {}),
-        ...(residentIds?.length ? { id: { in: residentIds } } : {}),
-      },
-    });
+    const residents = await this.resolveAnnouncementRecipients({ buildingId, unitIds, floor, residentIds, recipientRole });
+    const batchKey = `announcement-${Date.now()}-${Math.round(Math.random() * 1e6)}`;
 
     // Create communications for each resident
     const communications = await Promise.all(
@@ -118,7 +144,7 @@ export class CommunicationService {
             subject,
             message,
             channel: 'ANNOUNCEMENT',
-            metadata: { priority, unitIds, floor, recipientRole },
+            metadata: { priority, unitIds, floor, recipientRole, batchKey },
           },
           include: { sender: true, recipient: true, building: true },
         })
@@ -142,7 +168,7 @@ export class CommunicationService {
       entityType: 'ANNOUNCEMENT',
       action: 'ANNOUNCEMENT_CREATED',
       summary: `נשלחה הודעה ממוקדת ל-${communications.length} נמענים.`,
-      metadata: { priority, recipientRole, unitIds: unitIds ?? [], floor: floor ?? null },
+      metadata: { priority, recipientRole, unitIds: unitIds ?? [], floor: floor ?? null, batchKey },
     });
 
     return communications;
@@ -185,6 +211,7 @@ export class CommunicationService {
 
     const buildingId = data.buildingId ?? requester.resident?.units[0]?.buildingId;
     const residentId = requester.resident?.id;
+    const requestKey = `request-${Date.now()}-${Math.round(Math.random() * 1e6)}`;
 
     const rows = await Promise.all(
       recipientUsers.map((recipient) =>
@@ -198,6 +225,8 @@ export class CommunicationService {
             message: data.message,
             channel: 'REQUEST',
             metadata: {
+              requestKey,
+              status: 'SUBMITTED',
               requestType: data.requestType,
               requestedDate: data.requestedDate ?? null,
               ...data.metadata,
@@ -218,6 +247,7 @@ export class CommunicationService {
             userId: recipient.id,
             buildingId,
             metadata: {
+              requestKey,
               requestType: data.requestType,
               requestedDate: data.requestedDate ?? null,
             } as any,
@@ -233,10 +263,231 @@ export class CommunicationService {
       entityType: 'RESIDENT_REQUEST',
       action: 'REQUEST_CREATED',
       summary: `נוצרה בקשת דייר מסוג ${data.requestType}.`,
-      metadata: { subject: data.subject, recipientCount: recipientUsers.length },
+      metadata: { subject: data.subject, recipientCount: recipientUsers.length, requestKey },
     });
 
     return rows;
+  }
+
+  async listResidentRequests(input: {
+    userId: number;
+    role: string;
+    status?: string;
+    requestType?: string;
+  }) {
+    const rows = await this.prisma.communication.findMany({
+      where: {
+        channel: 'REQUEST',
+        ...(input.role === 'RESIDENT'
+          ? { senderId: input.userId }
+          : { recipientId: input.userId }),
+      },
+      include: {
+        sender: true,
+        recipient: true,
+        building: true,
+        unit: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const grouped = new Map<string, any>();
+    for (const row of rows) {
+      const metadata = (row.metadata ?? {}) as Record<string, any>;
+      const requestKey = String(metadata.requestKey ?? `legacy-${row.id}`);
+      const current = grouped.get(requestKey) ?? {
+        requestKey,
+        subject: row.subject,
+        message: row.message,
+        createdAt: row.createdAt,
+        updatedAt: row.createdAt,
+        requestType: metadata.requestType ?? 'GENERAL',
+        requestedDate: metadata.requestedDate ?? null,
+        status: metadata.status ?? 'SUBMITTED',
+        statusNotes: metadata.statusNotes ?? null,
+        buildingName: row.building?.name ?? null,
+        unitNumber: row.unit?.number ?? null,
+        senderEmail: row.sender?.email ?? null,
+        recipientCount: 0,
+      };
+      current.updatedAt = row.createdAt > current.updatedAt ? row.createdAt : current.updatedAt;
+      current.status = metadata.status ?? current.status;
+      current.statusNotes = metadata.statusNotes ?? current.statusNotes;
+      current.recipientCount += row.recipientId ? 1 : 0;
+      grouped.set(requestKey, current);
+    }
+
+    return Array.from(grouped.values())
+      .filter((item) => (input.status ? item.status === input.status : true))
+      .filter((item) => (input.requestType ? item.requestType === input.requestType : true))
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  }
+
+  async updateResidentRequestStatus(
+    requestKey: string,
+    actorUserId: number,
+    input: { status: 'SUBMITTED' | 'IN_REVIEW' | 'COMPLETED' | 'CLOSED'; statusNotes?: string | null },
+  ) {
+    const rows = await this.prisma.communication.findMany({
+      where: {
+        channel: 'REQUEST',
+      },
+    });
+
+    const matchingIds = rows
+      .filter((row) => {
+        const metadata = (row.metadata ?? {}) as Record<string, any>;
+        return String(metadata.requestKey ?? '') === requestKey;
+      })
+      .map((row) => row.id);
+
+    if (!matchingIds.length) {
+      return [];
+    }
+
+    const updated = await Promise.all(
+      matchingIds.map(async (id) => {
+        const existing = await this.prisma.communication.findUniqueOrThrow({ where: { id } });
+        const metadata = (existing.metadata ?? {}) as Record<string, any>;
+        return this.prisma.communication.update({
+          where: { id },
+          data: {
+            metadata: {
+              ...metadata,
+              status: input.status,
+              statusNotes: input.statusNotes ?? null,
+              statusUpdatedAt: new Date().toISOString(),
+            } as any,
+          },
+        });
+      }),
+    );
+
+    const first = await this.prisma.communication.findUnique({ where: { id: matchingIds[0] }, include: { building: true } });
+    await this.activity.log({
+      userId: actorUserId,
+      buildingId: first?.buildingId ?? undefined,
+      entityType: 'RESIDENT_REQUEST',
+      action: 'REQUEST_STATUS_UPDATED',
+      summary: `סטטוס בקשת דייר עודכן ל-${input.status}.`,
+      metadata: { requestKey, statusNotes: input.statusNotes ?? null },
+    });
+
+    return updated;
+  }
+
+  async previewAnnouncement(input: {
+    buildingId?: number;
+    unitIds?: number[];
+    floor?: number;
+    residentIds?: number[];
+    recipientRole?: 'RESIDENT' | 'PM' | 'ADMIN';
+  }) {
+    const recipients = await this.resolveAnnouncementRecipients(input);
+    return {
+      count: recipients.length,
+      recipients: recipients.slice(0, 25).map((recipient) => ({
+        id: recipient.id,
+        email: recipient.email,
+        role: recipient.role,
+        units: recipient.resident?.units.map((unit) => ({ id: unit.id, number: unit.number, floor: unit.floor })) ?? [],
+      })),
+    };
+  }
+
+  async listAnnouncementHistory(input: { buildingId?: number }) {
+    const rows = await this.prisma.communication.findMany({
+      where: {
+        channel: 'ANNOUNCEMENT',
+        ...(input.buildingId ? { buildingId: input.buildingId } : {}),
+      },
+      include: {
+        sender: true,
+        recipient: true,
+        building: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const grouped = new Map<string, any>();
+    for (const row of rows) {
+      const metadata = (row.metadata ?? {}) as Record<string, any>;
+      const batchKey = String(metadata.batchKey ?? `legacy-${row.id}`);
+      const current = grouped.get(batchKey) ?? {
+        batchKey,
+        subject: row.subject,
+        message: row.message,
+        createdAt: row.createdAt,
+        buildingName: row.building?.name ?? null,
+        priority: metadata.priority ?? 'MEDIUM',
+        recipientRole: metadata.recipientRole ?? 'RESIDENT',
+        recipientCount: 0,
+        sampleRecipients: [] as string[],
+      };
+      current.recipientCount += row.recipientId ? 1 : 0;
+      if (row.recipient?.email && current.sampleRecipients.length < 4) {
+        current.sampleRecipients.push(row.recipient.email);
+      }
+      grouped.set(batchKey, current);
+    }
+
+    return Array.from(grouped.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async listPublishedDocuments(buildingId?: number) {
+    return this.prisma.document.findMany({
+      where: {
+        accessLevel: 'PUBLIC',
+        ...(buildingId ? { buildingId } : {}),
+        category: {
+          in: ['meeting_summary', 'signed_protocol', 'regulation', 'committee_decision'],
+        },
+      },
+      include: {
+        building: true,
+        uploadedBy: true,
+      },
+      orderBy: { uploadedAt: 'desc' },
+    });
+  }
+
+  async publishDocumentNotice(data: {
+    senderId: number;
+    documentId: number;
+    buildingId: number;
+    bulletinType: 'meeting_summary' | 'signed_protocol' | 'regulation' | 'committee_decision';
+    subject: string;
+    message: string;
+  }) {
+    const document = await this.prisma.document.update({
+      where: { id: data.documentId },
+      data: {
+        buildingId: data.buildingId,
+        category: data.bulletinType,
+        accessLevel: 'PUBLIC',
+      },
+    });
+
+    const communications = await this.createAnnouncement({
+      senderId: data.senderId,
+      buildingId: data.buildingId,
+      recipientRole: 'RESIDENT',
+      subject: data.subject,
+      message: data.message,
+      priority: 'HIGH',
+    });
+
+    await this.activity.log({
+      userId: data.senderId,
+      buildingId: data.buildingId,
+      entityType: 'DOCUMENT_BULLETIN',
+      entityId: document.id,
+      action: 'DOCUMENT_BULLETIN_PUBLISHED',
+      summary: `פורסם מסמך דיירים מסוג ${data.bulletinType}.`,
+      metadata: { documentId: document.id, recipientCount: communications.length },
+    });
+
+    return { document, recipientCount: communications.length };
   }
 
   // Get conversation thread between two users

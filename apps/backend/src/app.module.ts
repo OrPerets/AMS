@@ -21,6 +21,7 @@ import { VoteModule } from './votes/vote.module';
 import { ScheduleModule } from './schedules/schedule.module';
 import { SupportModule } from './support/support.module';
 import { ActivityModule } from './activity/activity.module';
+import { ApprovalModule } from './approval/approval.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { OperationsModule } from './operations/operations.module';
 
@@ -47,6 +48,7 @@ import { OperationsModule } from './operations/operations.module';
     ScheduleModule,
     SupportModule,
     ActivityModule,
+    ApprovalModule,
     VendorsModule,
     OperationsModule,
   ],

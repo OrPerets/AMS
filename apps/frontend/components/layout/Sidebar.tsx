@@ -225,6 +225,18 @@ const getNavigationGroups = (role: string, t: (key: string) => string): Navigati
           icon: ShieldCheck,
           roles: ['ADMIN', 'PM'],
         },
+        {
+          title: 'מרכז אישורים',
+          href: '/admin/approvals',
+          icon: ShieldCheck,
+          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
+        },
+        {
+          title: 'איכות נתונים',
+          href: '/admin/data-quality',
+          icon: ShieldCheck,
+          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
+        },
       ]
     }
   ];

@@ -3,12 +3,19 @@ import { PrismaService } from '../prisma.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { CreateExpenseDto } from './dto/create-expense.dto';
-import { Prisma, ExpenseStatus, BudgetStatus } from '@prisma/client';
+import { Prisma, ExpenseStatus, BudgetStatus, ApprovalTaskType, Role } from '@prisma/client';
 import { NotificationService, NotificationTemplate } from '../notifications/notification.service';
+import { ApprovalService } from '../approval/approval.service';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class BudgetService {
-  constructor(private prisma: PrismaService, private notifications: NotificationService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationService,
+    private approvals: ApprovalService,
+    private activity: ActivityService,
+  ) {}
 
   private mapBudgetCreate(dto: CreateBudgetDto): Prisma.BudgetCreateInput {
     const { buildingId, ...rest } = dto;
@@ -60,7 +67,7 @@ export class BudgetService {
     return this.prisma.budget.delete({ where: { id } });
   }
 
-  async addExpense(dto: CreateExpenseDto) {
+  async addExpense(dto: CreateExpenseDto, userId?: number) {
     const { buildingId, budgetId, incurredAt, ...rest } = dto;
     const expense = await this.prisma.expense.create({
       data: {
@@ -71,7 +78,49 @@ export class BudgetService {
       },
       include: { building: true, budget: true, documents: true },
     });
-    // Do not update budget actuals until approved
+
+    const budgetOverrun =
+      expense.budget && expense.budget.amount > 0 ? expense.budget.actualSpent + expense.amount > expense.budget.amount : false;
+
+    await this.approvals.createTask({
+      type: ApprovalTaskType.EXPENSE_APPROVAL,
+      entityType: 'EXPENSE',
+      entityId: expense.id,
+      buildingId: expense.buildingId,
+      requestedById: userId,
+      title: `אישור הוצאה #${expense.id}`,
+      description: expense.description ?? `הוצאה בסך ₪${expense.amount.toLocaleString()}`,
+      metadata: { amount: expense.amount, category: expense.category, budgetId: expense.budgetId ?? null },
+    });
+
+    if (budgetOverrun) {
+      await this.approvals.createTask({
+        type: ApprovalTaskType.BUDGET_OVERRUN,
+        entityType: 'EXPENSE',
+        entityId: expense.id,
+        buildingId: expense.buildingId,
+        requestedById: userId,
+        title: `חריגת תקציב עבור הוצאה #${expense.id}`,
+        description: `ההוצאה תחרוג מהתקציב ${expense.budget?.name ?? ''}`.trim(),
+        metadata: {
+          amount: expense.amount,
+          budgetId: expense.budgetId ?? null,
+          planned: expense.budget?.amount ?? null,
+          actualSpent: expense.budget?.actualSpent ?? null,
+        },
+      });
+    }
+
+    await this.activity.log({
+      userId,
+      buildingId: expense.buildingId,
+      entityType: 'EXPENSE',
+      entityId: expense.id,
+      action: 'EXPENSE_SUBMITTED',
+      summary: `הוצאה #${expense.id} נשלחה לאישור.`,
+      metadata: { amount: expense.amount, category: expense.category, budgetOverrun },
+    });
+
     return expense;
   }
 
@@ -179,24 +228,58 @@ export class BudgetService {
     return updated;
   }
 
-  async approveExpense(expenseId: number, approverUserId?: number) {
-    const expense = await this.prisma.expense.update({
-      where: { id: expenseId },
-      data: { status: ExpenseStatus.APPROVED, approvedById: approverUserId, approvedAt: new Date() },
-      include: { budget: true },
+  async approveExpense(expenseId: number, approverUserId?: number, approverRole?: Role, comment?: string) {
+    const approval = await this.prisma.approvalTask.findFirst({
+      where: {
+        entityType: 'EXPENSE',
+        entityId: expenseId,
+        type: ApprovalTaskType.EXPENSE_APPROVAL,
+        status: 'PENDING',
+      },
     });
-    if (expense.budgetId) {
-      await this.updateBudgetActualsAndAlert(expense.budgetId);
+
+    if (approval && approverUserId && approverRole) {
+      await this.approvals.approve(approval.id, approverUserId, approverRole, comment);
+    } else {
+      const expense = await this.prisma.expense.update({
+        where: { id: expenseId },
+        data: { status: ExpenseStatus.APPROVED, approvedById: approverUserId, approvedAt: new Date() },
+        include: { budget: true },
+      });
+      if (expense.budgetId) {
+        await this.updateBudgetActualsAndAlert(expense.budgetId);
+      }
     }
-    return expense;
+
+    return this.prisma.expense.findUniqueOrThrow({
+      where: { id: expenseId },
+      include: { building: true, budget: true },
+    });
   }
 
-  async rejectExpense(expenseId: number, approverUserId?: number) {
-    const expense = await this.prisma.expense.update({
-      where: { id: expenseId },
-      data: { status: ExpenseStatus.REJECTED, approvedById: approverUserId, approvedAt: new Date() },
+  async rejectExpense(expenseId: number, approverUserId?: number, approverRole?: Role, comment?: string) {
+    const approval = await this.prisma.approvalTask.findFirst({
+      where: {
+        entityType: 'EXPENSE',
+        entityId: expenseId,
+        type: ApprovalTaskType.EXPENSE_APPROVAL,
+        status: 'PENDING',
+      },
     });
-    return expense;
+
+    if (approval && approverUserId && approverRole) {
+      await this.approvals.reject(approval.id, approverUserId, approverRole, comment);
+    } else {
+      await this.prisma.expense.update({
+        where: { id: expenseId },
+        data: { status: ExpenseStatus.REJECTED, approvedById: approverUserId, approvedAt: new Date() },
+      });
+    }
+
+    return this.prisma.expense.findUniqueOrThrow({
+      where: { id: expenseId },
+      include: { building: true, budget: true },
+    });
   }
 
   listExpenses(status?: ExpenseStatus) {

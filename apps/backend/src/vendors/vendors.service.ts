@@ -35,6 +35,7 @@ export class VendorsService {
     email?: string;
     phone?: string;
     insuranceExpiry?: string;
+    complianceDocumentExpiry?: string;
     complianceNotes?: string;
     rating?: number;
   }, userId?: number) {
@@ -46,6 +47,7 @@ export class VendorsService {
         email: input.email,
         phone: input.phone,
         insuranceExpiry: input.insuranceExpiry ? new Date(input.insuranceExpiry) : undefined,
+        complianceDocumentExpiry: input.complianceDocumentExpiry ? new Date(input.complianceDocumentExpiry) : undefined,
         complianceNotes: input.complianceNotes,
         rating: input.rating,
       },
@@ -68,6 +70,7 @@ export class VendorsService {
     phone?: string | null;
     isActive?: boolean;
     insuranceExpiry?: string | null;
+    complianceDocumentExpiry?: string | null;
     complianceNotes?: string | null;
     rating?: number | null;
   }, userId?: number) {
@@ -81,6 +84,7 @@ export class VendorsService {
         phone: input.phone === undefined ? undefined : input.phone,
         isActive: input.isActive,
         insuranceExpiry: input.insuranceExpiry ? new Date(input.insuranceExpiry) : input.insuranceExpiry === null ? null : undefined,
+        complianceDocumentExpiry: input.complianceDocumentExpiry ? new Date(input.complianceDocumentExpiry) : input.complianceDocumentExpiry === null ? null : undefined,
         complianceNotes: input.complianceNotes === undefined ? undefined : input.complianceNotes,
         rating: input.rating === undefined ? undefined : input.rating,
       },
@@ -216,5 +220,104 @@ export class VendorsService {
       summary: `עודכן חוזה: ${contract.title}.`,
     });
     return contract;
+  }
+
+  async runPortfolioReminders(userId?: number) {
+    const now = new Date();
+    const reminderHorizon = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    const [suppliers, contracts, managers] = await Promise.all([
+      this.prisma.supplier.findMany({
+        where: {
+          isActive: true,
+          OR: [
+            { insuranceExpiry: { lte: reminderHorizon, gte: now } },
+            { complianceDocumentExpiry: { lte: reminderHorizon, gte: now } },
+          ],
+        },
+      }),
+      this.prisma.contract.findMany({
+        where: {
+          status: 'ACTIVE',
+          endDate: { not: null },
+        },
+        include: {
+          building: true,
+          owner: true,
+          supplier: true,
+        },
+      }),
+      this.prisma.user.findMany({
+        where: { role: { in: ['ADMIN', 'PM', 'ACCOUNTANT'] } },
+        select: { id: true, tenantId: true },
+      }),
+    ]);
+
+    const expiringContracts = contracts.filter((contract) => {
+      if (!contract.endDate) return false;
+      const reminderDate = new Date(contract.endDate.getTime() - contract.renewalReminderDays * 24 * 60 * 60 * 1000);
+      return reminderDate <= now || contract.endDate < now;
+    });
+
+    const notifications = await Promise.all([
+      ...suppliers.flatMap((supplier) =>
+        managers.map((manager) =>
+          this.prisma.notification.create({
+            data: {
+              tenantId: manager.tenantId,
+              userId: manager.id,
+              title: `תזכורת תאימות ספק: ${supplier.name}`,
+              message: 'נדרש לעדכן ביטוח או מסמך תאימות בקרוב.',
+              type: 'VENDOR_COMPLIANCE_REMINDER',
+              metadata: { supplierId: supplier.id },
+            },
+          }),
+        ),
+      ),
+      ...expiringContracts.flatMap((contract) =>
+        managers.map((manager) =>
+          this.prisma.notification.create({
+            data: {
+              tenantId: manager.tenantId,
+              userId: manager.id,
+              buildingId: contract.buildingId,
+              title: `תזכורת חידוש חוזה: ${contract.title}`,
+              message: contract.endDate && contract.endDate < now ? 'החוזה עבר את מועד הסיום ודורש טיפול.' : 'החוזה קרוב למועד חידוש.',
+              type: 'CONTRACT_RENEWAL_REMINDER',
+              metadata: { contractId: contract.id, endDate: contract.endDate?.toISOString() ?? null },
+            },
+          }),
+        ),
+      ),
+    ]);
+
+    await Promise.all([
+      ...suppliers.map((supplier) =>
+        this.prisma.supplier.update({
+          where: { id: supplier.id },
+          data: { lastComplianceReminderAt: now },
+        }),
+      ),
+      ...expiringContracts.map((contract) =>
+        this.prisma.contract.update({
+          where: { id: contract.id },
+          data: { lastRenewalReminderAt: now },
+        }),
+      ),
+    ]);
+
+    await this.activity.log({
+      userId,
+      entityType: 'PORTFOLIO_REMINDERS',
+      action: 'REMINDERS_RUN',
+      summary: `נשלחו ${notifications.length} תזכורות חידוש ותאימות.`,
+      metadata: { supplierCount: suppliers.length, contractCount: expiringContracts.length },
+    });
+
+    return {
+      supplierReminders: suppliers.length,
+      contractReminders: expiringContracts.length,
+      notificationsSent: notifications.length,
+    };
   }
 }

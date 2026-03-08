@@ -94,6 +94,22 @@ const quickActions = [
     roles: ['ADMIN', 'PM', 'ACCOUNTANT', 'MASTER']
   },
   {
+    title: 'מרכז אישורים',
+    description: 'ניהול הוצאות, מחיקות מסמך והתאמות יתרה ממתינות',
+    icon: CheckCircle,
+    href: '/admin/approvals',
+    color: 'bg-red-500',
+    roles: ['ADMIN', 'PM', 'ACCOUNTANT']
+  },
+  {
+    title: 'איכות נתונים',
+    description: 'כפילויות, שדות חסרים וקישורים לא תקינים',
+    icon: CheckCircle,
+    href: '/admin/data-quality',
+    color: 'bg-slate-600',
+    roles: ['ADMIN', 'PM', 'ACCOUNTANT']
+  },
+  {
     title: 'אזור אישי',
     description: 'יתרה, מסמכים וקריאות שירות',
     icon: Users,

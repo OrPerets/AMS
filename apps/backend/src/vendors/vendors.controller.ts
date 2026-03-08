@@ -39,4 +39,9 @@ export class VendorsController {
   updateContract(@Param('id') id: string, @Body() body: any, @Req() req: any) {
     return this.vendors.updateContract(Number(id), body, req.user?.sub);
   }
+
+  @Post('portfolio/reminders/run')
+  runPortfolioReminders(@Req() req: any) {
+    return this.vendors.runPortfolioReminders(req.user?.sub);
+  }
 }

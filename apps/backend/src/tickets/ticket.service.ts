@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, Ticket, TicketSeverity, TicketStatus } from '@prisma/client';
+import { ApprovalTaskType, Prisma, Ticket, TicketSeverity, TicketStatus } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { PhotoService } from './photo.service';
 import { NotificationService } from '../notifications/notification.service';
 import { WebSocketGateway } from '../websocket/websocket.gateway';
 import { ActivityService } from '../activity/activity.service';
+import { ApprovalService } from '../approval/approval.service';
 
 type TicketListFilter = {
   status?: TicketStatus;
@@ -126,6 +127,7 @@ export class TicketService {
     private notifications: NotificationService,
     private websocketGateway: WebSocketGateway,
     private activity: ActivityService,
+    private approvals: ApprovalService,
   ) {}
 
   async create(data: Prisma.TicketCreateInput, files: Express.Multer.File[], description?: string, authorId?: number): Promise<Ticket> {
@@ -231,7 +233,7 @@ export class TicketService {
       return ticket;
     }
     if (dto.supplierId) {
-      await this.prisma.workOrder.create({
+      const workOrder = await this.prisma.workOrder.create({
         data: {
           ticket: { connect: { id } },
           supplier: { connect: { id: dto.supplierId } },
@@ -250,6 +252,15 @@ export class TicketService {
         action: 'WORK_ORDER_CREATED',
         summary: `נוצרה הזמנת עבודה לספק #${dto.supplierId}.`,
         metadata: { supplierId: dto.supplierId, costEstimate: dto.costEstimate ?? null },
+      });
+      await this.approvals.createTask({
+        type: ApprovalTaskType.WORK_ORDER_APPROVAL,
+        entityType: 'WORK_ORDER',
+        entityId: workOrder.id,
+        buildingId: ticket.unit.building.id,
+        title: `אישור הזמנת עבודה #${workOrder.id}`,
+        description: `הזמנת עבודה עבור קריאה #${ticket.id}`,
+        metadata: { ticketId: ticket.id, supplierId: dto.supplierId, costEstimate: dto.costEstimate ?? null },
       });
       return ticket;
     }

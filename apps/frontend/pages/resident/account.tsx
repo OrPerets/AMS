@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Bell, CreditCard, FileText, MessageSquare, Ticket, Wrench } from 'lucide-react';
 import { authFetch } from '../../lib/auth';
 import { Badge } from '../../components/ui/badge';
@@ -73,6 +74,9 @@ export default function ResidentAccountPage() {
   }
 
   const summary = finance?.summary;
+  const publishedDocuments = context.documents.filter((document) =>
+    ['meeting_summary', 'signed_protocol', 'regulation', 'committee_decision'].includes(String(document.category || '').toLowerCase()),
+  );
 
   return (
     <div className="space-y-6 p-6">
@@ -81,7 +85,17 @@ export default function ResidentAccountPage() {
           <h1 className="text-3xl font-semibold">האזור האישי של הדייר</h1>
           <p className="text-sm text-muted-foreground">יתרה, מסמכים, קריאות שירות והודעות במקום אחד.</p>
         </div>
-        <Button variant="outline" onClick={loadAccount}>רענון</Button>
+        <div className="flex gap-2">
+          {context.residentId ? (
+            <Button variant="outline" onClick={() => window.open(`/api/v1/invoices/ledger?residentId=${context.residentId}&format=csv`, '_blank')}>
+              ייצוא דוח יתרה
+            </Button>
+          ) : null}
+          <Button asChild variant="outline">
+            <Link href="/settings">העדפות התראות</Link>
+          </Button>
+          <Button variant="outline" onClick={loadAccount}>רענון</Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -105,12 +119,19 @@ export default function ResidentAccountPage() {
                     <div className="font-medium">#{invoice.id} · {invoice.description}</div>
                     <div className="text-xs text-muted-foreground">פירעון: {formatDate(new Date(invoice.dueDate), locale)}</div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-medium">{formatCurrency(invoice.amount)}</div>
-                    <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'warning'}>
-                      {invoice.status}
-                    </Badge>
-                  </div>
+                    <div className="text-right">
+                      <div className="font-medium">{formatCurrency(invoice.amount)}</div>
+                      <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'warning'}>
+                        {invoice.status}
+                      </Badge>
+                      {invoice.receiptNumber ? (
+                        <div className="mt-2">
+                          <Button size="sm" variant="outline" onClick={() => window.open(`/api/v1/invoices/${invoice.id}/receipt`, '_blank')}>
+                            הורד קבלה
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
                 </div>
               </div>
             ))}
@@ -160,7 +181,7 @@ export default function ResidentAccountPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><FileText className="h-4 w-4" /> מסמכים</CardTitle>
+            <CardTitle className="flex items-center gap-2"><FileText className="h-4 w-4" /> מסמכים והחלטות בניין</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {context.documents.slice(0, 6).map((document) => (
@@ -197,6 +218,22 @@ export default function ResidentAccountPage() {
           </CardContent>
         </Card>
       </div>
+
+      {publishedDocuments.length ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><FileText className="h-4 w-4" /> פרסומי ועד והנהלה</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {publishedDocuments.slice(0, 6).map((document) => (
+              <a key={document.id} href={document.url} target="_blank" rel="noreferrer" className="block rounded-lg border p-3 hover:bg-muted/40">
+                <div className="font-medium">{document.name}</div>
+                <div className="text-xs text-muted-foreground">{document.category || 'מסמך'} · {formatDate(new Date(document.uploadedAt), locale)}</div>
+              </a>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {finance?.ledger?.length ? (
         <Card>

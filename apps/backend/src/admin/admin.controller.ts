@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { Roles, Role } from '../auth/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -33,6 +33,33 @@ export class AdminController {
     const csv = await this.admin.exportActivity({ buildingId: buildingId ? Number(buildingId) : undefined });
     res.setHeader('Content-Type', 'text/csv');
     res.send(csv);
+  }
+
+  @Get('approvals')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.MASTER)
+  approvals(@Query('buildingId') buildingId?: string, @Query('status') status?: string) {
+    return this.admin.approvalsList({
+      buildingId: buildingId ? Number(buildingId) : undefined,
+      status,
+    });
+  }
+
+  @Post('approvals/:id/approve')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.MASTER)
+  approveTask(@Param('id') id: string, @Req() req: any, @Body() body: { comment?: string }) {
+    return this.admin.approveTask(Number(id), req.user?.sub, req.user?.actAsRole ?? req.user?.role, body?.comment);
+  }
+
+  @Post('approvals/:id/reject')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.MASTER)
+  rejectTask(@Param('id') id: string, @Req() req: any, @Body() body: { comment?: string }) {
+    return this.admin.rejectTask(Number(id), req.user?.sub, req.user?.actAsRole ?? req.user?.role, body?.comment);
+  }
+
+  @Get('data-quality')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.MASTER)
+  dataQuality() {
+    return this.admin.dataQuality();
   }
 
   @Post('impersonate')

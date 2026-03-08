@@ -23,11 +23,6 @@ export class CommunicationController {
     return this.communications.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.communications.findOne(+id);
-  }
-
   @Get('building/:buildingId')
   findForBuilding(@Param('buildingId') buildingId: string) {
     return this.communications.findForBuilding(+buildingId);
@@ -74,6 +69,24 @@ export class CommunicationController {
     return this.communications.createAnnouncement({ ...dto, senderId: dto.senderId ?? req.user?.sub });
   }
 
+  @Post('announcement/preview')
+  @Roles(Role.ADMIN, Role.PM)
+  previewAnnouncement(@Body() dto: {
+    buildingId?: number;
+    unitIds?: number[];
+    floor?: number;
+    residentIds?: number[];
+    recipientRole?: 'RESIDENT' | 'PM' | 'ADMIN';
+  }) {
+    return this.communications.previewAnnouncement(dto);
+  }
+
+  @Get('announcements/history')
+  @Roles(Role.ADMIN, Role.PM)
+  announcementHistory(@Query('buildingId') buildingId?: string) {
+    return this.communications.listAnnouncementHistory({ buildingId: buildingId ? +buildingId : undefined });
+  }
+
   @Post('resident-request')
   @Roles(Role.RESIDENT)
   createResidentRequest(@Body() dto: {
@@ -86,6 +99,51 @@ export class CommunicationController {
     metadata?: Record<string, any>;
   }, @Req() req: any) {
     return this.communications.createResidentRequest(req.user?.sub, dto);
+  }
+
+  @Get('resident-requests')
+  @Roles(Role.ADMIN, Role.PM, Role.RESIDENT)
+  residentRequests(@Req() req: any, @Query('status') status?: string, @Query('requestType') requestType?: string) {
+    return this.communications.listResidentRequests({
+      userId: req.user?.sub,
+      role: req.user?.actAsRole ?? req.user?.role,
+      status,
+      requestType,
+    });
+  }
+
+  @Put('resident-requests/:requestKey/status')
+  @Roles(Role.ADMIN, Role.PM)
+  updateResidentRequestStatus(
+    @Param('requestKey') requestKey: string,
+    @Req() req: any,
+    @Body() body: { status: 'SUBMITTED' | 'IN_REVIEW' | 'COMPLETED' | 'CLOSED'; statusNotes?: string | null },
+  ) {
+    return this.communications.updateResidentRequestStatus(requestKey, req.user?.sub, body);
+  }
+
+  @Get('published-documents')
+  @Roles(Role.ADMIN, Role.PM, Role.RESIDENT, Role.ACCOUNTANT)
+  publishedDocuments(@Query('buildingId') buildingId?: string) {
+    return this.communications.listPublishedDocuments(buildingId ? +buildingId : undefined);
+  }
+
+  @Post('document-bulletin')
+  @Roles(Role.ADMIN, Role.PM)
+  publishDocumentBulletin(
+    @Req() req: any,
+    @Body() body: {
+      documentId: number;
+      buildingId: number;
+      bulletinType: 'meeting_summary' | 'signed_protocol' | 'regulation' | 'committee_decision';
+      subject: string;
+      message: string;
+    },
+  ) {
+    return this.communications.publishDocumentNotice({
+      ...body,
+      senderId: req.user?.sub,
+    });
   }
 
   @Get('conversation/:user1Id/:user2Id')
@@ -106,5 +164,10 @@ export class CommunicationController {
     @Query('buildingId') buildingId?: string,
   ) {
     return this.communications.searchCommunications(query ?? '', userId ? +userId : undefined, buildingId ? +buildingId : undefined);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.communications.findOne(+id);
   }
 }

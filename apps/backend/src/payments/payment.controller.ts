@@ -92,6 +92,16 @@ export class PaymentController {
     return this.payments.updateCollections(+id, body, req.user?.sub);
   }
 
+  @Post('invoices/:id/adjustments')
+  @Roles(Role.ADMIN, Role.ACCOUNTANT)
+  requestAdjustment(
+    @Param('id') id: string,
+    @Body() body: { amount: number; reason?: string; description?: string },
+    @Req() req: any,
+  ) {
+    return this.payments.requestBalanceAdjustment(+id, body, req.user?.sub);
+  }
+
   @Get('invoices/account/:residentId')
   @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.RESIDENT, Role.MASTER)
   account(@Param('residentId') residentId: string, @Req() req: any) {
@@ -101,9 +111,29 @@ export class PaymentController {
 
   @Get('invoices/ledger')
   @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.RESIDENT, Role.MASTER)
-  ledger(@Query('residentId') residentId: string, @Req() req: any) {
+  async ledger(@Query('residentId') residentId: string, @Query('format') format: string | undefined, @Req() req: any, @Res({ passthrough: true }) res?: Response) {
     const effectiveResidentId = (req.user?.actAsRole ?? req.user?.role) === Role.RESIDENT ? req.user?.sub : +residentId;
-    return this.payments.getResidentLedger(effectiveResidentId);
+    const ledger = await this.payments.getResidentLedger(effectiveResidentId);
+    if (format === 'csv' && res) {
+      const csv = [
+        'entryId,invoiceId,type,amount,createdAt,summary,status',
+        ...ledger.entries.map((entry) =>
+          [
+            JSON.stringify(entry.id),
+            entry.invoiceId,
+            entry.type,
+            entry.amount,
+            new Date(entry.createdAt).toISOString(),
+            JSON.stringify(entry.summary),
+            entry.status,
+          ].join(','),
+        ),
+      ].join('\n');
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=\"resident-ledger.csv\"');
+      return csv;
+    }
+    return ledger;
   }
 
   @Post('payments/webhook')

@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   ActivitySeverity,
+  ApprovalTaskType,
   CollectionStatus,
   InvoiceReminderState,
   InvoiceStatus,
@@ -11,6 +12,7 @@ import { ActivityService } from '../activity/activity.service';
 import { PrismaService } from '../prisma.service';
 import { ReceiptService } from './receipt.service';
 import { TranzilaProvider } from './tranzila.provider';
+import { ApprovalService } from '../approval/approval.service';
 
 type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
   include: {
@@ -27,6 +29,7 @@ export class PaymentService {
     private receipts: ReceiptService,
     private tranzilaProvider: TranzilaProvider,
     private activity: ActivityService,
+    private approvals: ApprovalService,
   ) {}
 
   private invoiceInclude = {
@@ -652,6 +655,56 @@ export class PaymentService {
     );
 
     return this.mapInvoice(invoice);
+  }
+
+  async requestBalanceAdjustment(
+    invoiceId: number,
+    data: {
+      amount: number;
+      reason?: string;
+      description?: string;
+    },
+    userId?: number,
+  ) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: this.invoiceInclude,
+    });
+    if (!invoice) {
+      throw new BadRequestException('Invoice not found.');
+    }
+    if (!data.amount || Number.isNaN(Number(data.amount))) {
+      throw new BadRequestException('Adjustment amount is required.');
+    }
+
+    const task = await this.approvals.createTask({
+      type: ApprovalTaskType.RESIDENT_BALANCE_ADJUSTMENT,
+      entityType: 'INVOICE',
+      entityId: invoice.id,
+      buildingId: invoice.resident?.units?.[0]?.buildingId ?? null,
+      residentId: invoice.residentId,
+      requestedById: userId,
+      title: `התאמת יתרה לחשבונית #${invoice.id}`,
+      description: data.description ?? this.getInvoiceDescription(invoice.items as any[]),
+      reason: data.reason,
+      metadata: {
+        amount: Number(data.amount),
+        invoiceId: invoice.id,
+        residentId: invoice.residentId,
+        description: data.description ?? null,
+      },
+    });
+
+    await this.logInvoiceActivity(
+      invoice,
+      userId,
+      'BALANCE_ADJUSTMENT_REQUESTED',
+      `נשלחה בקשה להתאמת יתרה לחשבונית #${invoice.id}.`,
+      ActivitySeverity.WARNING,
+      { approvalTaskId: task.id, amount: Number(data.amount), reason: data.reason ?? null },
+    );
+
+    return task;
   }
 
   async generateReceipt(id: number): Promise<Buffer> {
