@@ -5,6 +5,8 @@ describe('PaymentService webhook processing', () => {
   let service: PaymentService;
   let prisma: any;
   let tranzilaProvider: any;
+  let stripeProvider: any;
+  let routingStrategy: any;
 
   beforeEach(() => {
     prisma = {
@@ -15,9 +17,13 @@ describe('PaymentService webhook processing', () => {
       paymentIntent: {
         findFirst: jest.fn(),
         update: jest.fn(),
+        create: jest.fn(),
+        findUniqueOrThrow: jest.fn(),
+        findMany: jest.fn(),
       },
       invoice: {
         update: jest.fn(),
+        findUnique: jest.fn(),
       },
       providerTransaction: {
         create: jest.fn(),
@@ -27,9 +33,34 @@ describe('PaymentService webhook processing', () => {
     tranzilaProvider = {
       name: 'tranzila',
       webhookVerify: jest.fn(),
+      createPayment: jest.fn(),
+      retrieve: jest.fn(),
+      refund: jest.fn(),
+      estimateFees: jest.fn().mockReturnValue({ estimatedFee: 5, estimatedNet: 95 }),
     };
 
-    service = new PaymentService(prisma as any, {} as any, tranzilaProvider as any, { log: jest.fn() } as any, {} as any);
+    stripeProvider = {
+      name: 'stripe',
+      createPayment: jest.fn(),
+      retrieve: jest.fn(),
+      refund: jest.fn(),
+      estimateFees: jest.fn().mockReturnValue({ estimatedFee: 4, estimatedNet: 96 }),
+    };
+
+    routingStrategy = {
+      selectProvider: jest.fn().mockReturnValue({ provider: tranzilaProvider, reason: 'default_route' }),
+      shouldFailover: jest.fn().mockReturnValue(true),
+    };
+
+    service = new PaymentService(
+      prisma as any,
+      { generate: jest.fn() } as any,
+      tranzilaProvider as any,
+      stripeProvider as any,
+      routingStrategy as any,
+      { log: jest.fn() } as any,
+      {} as any,
+    );
   });
 
   it('rejects invalid webhook signatures', async () => {
@@ -100,5 +131,34 @@ describe('PaymentService webhook processing', () => {
       where: { id: 102 },
       data: { status: 'UNPAID' as any, collectionStatus: 'PAST_DUE' as any },
     });
+  });
+
+  it('fails over to fallback provider and persists fee estimate fields', async () => {
+    prisma.invoice.findUnique.mockResolvedValue({ id: 77, amount: 100, residentId: 10 });
+    prisma.paymentIntent.create.mockResolvedValue({ id: 700, status: 'REQUIRES_CONFIRMATION' });
+    routingStrategy.selectProvider.mockReturnValue({ provider: tranzilaProvider, fallbackProvider: stripeProvider, reason: 'default_route' });
+    tranzilaProvider.createPayment.mockRejectedValue(new Error('soft_decline'));
+    stripeProvider.createPayment.mockResolvedValue({ providerIntentId: 'pi_fallback', requiresAction: false, raw: { ok: true } });
+
+    await service.initiatePayment(77, undefined, undefined);
+
+    expect(prisma.paymentIntent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          provider: 'tranzila',
+          providerFeeEstimated: 5,
+          netAmount: 95,
+          grossAmount: 100,
+        }),
+      }),
+    );
+    expect(prisma.paymentIntent.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          provider: 'stripe',
+          providerIntentId: 'pi_fallback',
+        }),
+      }),
+    );
   });
 });

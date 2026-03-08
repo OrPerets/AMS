@@ -12,6 +12,9 @@ import { ActivityService } from '../activity/activity.service';
 import { PrismaService } from '../prisma.service';
 import { ReceiptService } from './receipt.service';
 import { TranzilaProvider } from './tranzila.provider';
+import { StripeProvider } from './providers/stripe.provider';
+import { PaymentRoutingStrategy } from './providers/payment-routing.strategy';
+import { PaymentProvider, RoutingContext } from './providers/payment-provider';
 import { ApprovalService } from '../approval/approval.service';
 import { Role } from '../auth/roles.decorator';
 
@@ -31,9 +34,25 @@ export class PaymentService {
     private prisma: PrismaService,
     private receipts: ReceiptService,
     private tranzilaProvider: TranzilaProvider,
+    private stripeProvider: StripeProvider,
+    private routingStrategy: PaymentRoutingStrategy,
     private activity: ActivityService,
     private approvals: ApprovalService,
   ) {}
+
+  private getProviderByName(name: string): PaymentProvider {
+    return name === this.stripeProvider.name ? this.stripeProvider : this.tranzilaProvider;
+  }
+
+  private getRoutingContext(invoice: { amount: number; currency?: string }, metadata?: Record<string, any>): RoutingContext {
+    return {
+      amount: invoice.amount,
+      currency: invoice.currency || 'NIS',
+      cardType: metadata?.cardType || 'unknown',
+      cardBin: metadata?.cardBin,
+      countryCode: metadata?.countryCode,
+    };
+  }
 
   private invoiceInclude = {
     resident: {
@@ -904,32 +923,63 @@ export class PaymentService {
           });
     if (!invoice) throw new Error('Invoice not found');
 
+    const routingContext = this.getRoutingContext({ amount: invoice.amount, currency: 'NIS' });
+    const route = this.routingStrategy.selectProvider([this.tranzilaProvider, this.stripeProvider], routingContext);
+    const selectedProvider = route.provider;
+    const feeEstimate = selectedProvider.estimateFees(routingContext);
+
     const intent = await this.prisma.paymentIntent.create({
       data: {
         invoiceId: invoice.id,
         amount: invoice.amount,
+        grossAmount: invoice.amount,
+        providerFeeEstimated: feeEstimate.estimatedFee,
+        netAmount: feeEstimate.estimatedNet,
         currency: 'NIS',
         status: PaymentIntentStatus.REQUIRES_CONFIRMATION,
-        provider: 'tranzila',
+        provider: selectedProvider.name,
       },
     });
-    const result = await this.withProviderRetry(() =>
-      this.tranzilaProvider.createPayment({
-        amount: invoice.amount,
-        currency: 'NIS',
-        description: `Invoice #${invoice.id}`,
-        metadata: { invoiceId: invoice.id, residentId: invoice.residentId },
-      }),
-    );
 
+    const start = Date.now();
+    let result: any;
+    let usedProvider = selectedProvider;
+    try {
+      result = await this.withProviderRetry(() =>
+        selectedProvider.createPayment({
+          amount: invoice.amount,
+          currency: 'NIS',
+          description: `Invoice #${invoice.id}`,
+          metadata: { invoiceId: invoice.id, residentId: invoice.residentId, routeReason: route.reason },
+        }),
+      );
+    } catch (error) {
+      if (!route.fallbackProvider || !this.routingStrategy.shouldFailover(error)) {
+        throw error;
+      }
+      usedProvider = route.fallbackProvider;
+      this.logger.warn(`Payment routing failover: ${selectedProvider.name} -> ${usedProvider.name}`);
+      result = await this.withProviderRetry(() =>
+        usedProvider.createPayment({
+          amount: invoice.amount,
+          currency: 'NIS',
+          description: `Invoice #${invoice.id}`,
+          metadata: { invoiceId: invoice.id, residentId: invoice.residentId, routeReason: `${route.reason}:fallback` },
+        }),
+      );
+    }
+
+    const latencyMs = Date.now() - start;
     const internalStatus = this.toIntentStatus(result.requiresAction ? 'requires_action' : 'processing');
     await this.prisma.paymentIntent.update({
       where: { id: intent.id },
       data: {
+        provider: usedProvider.name,
         providerIntentId: result.providerIntentId || String(intent.id),
         clientSecret: result.clientSecret || null,
         status: internalStatus,
-        metadata: result.raw ?? undefined,
+        providerLatencyMs: latencyMs,
+        metadata: { ...(result.raw ?? {}), routeReason: route.reason, routedProvider: usedProvider.name },
       },
     });
     return { intentId: intent.id, redirectUrl: result.redirectUrl, clientSecret: result.clientSecret };
@@ -951,7 +1001,7 @@ export class PaymentService {
     }
 
     const providerIntentId = latestIntent.providerIntentId || String(latestIntent.id);
-    const providerResult = await this.withProviderRetry(() => this.tranzilaProvider.retrieve(providerIntentId));
+    const providerResult = await this.withProviderRetry(() => this.getProviderByName(latestIntent.provider).retrieve(providerIntentId));
     const verifiedStatus = this.toIntentStatus(providerResult.status);
 
     await this.prisma.paymentIntent.update({
@@ -1018,21 +1068,31 @@ export class PaymentService {
 
   async createPaymentIntentFromInvoice(invoiceId: number) {
     const invoice = await this.prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
+    const routingContext = this.getRoutingContext({ amount: invoice.amount, currency: 'NIS' });
+    const route = this.routingStrategy.selectProvider([this.tranzilaProvider, this.stripeProvider], routingContext);
+    const provider = route.provider;
+    const feeEstimate = provider.estimateFees(routingContext);
+
     const intent = await this.prisma.paymentIntent.create({
       data: {
         invoiceId: invoice.id,
         amount: invoice.amount,
+        grossAmount: invoice.amount,
+        providerFeeEstimated: feeEstimate.estimatedFee,
+        netAmount: feeEstimate.estimatedNet,
         currency: 'NIS',
         status: PaymentIntentStatus.REQUIRES_CONFIRMATION,
-        provider: 'tranzila',
+        provider: provider.name,
       },
     });
+
+    const start = Date.now();
     const result = await this.withProviderRetry(() =>
-      this.tranzilaProvider.createPayment({
+      provider.createPayment({
         amount: invoice.amount,
         currency: 'NIS',
         description: `Invoice #${invoice.id}`,
-        metadata: { invoiceId: invoice.id },
+        metadata: { invoiceId: invoice.id, routeReason: route.reason },
       }),
     );
     await this.prisma.paymentIntent.update({
@@ -1041,7 +1101,8 @@ export class PaymentService {
         providerIntentId: result.providerIntentId || String(intent.id),
         clientSecret: result.clientSecret || null,
         status: this.toIntentStatus(result.requiresAction ? 'requires_action' : 'processing'),
-        metadata: result.raw ?? undefined,
+        providerLatencyMs: Date.now() - start,
+        metadata: { ...(result.raw ?? {}), routeReason: route.reason },
       },
     });
     return { id: intent.id, status: intent.status, redirectUrl: result.redirectUrl, clientSecret: result.clientSecret };
@@ -1053,7 +1114,7 @@ export class PaymentService {
       include: { invoice: true },
     });
     const res = await this.withProviderRetry(() =>
-      this.tranzilaProvider.refund({ providerIntentId: intent.providerIntentId || String(intent.id), amount }),
+      this.getProviderByName(intent.provider).refund({ providerIntentId: intent.providerIntentId || String(intent.id), amount }),
     );
     await this.prisma.refund.create({
       data: { paymentIntentId: intent.id, amount: amount ?? intent.amount, providerRefundId: res.providerRefundId || undefined },
@@ -1080,6 +1141,60 @@ export class PaymentService {
       return this.assertResidentOwnsPaymentIntent(paymentIntentId, actorUserId);
     }
     return this.prisma.paymentIntent.findUniqueOrThrow({ where: { id: paymentIntentId } });
+  }
+
+
+
+  async reconcilePaymentIntent(paymentIntentId: number, data: { providerFeeActual: number; settlementBatchId: string }) {
+    const intent = await this.prisma.paymentIntent.findUniqueOrThrow({ where: { id: paymentIntentId } });
+    const netAmount = Number((intent.grossAmount ?? intent.amount) - data.providerFeeActual);
+    return this.prisma.paymentIntent.update({
+      where: { id: paymentIntentId },
+      data: {
+        providerFeeActual: data.providerFeeActual,
+        netAmount,
+        settlementBatchId: data.settlementBatchId,
+      },
+    });
+  }
+
+  async getProviderEconomicsReport() {
+    const intents = await this.prisma.paymentIntent.findMany({
+      select: {
+        provider: true,
+        amount: true,
+        grossAmount: true,
+        providerFeeEstimated: true,
+        providerFeeActual: true,
+        netAmount: true,
+        status: true,
+      },
+    });
+
+    const grouped: Record<string, any> = {};
+    for (const intent of intents) {
+      const bucket = (grouped[intent.provider] ??= {
+        provider: intent.provider,
+        count: 0,
+        succeeded: 0,
+        grossTotal: 0,
+        estimatedFeesTotal: 0,
+        actualFeesTotal: 0,
+        netTotal: 0,
+      });
+      bucket.count += 1;
+      if (intent.status === PaymentIntentStatus.SUCCEEDED) bucket.succeeded += 1;
+      bucket.grossTotal += intent.grossAmount ?? intent.amount ?? 0;
+      bucket.estimatedFeesTotal += intent.providerFeeEstimated ?? 0;
+      bucket.actualFeesTotal += intent.providerFeeActual ?? 0;
+      bucket.netTotal += intent.netAmount ?? 0;
+    }
+
+    return Object.values(grouped).map((row: any) => ({
+      ...row,
+      approvalRate: row.count ? Number((row.succeeded / row.count).toFixed(4)) : 0,
+      avgEstimatedCost: row.count ? Number((row.estimatedFeesTotal / row.count).toFixed(2)) : 0,
+    }));
   }
 
   async applyLatePenalty(invoiceId: number, penaltyAmount: number, userId?: number) {
