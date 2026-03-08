@@ -52,12 +52,12 @@ Replace placeholder/sandbox payment provider behavior with real provider API cal
    - Redact secrets and PCI-sensitive fields.
 
 ### TODO checklist
-- [ ] Add provider env vars and config validation (startup fail if missing).
-- [ ] Replace placeholder URL construction in `createPayment` with real API call.
-- [ ] Implement status mapping utility (`provider -> PaymentIntentStatus`).
-- [ ] Wire `confirm` and `retrieve` to real provider endpoints.
-- [ ] Wire `refund` to real endpoint and persist refund IDs.
-- [ ] Ensure `confirmPayment` updates invoice only after verified success.
+- [x] Add provider env vars and config validation (startup fail if missing).
+- [x] Replace placeholder URL construction in `createPayment` with real API call.
+- [x] Implement status mapping utility (`provider -> PaymentIntentStatus`).
+- [x] Wire `confirm` and `retrieve` to real provider endpoints.
+- [x] Wire `refund` to real endpoint and persist refund IDs.
+- [x] Ensure `confirmPayment` updates invoice only after verified success.
 - [ ] Add integration tests for success, action-required, failure, and timeout paths.
 
 ---
@@ -94,12 +94,12 @@ Process only authenticated, idempotent webhook events and prevent forged settlem
    - Persist full event metadata (sanitized), timestamps, processing outcome.
 
 ### TODO checklist
-- [ ] Add raw-body webhook handling middleware if provider signature requires raw payload.
-- [ ] Validate signature before any business logic.
-- [ ] Persist webhook event with unique `(provider, eventId)` constraint.
-- [ ] Implement duplicate detection and no-op behavior.
-- [ ] Implement event-type allowlist and transition handler.
-- [ ] Add tests for valid signature, invalid signature, duplicate delivery, unknown event.
+- [x] Add raw-body webhook handling middleware if provider signature requires raw payload.
+- [x] Validate signature before any business logic.
+- [x] Persist webhook event with unique `(provider, eventId)` constraint.
+- [x] Implement duplicate detection and no-op behavior.
+- [x] Implement event-type allowlist and transition handler.
+- [x] Add tests for valid signature, invalid signature, duplicate delivery, unknown event.
 
 ---
 
@@ -139,12 +139,12 @@ Enable residents to pay unpaid invoices via card from the resident account page 
    - Show receipt link once payment is completed.
 
 ### TODO checklist
-- [ ] Add `Pay now` button in resident invoice card/table.
-- [ ] Implement `initiatePayment(invoiceId)` client action.
-- [ ] Handle redirect/client-secret branches.
-- [ ] Add callback handling and status refresh logic.
-- [ ] Add status banners/toasts for success/failure/pending.
-- [ ] Add retry flow for failed attempts.
+- [x] Add `Pay now` button in resident invoice card/table.
+- [x] Implement `initiatePayment(invoiceId)` client action.
+- [x] Handle redirect/client-secret branches.
+- [x] Add callback handling and status refresh logic.
+- [x] Add status banners/toasts for success/failure/pending.
+- [x] Add retry flow for failed attempts.
 - [ ] Add frontend tests for button visibility and payment state transitions.
 
 ---
@@ -185,13 +185,13 @@ Support provider routing strategy and capture true payment economics (gross, fee
    - Add dashboard metrics for approval rate and cost per provider.
 
 ### TODO checklist
-- [ ] Create routing strategy abstraction and config toggles.
-- [ ] Add at least one additional provider implementation beyond current default.
-- [ ] Extend schema/migrations for fee and net tracking fields.
-- [ ] Write intent creation logic to store chosen provider + fee estimate.
-- [ ] Add reconciliation job/process to update actual fee/net values.
-- [ ] Add reporting endpoint or export showing provider-level economics.
-- [ ] Add tests for provider failover and fee field persistence.
+- [x] Create routing strategy abstraction and config toggles.
+- [x] Add at least one additional provider implementation beyond current default.
+- [x] Extend schema/migrations for fee and net tracking fields.
+- [x] Write intent creation logic to store chosen provider + fee estimate.
+- [x] Add reconciliation job/process to update actual fee/net values.
+- [x] Add reporting endpoint or export showing provider-level economics.
+- [x] Add tests for provider failover and fee field persistence.
 
 ---
 
@@ -233,13 +233,13 @@ Allow residents to save tokenized cards and auto-charge recurring invoices secur
    - Add consent records and clear cancellation logic for autopay.
 
 ### TODO checklist
-- [ ] Extend `PaymentMethod` metadata as needed (brand, last4, expiry, default).
-- [ ] Implement payment-method CRUD endpoints for residents.
-- [ ] Add resident UI to manage saved cards and default method.
-- [ ] Add autopay preference fields + API.
-- [ ] Integrate autopay into recurring invoice run pipeline.
-- [ ] Add notifications for charge success/failure and retry schedule.
-- [ ] Add tests for token lifecycle, default switching, and autopay failure recovery.
+- [x] Extend `PaymentMethod` metadata as needed (brand, last4, expiry, default).
+- [x] Implement payment-method CRUD endpoints for residents.
+- [x] Add resident UI to manage saved cards and default method.
+- [x] Add autopay preference fields + API.
+- [x] Integrate autopay into recurring invoice run pipeline.
+- [x] Add notifications for charge success/failure and retry schedule.
+- [x] Add tests for token lifecycle, default switching, and autopay failure recovery.
 
 ---
 

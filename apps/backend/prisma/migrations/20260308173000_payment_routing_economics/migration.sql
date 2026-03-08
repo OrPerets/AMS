@@ -1,0 +1,7 @@
+ALTER TABLE "PaymentIntent"
+ADD COLUMN "grossAmount" DOUBLE PRECISION,
+ADD COLUMN "providerFeeEstimated" DOUBLE PRECISION,
+ADD COLUMN "providerFeeActual" DOUBLE PRECISION,
+ADD COLUMN "netAmount" DOUBLE PRECISION,
+ADD COLUMN "settlementBatchId" TEXT,
+ADD COLUMN "providerLatencyMs" INTEGER;

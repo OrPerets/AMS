@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import {
   ActivitySeverity,
   ApprovalTaskType,
@@ -12,6 +12,9 @@ import { ActivityService } from '../activity/activity.service';
 import { PrismaService } from '../prisma.service';
 import { ReceiptService } from './receipt.service';
 import { TranzilaProvider } from './tranzila.provider';
+import { StripeProvider } from './providers/stripe.provider';
+import { PaymentRoutingStrategy } from './providers/payment-routing.strategy';
+import { PaymentProvider, RoutingContext } from './providers/payment-provider';
 import { ApprovalService } from '../approval/approval.service';
 import { Role } from '../auth/roles.decorator';
 
@@ -25,13 +28,31 @@ type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
 
 @Injectable()
 export class PaymentService {
+  private readonly logger = new Logger(PaymentService.name);
+
   constructor(
     private prisma: PrismaService,
     private receipts: ReceiptService,
     private tranzilaProvider: TranzilaProvider,
+    private stripeProvider: StripeProvider,
+    private routingStrategy: PaymentRoutingStrategy,
     private activity: ActivityService,
     private approvals: ApprovalService,
   ) {}
+
+  private getProviderByName(name: string): PaymentProvider {
+    return name === this.stripeProvider.name ? this.stripeProvider : this.tranzilaProvider;
+  }
+
+  private getRoutingContext(invoice: { amount: number; currency?: string }, metadata?: Record<string, any>): RoutingContext {
+    return {
+      amount: invoice.amount,
+      currency: invoice.currency || 'NIS',
+      cardType: metadata?.cardType || 'unknown',
+      cardBin: metadata?.cardBin,
+      countryCode: metadata?.countryCode,
+    };
+  }
 
   private invoiceInclude = {
     resident: {
@@ -99,6 +120,38 @@ export class PaymentService {
     if (value === null || value === undefined) return '""';
     const normalized = value instanceof Date ? value.toISOString() : String(value);
     return `"${normalized.replace(/"/g, '""')}"`;
+  }
+
+  private toIntentStatus(status: string): PaymentIntentStatus {
+    switch (status) {
+      case 'requires_payment_method':
+        return PaymentIntentStatus.REQUIRES_PAYMENT_METHOD;
+      case 'requires_action':
+        return PaymentIntentStatus.REQUIRES_ACTION;
+      case 'processing':
+        return PaymentIntentStatus.PROCESSING;
+      case 'succeeded':
+        return PaymentIntentStatus.SUCCEEDED;
+      case 'canceled':
+        return PaymentIntentStatus.CANCELED;
+      case 'failed':
+      default:
+        return PaymentIntentStatus.FAILED;
+    }
+  }
+
+  private async withProviderRetry<T>(operation: () => Promise<T>, maxAttempts = 3, delayMs = 250): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error;
+        if (attempt === maxAttempts) break;
+        await new Promise((resolve) => setTimeout(resolve, delayMs * attempt));
+      }
+    }
+    throw lastError;
   }
 
   private mapInvoice(invoice: InvoiceWithRelations) {
@@ -255,6 +308,156 @@ export class PaymentService {
       severity,
       metadata,
     });
+  }
+
+
+  private readonly webhookEventHandlers: Record<string, PaymentIntentStatus> = {
+    'payment.succeeded': PaymentIntentStatus.SUCCEEDED,
+    'payment.failed': PaymentIntentStatus.FAILED,
+    'payment.canceled': PaymentIntentStatus.CANCELED,
+    'payment.cancelled': PaymentIntentStatus.CANCELED,
+    'payment.processing': PaymentIntentStatus.PROCESSING,
+    'payment.requires_action': PaymentIntentStatus.REQUIRES_ACTION,
+    'payment.refunded': PaymentIntentStatus.CANCELED,
+  };
+
+  private canTransitionIntent(current: PaymentIntentStatus, next: PaymentIntentStatus): boolean {
+    if (current === next) return true;
+    const allowed: Record<PaymentIntentStatus, PaymentIntentStatus[]> = {
+      [PaymentIntentStatus.REQUIRES_PAYMENT_METHOD]: [
+        PaymentIntentStatus.PROCESSING,
+        PaymentIntentStatus.REQUIRES_ACTION,
+        PaymentIntentStatus.CANCELED,
+        PaymentIntentStatus.FAILED,
+        PaymentIntentStatus.SUCCEEDED,
+      ],
+      [PaymentIntentStatus.REQUIRES_CONFIRMATION]: [
+        PaymentIntentStatus.PROCESSING,
+        PaymentIntentStatus.REQUIRES_ACTION,
+        PaymentIntentStatus.CANCELED,
+        PaymentIntentStatus.FAILED,
+        PaymentIntentStatus.SUCCEEDED,
+      ],
+      [PaymentIntentStatus.REQUIRES_ACTION]: [
+        PaymentIntentStatus.PROCESSING,
+        PaymentIntentStatus.CANCELED,
+        PaymentIntentStatus.FAILED,
+        PaymentIntentStatus.SUCCEEDED,
+      ],
+      [PaymentIntentStatus.PROCESSING]: [PaymentIntentStatus.SUCCEEDED, PaymentIntentStatus.FAILED, PaymentIntentStatus.CANCELED],
+      [PaymentIntentStatus.SUCCEEDED]: [PaymentIntentStatus.CANCELED],
+      [PaymentIntentStatus.FAILED]: [PaymentIntentStatus.REQUIRES_PAYMENT_METHOD],
+      [PaymentIntentStatus.CANCELED]: [],
+    };
+
+    return allowed[current]?.includes(next) ?? false;
+  }
+
+  async processWebhook(payload: any, signature?: string, rawBody?: string) {
+    const verified = await this.tranzilaProvider.webhookVerify(signature, payload, rawBody);
+    if (!verified.ok) {
+      throw new UnauthorizedException('Invalid webhook signature.');
+    }
+
+    const provider = this.tranzilaProvider.name;
+    const eventId = verified.eventId as string;
+    const eventType = (verified.type || '').toLowerCase();
+
+    try {
+      await this.prisma.webhookEvent.create({
+        data: {
+          provider,
+          eventId,
+          signature: signature || null,
+          payload: verified.data ?? payload ?? {},
+          processed: false,
+        },
+      });
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        this.logger.log(`Duplicate webhook ignored for ${provider}:${eventId}`);
+        return { ok: true, duplicate: true };
+      }
+      throw error;
+    }
+
+    const mappedStatus = this.webhookEventHandlers[eventType];
+    if (!mappedStatus) {
+      await this.prisma.webhookEvent.update({
+        where: { provider_eventId: { provider, eventId } },
+        data: { processed: true },
+      });
+      this.logger.warn(`Ignoring unhandled webhook type: ${eventType || 'unknown'}`);
+      return { ok: true, ignored: true };
+    }
+
+    const providerIntentId = String(payload?.providerIntentId || payload?.intentId || payload?.paymentIntentId || '');
+    if (!providerIntentId) {
+      await this.prisma.webhookEvent.update({
+        where: { provider_eventId: { provider, eventId } },
+        data: { processed: true },
+      });
+      this.logger.warn(`Webhook ${eventId} missing provider intent identifier.`);
+      return { ok: true, ignored: true };
+    }
+
+    const intent = await this.prisma.paymentIntent.findFirst({
+      where: { provider, providerIntentId },
+      include: { invoice: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!intent) {
+      await this.prisma.webhookEvent.update({
+        where: { provider_eventId: { provider, eventId } },
+        data: { processed: true },
+      });
+      this.logger.warn(`No payment intent found for providerIntentId=${providerIntentId}`);
+      return { ok: true, ignored: true };
+    }
+
+    if (!this.canTransitionIntent(intent.status, mappedStatus)) {
+      await this.prisma.webhookEvent.update({
+        where: { provider_eventId: { provider, eventId } },
+        data: { processed: true },
+      });
+      this.logger.warn(`Rejected invalid payment transition ${intent.status} -> ${mappedStatus} for intent ${intent.id}`);
+      return { ok: true, ignored: true };
+    }
+
+    await this.prisma.paymentIntent.update({
+      where: { id: intent.id },
+      data: {
+        status: mappedStatus,
+        metadata: verified.data ?? payload ?? {},
+      },
+    });
+
+    if (mappedStatus === PaymentIntentStatus.SUCCEEDED) {
+      await this.confirmPayment(intent.invoiceId);
+    } else if (mappedStatus === PaymentIntentStatus.CANCELED || mappedStatus === PaymentIntentStatus.FAILED) {
+      await this.prisma.invoice.update({
+        where: { id: intent.invoiceId },
+        data: { status: InvoiceStatus.UNPAID, collectionStatus: CollectionStatus.PAST_DUE },
+      });
+    }
+
+    await this.prisma.providerTransaction.create({
+      data: {
+        paymentIntentId: intent.id,
+        provider,
+        type: 'webhook',
+        status: mappedStatus.toLowerCase(),
+        raw: verified.data ?? payload ?? {},
+      },
+    });
+
+    await this.prisma.webhookEvent.update({
+      where: { provider_eventId: { provider, eventId } },
+      data: { processed: true },
+    });
+
+    return { ok: true };
   }
 
   async createInvoice(
@@ -720,23 +923,64 @@ export class PaymentService {
           });
     if (!invoice) throw new Error('Invoice not found');
 
+    const routingContext = this.getRoutingContext({ amount: invoice.amount, currency: 'NIS' });
+    const route = this.routingStrategy.selectProvider([this.tranzilaProvider, this.stripeProvider], routingContext);
+    const selectedProvider = route.provider;
+    const feeEstimate = selectedProvider.estimateFees(routingContext);
+
     const intent = await this.prisma.paymentIntent.create({
       data: {
         invoiceId: invoice.id,
         amount: invoice.amount,
+        grossAmount: invoice.amount,
+        providerFeeEstimated: feeEstimate.estimatedFee,
+        netAmount: feeEstimate.estimatedNet,
         currency: 'NIS',
         status: PaymentIntentStatus.REQUIRES_CONFIRMATION,
-        provider: 'tranzila',
+        provider: selectedProvider.name,
       },
     });
-    const result = await this.tranzilaProvider.createPayment({
-      amount: invoice.amount,
-      currency: 'NIS',
-      description: `Invoice #${invoice.id}`,
-    });
+
+    const start = Date.now();
+    let result: any;
+    let usedProvider = selectedProvider;
+    try {
+      result = await this.withProviderRetry(() =>
+        selectedProvider.createPayment({
+          amount: invoice.amount,
+          currency: 'NIS',
+          description: `Invoice #${invoice.id}`,
+          metadata: { invoiceId: invoice.id, residentId: invoice.residentId, routeReason: route.reason },
+        }),
+      );
+    } catch (error) {
+      if (!route.fallbackProvider || !this.routingStrategy.shouldFailover(error)) {
+        throw error;
+      }
+      usedProvider = route.fallbackProvider;
+      this.logger.warn(`Payment routing failover: ${selectedProvider.name} -> ${usedProvider.name}`);
+      result = await this.withProviderRetry(() =>
+        usedProvider.createPayment({
+          amount: invoice.amount,
+          currency: 'NIS',
+          description: `Invoice #${invoice.id}`,
+          metadata: { invoiceId: invoice.id, residentId: invoice.residentId, routeReason: `${route.reason}:fallback` },
+        }),
+      );
+    }
+
+    const latencyMs = Date.now() - start;
+    const internalStatus = this.toIntentStatus(result.requiresAction ? 'requires_action' : 'processing');
     await this.prisma.paymentIntent.update({
       where: { id: intent.id },
-      data: { providerIntentId: result.providerIntentId || String(intent.id), clientSecret: result.clientSecret || null },
+      data: {
+        provider: usedProvider.name,
+        providerIntentId: result.providerIntentId || String(intent.id),
+        clientSecret: result.clientSecret || null,
+        status: internalStatus,
+        providerLatencyMs: latencyMs,
+        metadata: { ...(result.raw ?? {}), routeReason: route.reason, routedProvider: usedProvider.name },
+      },
     });
     return { intentId: intent.id, redirectUrl: result.redirectUrl, clientSecret: result.clientSecret };
   }
@@ -751,6 +995,27 @@ export class PaymentService {
       return existing;
     }
 
+    const latestIntent = existing.paymentIntents[0];
+    if (!latestIntent) {
+      throw new BadRequestException('Payment intent not found for invoice.');
+    }
+
+    const providerIntentId = latestIntent.providerIntentId || String(latestIntent.id);
+    const providerResult = await this.withProviderRetry(() => this.getProviderByName(latestIntent.provider).retrieve(providerIntentId));
+    const verifiedStatus = this.toIntentStatus(providerResult.status);
+
+    await this.prisma.paymentIntent.update({
+      where: { id: latestIntent.id },
+      data: {
+        status: verifiedStatus,
+        metadata: providerResult.raw ?? undefined,
+      },
+    });
+
+    if (verifiedStatus !== PaymentIntentStatus.SUCCEEDED) {
+      return existing;
+    }
+
     const invoice = await this.prisma.invoice.update({
       where: { id: invoiceId },
       data: {
@@ -760,13 +1025,6 @@ export class PaymentService {
       },
       include: this.invoiceInclude,
     });
-    const latestIntent = invoice.paymentIntents[0];
-    if (latestIntent) {
-      await this.prisma.paymentIntent.update({
-        where: { id: latestIntent.id },
-        data: { status: PaymentIntentStatus.SUCCEEDED },
-      });
-    }
     await this.prisma.ledgerEntry.create({
       data: { invoiceId, entryType: 'payment', amount: invoice.amount, debit: 'Cash', credit: 'Accounts Receivable' },
     });
@@ -810,23 +1068,42 @@ export class PaymentService {
 
   async createPaymentIntentFromInvoice(invoiceId: number) {
     const invoice = await this.prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
+    const routingContext = this.getRoutingContext({ amount: invoice.amount, currency: 'NIS' });
+    const route = this.routingStrategy.selectProvider([this.tranzilaProvider, this.stripeProvider], routingContext);
+    const provider = route.provider;
+    const feeEstimate = provider.estimateFees(routingContext);
+
     const intent = await this.prisma.paymentIntent.create({
       data: {
         invoiceId: invoice.id,
         amount: invoice.amount,
+        grossAmount: invoice.amount,
+        providerFeeEstimated: feeEstimate.estimatedFee,
+        netAmount: feeEstimate.estimatedNet,
         currency: 'NIS',
         status: PaymentIntentStatus.REQUIRES_CONFIRMATION,
-        provider: 'tranzila',
+        provider: provider.name,
       },
     });
-    const result = await this.tranzilaProvider.createPayment({
-      amount: invoice.amount,
-      currency: 'NIS',
-      description: `Invoice #${invoice.id}`,
-    });
+
+    const start = Date.now();
+    const result = await this.withProviderRetry(() =>
+      provider.createPayment({
+        amount: invoice.amount,
+        currency: 'NIS',
+        description: `Invoice #${invoice.id}`,
+        metadata: { invoiceId: invoice.id, routeReason: route.reason },
+      }),
+    );
     await this.prisma.paymentIntent.update({
       where: { id: intent.id },
-      data: { providerIntentId: result.providerIntentId || String(intent.id), clientSecret: result.clientSecret || null },
+      data: {
+        providerIntentId: result.providerIntentId || String(intent.id),
+        clientSecret: result.clientSecret || null,
+        status: this.toIntentStatus(result.requiresAction ? 'requires_action' : 'processing'),
+        providerLatencyMs: Date.now() - start,
+        metadata: { ...(result.raw ?? {}), routeReason: route.reason },
+      },
     });
     return { id: intent.id, status: intent.status, redirectUrl: result.redirectUrl, clientSecret: result.clientSecret };
   }
@@ -836,7 +1113,9 @@ export class PaymentService {
       where: { id: paymentIntentId },
       include: { invoice: true },
     });
-    const res = await this.tranzilaProvider.refund({ providerIntentId: intent.providerIntentId || String(intent.id), amount });
+    const res = await this.withProviderRetry(() =>
+      this.getProviderByName(intent.provider).refund({ providerIntentId: intent.providerIntentId || String(intent.id), amount }),
+    );
     await this.prisma.refund.create({
       data: { paymentIntentId: intent.id, amount: amount ?? intent.amount, providerRefundId: res.providerRefundId || undefined },
     });
@@ -862,6 +1141,60 @@ export class PaymentService {
       return this.assertResidentOwnsPaymentIntent(paymentIntentId, actorUserId);
     }
     return this.prisma.paymentIntent.findUniqueOrThrow({ where: { id: paymentIntentId } });
+  }
+
+
+
+  async reconcilePaymentIntent(paymentIntentId: number, data: { providerFeeActual: number; settlementBatchId: string }) {
+    const intent = await this.prisma.paymentIntent.findUniqueOrThrow({ where: { id: paymentIntentId } });
+    const netAmount = Number((intent.grossAmount ?? intent.amount) - data.providerFeeActual);
+    return this.prisma.paymentIntent.update({
+      where: { id: paymentIntentId },
+      data: {
+        providerFeeActual: data.providerFeeActual,
+        netAmount,
+        settlementBatchId: data.settlementBatchId,
+      },
+    });
+  }
+
+  async getProviderEconomicsReport() {
+    const intents = await this.prisma.paymentIntent.findMany({
+      select: {
+        provider: true,
+        amount: true,
+        grossAmount: true,
+        providerFeeEstimated: true,
+        providerFeeActual: true,
+        netAmount: true,
+        status: true,
+      },
+    });
+
+    const grouped: Record<string, any> = {};
+    for (const intent of intents) {
+      const bucket = (grouped[intent.provider] ??= {
+        provider: intent.provider,
+        count: 0,
+        succeeded: 0,
+        grossTotal: 0,
+        estimatedFeesTotal: 0,
+        actualFeesTotal: 0,
+        netTotal: 0,
+      });
+      bucket.count += 1;
+      if (intent.status === PaymentIntentStatus.SUCCEEDED) bucket.succeeded += 1;
+      bucket.grossTotal += intent.grossAmount ?? intent.amount ?? 0;
+      bucket.estimatedFeesTotal += intent.providerFeeEstimated ?? 0;
+      bucket.actualFeesTotal += intent.providerFeeActual ?? 0;
+      bucket.netTotal += intent.netAmount ?? 0;
+    }
+
+    return Object.values(grouped).map((row: any) => ({
+      ...row,
+      approvalRate: row.count ? Number((row.succeeded / row.count).toFixed(4)) : 0,
+      avgEstimatedCost: row.count ? Number((row.estimatedFeesTotal / row.count).toFixed(2)) : 0,
+    }));
   }
 
   async applyLatePenalty(invoiceId: number, penaltyAmount: number, userId?: number) {
@@ -1091,6 +1424,249 @@ export class PaymentService {
     return this.mapRecurring(recurring);
   }
 
+  private async resolveResidentForPaymentSettings(actorUserId: number | undefined, actorRole: Role | undefined, residentId?: number) {
+    if (actorRole === Role.RESIDENT) {
+      if (!actorUserId) throw new UnauthorizedException('Resident context is missing.');
+      const resident = await this.prisma.resident.findUnique({ where: { userId: actorUserId }, select: { id: true, userId: true } });
+      if (!resident) throw new ForbiddenException('Resident profile not found.');
+      return resident;
+    }
+
+    if (!residentId) {
+      throw new BadRequestException('residentId is required for non-resident roles.');
+    }
+    const resolved = await this.resolveResidentId(residentId);
+    const resident = await this.prisma.resident.findUnique({ where: { id: resolved }, select: { id: true, userId: true } });
+    if (!resident) throw new BadRequestException('Resident not found.');
+    return resident;
+  }
+
+  async listPaymentMethods(actorUserId?: number, actorRole?: Role, residentId?: number) {
+    const resident = await this.resolveResidentForPaymentSettings(actorUserId, actorRole, residentId);
+    return this.prisma.paymentMethod.findMany({ where: { residentId: resident.id }, orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }] });
+  }
+
+  async addPaymentMethod(
+    data: {
+      provider: string;
+      token: string;
+      brand?: string;
+      last4?: string;
+      expMonth?: number;
+      expYear?: number;
+      networkTokenized?: boolean;
+      isDefault?: boolean;
+      residentId?: number;
+    },
+    actorUserId?: number,
+    actorRole?: Role,
+  ) {
+    if (!data.provider || !data.token) {
+      throw new BadRequestException('provider and token are required.');
+    }
+
+    const resident = await this.resolveResidentForPaymentSettings(actorUserId, actorRole, data.residentId);
+    const existingCount = await this.prisma.paymentMethod.count({ where: { residentId: resident.id } });
+    const nextIsDefault = data.isDefault ?? existingCount === 0;
+
+    if (nextIsDefault) {
+      await this.prisma.paymentMethod.updateMany({ where: { residentId: resident.id, isDefault: true }, data: { isDefault: false } });
+    }
+
+    return this.prisma.paymentMethod.create({
+      data: {
+        residentId: resident.id,
+        provider: data.provider,
+        token: data.token,
+        brand: data.brand,
+        last4: data.last4,
+        expMonth: data.expMonth,
+        expYear: data.expYear,
+        networkTokenized: Boolean(data.networkTokenized),
+        isDefault: nextIsDefault,
+      },
+    });
+  }
+
+  async setDefaultPaymentMethod(id: number, actorUserId?: number, actorRole?: Role, residentId?: number) {
+    const resident = await this.resolveResidentForPaymentSettings(actorUserId, actorRole, residentId);
+    const method = await this.prisma.paymentMethod.findUnique({ where: { id } });
+    if (!method || method.residentId !== resident.id) {
+      throw new ForbiddenException('Payment method not found for resident.');
+    }
+
+    await this.prisma.paymentMethod.updateMany({ where: { residentId: resident.id, isDefault: true }, data: { isDefault: false } });
+    return this.prisma.paymentMethod.update({ where: { id }, data: { isDefault: true } });
+  }
+
+  async removePaymentMethod(id: number, actorUserId?: number, actorRole?: Role, residentId?: number) {
+    const resident = await this.resolveResidentForPaymentSettings(actorUserId, actorRole, residentId);
+    const method = await this.prisma.paymentMethod.findUnique({ where: { id } });
+    if (!method || method.residentId !== resident.id) {
+      throw new ForbiddenException('Payment method not found for resident.');
+    }
+
+    await this.prisma.paymentMethod.delete({ where: { id } });
+    if (method.isDefault) {
+      const replacement = await this.prisma.paymentMethod.findFirst({ where: { residentId: resident.id }, orderBy: { createdAt: 'desc' } });
+      if (replacement) {
+        await this.prisma.paymentMethod.update({ where: { id: replacement.id }, data: { isDefault: true } });
+      }
+    }
+    return { ok: true };
+  }
+
+  async updateAutopayPreferences(
+    data: { enabled: boolean; retrySchedule?: number[]; consentAt?: string; residentId?: number },
+    actorUserId?: number,
+    actorRole?: Role,
+  ) {
+    const resident = await this.resolveResidentForPaymentSettings(actorUserId, actorRole, data.residentId);
+    const retrySchedule = (data.retrySchedule ?? [1, 3, 7]).filter((day) => Number.isInteger(day) && day > 0);
+    return this.prisma.resident.update({
+      where: { id: resident.id },
+      data: {
+        autopayEnabled: Boolean(data.enabled),
+        autopayRetrySchedule: retrySchedule.length ? retrySchedule : [1, 3, 7],
+        autopayConsentAt: data.enabled ? (data.consentAt ? new Date(data.consentAt) : new Date()) : null,
+      },
+      select: { id: true, autopayEnabled: true, autopayRetrySchedule: true, autopayConsentAt: true },
+    });
+  }
+
+  async getAutopayPreferences(actorUserId?: number, actorRole?: Role, residentId?: number) {
+    const resident = await this.resolveResidentForPaymentSettings(actorUserId, actorRole, residentId);
+    return this.prisma.resident.findUniqueOrThrow({
+      where: { id: resident.id },
+      select: { id: true, autopayEnabled: true, autopayRetrySchedule: true, autopayConsentAt: true },
+    });
+  }
+
+  async setRecurringAutopay(id: number, enabled: boolean) {
+    return this.prisma.recurringInvoice.update({
+      where: { id },
+      data: { autopayEnabled: enabled },
+    });
+  }
+
+  private async notifyAutopayOutcome(
+    residentId: number,
+    title: string,
+    message: string,
+    metadata: Record<string, any>,
+    type: 'AUTOPAY_SUCCESS' | 'AUTOPAY_FAILURE',
+  ) {
+    const resident = await this.prisma.resident.findUnique({ where: { id: residentId }, select: { userId: true } });
+    if (!resident?.userId) return;
+    await this.prisma.notification.create({
+      data: {
+        userId: resident.userId,
+        title,
+        message,
+        type,
+        metadata,
+      },
+    });
+  }
+
+  private async attemptAutopayForInvoice(invoiceId: number, residentId: number, recurringId: number) {
+    const resident = await this.prisma.resident.findUnique({
+      where: { id: residentId },
+      select: { autopayEnabled: true, autopayRetrySchedule: true },
+    });
+    if (!resident?.autopayEnabled) return;
+
+    const method = await this.prisma.paymentMethod.findFirst({ where: { residentId, isDefault: true } });
+    if (!method) {
+      await this.notifyAutopayOutcome(
+        residentId,
+        'חיוב אוטומטי נכשל',
+        `לא נמצא אמצעי תשלום ברירת מחדל עבור חשבונית #${invoiceId}.`,
+        { invoiceId, recurringId, retrySchedule: resident.autopayRetrySchedule },
+        'AUTOPAY_FAILURE',
+      );
+      return;
+    }
+
+    const invoice = await this.prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
+    const route = this.routingStrategy.selectProvider([this.tranzilaProvider, this.stripeProvider], this.getRoutingContext({ amount: invoice.amount, currency: 'NIS' }));
+    const feeEstimate = route.provider.estimateFees({ amount: invoice.amount, currency: 'NIS', cardType: 'unknown' });
+
+    const intent = await this.prisma.paymentIntent.create({
+      data: {
+        invoiceId,
+        amount: invoice.amount,
+        grossAmount: invoice.amount,
+        providerFeeEstimated: feeEstimate.estimatedFee,
+        netAmount: feeEstimate.estimatedNet,
+        currency: 'NIS',
+        status: PaymentIntentStatus.REQUIRES_CONFIRMATION,
+        provider: route.provider.name,
+        paymentMethodId: method.id,
+        metadata: { autopay: true, recurringInvoiceId: recurringId },
+      },
+    });
+
+    try {
+      const result = await this.withProviderRetry(() =>
+        route.provider.createPayment({
+          amount: invoice.amount,
+          currency: 'NIS',
+          description: `Recurring invoice #${invoiceId}`,
+          metadata: { invoiceId, residentId, recurringId, autopay: true, paymentMethodToken: method.token },
+        }),
+      );
+
+      const providerResult = await this.withProviderRetry(() => route.provider.retrieve(result.providerIntentId || String(intent.id)));
+      const status = this.toIntentStatus(providerResult.status);
+
+      await this.prisma.paymentIntent.update({
+        where: { id: intent.id },
+        data: {
+          providerIntentId: result.providerIntentId || String(intent.id),
+          clientSecret: result.clientSecret || null,
+          status,
+          metadata: {
+            ...(result.raw ?? {}),
+            ...(providerResult.raw ?? {}),
+            autopay: true,
+            recurringInvoiceId: recurringId,
+          },
+        },
+      });
+
+      if (status === PaymentIntentStatus.SUCCEEDED) {
+        await this.confirmPayment(invoiceId);
+        await this.notifyAutopayOutcome(
+          residentId,
+          'החיוב האוטומטי הצליח',
+          `חשבונית #${invoiceId} שולמה בהצלחה באמצעות כרטיס שמור.`,
+          { invoiceId, recurringId, paymentIntentId: intent.id },
+          'AUTOPAY_SUCCESS',
+        );
+        return;
+      }
+
+      const retrySchedule = resident.autopayRetrySchedule?.length ? resident.autopayRetrySchedule : [1, 3, 7];
+      await this.notifyAutopayOutcome(
+        residentId,
+        'החיוב האוטומטי נכשל',
+        `חיוב אוטומטי עבור חשבונית #${invoiceId} נכשל. ניסיונות חוזרים מתוכננים בעוד ${retrySchedule.join(', ')} ימים.`,
+        { invoiceId, recurringId, paymentIntentId: intent.id, retrySchedule },
+        'AUTOPAY_FAILURE',
+      );
+    } catch (error) {
+      const retrySchedule = resident.autopayRetrySchedule?.length ? resident.autopayRetrySchedule : [1, 3, 7];
+      await this.notifyAutopayOutcome(
+        residentId,
+        'החיוב האוטומטי נכשל',
+        `חיוב אוטומטי עבור חשבונית #${invoiceId} נכשל זמנית. ניסיונות חוזרים מתוכננים בעוד ${retrySchedule.join(', ')} ימים.`,
+        { invoiceId, recurringId, retrySchedule, reason: String((error as Error)?.message || error) },
+        'AUTOPAY_FAILURE',
+      );
+    }
+  }
+
   private computeNextRun(current: Date, recurrence: string): Date {
     const next = new Date(current);
     const lower = recurrence.toLowerCase();
@@ -1124,6 +1700,10 @@ export class PaymentService {
       where: { id },
       data: { lastRunAt: new Date(), nextRunAt: this.computeNextRun(new Date(), rec.recurrence) },
     });
+    const autopayActive = rec.autopayEnabled ?? true;
+    if (autopayActive) {
+      await this.attemptAutopayForInvoice(invoice.id, rec.residentId, rec.id);
+    }
     return invoice;
   }
 
@@ -1143,6 +1723,9 @@ export class PaymentService {
         where: { id: rec.id },
         data: { lastRunAt: new Date(), nextRunAt: this.computeNextRun(now, rec.recurrence) },
       });
+      if (rec.autopayEnabled ?? true) {
+        await this.attemptAutopayForInvoice(invoice.id, rec.residentId, rec.id);
+      }
       results.push(invoice);
     }
     return { generated: results.length, invoices: results };

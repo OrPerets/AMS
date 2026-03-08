@@ -144,14 +144,87 @@ export class PaymentController {
     return ledger;
   }
 
+
+  @Get('payments/economics/report')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  economicsReport() {
+    return this.payments.getProviderEconomicsReport();
+  }
+
+  @Post('payments/:id/reconcile')
+  @Roles(Role.ADMIN, Role.ACCOUNTANT)
+  reconcile(
+    @Param('id') id: string,
+    @Body() body: { providerFeeActual: number; settlementBatchId: string },
+  ) {
+    return this.payments.reconcilePaymentIntent(+id, body);
+  }
+
+
+  @Get('payments/methods')
+  @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  listPaymentMethods(@Req() req: any, @Query('residentId') residentId?: string) {
+    return this.payments.listPaymentMethods(req.user?.sub, req.user?.actAsRole ?? req.user?.role, residentId ? +residentId : undefined);
+  }
+
+  @Post('payments/methods')
+  @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  addPaymentMethod(
+    @Body()
+    body: {
+      provider: string;
+      token: string;
+      brand?: string;
+      last4?: string;
+      expMonth?: number;
+      expYear?: number;
+      networkTokenized?: boolean;
+      isDefault?: boolean;
+      residentId?: number;
+    },
+    @Req() req: any,
+  ) {
+    return this.payments.addPaymentMethod(body, req.user?.sub, req.user?.actAsRole ?? req.user?.role);
+  }
+
+  @Patch('payments/methods/:id/default')
+  @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  setDefaultPaymentMethod(@Param('id') id: string, @Req() req: any, @Body() body: { residentId?: number }) {
+    return this.payments.setDefaultPaymentMethod(+id, req.user?.sub, req.user?.actAsRole ?? req.user?.role, body?.residentId);
+  }
+
+  @Patch('payments/autopay')
+  @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  updateAutopayPreferences(
+    @Body() body: { enabled: boolean; retrySchedule?: number[]; consentAt?: string; residentId?: number },
+    @Req() req: any,
+  ) {
+    return this.payments.updateAutopayPreferences(body, req.user?.sub, req.user?.actAsRole ?? req.user?.role);
+  }
+
+  @Get('payments/autopay')
+  @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  getAutopayPreferences(@Req() req: any, @Query('residentId') residentId?: string) {
+    return this.payments.getAutopayPreferences(req.user?.sub, req.user?.actAsRole ?? req.user?.role, residentId ? +residentId : undefined);
+  }
+
+  @Post('recurring-invoices/:id/autopay')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  setRecurringAutopay(@Param('id') id: string, @Body() body: { enabled: boolean }) {
+    return this.payments.setRecurringAutopay(+id, body.enabled);
+  }
+
+  @Patch('payments/methods/:id/remove')
+  @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  removePaymentMethod(@Param('id') id: string, @Req() req: any, @Body() body: { residentId?: number }) {
+    return this.payments.removePaymentMethod(+id, req.user?.sub, req.user?.actAsRole ?? req.user?.role, body?.residentId);
+  }
+
   @Post('payments/webhook')
   @Public()
-  webhook(@Body() body: any) {
-    // Accept generic webhook payload for sandbox; production should verify signature and provider
-    if (body?.invoiceId && body?.status === 'paid') {
-      return this.payments.confirmPayment(body.invoiceId);
-    }
-    return { ok: true };
+  webhook(@Body() body: any, @Req() req: any) {
+    const signature = req.headers['x-tranzila-signature'] || req.headers['x-webhook-signature'];
+    return this.payments.processWebhook(body, signature, req.rawBody);
   }
 
   @Get('invoices/:id/receipt')

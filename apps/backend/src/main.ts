@@ -12,6 +12,17 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.disable('x-powered-by');
 
+
+  app.use(
+    express.json({
+      verify: (req: Request & { rawBody?: string }, _res: Response, buf: Buffer) => {
+        if (req.originalUrl.includes('/api/v1/payments/webhook')) {
+          req.rawBody = buf.toString('utf8');
+        }
+      },
+    }),
+  );
+  app.use(express.urlencoded({ extended: true }));
   app.use((_req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -54,6 +65,21 @@ async function bootstrap() {
     if (!process.env[key]) {
       console.warn(`[bootstrap] Warning: ${key} is not set.`);
     }
+  }
+
+  const tranzilaMode = (process.env.TRANZILA_MODE || 'sandbox').toLowerCase();
+  const missingTranzila: string[] = [];
+  if (!process.env.TRANZILA_TERMINAL_ID) {
+    missingTranzila.push('TRANZILA_TERMINAL_ID');
+  }
+  if (!process.env.TRANZILA_SECRET && !process.env.TRANZILA_PASSWORD) {
+    missingTranzila.push('TRANZILA_SECRET (or TRANZILA_PASSWORD)');
+  }
+  if (missingTranzila.length > 0) {
+    throw new Error(`[bootstrap] Missing Tranzila env vars: ${missingTranzila.join(', ')}`);
+  }
+  if (!['sandbox', 'production'].includes(tranzilaMode)) {
+    throw new Error('[bootstrap] TRANZILA_MODE must be either "sandbox" or "production".');
   }
 
   const fallbackPort = 3000;
