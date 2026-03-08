@@ -164,6 +164,8 @@ model User {
   voteResponses     VoteResponse[]
   createdSchedules  WorkSchedule[]  @relation("ScheduleCreator")
   assignedTasks     ScheduledTask[] @relation("TaskAssignee")
+  activityLogs      ActivityLog[]
+  ownedContracts    Contract[]      @relation("ContractOwner")
 }
 
 model Building {
@@ -192,6 +194,7 @@ model Building {
   codes     BuildingCode[]
   votes     Vote[]
   schedules WorkSchedule[]
+  activityLogs ActivityLog[]
 }
 
 model BuildingCode {
@@ -238,6 +241,7 @@ model Resident {
   invoices Invoice[]
   recurringInvoices RecurringInvoice[]
   paymentMethods PaymentMethod[]
+  activityLogs ActivityLog[]
 }
 
 model Ticket {
@@ -273,6 +277,12 @@ model Supplier {
   skills    String[]
   rating    Float?
   documents String[]
+  contactName String?
+  email     String?
+  phone     String?
+  isActive  Boolean   @default(true)
+  insuranceExpiry DateTime?
+  complianceNotes String?
   userId    Int?      @unique
   user      User?     @relation(fields: [userId], references: [id])
   workOrders WorkOrder[]
@@ -310,6 +320,22 @@ enum InvoiceStatus {
   PAID
 }
 
+enum InvoiceReminderState {
+  NONE
+  UPCOMING
+  SENT
+  PROMISED
+  ESCALATED
+}
+
+enum CollectionStatus {
+  CURRENT
+  PAST_DUE
+  IN_COLLECTIONS
+  PROMISE_TO_PAY
+  RESOLVED
+}
+
 model Invoice {
   id         Int           @id @default(autoincrement())
   residentId Int
@@ -317,6 +343,13 @@ model Invoice {
   items      Json
   amount     Float
   status     InvoiceStatus @default(UNPAID)
+  dueDate    DateTime?
+  lateFeeAmount Float      @default(0)
+  reminderState InvoiceReminderState @default(NONE)
+  collectionStatus CollectionStatus @default(CURRENT)
+  promiseToPayDate DateTime?
+  collectionNotes String?
+  lastReminderAt DateTime?
   createdAt  DateTime      @default(now())
   paymentIntents PaymentIntent[]
   ledgerEntries LedgerEntry[]
@@ -326,12 +359,17 @@ model RecurringInvoice {
   id           Int      @id @default(autoincrement())
   residentId   Int
   resident     Resident @relation(fields: [residentId], references: [id])
+  title        String?
   items        Json
   amount       Float
   recurrence   String   // e.g., "monthly", "quarterly", or cronstr
+  dueDaysAfterIssue Int @default(30)
+  graceDays    Int      @default(0)
+  lateFeeAmount Float   @default(0)
   nextRunAt    DateTime
   lastRunAt    DateTime?
   active       Boolean  @default(true)
+  pausedAt     DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -489,18 +527,51 @@ model Notification {
   building   Building? @relation(fields: [buildingId], references: [id])
 }
 
+enum ActivitySeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+model ActivityLog {
+  id          Int              @id @default(autoincrement())
+  userId      Int?
+  user        User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  buildingId  Int?
+  building    Building?        @relation(fields: [buildingId], references: [id], onDelete: SetNull)
+  residentId  Int?
+  resident    Resident?        @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  entityType  String
+  entityId    Int?
+  action      String
+  summary     String
+  severity    ActivitySeverity @default(INFO)
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+
+  @@index([entityType, entityId])
+  @@index([buildingId, createdAt])
+  @@index([residentId, createdAt])
+  @@index([createdAt])
+}
+
 model Contract {
   id          Int        @id @default(autoincrement())
   buildingId  Int
   building    Building   @relation(fields: [buildingId], references: [id])
   supplierId  Int?
   supplier    Supplier?  @relation(fields: [supplierId], references: [id])
+  ownerUserId Int?
+  owner       User?      @relation("ContractOwner", fields: [ownerUserId], references: [id])
   title       String
   description String?
   value       Float?
   startDate   DateTime
   endDate     DateTime?
   status      String     @default("ACTIVE")
+  renewalReminderDays Int @default(30)
+  approvalStatus String   @default("APPROVED")
+  approvedAt  DateTime?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   documents   Document[] @relation("ContractDocuments")

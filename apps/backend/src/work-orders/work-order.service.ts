@@ -7,6 +7,7 @@ import { UpdateWorkOrderStatusDto } from './dto/update-work-order-status.dto';
 import { UpdateWorkOrderPhotosDto } from './dto/update-work-order-photos.dto';
 import { ApproveWorkOrderDto } from './dto/approve-work-order.dto';
 import { WorkOrderReportQueryDto } from './dto/work-order-report-query.dto';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class WorkOrderService {
@@ -27,6 +28,7 @@ export class WorkOrderService {
   constructor(
     private prisma: PrismaService,
     private photos: PhotoService,
+    private activity: ActivityService,
   ) {}
 
   private calculateTotalCost(costs: {
@@ -97,7 +99,7 @@ export class WorkOrderService {
       tax: dto.tax ?? order.tax,
     });
 
-    return this.prisma.workOrder.update({
+    const updated = await this.prisma.workOrder.update({
       where: { id },
       data: {
         laborCost: dto.laborCost,
@@ -110,10 +112,19 @@ export class WorkOrderService {
       },
       include: this.include,
     });
+    await this.activity.log({
+      buildingId: updated.ticket.unit.building.id,
+      entityType: 'WORK_ORDER',
+      entityId: updated.id,
+      action: 'WORK_ORDER_COST_UPDATED',
+      summary: `עודכנו עלויות להזמנת עבודה #${updated.id}.`,
+      metadata: { totalCost: updated.totalCost, supplierId: updated.supplierId },
+    });
+    return updated;
   }
 
   async updateStatus(id: number, dto: UpdateWorkOrderStatusDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       const order = await tx.workOrder.findUnique({ where: { id } });
       if (!order) {
         throw new Error('Work order not found');
@@ -157,6 +168,21 @@ export class WorkOrderService {
 
       return updated;
     });
+    await this.logStatusUpdate(updated);
+    return updated;
+  }
+
+  async logStatusUpdate(order: Awaited<ReturnType<WorkOrderService['findOne']>>) {
+    if (!order) return;
+    await this.activity.log({
+      userId: order.approvedById ?? undefined,
+      buildingId: order.ticket.unit.building.id,
+      entityType: 'WORK_ORDER',
+      entityId: order.id,
+      action: 'WORK_ORDER_STATUS_CHANGED',
+      summary: `סטטוס הזמנת עבודה #${order.id} עודכן ל-${order.status}.`,
+      metadata: { status: order.status, supplierId: order.supplierId },
+    });
   }
 
   async updatePhotos(id: number, dto: UpdateWorkOrderPhotosDto, files?: Express.Multer.File[]) {
@@ -171,18 +197,27 @@ export class WorkOrderService {
     const nextPhotos = [...requestedPhotos, ...uploadedPhotos];
     const photos = dto.replace ? nextPhotos : Array.from(new Set([...current, ...nextPhotos]));
 
-    return this.prisma.workOrder.update({
+    const updated = await this.prisma.workOrder.update({
       where: { id },
       data: { photos },
       include: this.include,
     });
+    await this.activity.log({
+      buildingId: updated.ticket.unit.building.id,
+      entityType: 'WORK_ORDER',
+      entityId: updated.id,
+      action: 'WORK_ORDER_PHOTOS_UPDATED',
+      summary: `עודכנו תמונות להזמנת עבודה #${updated.id}.`,
+      metadata: { photoCount: updated.photos.length },
+    });
+    return updated;
   }
 
   async approve(id: number, dto: ApproveWorkOrderDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const order = await this.prisma.$transaction(async (tx) => {
       const approvedAt = dto.approvedAt ? new Date(dto.approvedAt) : new Date();
 
-      const order = await tx.workOrder.update({
+      const updatedOrder = await tx.workOrder.update({
         where: { id },
         data: {
           status: WorkOrderStatus.APPROVED,
@@ -192,10 +227,22 @@ export class WorkOrderService {
         include: this.include,
       });
 
-      await tx.ticket.update({ where: { id: order.ticketId }, data: { status: TicketStatus.ASSIGNED } });
+      await tx.ticket.update({ where: { id: updatedOrder.ticketId }, data: { status: TicketStatus.ASSIGNED } });
 
-      return order;
+      return updatedOrder;
     });
+
+    await this.activity.log({
+      userId: dto.approvedById,
+      buildingId: order.ticket.unit.building.id,
+      entityType: 'WORK_ORDER',
+      entityId: order.id,
+      action: 'WORK_ORDER_APPROVED',
+      summary: `הזמנת עבודה #${order.id} אושרה.`,
+      metadata: { approvedAt: order.approvedAt?.toISOString() ?? null },
+    });
+
+    return order;
   }
 
   async getReport(query: WorkOrderReportQueryDto) {

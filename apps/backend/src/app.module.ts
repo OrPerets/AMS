@@ -20,6 +20,9 @@ import { WebSocketModule } from './websocket/websocket.module';
 import { VoteModule } from './votes/vote.module';
 import { ScheduleModule } from './schedules/schedule.module';
 import { SupportModule } from './support/support.module';
+import { ActivityModule } from './activity/activity.module';
+import { VendorsModule } from './vendors/vendors.module';
+import { OperationsModule } from './operations/operations.module';
 
 @Module({
   imports: [
@@ -43,6 +46,9 @@ import { SupportModule } from './support/support.module';
     VoteModule,
     ScheduleModule,
     SupportModule,
+    ActivityModule,
+    VendorsModule,
+    OperationsModule,
   ],
   controllers: [HealthController],
 })

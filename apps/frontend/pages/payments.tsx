@@ -33,6 +33,26 @@ interface InvoiceRow {
   paidAt: string | null;
   receiptNumber: string | null;
   history: InvoiceHistoryEntry[];
+  reminderState?: 'NONE' | 'UPCOMING' | 'SENT' | 'PROMISED' | 'ESCALATED';
+  collectionStatus?: 'CURRENT' | 'PAST_DUE' | 'IN_COLLECTIONS' | 'PROMISE_TO_PAY' | 'RESOLVED';
+  promiseToPayDate?: string | null;
+  collectionNotes?: string | null;
+  buildingName?: string | null;
+  agingBucket?: string;
+}
+
+interface RecurringInvoiceRow {
+  id: number;
+  residentId: number;
+  residentName: string;
+  title?: string | null;
+  recurrence: string;
+  amount: number;
+  active: boolean;
+  nextRunAt: string;
+  lastRunAt?: string | null;
+  dueDaysAfterIssue: number;
+  lateFeeAmount: number;
 }
 
 interface ResidentOption {
@@ -66,6 +86,7 @@ export default function PaymentsPage() {
   const [settlingId, setSettlingId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<'ALL' | InvoiceStatus>('ALL');
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
+  const [recurringInvoices, setRecurringInvoices] = useState<RecurringInvoiceRow[]>([]);
   const [residents, setResidents] = useState<ResidentOption[]>([]);
   const [residentQuery, setResidentQuery] = useState('');
   const [recurringResidentQuery, setRecurringResidentQuery] = useState('');
@@ -94,6 +115,18 @@ export default function PaymentsPage() {
     }
   }
 
+  async function loadRecurringInvoices() {
+    try {
+      const res = await authFetch('/api/v1/recurring-invoices');
+      if (!res.ok) throw new Error(await res.text());
+      setRecurringInvoices(await res.json());
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'טעינת החיובים המחזוריים נכשלה', variant: 'destructive' });
+      setRecurringInvoices([]);
+    }
+  }
+
   async function loadResidents() {
     try {
       const res = await authFetch('/api/v1/users/residents');
@@ -108,6 +141,7 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     loadInvoices();
+    loadRecurringInvoices();
     loadResidents();
   }, []);
 
@@ -220,11 +254,59 @@ export default function PaymentsPage() {
       if (!res.ok) throw new Error(await res.text());
       toast({ title: 'החיוב המחזורי נשמר' });
       setRecurring({ residentId: '', recurrence: 'monthly', items: [{ description: '', quantity: '1', unitPrice: '' }] });
+      await loadRecurringInvoices();
     } catch (error) {
       console.error(error);
       toast({ title: 'שמירת החיוב המחזורי נכשלה', variant: 'destructive' });
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function toggleRecurringInvoice(id: number, active: boolean) {
+    try {
+      const res = await authFetch(`/api/v1/recurring-invoices/${id}/toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast({ title: active ? 'החיוב הופעל' : 'החיוב הושהה' });
+      await loadRecurringInvoices();
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'עדכון החיוב המחזורי נכשל', variant: 'destructive' });
+    }
+  }
+
+  async function runRecurringNow(id: number) {
+    try {
+      const res = await authFetch(`/api/v1/recurring-invoices/${id}/run`, { method: 'POST' });
+      if (!res.ok) throw new Error(await res.text());
+      toast({ title: 'החיוב הופק בהצלחה' });
+      await Promise.all([loadInvoices(), loadRecurringInvoices()]);
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'הפקת החיוב נכשלה', variant: 'destructive' });
+    }
+  }
+
+  async function updateCollections(
+    invoiceId: number,
+    payload: Partial<Pick<InvoiceRow, 'reminderState' | 'collectionStatus' | 'promiseToPayDate'>>,
+  ) {
+    try {
+      const res = await authFetch(`/api/v1/invoices/${invoiceId}/collections`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast({ title: 'סטטוס הגבייה עודכן' });
+      await loadInvoices();
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'עדכון הגבייה נכשל', variant: 'destructive' });
     }
   }
 
@@ -354,6 +436,7 @@ export default function PaymentsPage() {
                   <th className="py-2">סכום</th>
                   <th className="py-2">פירעון</th>
                   <th className="py-2">סטטוס</th>
+                  <th className="py-2">גבייה</th>
                   <th className="py-2">היסטוריה</th>
                   <th className="py-2">פעולות</th>
                 </tr>
@@ -375,6 +458,14 @@ export default function PaymentsPage() {
                       <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'warning'}>
                         {statusLabel[invoice.status]}
                       </Badge>
+                      <div className="mt-1 text-xs text-muted-foreground">{invoice.buildingName ?? 'ללא בניין'}</div>
+                    </td>
+                    <td className="py-3 pe-4">
+                      <div className="space-y-1 text-xs">
+                        <div>תזכורת: {invoice.reminderState ?? 'NONE'}</div>
+                        <div>סטטוס: {invoice.collectionStatus ?? 'CURRENT'}</div>
+                        {invoice.promiseToPayDate && <div>הבטחה: {formatDate(new Date(invoice.promiseToPayDate), locale)}</div>}
+                      </div>
                     </td>
                     <td className="py-3 pe-4">
                       {invoice.history.length === 0 ? (
@@ -396,6 +487,26 @@ export default function PaymentsPage() {
                             {settlingId === invoice.id ? 'מסלק...' : 'סליקה'}
                           </Button>
                         )}
+                        {invoice.status === 'OVERDUE' && (
+                          <>
+                            <Button variant="outline" size="sm" onClick={() => updateCollections(invoice.id, { reminderState: 'SENT', collectionStatus: 'PAST_DUE' })}>
+                              נשלחה תזכורת
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                updateCollections(invoice.id, {
+                                  reminderState: 'PROMISED',
+                                  collectionStatus: 'PROMISE_TO_PAY',
+                                  promiseToPayDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                                })
+                              }
+                            >
+                              הבטחת תשלום
+                            </Button>
+                          </>
+                        )}
                         <Button variant="outline" size="sm" onClick={() => window.open(`/api/v1/invoices/${invoice.id}/receipt`, '_blank')}>
                           <Receipt className="me-2 h-4 w-4" />
                           קבלה
@@ -406,7 +517,7 @@ export default function PaymentsPage() {
                 ))}
                 {!loading && filteredInvoices.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-6 text-center text-muted-foreground">אין חשבוניות להצגה.</td>
+                    <td colSpan={8} className="py-6 text-center text-muted-foreground">אין חשבוניות להצגה.</td>
                   </tr>
                 )}
               </tbody>
@@ -493,6 +604,59 @@ export default function PaymentsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>חיובים מחזוריים פעילים</CardTitle>
+          <CardDescription>שליטה על חיובים חודשיים, עצירה זמנית והפקה ידנית לצורך בדיקה.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left">
+                  <th className="py-2">דייר</th>
+                  <th className="py-2">שם חיוב</th>
+                  <th className="py-2">מחזור</th>
+                  <th className="py-2">סכום</th>
+                  <th className="py-2">הרצה הבאה</th>
+                  <th className="py-2">סטטוס</th>
+                  <th className="py-2">פעולות</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recurringInvoices.map((invoice) => (
+                  <tr key={invoice.id} className="border-b">
+                    <td className="py-3 pe-4">{invoice.residentName}</td>
+                    <td className="py-3 pe-4">{invoice.title || `חיוב #${invoice.id}`}</td>
+                    <td className="py-3 pe-4">{invoice.recurrence}</td>
+                    <td className="py-3 pe-4">{formatCurrency(invoice.amount)}</td>
+                    <td className="py-3 pe-4">{formatDate(new Date(invoice.nextRunAt), locale)}</td>
+                    <td className="py-3 pe-4">
+                      <Badge variant={invoice.active ? 'success' : 'secondary'}>{invoice.active ? 'פעיל' : 'מושהה'}</Badge>
+                    </td>
+                    <td className="py-3">
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" variant="outline" onClick={() => runRecurringNow(invoice.id)}>
+                          הפק עכשיו
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => toggleRecurringInvoice(invoice.id, !invoice.active)}>
+                          {invoice.active ? 'השהה' : 'הפעל'}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {!recurringInvoices.length && (
+                  <tr>
+                    <td colSpan={7} className="py-6 text-center text-muted-foreground">אין חיובים מחזוריים.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

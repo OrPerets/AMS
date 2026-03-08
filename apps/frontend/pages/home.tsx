@@ -11,7 +11,8 @@ import {
   ArrowLeft,
   Calendar,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Truck
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -59,6 +60,54 @@ const quickActions = [
     href: '/buildings',
     color: 'bg-indigo-500',
     roles: ['ADMIN', 'PM']
+  },
+  {
+    title: 'יומן תפעול',
+    description: 'תכנון פורטפוליו של תחזוקה, חוזים ופירעונות',
+    icon: Calendar,
+    href: '/operations/calendar',
+    color: 'bg-cyan-600',
+    roles: ['ADMIN', 'PM', 'ACCOUNTANT']
+  },
+  {
+    title: 'הודעות ממוקדות',
+    description: 'שליחת הודעות לפי בניין, קומה ויחידות',
+    icon: CheckCircle,
+    href: '/communications/announcements',
+    color: 'bg-fuchsia-600',
+    roles: ['ADMIN', 'PM']
+  },
+  {
+    title: 'ספקים וחוזים',
+    description: 'ניהול קבלנים, חידושי חוזים ותאימות',
+    icon: Truck,
+    href: '/vendors',
+    color: 'bg-orange-500',
+    roles: ['ADMIN', 'PM', 'ACCOUNTANT']
+  },
+  {
+    title: 'יומן פעילות',
+    description: 'בקרה ואודיט על פעולות רגישות',
+    icon: CheckCircle,
+    href: '/admin/activity',
+    color: 'bg-rose-500',
+    roles: ['ADMIN', 'PM', 'ACCOUNTANT', 'MASTER']
+  },
+  {
+    title: 'אזור אישי',
+    description: 'יתרה, מסמכים וקריאות שירות',
+    icon: Users,
+    href: '/resident/account',
+    color: 'bg-emerald-500',
+    roles: ['RESIDENT']
+  },
+  {
+    title: 'בקשות דייר',
+    description: 'מעבר, חניה, מסמכים ועדכון פרטים',
+    icon: Ticket,
+    href: '/resident/requests',
+    color: 'bg-teal-500',
+    roles: ['RESIDENT']
   },
 ];
 
@@ -232,5 +281,3 @@ export default function Home() {
     </div>
   );
 }
-
-

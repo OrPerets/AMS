@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcryptjs';
+import { ActivityService } from '../activity/activity.service';
 // Prisma types are generated in runtime; keep signatures lightweight to avoid tight coupling
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private activity: ActivityService,
+  ) {}
 
   findByEmail(email: string) {
     return this.prisma.user.findUnique({ where: { email } });
@@ -74,6 +78,25 @@ export class UserService {
     });
   }
 
+  listManagementUsers() {
+    return this.prisma.user.findMany({
+      where: {
+        role: {
+          in: ['ADMIN', 'PM', 'ACCOUNTANT', 'MASTER'],
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        phone: true,
+      },
+      orderBy: {
+        email: 'asc',
+      },
+    });
+  }
+
   findProfile(userId: number) {
     return this.prisma.user.findUnique({
       where: { id: userId },
@@ -94,6 +117,72 @@ export class UserService {
         supplier: true,
       },
     });
+  }
+
+  async getAccountContext(userId: number) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      include: {
+        resident: {
+          include: {
+            units: {
+              include: {
+                building: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const residentId = user.resident?.id ?? null;
+    const unitIds = user.resident?.units.map((unit) => unit.id) ?? [];
+    const buildingIds = user.resident?.units.map((unit) => unit.buildingId) ?? [];
+
+    const [notifications, documents, tickets, activity] = await Promise.all([
+      this.prisma.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 12,
+      }),
+      this.prisma.document.findMany({
+        where: {
+          OR: [
+            { buildingId: { in: buildingIds }, accessLevel: 'PUBLIC' },
+            { unitId: { in: unitIds } },
+            { sharedWith: { some: { userId } } },
+          ],
+        },
+        orderBy: { uploadedAt: 'desc' },
+        take: 12,
+      }),
+      this.prisma.ticket.findMany({
+        where: { unitId: { in: unitIds } },
+        include: {
+          unit: { include: { building: true } },
+          comments: true,
+          workOrders: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 12,
+      }),
+      residentId ? this.activity.list({ residentId, limit: 20 }) : Promise.resolve([]),
+    ]);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+      residentId,
+      units: user.resident?.units ?? [],
+      notifications,
+      documents,
+      tickets,
+      recentActivity: activity,
+    };
   }
 
   updateProfile(

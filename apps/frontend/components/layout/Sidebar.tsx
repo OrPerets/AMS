@@ -22,7 +22,8 @@ import {
   MessageCircle,
   X,
   Vote,
-  ClipboardList
+  ClipboardList,
+  ShieldCheck
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
@@ -111,10 +112,22 @@ const getNavigationGroups = (role: string, t: (key: string) => string): Navigati
           roles: ['ADMIN', 'PM', 'TECH'],
         },
         {
+          title: 'הודעות ממוקדות',
+          href: '/communications/announcements',
+          icon: Bell,
+          roles: ['ADMIN', 'PM'],
+        },
+        {
           title: 'הצבעות',
           href: '/votes',
           icon: Vote,
           roles: ['ADMIN', 'PM', 'RESIDENT'],
+        },
+        {
+          title: 'בקשות דייר',
+          href: '/resident/requests',
+          icon: ClipboardList,
+          roles: ['RESIDENT'],
         },
         {
           title: 'לוחות זמנים',
@@ -146,6 +159,18 @@ const getNavigationGroups = (role: string, t: (key: string) => string): Navigati
           icon: Folder,
           roles: ['ADMIN', 'PM', 'TECH', 'ACCOUNTANT'],
         },
+        {
+          title: 'ספקים',
+          href: '/vendors',
+          icon: Users,
+          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
+        },
+        {
+          title: 'חוזים',
+          href: '/contracts',
+          icon: FileText,
+          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
+        },
       ]
     },
     {
@@ -176,6 +201,12 @@ const getNavigationGroups = (role: string, t: (key: string) => string): Navigati
           icon: FileText,
           roles: ['ADMIN', 'ACCOUNTANT'],
         },
+        {
+          title: 'יומן תפעול',
+          href: '/operations/calendar',
+          icon: CalendarClock,
+          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
+        },
       ]
     },
     {
@@ -186,6 +217,12 @@ const getNavigationGroups = (role: string, t: (key: string) => string): Navigati
           title: 'התראות',
           href: '/admin/notifications',
           icon: Bell,
+          roles: ['ADMIN', 'PM'],
+        },
+        {
+          title: 'יומן פעילות',
+          href: '/admin/activity',
+          icon: ShieldCheck,
           roles: ['ADMIN', 'PM'],
         },
       ]

@@ -27,6 +27,12 @@ export class UserController {
     return this.users.listTechnicians();
   }
 
+  @Get('api/v1/users/management')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.MASTER)
+  listManagementUsers() {
+    return this.users.listManagementUsers();
+  }
+
   @Get('api/v1/users/profile')
   @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT, Role.MASTER)
   profile(@Req() req: any) {
@@ -46,6 +52,12 @@ export class UserController {
     },
   ) {
     return this.users.updateProfile(req.user.sub, body);
+  }
+
+  @Get('api/v1/users/account')
+  @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.MASTER)
+  account(@Req() req: any) {
+    return this.users.getAccountContext(req.user.sub);
   }
 
   @Post('api/v1/users/change-password')

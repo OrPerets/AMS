@@ -7,9 +7,10 @@ import { NotificationModule } from '../notifications/notification.module';
 import { WebSocketModule } from '../websocket/websocket.module';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
-  imports: [NotificationModule, WebSocketModule],
+  imports: [NotificationModule, WebSocketModule, ActivityModule],
   providers: [PrismaService, PhotoService, TicketService, JwtAuthGuard, RolesGuard],
   controllers: [TicketController],
 })

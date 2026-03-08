@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { CommunicationService } from './communication.service';
 import { CreateCommunicationDto } from './dto/create-communication.dto';
 import { UpdateCommunicationDto } from './dto/update-communication.dto';
@@ -61,13 +61,31 @@ export class CommunicationController {
   @Post('announcement')
   @Roles(Role.ADMIN, Role.PM)
   createAnnouncement(@Body() dto: {
-    senderId: number;
+    senderId?: number;
     buildingId?: number;
+    unitIds?: number[];
+    floor?: number;
+    residentIds?: number[];
+    recipientRole?: 'RESIDENT' | 'PM' | 'ADMIN';
     subject: string;
     message: string;
     priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-  }) {
-    return this.communications.createAnnouncement(dto);
+  }, @Req() req: any) {
+    return this.communications.createAnnouncement({ ...dto, senderId: dto.senderId ?? req.user?.sub });
+  }
+
+  @Post('resident-request')
+  @Roles(Role.RESIDENT)
+  createResidentRequest(@Body() dto: {
+    buildingId?: number;
+    unitId?: number;
+    requestType: 'MOVING' | 'PARKING' | 'DOCUMENT' | 'CONTACT_UPDATE' | 'GENERAL';
+    subject: string;
+    message: string;
+    requestedDate?: string;
+    metadata?: Record<string, any>;
+  }, @Req() req: any) {
+    return this.communications.createResidentRequest(req.user?.sub, dto);
   }
 
   @Get('conversation/:user1Id/:user2Id')

@@ -28,6 +28,20 @@ export class ScheduleController {
     );
   }
 
+  @Get('range')
+  @Roles(Role.ADMIN, Role.PM, Role.TECH)
+  async getSchedulesByRange(
+    @Query('start') start: string,
+    @Query('end') end: string,
+    @Query('buildingId') buildingId?: string
+  ) {
+    return this.scheduleService.getSchedulesByDateRange(
+      new Date(start),
+      new Date(end),
+      buildingId ? +buildingId : undefined,
+    );
+  }
+
   @Get('my')
   @Roles(Role.TECH)
   async getMySchedules(@Req() req: any, @Query('date') date?: string) {
@@ -101,4 +115,3 @@ export class ScheduleController {
     return this.scheduleService.getScheduleProgress(+id);
   }
 }
-

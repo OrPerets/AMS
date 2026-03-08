@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma.service';
 import { PhotoService } from './photo.service';
 import { NotificationService } from '../notifications/notification.service';
 import { WebSocketGateway } from '../websocket/websocket.gateway';
+import { ActivityService } from '../activity/activity.service';
 
 type TicketListFilter = {
   status?: TicketStatus;
@@ -124,6 +125,7 @@ export class TicketService {
     private photos: PhotoService,
     private notifications: NotificationService,
     private websocketGateway: WebSocketGateway,
+    private activity: ActivityService,
   ) {}
 
   async create(data: Prisma.TicketCreateInput, files: Express.Multer.File[], description?: string, authorId?: number): Promise<Ticket> {
@@ -179,6 +181,16 @@ export class TicketService {
       ),
     );
 
+    await this.activity.log({
+      userId: authorId,
+      buildingId: ticket.unit.building.id,
+      entityType: 'TICKET',
+      entityId: ticket.id,
+      action: 'TICKET_CREATED',
+      summary: `נפתחה קריאה חדשה בבניין ${ticket.unit.building.name}.`,
+      metadata: { severity: ticket.severity, status: ticket.status },
+    });
+
     return ticket;
   }
 
@@ -202,11 +214,21 @@ export class TicketService {
 
   async assign(id: number, dto: { assigneeId?: number; supplierId?: number; costEstimate?: number }) {
     if (dto.assigneeId) {
-      return this.prisma.ticket.update({
+      const ticket = await this.prisma.ticket.update({
         where: { id },
         data: { assignedToId: dto.assigneeId, status: TicketStatus.ASSIGNED },
         include: ticketInclude,
       });
+      await this.activity.log({
+        userId: dto.assigneeId,
+        buildingId: ticket.unit.building.id,
+        entityType: 'TICKET',
+        entityId: ticket.id,
+        action: 'TICKET_ASSIGNED',
+        summary: `הקריאה הוקצתה ל-${ticket.assignedTo?.email ?? `משתמש ${dto.assigneeId}`}.`,
+        metadata: { assigneeId: dto.assigneeId },
+      });
+      return ticket;
     }
     if (dto.supplierId) {
       await this.prisma.workOrder.create({
@@ -216,11 +238,20 @@ export class TicketService {
           costEstimate: dto.costEstimate,
         },
       });
-      return this.prisma.ticket.update({
+      const ticket = await this.prisma.ticket.update({
         where: { id },
         data: { status: TicketStatus.ASSIGNED },
         include: ticketInclude,
       });
+      await this.activity.log({
+        buildingId: ticket.unit.building.id,
+        entityType: 'TICKET',
+        entityId: ticket.id,
+        action: 'WORK_ORDER_CREATED',
+        summary: `נוצרה הזמנת עבודה לספק #${dto.supplierId}.`,
+        metadata: { supplierId: dto.supplierId, costEstimate: dto.costEstimate ?? null },
+      });
+      return ticket;
     }
     throw new Error('No assignee specified');
   }
@@ -247,6 +278,15 @@ export class TicketService {
 
     await this.notifications.ticketStatusChanged(ticket);
     this.websocketGateway.notifyTicketUpdate(ticket);
+    await this.activity.log({
+      userId: ticket.assignedTo?.id ?? undefined,
+      buildingId: ticket.unit.building.id,
+      entityType: 'TICKET',
+      entityId: ticket.id,
+      action: 'TICKET_STATUS_CHANGED',
+      summary: `סטטוס הקריאה #${ticket.id} עודכן ל-${ticket.status}.`,
+      metadata: { status: ticket.status, severity: ticket.severity },
+    });
 
     return ticket;
   }

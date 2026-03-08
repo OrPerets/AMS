@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { DocumentService } from './document.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
@@ -84,8 +84,8 @@ export class DocumentController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.documents.remove(+id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.documents.remove(+id, req.user?.sub);
   }
 
   @Post('upload')
@@ -139,9 +139,10 @@ export class DocumentController {
   @Post(':id/share')
   share(
     @Param('id') id: string,
-    @Body() body: { userId: number; permission?: 'VIEW' | 'DOWNLOAD' | 'EDIT' | 'DELETE'; expiresAt?: string }
+    @Body() body: { userId: number; permission?: 'VIEW' | 'DOWNLOAD' | 'EDIT' | 'DELETE'; expiresAt?: string },
+    @Req() req: any,
   ) {
-    return this.documents.share(+id, { userId: body.userId, permission: body.permission, expiresAt: body.expiresAt });
+    return this.documents.share(+id, { userId: body.userId, permission: body.permission, expiresAt: body.expiresAt }, req.user?.sub);
   }
 
   @Get(':id/shares')

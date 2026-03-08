@@ -5,8 +5,10 @@ import { PrismaService } from '../prisma.service';
 import { TranzilaService } from './tranzila.service';
 import { ReceiptService } from './receipt.service';
 import { TranzilaProvider } from './tranzila.provider';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
+  imports: [ActivityModule],
   controllers: [PaymentController],
   providers: [PaymentService, PrismaService, TranzilaService, ReceiptService, TranzilaProvider],
 })

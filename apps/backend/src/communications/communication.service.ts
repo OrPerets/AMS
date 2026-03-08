@@ -4,12 +4,14 @@ import { CreateCommunicationDto } from './dto/create-communication.dto';
 import { UpdateCommunicationDto } from './dto/update-communication.dto';
 import { Prisma } from '@prisma/client';
 import { NotificationService } from '../notifications/notification.service';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class CommunicationService {
   constructor(
     private prisma: PrismaService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private activity: ActivityService,
   ) {}
 
   private mapCreate(dto: CreateCommunicationDto): Prisma.CommunicationCreateInput {
@@ -65,20 +67,43 @@ export class CommunicationService {
   async createAnnouncement(data: {
     senderId: number;
     buildingId?: number;
+    unitIds?: number[];
+    floor?: number;
+    residentIds?: number[];
+    recipientRole?: 'RESIDENT' | 'PM' | 'ADMIN';
     subject: string;
     message: string;
     priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   }) {
-    const { senderId, buildingId, subject, message, priority = 'MEDIUM' } = data;
+    const {
+      senderId,
+      buildingId,
+      unitIds,
+      floor,
+      residentIds,
+      recipientRole = 'RESIDENT',
+      subject,
+      message,
+      priority = 'MEDIUM',
+    } = data;
 
-    // Get all residents in the building
     const residents = await this.prisma.user.findMany({
       where: {
-        resident: {
-          units: {
-            some: buildingId ? { buildingId } : undefined,
-          },
-        },
+        role: recipientRole,
+        ...(recipientRole === 'RESIDENT'
+          ? {
+              resident: {
+                units: {
+                  some: {
+                    ...(buildingId ? { buildingId } : {}),
+                    ...(unitIds?.length ? { id: { in: unitIds } } : {}),
+                    ...(floor !== undefined ? { floor } : {}),
+                  },
+                },
+              },
+            }
+          : {}),
+        ...(residentIds?.length ? { id: { in: residentIds } } : {}),
       },
     });
 
@@ -93,7 +118,7 @@ export class CommunicationService {
             subject,
             message,
             channel: 'ANNOUNCEMENT',
-            metadata: { priority },
+            metadata: { priority, unitIds, floor, recipientRole },
           },
           include: { sender: true, recipient: true, building: true },
         })
@@ -111,7 +136,107 @@ export class CommunicationService {
       )
     );
 
+    await this.activity.log({
+      userId: senderId,
+      buildingId,
+      entityType: 'ANNOUNCEMENT',
+      action: 'ANNOUNCEMENT_CREATED',
+      summary: `נשלחה הודעה ממוקדת ל-${communications.length} נמענים.`,
+      metadata: { priority, recipientRole, unitIds: unitIds ?? [], floor: floor ?? null },
+    });
+
     return communications;
+  }
+
+  async createResidentRequest(
+    requesterUserId: number,
+    data: {
+      buildingId?: number;
+      unitId?: number;
+      requestType: 'MOVING' | 'PARKING' | 'DOCUMENT' | 'CONTACT_UPDATE' | 'GENERAL';
+      subject: string;
+      message: string;
+      requestedDate?: string;
+      metadata?: Record<string, any>;
+    },
+  ) {
+    const requester = await this.prisma.user.findUniqueOrThrow({
+      where: { id: requesterUserId },
+      include: {
+        resident: {
+          include: {
+            units: true,
+          },
+        },
+      },
+    });
+
+    const recipientUsers = await this.prisma.user.findMany({
+      where: {
+        tenantId: requester.tenantId,
+        role: {
+          in: ['ADMIN', 'PM', 'MASTER'],
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const buildingId = data.buildingId ?? requester.resident?.units[0]?.buildingId;
+    const residentId = requester.resident?.id;
+
+    const rows = await Promise.all(
+      recipientUsers.map((recipient) =>
+        this.prisma.communication.create({
+          data: {
+            senderId: requesterUserId,
+            recipientId: recipient.id,
+            buildingId,
+            unitId: data.unitId,
+            subject: `${data.requestType}: ${data.subject}`,
+            message: data.message,
+            channel: 'REQUEST',
+            metadata: {
+              requestType: data.requestType,
+              requestedDate: data.requestedDate ?? null,
+              ...data.metadata,
+            },
+          },
+        }),
+      ),
+    );
+
+    await Promise.all(
+      recipientUsers.map((recipient) =>
+        this.prisma.notification.create({
+          data: {
+            title: `${data.requestType}: ${data.subject}`,
+            message: data.message,
+            type: 'RESIDENT_REQUEST',
+            tenantId: requester.tenantId,
+            userId: recipient.id,
+            buildingId,
+            metadata: {
+              requestType: data.requestType,
+              requestedDate: data.requestedDate ?? null,
+            } as any,
+          },
+        }),
+      ),
+    );
+
+    await this.activity.log({
+      userId: requesterUserId,
+      buildingId,
+      residentId,
+      entityType: 'RESIDENT_REQUEST',
+      action: 'REQUEST_CREATED',
+      summary: `נוצרה בקשת דייר מסוג ${data.requestType}.`,
+      metadata: { subject: data.subject, recipientCount: recipientUsers.length },
+    });
+
+    return rows;
   }
 
   // Get conversation thread between two users

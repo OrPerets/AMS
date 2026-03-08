@@ -3,10 +3,14 @@ import { PrismaService } from '../prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { Prisma } from '@prisma/client';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class DocumentService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private activity: ActivityService,
+  ) {}
 
   private mapCreate(dto: CreateDocumentDto): Prisma.DocumentCreateInput {
     const { buildingId, unitId, contractId, assetId, expenseId, uploadedById, ...rest } = dto;
@@ -133,16 +137,40 @@ export class DocumentService {
     });
   }
 
-  remove(id: number) {
-    return this.prisma.document.delete({ where: { id } });
+  async remove(id: number, userId?: number) {
+    const document = await this.prisma.document.delete({
+      where: { id },
+      include: { building: true, unit: true, contract: true },
+    });
+    await this.activity.log({
+      userId,
+      buildingId: document.buildingId ?? undefined,
+      entityType: 'DOCUMENT',
+      entityId: document.id,
+      action: 'DOCUMENT_DELETED',
+      summary: `המסמך ${document.name} נמחק.`,
+      metadata: { category: document.category ?? null },
+    });
+    return document;
   }
 
-  share(documentId: number, input: { userId: number; permission?: string; expiresAt?: string }) {
-    return this.prisma.documentShare.upsert({
+  async share(documentId: number, input: { userId: number; permission?: string; expiresAt?: string }, actorUserId?: number) {
+    const share = await this.prisma.documentShare.upsert({
       where: { documentId_userId: { documentId, userId: input.userId } },
       update: { permission: input.permission as any, expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined },
       create: { documentId, userId: input.userId, permission: (input.permission as any) ?? 'VIEW', expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined },
     });
+    const document = await this.prisma.document.findUnique({ where: { id: documentId } });
+    await this.activity.log({
+      userId: actorUserId,
+      buildingId: document?.buildingId ?? undefined,
+      entityType: 'DOCUMENT',
+      entityId: documentId,
+      action: 'DOCUMENT_SHARED',
+      summary: `המסמך #${documentId} שותף למשתמש #${input.userId}.`,
+      metadata: { permission: input.permission ?? 'VIEW', expiresAt: input.expiresAt ?? null },
+    });
+    return share;
   }
 
   listShares(documentId: number) {
