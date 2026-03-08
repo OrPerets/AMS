@@ -24,6 +24,30 @@ describe('PaymentService webhook processing', () => {
       invoice: {
         update: jest.fn(),
         findUnique: jest.fn(),
+        findUniqueOrThrow: jest.fn(),
+      },
+      resident: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn(),
+        update: jest.fn(),
+      },
+      paymentMethod: {
+        findMany: jest.fn(),
+        count: jest.fn(),
+        updateMany: jest.fn(),
+        create: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+        findFirst: jest.fn(),
+      },
+      notification: {
+        create: jest.fn(),
+      },
+      recurringInvoice: {
+        findMany: jest.fn(),
+        update: jest.fn(),
+        findUniqueOrThrow: jest.fn(),
       },
       providerTransaction: {
         create: jest.fn(),
@@ -161,4 +185,68 @@ describe('PaymentService webhook processing', () => {
       }),
     );
   });
+
+it('adds a resident payment method and marks first method as default', async () => {
+    prisma.resident.findUnique.mockResolvedValue({ id: 10, userId: 99 });
+    prisma.paymentMethod.count.mockResolvedValue(0);
+    prisma.paymentMethod.create.mockResolvedValue({ id: 300, residentId: 10, isDefault: true, networkTokenized: true });
+
+    const created = await service.addPaymentMethod(
+      {
+        provider: 'tranzila',
+        token: 'tok_123',
+        brand: 'visa',
+        last4: '4242',
+        networkTokenized: true,
+      },
+      99,
+      'RESIDENT' as any,
+    );
+
+    expect(created.isDefault).toBe(true);
+    expect(prisma.paymentMethod.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          residentId: 10,
+          token: 'tok_123',
+          networkTokenized: true,
+          isDefault: true,
+        }),
+      }),
+    );
+  });
+
+  it('runs autopay on due recurring invoices and sends success notification', async () => {
+    prisma.recurringInvoice.findMany.mockResolvedValue([
+      {
+        id: 7,
+        residentId: 10,
+        items: [{ description: 'HOA' }],
+        amount: 100,
+        dueDaysAfterIssue: 30,
+        lateFeeAmount: 0,
+        recurrence: 'monthly',
+        autopayEnabled: true,
+      },
+    ]);
+    jest.spyOn(service, 'createInvoice').mockResolvedValue({ id: 401 } as any);
+    prisma.recurringInvoice.update.mockResolvedValue({});
+    prisma.resident.findUnique.mockResolvedValueOnce({ autopayEnabled: true, autopayRetrySchedule: [1, 3, 7] });
+    prisma.paymentMethod.findFirst.mockResolvedValue({ id: 88, token: 'tok_default', residentId: 10, isDefault: true });
+    prisma.invoice.findUniqueOrThrow.mockResolvedValue({ id: 401, amount: 100, residentId: 10 });
+    prisma.paymentIntent.create.mockResolvedValue({ id: 900 });
+    tranzilaProvider.createPayment.mockResolvedValue({ providerIntentId: 'pi_auto', raw: { ok: true } });
+    tranzilaProvider.retrieve.mockResolvedValue({ status: 'succeeded', raw: { settled: true } });
+    prisma.paymentIntent.update.mockResolvedValue({});
+    jest.spyOn(service, 'confirmPayment').mockResolvedValue({ id: 401 } as any);
+    prisma.resident.findUnique.mockResolvedValueOnce({ userId: 99 });
+
+    const result = await service.runDueRecurring();
+
+    expect(result.generated).toBe(1);
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ userId: 99, type: 'AUTOPAY_SUCCESS' }) }),
+    );
+  });
+
 });

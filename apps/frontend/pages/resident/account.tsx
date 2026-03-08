@@ -20,6 +20,17 @@ type AccountContext = {
   recentActivity: Array<{ id: number; summary: string; createdAt: string; severity: string }>;
 };
 
+type PaymentMethod = {
+  id: number;
+  provider: string;
+  brand?: string | null;
+  last4?: string | null;
+  expMonth?: number | null;
+  expYear?: number | null;
+  isDefault: boolean;
+  networkTokenized: boolean;
+};
+
 type ResidentFinance = {
   summary: {
     currentBalance: number;
@@ -42,6 +53,9 @@ export default function ResidentAccountPage() {
   const [processingInvoiceId, setProcessingInvoiceId] = useState<number | null>(null);
   const [paymentAttempts, setPaymentAttempts] = useState<Record<number, { intentId: number; status: string; attemptedAt: string }>>({});
   const [paymentBanner, setPaymentBanner] = useState<{ title: string; description: string; variant: 'success' | 'warning' | 'destructive' } | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [autopayEnabled, setAutopayEnabled] = useState(false);
+  const [newCard, setNewCard] = useState({ provider: 'tranzila', token: '', brand: '', last4: '', expMonth: '', expYear: '' });
 
   useEffect(() => {
     loadAccount();
@@ -164,6 +178,92 @@ export default function ResidentAccountPage() {
     }
   }
 
+
+  async function loadPaymentSettings() {
+    try {
+      const methodsRes = await authFetch('/api/v1/payments/methods');
+      if (methodsRes.ok) {
+        setPaymentMethods(await methodsRes.json());
+      }
+
+      const autopayRes = await authFetch('/api/v1/payments/autopay');
+      if (autopayRes.ok) {
+        const prefs = await autopayRes.json();
+        setAutopayEnabled(Boolean(prefs.autopayEnabled));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function addCard() {
+    if (!newCard.token) {
+      toast({ title: 'יש להזין טוקן תשלום', variant: 'destructive' });
+      return;
+    }
+    const response = await authFetch('/api/v1/payments/methods', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: newCard.provider,
+        token: newCard.token,
+        brand: newCard.brand || undefined,
+        last4: newCard.last4 || undefined,
+        expMonth: newCard.expMonth ? Number(newCard.expMonth) : undefined,
+        expYear: newCard.expYear ? Number(newCard.expYear) : undefined,
+        networkTokenized: true,
+      }),
+    });
+
+    if (!response.ok) {
+      toast({ title: 'שמירת כרטיס נכשלה', variant: 'destructive' });
+      return;
+    }
+
+    setNewCard({ provider: 'tranzila', token: '', brand: '', last4: '', expMonth: '', expYear: '' });
+    toast({ title: 'כרטיס נשמר בהצלחה' });
+    await loadPaymentSettings();
+  }
+
+  async function setDefaultCard(id: number) {
+    const response = await authFetch(`/api/v1/payments/methods/${id}/default`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    if (!response.ok) {
+      toast({ title: 'עדכון ברירת מחדל נכשל', variant: 'destructive' });
+      return;
+    }
+    await loadPaymentSettings();
+  }
+
+  async function removeCard(id: number) {
+    const response = await authFetch(`/api/v1/payments/methods/${id}/remove`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    if (!response.ok) {
+      toast({ title: 'מחיקת כרטיס נכשלה', variant: 'destructive' });
+      return;
+    }
+    await loadPaymentSettings();
+  }
+
+  async function toggleAutopay(enabled: boolean) {
+    const response = await authFetch('/api/v1/payments/autopay', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    });
+    if (!response.ok) {
+      toast({ title: 'עדכון חיוב אוטומטי נכשל', variant: 'destructive' });
+      return;
+    }
+    setAutopayEnabled(enabled);
+  }
+
   async function loadAccount() {
     try {
       setLoading(true);
@@ -180,6 +280,7 @@ export default function ResidentAccountPage() {
           throw new Error(await financeResponse.text());
         }
         setFinance(await financeResponse.json());
+        await loadPaymentSettings();
       } else {
         setFinance(null);
       }
@@ -240,6 +341,44 @@ export default function ResidentAccountPage() {
                 <div className="text-xs text-muted-foreground">{paymentBanner.description}</div>
               </div>
             ) : null}
+
+            <div className="rounded-lg border p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">כרטיסים שמורים וחיוב אוטומטי</div>
+                  <div className="text-xs text-muted-foreground">ניהול כרטיס ברירת מחדל וגבייה אוטומטית לחשבוניות מחזוריות.</div>
+                </div>
+                <Button size="sm" variant={autopayEnabled ? 'default' : 'outline'} onClick={() => toggleAutopay(!autopayEnabled)}>
+                  {autopayEnabled ? 'חיוב אוטומטי פעיל' : 'הפעל חיוב אוטומטי'}
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                {paymentMethods.map((method) => (
+                  <div key={method.id} className="flex items-center justify-between rounded border p-2 text-xs">
+                    <div>
+                      <div className="font-medium">{method.brand || method.provider} •••• {method.last4 || 'XXXX'}</div>
+                      <div className="text-muted-foreground">{method.expMonth || '--'}/{method.expYear || '--'} {method.networkTokenized ? '· tokenized' : ''}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      {!method.isDefault ? <Button size="sm" variant="outline" onClick={() => setDefaultCard(method.id)}>ברירת מחדל</Button> : <Badge variant="success">ברירת מחדל</Badge>}
+                      <Button size="sm" variant="outline" onClick={() => removeCard(method.id)}>הסר</Button>
+                    </div>
+                  </div>
+                ))}
+                {!paymentMethods.length ? <div className="text-xs text-muted-foreground">אין כרטיסים שמורים.</div> : null}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <input className="rounded border px-2 py-1 text-xs" placeholder="provider" value={newCard.provider} onChange={(e) => setNewCard((c) => ({ ...c, provider: e.target.value }))} />
+                <input className="rounded border px-2 py-1 text-xs" placeholder="token" value={newCard.token} onChange={(e) => setNewCard((c) => ({ ...c, token: e.target.value }))} />
+                <input className="rounded border px-2 py-1 text-xs" placeholder="brand" value={newCard.brand} onChange={(e) => setNewCard((c) => ({ ...c, brand: e.target.value }))} />
+                <input className="rounded border px-2 py-1 text-xs" placeholder="last4" value={newCard.last4} onChange={(e) => setNewCard((c) => ({ ...c, last4: e.target.value }))} />
+                <input className="rounded border px-2 py-1 text-xs" placeholder="exp month" value={newCard.expMonth} onChange={(e) => setNewCard((c) => ({ ...c, expMonth: e.target.value }))} />
+                <input className="rounded border px-2 py-1 text-xs" placeholder="exp year" value={newCard.expYear} onChange={(e) => setNewCard((c) => ({ ...c, expYear: e.target.value }))} />
+              </div>
+              <Button size="sm" onClick={addCard}>הוסף כרטיס שמור</Button>
+            </div>
             {(finance?.invoices || []).slice(0, 6).map((invoice) => (
               <div key={invoice.id} className="rounded-lg border p-3">
                 <div className="flex items-center justify-between gap-3">

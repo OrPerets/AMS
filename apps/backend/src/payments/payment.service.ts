@@ -1424,6 +1424,249 @@ export class PaymentService {
     return this.mapRecurring(recurring);
   }
 
+  private async resolveResidentForPaymentSettings(actorUserId: number | undefined, actorRole: Role | undefined, residentId?: number) {
+    if (actorRole === Role.RESIDENT) {
+      if (!actorUserId) throw new UnauthorizedException('Resident context is missing.');
+      const resident = await this.prisma.resident.findUnique({ where: { userId: actorUserId }, select: { id: true, userId: true } });
+      if (!resident) throw new ForbiddenException('Resident profile not found.');
+      return resident;
+    }
+
+    if (!residentId) {
+      throw new BadRequestException('residentId is required for non-resident roles.');
+    }
+    const resolved = await this.resolveResidentId(residentId);
+    const resident = await this.prisma.resident.findUnique({ where: { id: resolved }, select: { id: true, userId: true } });
+    if (!resident) throw new BadRequestException('Resident not found.');
+    return resident;
+  }
+
+  async listPaymentMethods(actorUserId?: number, actorRole?: Role, residentId?: number) {
+    const resident = await this.resolveResidentForPaymentSettings(actorUserId, actorRole, residentId);
+    return this.prisma.paymentMethod.findMany({ where: { residentId: resident.id }, orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }] });
+  }
+
+  async addPaymentMethod(
+    data: {
+      provider: string;
+      token: string;
+      brand?: string;
+      last4?: string;
+      expMonth?: number;
+      expYear?: number;
+      networkTokenized?: boolean;
+      isDefault?: boolean;
+      residentId?: number;
+    },
+    actorUserId?: number,
+    actorRole?: Role,
+  ) {
+    if (!data.provider || !data.token) {
+      throw new BadRequestException('provider and token are required.');
+    }
+
+    const resident = await this.resolveResidentForPaymentSettings(actorUserId, actorRole, data.residentId);
+    const existingCount = await this.prisma.paymentMethod.count({ where: { residentId: resident.id } });
+    const nextIsDefault = data.isDefault ?? existingCount === 0;
+
+    if (nextIsDefault) {
+      await this.prisma.paymentMethod.updateMany({ where: { residentId: resident.id, isDefault: true }, data: { isDefault: false } });
+    }
+
+    return this.prisma.paymentMethod.create({
+      data: {
+        residentId: resident.id,
+        provider: data.provider,
+        token: data.token,
+        brand: data.brand,
+        last4: data.last4,
+        expMonth: data.expMonth,
+        expYear: data.expYear,
+        networkTokenized: Boolean(data.networkTokenized),
+        isDefault: nextIsDefault,
+      },
+    });
+  }
+
+  async setDefaultPaymentMethod(id: number, actorUserId?: number, actorRole?: Role, residentId?: number) {
+    const resident = await this.resolveResidentForPaymentSettings(actorUserId, actorRole, residentId);
+    const method = await this.prisma.paymentMethod.findUnique({ where: { id } });
+    if (!method || method.residentId !== resident.id) {
+      throw new ForbiddenException('Payment method not found for resident.');
+    }
+
+    await this.prisma.paymentMethod.updateMany({ where: { residentId: resident.id, isDefault: true }, data: { isDefault: false } });
+    return this.prisma.paymentMethod.update({ where: { id }, data: { isDefault: true } });
+  }
+
+  async removePaymentMethod(id: number, actorUserId?: number, actorRole?: Role, residentId?: number) {
+    const resident = await this.resolveResidentForPaymentSettings(actorUserId, actorRole, residentId);
+    const method = await this.prisma.paymentMethod.findUnique({ where: { id } });
+    if (!method || method.residentId !== resident.id) {
+      throw new ForbiddenException('Payment method not found for resident.');
+    }
+
+    await this.prisma.paymentMethod.delete({ where: { id } });
+    if (method.isDefault) {
+      const replacement = await this.prisma.paymentMethod.findFirst({ where: { residentId: resident.id }, orderBy: { createdAt: 'desc' } });
+      if (replacement) {
+        await this.prisma.paymentMethod.update({ where: { id: replacement.id }, data: { isDefault: true } });
+      }
+    }
+    return { ok: true };
+  }
+
+  async updateAutopayPreferences(
+    data: { enabled: boolean; retrySchedule?: number[]; consentAt?: string; residentId?: number },
+    actorUserId?: number,
+    actorRole?: Role,
+  ) {
+    const resident = await this.resolveResidentForPaymentSettings(actorUserId, actorRole, data.residentId);
+    const retrySchedule = (data.retrySchedule ?? [1, 3, 7]).filter((day) => Number.isInteger(day) && day > 0);
+    return this.prisma.resident.update({
+      where: { id: resident.id },
+      data: {
+        autopayEnabled: Boolean(data.enabled),
+        autopayRetrySchedule: retrySchedule.length ? retrySchedule : [1, 3, 7],
+        autopayConsentAt: data.enabled ? (data.consentAt ? new Date(data.consentAt) : new Date()) : null,
+      },
+      select: { id: true, autopayEnabled: true, autopayRetrySchedule: true, autopayConsentAt: true },
+    });
+  }
+
+  async getAutopayPreferences(actorUserId?: number, actorRole?: Role, residentId?: number) {
+    const resident = await this.resolveResidentForPaymentSettings(actorUserId, actorRole, residentId);
+    return this.prisma.resident.findUniqueOrThrow({
+      where: { id: resident.id },
+      select: { id: true, autopayEnabled: true, autopayRetrySchedule: true, autopayConsentAt: true },
+    });
+  }
+
+  async setRecurringAutopay(id: number, enabled: boolean) {
+    return this.prisma.recurringInvoice.update({
+      where: { id },
+      data: { autopayEnabled: enabled },
+    });
+  }
+
+  private async notifyAutopayOutcome(
+    residentId: number,
+    title: string,
+    message: string,
+    metadata: Record<string, any>,
+    type: 'AUTOPAY_SUCCESS' | 'AUTOPAY_FAILURE',
+  ) {
+    const resident = await this.prisma.resident.findUnique({ where: { id: residentId }, select: { userId: true } });
+    if (!resident?.userId) return;
+    await this.prisma.notification.create({
+      data: {
+        userId: resident.userId,
+        title,
+        message,
+        type,
+        metadata,
+      },
+    });
+  }
+
+  private async attemptAutopayForInvoice(invoiceId: number, residentId: number, recurringId: number) {
+    const resident = await this.prisma.resident.findUnique({
+      where: { id: residentId },
+      select: { autopayEnabled: true, autopayRetrySchedule: true },
+    });
+    if (!resident?.autopayEnabled) return;
+
+    const method = await this.prisma.paymentMethod.findFirst({ where: { residentId, isDefault: true } });
+    if (!method) {
+      await this.notifyAutopayOutcome(
+        residentId,
+        'חיוב אוטומטי נכשל',
+        `לא נמצא אמצעי תשלום ברירת מחדל עבור חשבונית #${invoiceId}.`,
+        { invoiceId, recurringId, retrySchedule: resident.autopayRetrySchedule },
+        'AUTOPAY_FAILURE',
+      );
+      return;
+    }
+
+    const invoice = await this.prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
+    const route = this.routingStrategy.selectProvider([this.tranzilaProvider, this.stripeProvider], this.getRoutingContext({ amount: invoice.amount, currency: 'NIS' }));
+    const feeEstimate = route.provider.estimateFees({ amount: invoice.amount, currency: 'NIS', cardType: 'unknown' });
+
+    const intent = await this.prisma.paymentIntent.create({
+      data: {
+        invoiceId,
+        amount: invoice.amount,
+        grossAmount: invoice.amount,
+        providerFeeEstimated: feeEstimate.estimatedFee,
+        netAmount: feeEstimate.estimatedNet,
+        currency: 'NIS',
+        status: PaymentIntentStatus.REQUIRES_CONFIRMATION,
+        provider: route.provider.name,
+        paymentMethodId: method.id,
+        metadata: { autopay: true, recurringInvoiceId: recurringId },
+      },
+    });
+
+    try {
+      const result = await this.withProviderRetry(() =>
+        route.provider.createPayment({
+          amount: invoice.amount,
+          currency: 'NIS',
+          description: `Recurring invoice #${invoiceId}`,
+          metadata: { invoiceId, residentId, recurringId, autopay: true, paymentMethodToken: method.token },
+        }),
+      );
+
+      const providerResult = await this.withProviderRetry(() => route.provider.retrieve(result.providerIntentId || String(intent.id)));
+      const status = this.toIntentStatus(providerResult.status);
+
+      await this.prisma.paymentIntent.update({
+        where: { id: intent.id },
+        data: {
+          providerIntentId: result.providerIntentId || String(intent.id),
+          clientSecret: result.clientSecret || null,
+          status,
+          metadata: {
+            ...(result.raw ?? {}),
+            ...(providerResult.raw ?? {}),
+            autopay: true,
+            recurringInvoiceId: recurringId,
+          },
+        },
+      });
+
+      if (status === PaymentIntentStatus.SUCCEEDED) {
+        await this.confirmPayment(invoiceId);
+        await this.notifyAutopayOutcome(
+          residentId,
+          'החיוב האוטומטי הצליח',
+          `חשבונית #${invoiceId} שולמה בהצלחה באמצעות כרטיס שמור.`,
+          { invoiceId, recurringId, paymentIntentId: intent.id },
+          'AUTOPAY_SUCCESS',
+        );
+        return;
+      }
+
+      const retrySchedule = resident.autopayRetrySchedule?.length ? resident.autopayRetrySchedule : [1, 3, 7];
+      await this.notifyAutopayOutcome(
+        residentId,
+        'החיוב האוטומטי נכשל',
+        `חיוב אוטומטי עבור חשבונית #${invoiceId} נכשל. ניסיונות חוזרים מתוכננים בעוד ${retrySchedule.join(', ')} ימים.`,
+        { invoiceId, recurringId, paymentIntentId: intent.id, retrySchedule },
+        'AUTOPAY_FAILURE',
+      );
+    } catch (error) {
+      const retrySchedule = resident.autopayRetrySchedule?.length ? resident.autopayRetrySchedule : [1, 3, 7];
+      await this.notifyAutopayOutcome(
+        residentId,
+        'החיוב האוטומטי נכשל',
+        `חיוב אוטומטי עבור חשבונית #${invoiceId} נכשל זמנית. ניסיונות חוזרים מתוכננים בעוד ${retrySchedule.join(', ')} ימים.`,
+        { invoiceId, recurringId, retrySchedule, reason: String((error as Error)?.message || error) },
+        'AUTOPAY_FAILURE',
+      );
+    }
+  }
+
   private computeNextRun(current: Date, recurrence: string): Date {
     const next = new Date(current);
     const lower = recurrence.toLowerCase();
@@ -1457,6 +1700,10 @@ export class PaymentService {
       where: { id },
       data: { lastRunAt: new Date(), nextRunAt: this.computeNextRun(new Date(), rec.recurrence) },
     });
+    const autopayActive = rec.autopayEnabled ?? true;
+    if (autopayActive) {
+      await this.attemptAutopayForInvoice(invoice.id, rec.residentId, rec.id);
+    }
     return invoice;
   }
 
@@ -1476,6 +1723,9 @@ export class PaymentService {
         where: { id: rec.id },
         data: { lastRunAt: new Date(), nextRunAt: this.computeNextRun(now, rec.recurrence) },
       });
+      if (rec.autopayEnabled ?? true) {
+        await this.attemptAutopayForInvoice(invoice.id, rec.residentId, rec.id);
+      }
       results.push(invoice);
     }
     return { generated: results.length, invoices: results };
