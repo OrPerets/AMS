@@ -18,6 +18,8 @@ COPY . .
 
 WORKDIR /app/apps/frontend
 RUN npm run build
+RUN mkdir -p .next/standalone/apps/frontend/.next \
+  && cp -R .next/static .next/standalone/apps/frontend/.next/static
 
 WORKDIR /app/apps/frontend
 
