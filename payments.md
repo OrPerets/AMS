@@ -139,12 +139,12 @@ Enable residents to pay unpaid invoices via card from the resident account page 
    - Show receipt link once payment is completed.
 
 ### TODO checklist
-- [ ] Add `Pay now` button in resident invoice card/table.
-- [ ] Implement `initiatePayment(invoiceId)` client action.
-- [ ] Handle redirect/client-secret branches.
-- [ ] Add callback handling and status refresh logic.
-- [ ] Add status banners/toasts for success/failure/pending.
-- [ ] Add retry flow for failed attempts.
+- [x] Add `Pay now` button in resident invoice card/table.
+- [x] Implement `initiatePayment(invoiceId)` client action.
+- [x] Handle redirect/client-secret branches.
+- [x] Add callback handling and status refresh logic.
+- [x] Add status banners/toasts for success/failure/pending.
+- [x] Add retry flow for failed attempts.
 - [ ] Add frontend tests for button visibility and payment state transitions.
 
 ---
