@@ -41,3 +41,15 @@ curl -X POST http://localhost:3000/api/v1/support \
   - Replaced placeholders with structured policy/terms content.
 - `/tech/jobs`
   - Retained live job board behavior already present and verified it still builds after Sprint 9 changes.
+
+## Re-Verification On 2026-03-08
+
+- `GET /api/v1/users/profile` returned `200` for authenticated users, and `PATCH /api/v1/users/profile` still persisted profile and notification-preference changes.
+- Password validation remained enforced:
+  - short password change request returned `400`
+  - valid password change returned `201`
+  - password was restored to the seeded credential after the smoke test
+- Public support submission still succeeded with `201`, while missing required fields returned `400`.
+- Frontend route checks returned `200` for `/support`, `/privacy`, `/terms`, `/settings`, and `/tech/jobs`.
+- Fixed `/tech/jobs` during verification: the page was hardcoded to `supplierId=1`, which hid real assigned work orders in the seed data. The page now loads tech-visible work orders and filters them by the logged-in technician via `ticket.assignedToId`.
+- After the fix, the live dataset contained one job assigned to `tech1@demo.com`, so the page now has real data to display instead of an incorrect empty state.

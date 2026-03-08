@@ -15,7 +15,7 @@ import {
   RefreshCw,
   Navigation
 } from 'lucide-react';
-import { authFetch } from '../../lib/auth';
+import { authFetch, getCurrentUserId } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -64,11 +64,18 @@ export default function Jobs() {
 
   const loadJobs = async () => {
       try {
-        const res = await authFetch('/api/v1/work-orders/today?supplierId=1');
+        const currentUserId = getCurrentUserId();
+        // Work orders are assigned to technicians via the ticket assignee, not a fixed supplier id.
+        const res = await authFetch('/api/v1/work-orders');
       if (res.ok) {
         const data = await res.json();
         const mapped = Array.isArray(data)
-          ? data.map((o: any) => ({ ...o, status: o.ticket.status }))
+          ? data
+              .filter((o: any) => {
+                if (!currentUserId) return true;
+                return o?.ticket?.assignedToId === currentUserId;
+              })
+              .map((o: any) => ({ ...o, status: o.ticket.status }))
           : [];
         setOrders(mapped);
       } else {

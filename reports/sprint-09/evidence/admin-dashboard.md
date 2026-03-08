@@ -42,3 +42,16 @@ curl http://localhost:3000/admin/overview -H "Authorization: Bearer ADMIN_TOKEN"
 ## Fixes Captured During Verification
 
 - Fixed `GET /api/v1/invoices/unpaid` hanging because the controller mixed `@Res()` with a normal return path. The endpoint now uses `@Res({ passthrough: true })` and returns JSON correctly for non-CSV requests.
+
+## Re-Verification On 2026-03-08
+
+- Re-ran the dashboard smoke test against the live AMS stack on `http://localhost:3002` with the frontend on `http://localhost:3001` because port `3000` was occupied by an unrelated local app.
+- `GET /admin/overview` returned `200` for `ADMIN` and `403` for `RESIDENT`, confirming admin-only access still holds.
+- Current live overview snapshot returned:
+  - `stats.totalUsers = 9`
+  - `stats.totalBuildings = 78`
+  - `stats.openTickets = 6`
+  - `stats.unpaidInvoices = 1`
+  - `stats.activeTechs = 3`
+- `GET /api/v1/dashboard/overview` returned `200` with populated building filters, KPI cards, collections summary, maintenance summary, and recent notifications used by `/admin/dashboard`.
+- Frontend route checks returned `200` for `/admin/dashboard` and the page compiled successfully in Next dev without runtime build errors.

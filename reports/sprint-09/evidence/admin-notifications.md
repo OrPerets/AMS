@@ -36,3 +36,11 @@ curl http://localhost:3000/admin/overview \
   - Added dynamic parameter fields and recent-delivery feed.
 - `/admin/unpaid-invoices`
   - Added live table with resident name, amount, due date, payment tracking, CSV export, and batch settle action.
+
+## Re-Verification On 2026-03-08
+
+- `GET /api/v1/invoices/unpaid` returned `200` with one overdue invoice before the smoke action.
+- `POST /api/v1/invoices/2/confirm` returned `201`, confirming the admin invoice-management action remains wired.
+- `POST /api/v1/notifications/user/1` returned `201` for the `ANNOUNCEMENT` template, confirming template sends still work.
+- `GET /admin/overview` continued exposing the recent notifications feed used by `/admin/notifications`.
+- Frontend route checks returned `200` for `/admin/notifications` and `/admin/unpaid-invoices`, and both pages compiled successfully in Next dev.
