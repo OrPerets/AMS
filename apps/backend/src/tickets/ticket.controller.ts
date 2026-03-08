@@ -21,7 +21,7 @@ import { UpdateTicketCommentDto } from './dto/update-ticket-comment.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles, Role } from '../auth/roles.decorator';
-import { TicketStatus } from '@prisma/client';
+import { TicketSeverity, TicketStatus } from '@prisma/client';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { imageUploadOptions } from '../uploads/upload.utils';
 
@@ -43,10 +43,31 @@ export class TicketController {
   }
 
   @Get()
-  findAll(@Query('status') status?: TicketStatus, @Query('buildingId') buildingId?: string) {
+  findAll(
+    @Query('status') status?: TicketStatus,
+    @Query('buildingId') buildingId?: string,
+    @Query('assigneeId') assigneeId?: string,
+    @Query('severity') severity?: TicketSeverity,
+    @Query('search') search?: string,
+    @Query('slaState') slaState?: string,
+    @Query('sort') sort?: string,
+    @Query('queue') queue?: string,
+    @Query('limit') limit?: string,
+    @Query('category') category?: string,
+    @Query('view') view?: string,
+  ) {
     return this.tickets.findAll({
       status,
       buildingId: buildingId ? +buildingId : undefined,
+      assigneeId: assigneeId ? +assigneeId : undefined,
+      severity,
+      search,
+      slaState,
+      sort,
+      queue,
+      limit: limit ? Number.parseInt(limit, 10) : undefined,
+      category,
+      view,
     });
   }
 

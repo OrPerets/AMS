@@ -8,13 +8,18 @@ import { Response } from 'express';
 
 @Controller('api/v1/dashboard')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+@Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.MASTER)
 export class DashboardController {
   constructor(private dashboard: DashboardService) {}
 
   @Get()
   kpis(@Query('buildingId') buildingId?: string) {
     return this.dashboard.kpis({ buildingId: buildingId ? +buildingId : undefined });
+  }
+
+  @Get('overview')
+  overview(@Query('buildingId') buildingId?: string, @Query('range') range?: string) {
+    return this.dashboard.overview({ buildingId: buildingId ? +buildingId : undefined, range });
   }
 
   @Get('charts')

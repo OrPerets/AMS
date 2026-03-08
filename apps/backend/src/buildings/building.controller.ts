@@ -35,6 +35,12 @@ export class BuildingController {
     return this.buildings.getOverview(+id);
   }
 
+  @Public()
+  @Get(':id/units')
+  listUnits(@Param('id') id: string) {
+    return this.buildings.listUnits(+id);
+  }
+
   @Get(':id/maintenance/upcoming')
   getUpcomingMaintenance(@Param('id') id: string) {
     return this.buildings.getUpcomingMaintenance(+id);

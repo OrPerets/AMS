@@ -19,6 +19,18 @@ export class BuildingService {
     return this.prisma.building.findUnique({ where: { id } });
   }
 
+  listUnits(id: number) {
+    return this.prisma.unit.findMany({
+      where: { buildingId: id },
+      select: {
+        id: true,
+        number: true,
+        floor: true,
+      },
+      orderBy: [{ floor: 'asc' }, { number: 'asc' }],
+    });
+  }
+
   findDetailed(id: number) {
     return this.prisma.building.findUnique({
       where: { id },

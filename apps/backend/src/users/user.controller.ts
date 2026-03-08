@@ -21,6 +21,12 @@ export class UserController {
     return this.users.listResidents();
   }
 
+  @Get('api/v1/users/technicians')
+  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.MASTER)
+  listTechnicians() {
+    return this.users.listTechnicians();
+  }
+
   @Get('api/v1/users/profile')
   @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT, Role.MASTER)
   profile(@Req() req: any) {

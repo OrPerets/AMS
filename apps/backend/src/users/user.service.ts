@@ -50,6 +50,30 @@ export class UserService {
     });
   }
 
+  listTechnicians() {
+    return this.prisma.user.findMany({
+      where: {
+        role: 'TECH',
+      },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        supplier: {
+          select: {
+            id: true,
+            name: true,
+            skills: true,
+            rating: true,
+          },
+        },
+      },
+      orderBy: {
+        email: 'asc',
+      },
+    });
+  }
+
   findProfile(userId: number) {
     return this.prisma.user.findUnique({
       where: { id: userId },
