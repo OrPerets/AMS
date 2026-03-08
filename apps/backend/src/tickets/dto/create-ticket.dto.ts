@@ -1,13 +1,14 @@
-import { TicketSeverity } from '@prisma/client';
+import type { TicketSeverity } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsDateString, IsString } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsDateString, IsString } from 'class-validator';
+import { TICKET_SEVERITIES } from '../../common/validation/prisma-enums';
 
 export class CreateTicketDto {
   @Type(() => Number)
   @IsInt()
   unitId!: number;
 
-  @IsEnum(TicketSeverity)
+  @IsIn(TICKET_SEVERITIES)
   severity!: TicketSeverity;
 
   @IsOptional()

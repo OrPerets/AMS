@@ -1,6 +1,7 @@
-import { IsString, IsEnum, IsOptional, IsBoolean, IsInt, IsDateString, IsArray, ValidateNested, Min, Max } from 'class-validator';
+import { IsString, IsIn, IsOptional, IsBoolean, IsInt, IsDateString, IsArray, ValidateNested, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
-import { VoteType } from '@prisma/client';
+import type { VoteType } from '@prisma/client';
+import { VOTE_TYPES } from '../../common/validation/prisma-enums';
 
 export class CreateVoteDto {
   @IsInt()
@@ -16,7 +17,7 @@ export class CreateVoteDto {
   @IsString()
   question!: string;
 
-  @IsEnum(VoteType)
+  @IsIn(VOTE_TYPES)
   voteType!: VoteType;
 
   @IsOptional()
@@ -73,4 +74,3 @@ export class UpdateVoteDto {
   @IsBoolean()
   isClosed?: boolean;
 }
-

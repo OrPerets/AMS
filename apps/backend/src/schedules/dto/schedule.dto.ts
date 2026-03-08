@@ -1,13 +1,14 @@
-import { IsString, IsEnum, IsOptional, IsInt, IsDateString, IsArray, ValidateNested, IsBoolean } from 'class-validator';
+import { IsString, IsIn, IsOptional, IsInt, IsDateString, IsArray, ValidateNested, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
-import { TaskType, TaskStatus, Priority, ScheduleStatus } from '@prisma/client';
+import type { TaskType, TaskStatus, Priority, ScheduleStatus } from '@prisma/client';
+import { PRIORITIES, SCHEDULE_STATUSES, TASK_STATUSES, TASK_TYPES } from '../../common/validation/prisma-enums';
 
 export class CreateTaskDto {
   @IsOptional()
   @IsInt()
   assignedTo?: number;
 
-  @IsEnum(TaskType)
+  @IsIn(TASK_TYPES)
   taskType!: TaskType;
 
   @IsString()
@@ -25,7 +26,7 @@ export class CreateTaskDto {
   @IsInt()
   estimatedTime?: number;
 
-  @IsEnum(Priority)
+  @IsIn(PRIORITIES)
   priority!: Priority;
 
   @IsOptional()
@@ -81,7 +82,7 @@ export class UpdateScheduleDto {
   description?: string;
 
   @IsOptional()
-  @IsEnum(ScheduleStatus)
+  @IsIn(SCHEDULE_STATUSES)
   status?: ScheduleStatus;
 }
 
@@ -99,11 +100,11 @@ export class UpdateTaskDto {
   assignedTo?: number;
 
   @IsOptional()
-  @IsEnum(TaskStatus)
+  @IsIn(TASK_STATUSES)
   status?: TaskStatus;
 
   @IsOptional()
-  @IsEnum(Priority)
+  @IsIn(PRIORITIES)
   priority?: Priority;
 
   @IsOptional()
@@ -130,4 +131,3 @@ export class CompleteTaskDto {
   @IsString()
   notes?: string;
 }
-

@@ -1,5 +1,6 @@
-import { BudgetStatus } from '@prisma/client';
-import { IsEnum, IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
+import type { BudgetStatus } from '@prisma/client';
+import { IsIn, IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
+import { BUDGET_STATUSES } from '../../common/validation/prisma-enums';
 
 export class UpdateBudgetDto {
   @IsOptional()
@@ -19,7 +20,7 @@ export class UpdateBudgetDto {
   amount?: number;
 
   @IsOptional()
-  @IsEnum(BudgetStatus)
+  @IsIn(BUDGET_STATUSES)
   status?: BudgetStatus;
 
   @IsOptional()

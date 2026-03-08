@@ -1,5 +1,6 @@
-import { IsArray, IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
-import { MaintenanceCategory, MaintenancePriority, MaintenanceType } from '@prisma/client';
+import type { MaintenanceCategory, MaintenancePriority, MaintenanceType } from '@prisma/client';
+import { IsArray, IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
+import { MAINTENANCE_CATEGORIES, MAINTENANCE_PRIORITIES, MAINTENANCE_TYPES } from '../../common/validation/prisma-enums';
 
 export class CreateMaintenanceDto {
   @IsInt()
@@ -16,10 +17,10 @@ export class CreateMaintenanceDto {
   @IsString()
   description?: string;
 
-  @IsEnum(MaintenanceCategory)
+  @IsIn(MAINTENANCE_CATEGORIES)
   category!: MaintenanceCategory;
 
-  @IsEnum(MaintenanceType)
+  @IsIn(MAINTENANCE_TYPES)
   type!: MaintenanceType;
 
   @IsString()
@@ -41,7 +42,7 @@ export class CreateMaintenanceDto {
   assignedToId?: number;
 
   @IsOptional()
-  @IsEnum(MaintenancePriority)
+  @IsIn(MAINTENANCE_PRIORITIES)
   priority?: MaintenancePriority;
 
   @IsOptional()

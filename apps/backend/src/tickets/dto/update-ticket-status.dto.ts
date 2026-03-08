@@ -1,7 +1,8 @@
-import { TicketStatus } from '@prisma/client';
-import { IsEnum } from 'class-validator';
+import type { TicketStatus } from '@prisma/client';
+import { IsIn } from 'class-validator';
+import { TICKET_STATUSES } from '../../common/validation/prisma-enums';
 
 export class UpdateTicketStatusDto {
-  @IsEnum(TicketStatus)
+  @IsIn(TICKET_STATUSES)
   status!: TicketStatus;
 }

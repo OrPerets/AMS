@@ -1,11 +1,12 @@
-import { IsString, IsEnum, IsOptional, IsBoolean, IsInt, IsDateString } from 'class-validator';
-import { CodeType } from '@prisma/client';
+import type { CodeType } from '@prisma/client';
+import { IsString, IsIn, IsOptional, IsBoolean, IsInt, IsDateString } from 'class-validator';
+import { CODE_TYPES } from '../../common/validation/prisma-enums';
 
 export class CreateBuildingCodeDto {
   @IsInt()
   buildingId!: number;
 
-  @IsEnum(CodeType)
+  @IsIn(CODE_TYPES)
   codeType!: CodeType;
 
   @IsString()
@@ -41,4 +42,3 @@ export class UpdateBuildingCodeDto {
   @IsDateString()
   validUntil?: Date;
 }
-

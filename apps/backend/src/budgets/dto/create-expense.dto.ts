@@ -1,12 +1,13 @@
-import { ExpenseCategory } from '@prisma/client';
+import type { ExpenseCategory } from '@prisma/client';
 import {
   IsDateString,
-  IsEnum,
+  IsIn,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
+import { EXPENSE_CATEGORIES } from '../../common/validation/prisma-enums';
 
 export class CreateExpenseDto {
   @IsInt()
@@ -16,7 +17,7 @@ export class CreateExpenseDto {
   @IsInt()
   budgetId?: number;
 
-  @IsEnum(ExpenseCategory)
+  @IsIn(EXPENSE_CATEGORIES)
   category!: ExpenseCategory;
 
   @IsNumber()

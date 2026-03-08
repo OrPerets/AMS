@@ -1,5 +1,6 @@
-import { WorkOrderStatus } from '@prisma/client';
-import { IsDateString, IsEnum, IsInt, IsOptional } from 'class-validator';
+import type { WorkOrderStatus } from '@prisma/client';
+import { IsDateString, IsIn, IsInt, IsOptional } from 'class-validator';
+import { WORK_ORDER_STATUSES } from '../../common/validation/prisma-enums';
 
 export class WorkOrderReportQueryDto {
   @IsOptional()
@@ -15,6 +16,6 @@ export class WorkOrderReportQueryDto {
   supplierId?: number;
 
   @IsOptional()
-  @IsEnum(WorkOrderStatus)
+  @IsIn(WORK_ORDER_STATUSES)
   status?: WorkOrderStatus;
 }
