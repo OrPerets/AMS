@@ -1,71 +1,31 @@
-# Multi-stage build for AMS Backend
-FROM node:18-alpine AS base
+FROM node:20-alpine
 
-# Install dependencies for building
 RUN apk add --no-cache libc6-compat openssl wget
 
-# Dependencies stage
-FROM base AS deps
 WORKDIR /app
 
-# Copy package files for dependency installation
 COPY package*.json ./
 COPY apps/backend/package*.json ./apps/backend/
-COPY tsconfig*.json ./
+COPY apps/frontend/package*.json ./apps/frontend/
 
-# Install production dependencies only
-RUN npm ci --only=production --frozen-lockfile && npm cache clean --force
+RUN npm ci
 
-# Build stage
-FROM base AS builder
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-COPY apps/backend/package*.json ./apps/backend/
-COPY tsconfig*.json ./
-
-# Install all dependencies (including dev dependencies)
-RUN npm ci --frozen-lockfile
-
-# Copy source code
 COPY . .
 
-# Build the application
 WORKDIR /app/apps/backend
-RUN npx prisma generate
+
 RUN npm run build
 
-# Production stage
-FROM base AS runner
-WORKDIR /app
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nestjs \
+  && mkdir -p uploads \
+  && chown -R nestjs:nodejs /app
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=3000
-
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nestjs
-
-# Copy built application and dependencies
-COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/dist ./dist
-COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/package*.json ./
-COPY --from=builder --chown=nestjs:nodejs /app/apps/backend/prisma ./prisma
-COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
-
-# Create necessary directories
-RUN mkdir -p uploads && chown nestjs:nodejs uploads
-
-# Switch to non-root user
 USER nestjs
 
-# Expose port
-EXPOSE $PORT
+EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:$PORT/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD sh -c 'wget --no-verbose --tries=1 --spider "http://127.0.0.1:${PORT:-3000}/health" || exit 1'
 
-# Start the application
-CMD ["node", "-r", "dotenv/config", "dist/src/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && PORT=${PORT:-3000} node -r dotenv/config dist/src/main.js"]

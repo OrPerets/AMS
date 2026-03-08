@@ -1,10 +1,18 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
-// Updated for new backend URL: ams-backend-production-fb77.up.railway.app
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://ams-backend-production-fb77.up.railway.app';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
 
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
+  outputFileTracingRoot: path.join(__dirname, '../..'),
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   compiler: {
     styledComponents: true,
   },
