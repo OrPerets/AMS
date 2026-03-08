@@ -39,6 +39,7 @@ export default function CreateCall() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedBuilding, setSelectedBuilding] = useState<number | ''>('');
   const [selectedUnit, setSelectedUnit] = useState<number | ''>('');
+  const [buildingQuery, setBuildingQuery] = useState('');
   const [severity, setSeverity] = useState<'NORMAL' | 'HIGH' | 'URGENT'>('HIGH');
   const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState<File[]>([]);
@@ -65,6 +66,12 @@ export default function CreateCall() {
       setSelectedUnit('');
     }
   }, [selectedBuilding]);
+
+  const filteredBuildings = buildings.filter((building) => {
+    const query = buildingQuery.trim().toLowerCase();
+    if (!query) return true;
+    return `${building.name} ${building.address}`.toLowerCase().includes(query);
+  });
 
   const loadUserInfo = async () => {
     try {
@@ -285,6 +292,12 @@ export default function CreateCall() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <Input
+              placeholder="חיפוש לפי כתובת או שם בניין"
+              value={buildingQuery}
+              onChange={(e) => setBuildingQuery(e.target.value)}
+              className="mb-3"
+            />
             <select
               value={selectedBuilding}
               onChange={(e) => setSelectedBuilding(Number(e.target.value) || '')}
@@ -292,9 +305,9 @@ export default function CreateCall() {
               required
             >
               <option value="">בחר בניין...</option>
-              {buildings.map((building) => (
+              {filteredBuildings.map((building) => (
                 <option key={building.id} value={building.id}>
-                  {building.name}
+                  {building.address}
                 </option>
               ))}
             </select>
