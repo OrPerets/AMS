@@ -34,15 +34,18 @@ export class PaymentController {
     @Query('status') status?: 'PENDING' | 'PAID' | 'OVERDUE',
     @Query('format') format?: string,
     @Query('buildingId') buildingId?: string,
+    @Req() req?: any,
     @Res({ passthrough: true }) res?: Response,
   ) {
+    const effectiveRole = req?.user?.actAsRole ?? req?.user?.role;
+    const effectiveResidentId = effectiveRole === Role.RESIDENT ? req?.user?.sub : residentId ? +residentId : undefined;
     if (format === 'csv' && res) {
-      const csv = await this.payments.exportInvoicesCsv('invoices', residentId ? +residentId : undefined, buildingId ? +buildingId : undefined);
+      const csv = await this.payments.exportInvoicesCsv('invoices', effectiveResidentId, buildingId ? +buildingId : undefined, req?.user?.sub);
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename="invoices.csv"');
       return csv;
     }
-    return this.payments.listInvoices(residentId ? +residentId : undefined, status);
+    return this.payments.listInvoices(effectiveResidentId, status);
   }
 
   @Get('invoices/unpaid')
@@ -50,11 +53,12 @@ export class PaymentController {
   async listUnpaid(
     @Query('residentId') residentId?: string,
     @Query('format') format?: string,
+    @Req() req?: any,
     @Res({ passthrough: true }) res?: Response,
   ) {
     const data = this.payments.listUnpaid(residentId ? +residentId : undefined);
     if (format === 'csv' && res) {
-      const csv = await this.payments.exportInvoicesCsv('unpaid', residentId ? +residentId : undefined);
+      const csv = await this.payments.exportInvoicesCsv('unpaid', residentId ? +residentId : undefined, undefined, req?.user?.sub);
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename="unpaid-invoices.csv"');
       return csv;
@@ -70,8 +74,8 @@ export class PaymentController {
 
   @Post('invoices/:id/pay')
   @Roles(Role.RESIDENT)
-  pay(@Param('id') id: string) {
-    return this.payments.initiatePayment(+id);
+  pay(@Param('id') id: string, @Req() req: any) {
+    return this.payments.initiatePayment(+id, req.user?.sub, req.user?.actAsRole ?? req.user?.role);
   }
 
   @Post('invoices/:id/confirm')
@@ -132,7 +136,7 @@ export class PaymentController {
     const effectiveResidentId = (req.user?.actAsRole ?? req.user?.role) === Role.RESIDENT ? req.user?.sub : +residentId;
     const ledger = await this.payments.getResidentLedger(effectiveResidentId);
     if (format === 'csv' && res) {
-      const csv = await this.payments.exportInvoicesCsv('ledger', effectiveResidentId);
+      const csv = await this.payments.exportInvoicesCsv('ledger', effectiveResidentId, undefined, req.user?.sub);
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=\"resident-ledger.csv\"');
       return csv;
@@ -152,8 +156,8 @@ export class PaymentController {
 
   @Get('invoices/:id/receipt')
   @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.RESIDENT)
-  async receipt(@Param('id') id: string, @Res() res: Response) {
-    const pdf = await this.payments.generateReceipt(+id);
+  async receipt(@Param('id') id: string, @Req() req: any, @Res() res: Response) {
+    const pdf = await this.payments.generateReceipt(+id, req.user?.sub, req.user?.actAsRole ?? req.user?.role);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename=invoice-${id}.pdf`);
     return res.send(pdf);
@@ -207,14 +211,16 @@ export class PaymentController {
   // Sprint 6 Payments API (v1)
   @Post('payments/intents')
   @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.ACCOUNTANT)
-  createIntent(@Body() body: { invoiceId: number }) {
-    return this.payments.createPaymentIntentFromInvoice(body.invoiceId);
+  createIntent(@Body() body: { invoiceId: number }, @Req() req: any) {
+    return this.payments.initiatePayment(body.invoiceId, req.user?.sub, req.user?.actAsRole ?? req.user?.role);
   }
 
   @Post('payments/intents/:id/confirm')
   @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.ACCOUNTANT)
-  confirmIntent(@Param('id') id: string) {
-    return this.payments.getPayment(+id).then((intent) => this.payments.confirmPayment(intent.invoiceId));
+  confirmIntent(@Param('id') id: string, @Req() req: any) {
+    return this.payments
+      .getPayment(+id, req.user?.sub, req.user?.actAsRole ?? req.user?.role)
+      .then((intent: any) => this.payments.confirmPayment(intent.invoiceId));
   }
 
   @Post('payments/:id/refund')
@@ -225,7 +231,7 @@ export class PaymentController {
 
   @Get('payments/:id')
   @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.ACCOUNTANT)
-  getPayment(@Param('id') id: string) {
-    return this.payments.getPayment(+id);
+  getPayment(@Param('id') id: string, @Req() req: any) {
+    return this.payments.getPayment(+id, req.user?.sub, req.user?.actAsRole ?? req.user?.role);
   }
 }

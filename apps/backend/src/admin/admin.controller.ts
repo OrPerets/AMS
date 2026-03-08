@@ -29,8 +29,11 @@ export class AdminController {
 
   @Get('activity/export')
   @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.MASTER)
-  async exportActivity(@Res() res: Response, @Query('buildingId') buildingId?: string) {
-    const csv = await this.admin.exportActivity({ buildingId: buildingId ? Number(buildingId) : undefined });
+  async exportActivity(@Res() res: Response, @Query('buildingId') buildingId?: string, @Req() req?: any) {
+    const csv = await this.admin.exportActivity({
+      buildingId: buildingId ? Number(buildingId) : undefined,
+      userId: req?.user?.sub,
+    });
     res.setHeader('Content-Type', 'text/csv');
     res.send(csv);
   }
@@ -60,6 +63,12 @@ export class AdminController {
   @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.MASTER)
   dataQuality() {
     return this.admin.dataQuality();
+  }
+
+  @Get('security')
+  @Roles(Role.ADMIN, Role.MASTER)
+  security() {
+    return this.admin.securityOverview();
   }
 
   @Post('impersonate')

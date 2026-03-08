@@ -71,15 +71,17 @@ Status: Done on 2026-03-08
 
 ## 8. Admin And Security
 
-- [ ] Harden the permissions matrix across backend endpoints and frontend navigation.
-- [ ] Verify that resident, accountant, PM, admin, and master roles only see allowed data and actions.
-- [ ] Add more audit coverage for impersonation, building-code changes, permission changes, and sensitive exports.
+Status: Done on 2026-03-08
+
+- [x] Harden the permissions matrix across backend endpoints and frontend navigation.
+- [x] Verify that resident, accountant, PM, admin, and master roles only see allowed data and actions.
+- [x] Add more audit coverage for impersonation, building-code changes, permission changes, and sensitive exports.
 
 ## 9. QA And Verification
 
-- [ ] Finish Sprint 7 verification for budgets, financial reports, exports, and analytics pages.
-- [ ] Finish Sprint 8 verification for communications, documents, and notifications pages.
-- [ ] Finish Sprint 9 verification for admin pages, unpaid invoices, settings, support, privacy, terms, and jobs pages.
+- [x] Finish Sprint 7 verification for budgets, financial reports, exports, and analytics pages.
+- [x] Finish Sprint 8 verification for communications, documents, and notifications pages.
+- [x] Finish Sprint 9 verification for admin pages, unpaid invoices, settings, support, privacy, terms, and jobs pages.
 - [ ] Run Sprint 10 end-to-end integration checks, including file uploads and mobile responsiveness.
 - [ ] Run Sprint 11 performance, authorization, validation, and error-handling checks.
 - [ ] Run Sprint 12 production-mode verification and deployment checklist.

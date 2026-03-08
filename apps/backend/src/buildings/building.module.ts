@@ -4,8 +4,10 @@ import { BuildingController } from './building.controller';
 import { PrismaService } from '../prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
+  imports: [ActivityModule],
   providers: [PrismaService, BuildingService, JwtAuthGuard, RolesGuard],
   controllers: [BuildingController],
 })

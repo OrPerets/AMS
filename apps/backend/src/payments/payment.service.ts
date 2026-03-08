@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import {
   ActivitySeverity,
   ApprovalTaskType,
@@ -13,6 +13,7 @@ import { PrismaService } from '../prisma.service';
 import { ReceiptService } from './receipt.service';
 import { TranzilaProvider } from './tranzila.provider';
 import { ApprovalService } from '../approval/approval.service';
+import { Role } from '../auth/roles.decorator';
 
 type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
   include: {
@@ -189,6 +190,52 @@ export class PaymentService {
     return resident.id;
   }
 
+  private async assertResidentOwnsInvoice(invoiceId: number, actorUserId?: number) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        resident: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!invoice) {
+      throw new BadRequestException('Invoice not found.');
+    }
+    if (invoice.resident.userId !== actorUserId) {
+      throw new ForbiddenException('Residents may only access their own invoices.');
+    }
+    return invoice;
+  }
+
+  private async assertResidentOwnsPaymentIntent(paymentIntentId: number, actorUserId?: number) {
+    const intent = await this.prisma.paymentIntent.findUnique({
+      where: { id: paymentIntentId },
+      include: {
+        invoice: {
+          include: {
+            resident: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!intent) {
+      throw new BadRequestException('Payment intent not found.');
+    }
+    if (intent.invoice.resident.userId !== actorUserId) {
+      throw new ForbiddenException('Residents may only access their own payment intents.');
+    }
+    return intent;
+  }
+
   private async logInvoiceActivity(
     invoice: { id: number; residentId: number; resident?: { units?: Array<{ buildingId: number }> } | null },
     userId: number | undefined,
@@ -261,12 +308,13 @@ export class PaymentService {
     );
   }
 
-  listUnpaid(residentId?: number) {
+  async listUnpaid(residentId?: number) {
+    const resolvedResidentId = residentId ? await this.resolveResidentId(residentId) : undefined;
     return this.prisma.invoice
       .findMany({
         where: {
           status: InvoiceStatus.UNPAID,
-          ...(residentId ? { residentId } : {}),
+          ...(resolvedResidentId ? { residentId: resolvedResidentId } : {}),
         },
         include: this.invoiceInclude,
         orderBy: { createdAt: 'desc' },
@@ -274,11 +322,12 @@ export class PaymentService {
       .then((invoices) => invoices.map((invoice) => this.mapInvoice(invoice)));
   }
 
-  listInvoices(residentId?: number, status?: 'PENDING' | 'PAID' | 'OVERDUE') {
+  async listInvoices(residentId?: number, status?: 'PENDING' | 'PAID' | 'OVERDUE') {
+    const resolvedResidentId = residentId ? await this.resolveResidentId(residentId) : undefined;
     return this.prisma.invoice
       .findMany({
         where: {
-          ...(residentId ? { residentId } : {}),
+          ...(resolvedResidentId ? { residentId: resolvedResidentId } : {}),
         },
         include: this.invoiceInclude,
         orderBy: { createdAt: 'desc' },
@@ -565,10 +614,10 @@ export class PaymentService {
     };
   }
 
-  async exportInvoicesCsv(type: 'invoices' | 'unpaid' | 'ledger', residentId?: number, buildingId?: number) {
+  async exportInvoicesCsv(type: 'invoices' | 'unpaid' | 'ledger', residentId?: number, buildingId?: number, userId?: number) {
     if (type === 'ledger' && residentId) {
       const ledger = await this.getResidentLedger(residentId);
-      return [
+      const csv = [
         ['entryId', 'invoiceId', 'type', 'amount', 'createdAt', 'summary', 'status'].join(','),
         ...ledger.entries.map((entry) =>
           [
@@ -582,6 +631,17 @@ export class PaymentService {
           ].join(','),
         ),
       ].join('\n');
+      await this.activity.log({
+        userId,
+        residentId: ledger.resident.id,
+        buildingId: ledger.resident.units[0]?.building.id ?? null,
+        entityType: 'EXPORT',
+        action: 'LEDGER_EXPORT',
+        summary: 'בוצע יצוא של דוח יתרת דייר.',
+        severity: ActivitySeverity.WARNING,
+        metadata: { type, residentId: ledger.resident.id },
+      });
+      return csv;
     }
 
     const invoices = await this.prisma.invoice.findMany({
@@ -602,7 +662,7 @@ export class PaymentService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return [
+    const csv = [
       [
         'invoiceId',
         'residentId',
@@ -637,13 +697,27 @@ export class PaymentService {
         ].join(',');
       }),
     ].join('\n');
+    await this.activity.log({
+      userId,
+      buildingId: buildingId ?? null,
+      residentId: residentId ?? null,
+      entityType: 'EXPORT',
+      action: type === 'unpaid' ? 'UNPAID_EXPORT' : 'INVOICE_EXPORT',
+      summary: `בוצע יצוא CSV עבור ${type === 'unpaid' ? 'יתרות פתוחות' : 'חשבוניות'}.`,
+      severity: ActivitySeverity.WARNING,
+      metadata: { type, residentId: residentId ?? null, buildingId: buildingId ?? null },
+    });
+    return csv;
   }
 
-  async initiatePayment(id: number) {
-    const invoice = await this.prisma.invoice.findUnique({
-      where: { id },
-      include: { resident: { include: { user: true } } },
-    });
+  async initiatePayment(id: number, actorUserId?: number, actorRole?: Role) {
+    const invoice =
+      actorRole === Role.RESIDENT
+        ? await this.assertResidentOwnsInvoice(id, actorUserId)
+        : await this.prisma.invoice.findUnique({
+            where: { id },
+            include: { resident: { include: { user: true } } },
+          });
     if (!invoice) throw new Error('Invoice not found');
 
     const intent = await this.prisma.paymentIntent.create({
@@ -783,7 +857,10 @@ export class PaymentService {
     return { ok: true };
   }
 
-  async getPayment(paymentIntentId: number) {
+  async getPayment(paymentIntentId: number, actorUserId?: number, actorRole?: Role) {
+    if (actorRole === Role.RESIDENT) {
+      return this.assertResidentOwnsPaymentIntent(paymentIntentId, actorUserId);
+    }
     return this.prisma.paymentIntent.findUniqueOrThrow({ where: { id: paymentIntentId } });
   }
 
@@ -902,8 +979,11 @@ export class PaymentService {
     return task;
   }
 
-  async generateReceipt(id: number): Promise<Buffer> {
-    const invoice = await this.prisma.invoice.findUniqueOrThrow({ where: { id } });
+  async generateReceipt(id: number, actorUserId?: number, actorRole?: Role): Promise<Buffer> {
+    const invoice =
+      actorRole === Role.RESIDENT
+        ? await this.assertResidentOwnsInvoice(id, actorUserId)
+        : await this.prisma.invoice.findUniqueOrThrow({ where: { id } });
     return this.receipts.generate(invoice);
   }
 

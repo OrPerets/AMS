@@ -176,6 +176,9 @@ export class DocumentService {
   }
 
   async share(documentId: number, input: { userId: number; permission?: string; expiresAt?: string }, actorUserId?: number) {
+    const existingShare = await this.prisma.documentShare.findUnique({
+      where: { documentId_userId: { documentId, userId: input.userId } },
+    });
     const share = await this.prisma.documentShare.upsert({
       where: { documentId_userId: { documentId, userId: input.userId } },
       update: { permission: input.permission as any, expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined },
@@ -187,9 +190,15 @@ export class DocumentService {
       buildingId: document?.buildingId ?? undefined,
       entityType: 'DOCUMENT',
       entityId: documentId,
-      action: 'DOCUMENT_SHARED',
-      summary: `המסמך #${documentId} שותף למשתמש #${input.userId}.`,
-      metadata: { permission: input.permission ?? 'VIEW', expiresAt: input.expiresAt ?? null },
+      action: existingShare ? 'DOCUMENT_PERMISSION_CHANGED' : 'DOCUMENT_SHARED',
+      summary: existingShare
+        ? `הרשאת המסמך #${documentId} עודכנה עבור משתמש #${input.userId}.`
+        : `המסמך #${documentId} שותף למשתמש #${input.userId}.`,
+      metadata: {
+        permission: input.permission ?? 'VIEW',
+        previousPermission: existingShare?.permission ?? null,
+        expiresAt: input.expiresAt ?? null,
+      },
     });
     return share;
   }

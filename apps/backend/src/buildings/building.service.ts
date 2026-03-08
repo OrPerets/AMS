@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { Prisma, Building, TicketStatus, BuildingCode } from '@prisma/client';
+import { ActivityService } from '../activity/activity.service';
+import { Prisma, Building, TicketStatus, BuildingCode, ActivitySeverity } from '@prisma/client';
 import { CreateBuildingCodeDto, UpdateBuildingCodeDto } from './dto/building-code.dto';
 
 @Injectable()
 export class BuildingService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private activity: ActivityService,
+  ) {}
 
   create(data: Prisma.BuildingCreateInput): Promise<Building> {
     return this.prisma.building.create({ data });
@@ -198,7 +202,7 @@ export class BuildingService {
     dto: CreateBuildingCodeDto,
     createdBy: number,
   ): Promise<BuildingCode> {
-    return this.prisma.buildingCode.create({
+    const code = await this.prisma.buildingCode.create({
       data: {
         buildingId,
         codeType: dto.codeType,
@@ -217,11 +221,23 @@ export class BuildingService {
         },
       },
     });
+    await this.activity.log({
+      userId: createdBy,
+      buildingId,
+      entityType: 'BUILDING_CODE',
+      entityId: code.id,
+      action: 'BUILDING_CODE_CREATED',
+      summary: `נוצר קוד בניין חדש מסוג ${code.codeType}.`,
+      severity: ActivitySeverity.WARNING,
+      metadata: { codeType: code.codeType, hasExpiry: !!code.validUntil },
+    });
+    return code;
   }
 
   async updateBuildingCode(
     codeId: number,
     dto: UpdateBuildingCodeDto,
+    actorUserId?: number,
   ): Promise<BuildingCode> {
     const updateData: Prisma.BuildingCodeUpdateInput = {};
     
@@ -232,7 +248,7 @@ export class BuildingService {
       updateData.validUntil = dto.validUntil ? new Date(dto.validUntil) : null;
     }
 
-    return this.prisma.buildingCode.update({
+    const code = await this.prisma.buildingCode.update({
       where: { id: codeId },
       data: updateData,
       include: {
@@ -244,12 +260,38 @@ export class BuildingService {
         },
       },
     });
+    await this.activity.log({
+      userId: actorUserId,
+      buildingId: code.buildingId,
+      entityType: 'BUILDING_CODE',
+      entityId: code.id,
+      action: 'BUILDING_CODE_UPDATED',
+      summary: `עודכן קוד בניין מסוג ${code.codeType}.`,
+      severity: ActivitySeverity.WARNING,
+      metadata: {
+        isActive: code.isActive,
+        validUntil: code.validUntil?.toISOString() ?? null,
+        fields: Object.keys(updateData),
+      },
+    });
+    return code;
   }
 
-  async deleteBuildingCode(codeId: number): Promise<BuildingCode> {
-    return this.prisma.buildingCode.delete({
+  async deleteBuildingCode(codeId: number, actorUserId?: number): Promise<BuildingCode> {
+    const code = await this.prisma.buildingCode.delete({
       where: { id: codeId },
     });
+    await this.activity.log({
+      userId: actorUserId,
+      buildingId: code.buildingId,
+      entityType: 'BUILDING_CODE',
+      entityId: code.id,
+      action: 'BUILDING_CODE_DELETED',
+      summary: `נמחק קוד בניין מסוג ${code.codeType}.`,
+      severity: ActivitySeverity.CRITICAL,
+      metadata: { codeType: code.codeType },
+    });
+    return code;
   }
 
   async deactivateExpiredCodes(): Promise<number> {

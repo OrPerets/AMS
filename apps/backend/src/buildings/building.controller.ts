@@ -68,7 +68,7 @@ export class BuildingController {
 
   // Building Code Management Endpoints
   @Get(':id/codes')
-  @Roles(Role.ADMIN, Role.PM, Role.TECH)
+  @Roles(Role.ADMIN, Role.PM, Role.MASTER)
   getBuildingCodes(@Param('id') id: string) {
     return this.buildings.getBuildingCodes(+id);
   }
@@ -80,7 +80,7 @@ export class BuildingController {
     @Body() dto: CreateBuildingCodeDto,
     @Req() req: any,
   ) {
-    return this.buildings.createBuildingCode(+id, dto, req.user.userId);
+    return this.buildings.createBuildingCode(+id, dto, req.user?.sub);
   }
 
   @Patch('codes/:codeId')
@@ -88,13 +88,14 @@ export class BuildingController {
   updateBuildingCode(
     @Param('codeId') codeId: string,
     @Body() dto: UpdateBuildingCodeDto,
+    @Req() req: any,
   ) {
-    return this.buildings.updateBuildingCode(+codeId, dto);
+    return this.buildings.updateBuildingCode(+codeId, dto, req.user?.sub);
   }
 
   @Delete('codes/:codeId')
-  @Roles(Role.ADMIN, Role.PM)
-  deleteBuildingCode(@Param('codeId') codeId: string) {
-    return this.buildings.deleteBuildingCode(+codeId);
+  @Roles(Role.ADMIN, Role.PM, Role.MASTER)
+  deleteBuildingCode(@Param('codeId') codeId: string, @Req() req: any) {
+    return this.buildings.deleteBuildingCode(+codeId, req.user?.sub);
   }
 }

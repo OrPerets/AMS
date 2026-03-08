@@ -141,8 +141,79 @@ export class AdminService {
     });
   }
 
-  exportActivity(input: { buildingId?: number }) {
-    return this.activityLog.exportCsv({ buildingId: input.buildingId, limit: 500 });
+  async exportActivity(input: { buildingId?: number; userId?: number }) {
+    const csv = await this.activityLog.exportCsv({ buildingId: input.buildingId, limit: 500 });
+    await this.activityLog.log({
+      userId: input.userId,
+      buildingId: input.buildingId,
+      entityType: 'EXPORT',
+      action: 'ACTIVITY_EXPORT',
+      summary: 'יומן הפעילות יוצא לקובץ CSV.',
+      severity: ActivitySeverity.WARNING,
+      metadata: { scope: 'activity', buildingId: input.buildingId ?? null },
+    });
+    return csv;
+  }
+
+  async securityOverview() {
+    const permissionMatrix = {
+      MASTER: {
+        finance: ['view', 'export', 'approve', 'impersonate'],
+        operations: ['view', 'manage'],
+        documents: ['view', 'share', 'delete-request'],
+        admin: ['view', 'export', 'security'],
+      },
+      ADMIN: {
+        finance: ['view', 'export', 'approve'],
+        operations: ['view', 'manage'],
+        documents: ['view', 'share', 'delete-request'],
+        admin: ['view', 'export', 'security'],
+      },
+      PM: {
+        finance: ['view', 'export'],
+        operations: ['view', 'manage'],
+        documents: ['view', 'share'],
+        admin: ['view'],
+      },
+      ACCOUNTANT: {
+        finance: ['view', 'export', 'approve'],
+        operations: ['view'],
+        documents: ['view'],
+        admin: ['view'],
+      },
+      TECH: {
+        finance: [],
+        operations: ['view', 'manage-assigned'],
+        documents: ['view-assigned'],
+        admin: [],
+      },
+      RESIDENT: {
+        finance: ['view-own', 'download-own'],
+        operations: ['view-own', 'create-request'],
+        documents: ['view-public', 'view-shared'],
+        admin: [],
+      },
+    } as const;
+
+    const recentSensitiveActivity = await this.activityLog.list({
+      limit: 40,
+    });
+
+    return {
+      permissionMatrix,
+      enforcementNotes: [
+        'Resident finance endpoints are restricted to the resident’s own invoices, receipts, and payment intents.',
+        'Building code create, update, and delete actions are audited and limited to PM/Admin/Master.',
+        'Sensitive exports are audited through activity logs.',
+        'Document sharing and impersonation events are written to the audit trail.',
+      ],
+      recentSensitiveActivity: recentSensitiveActivity.filter((row) =>
+        ['IMPERSONATION', 'BUILDING_CODE', 'EXPORT', 'DOCUMENT'].includes(row.entityType) ||
+        row.action.includes('EXPORT') ||
+        row.action.includes('IMPERSONATION') ||
+        row.action.includes('BUILDING_CODE'),
+      ),
+    };
   }
 
   approvalsList(input: { buildingId?: number; status?: ApprovalTaskStatus | string }) {

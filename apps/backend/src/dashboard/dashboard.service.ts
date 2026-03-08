@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { InvoiceStatus, Prisma, Role as PrismaRole, TicketSeverity, TicketStatus } from '@prisma/client';
+import { ActivitySeverity, InvoiceStatus, Prisma, Role as PrismaRole, TicketSeverity, TicketStatus } from '@prisma/client';
 import { PrismaService } from '../prisma.service';
+import { ActivityService } from '../activity/activity.service';
 
 type DashboardFilter = {
   buildingId?: number;
@@ -43,7 +44,10 @@ type InvoiceSnapshot = {
 
 @Injectable()
 export class DashboardService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private activity: ActivityService,
+  ) {}
 
   async kpis(filter: { buildingId?: number }) {
     const ticketFilter: Prisma.TicketWhereInput = { status: { not: TicketStatus.RESOLVED } };
@@ -640,13 +644,22 @@ export class DashboardService {
     };
   }
 
-  async exportInvoices(filter: { buildingId?: number }) {
+  async exportInvoices(filter: { buildingId?: number; userId?: number }) {
     const where: Prisma.InvoiceWhereInput = {};
     if (filter.buildingId) {
       where.resident = { units: { some: { buildingId: filter.buildingId } } };
     }
     const invoices = await this.prisma.invoice.findMany({ where });
     const lines = ['id,residentId,amount,status', ...invoices.map((invoice) => `${invoice.id},${invoice.residentId},${invoice.amount},${invoice.status}`)];
+    await this.activity.log({
+      userId: filter.userId,
+      buildingId: filter.buildingId ?? null,
+      entityType: 'EXPORT',
+      action: 'DASHBOARD_EXPORT',
+      summary: 'בוצע יצוא נתוני דשבורד ל-CSV.',
+      severity: ActivitySeverity.WARNING,
+      metadata: { scope: 'dashboard', buildingId: filter.buildingId ?? null },
+    });
     return lines.join('\n');
   }
 

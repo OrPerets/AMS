@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Res, UseGuards, Req } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -28,8 +28,8 @@ export class DashboardController {
   }
 
   @Get('export')
-  async export(@Res() res: Response, @Query('buildingId') buildingId?: string) {
-    const csv = await this.dashboard.exportInvoices({ buildingId: buildingId ? +buildingId : undefined });
+  async export(@Res() res: Response, @Query('buildingId') buildingId?: string, @Req() req?: any) {
+    const csv = await this.dashboard.exportInvoices({ buildingId: buildingId ? +buildingId : undefined, userId: req?.user?.sub });
     res.setHeader('Content-Type', 'text/csv');
     res.send(csv);
   }
