@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import {
   ActivitySeverity,
   ApprovalTaskType,
@@ -25,6 +25,8 @@ type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
 
 @Injectable()
 export class PaymentService {
+  private readonly logger = new Logger(PaymentService.name);
+
   constructor(
     private prisma: PrismaService,
     private receipts: ReceiptService,
@@ -287,6 +289,156 @@ export class PaymentService {
       severity,
       metadata,
     });
+  }
+
+
+  private readonly webhookEventHandlers: Record<string, PaymentIntentStatus> = {
+    'payment.succeeded': PaymentIntentStatus.SUCCEEDED,
+    'payment.failed': PaymentIntentStatus.FAILED,
+    'payment.canceled': PaymentIntentStatus.CANCELED,
+    'payment.cancelled': PaymentIntentStatus.CANCELED,
+    'payment.processing': PaymentIntentStatus.PROCESSING,
+    'payment.requires_action': PaymentIntentStatus.REQUIRES_ACTION,
+    'payment.refunded': PaymentIntentStatus.CANCELED,
+  };
+
+  private canTransitionIntent(current: PaymentIntentStatus, next: PaymentIntentStatus): boolean {
+    if (current === next) return true;
+    const allowed: Record<PaymentIntentStatus, PaymentIntentStatus[]> = {
+      [PaymentIntentStatus.REQUIRES_PAYMENT_METHOD]: [
+        PaymentIntentStatus.PROCESSING,
+        PaymentIntentStatus.REQUIRES_ACTION,
+        PaymentIntentStatus.CANCELED,
+        PaymentIntentStatus.FAILED,
+        PaymentIntentStatus.SUCCEEDED,
+      ],
+      [PaymentIntentStatus.REQUIRES_CONFIRMATION]: [
+        PaymentIntentStatus.PROCESSING,
+        PaymentIntentStatus.REQUIRES_ACTION,
+        PaymentIntentStatus.CANCELED,
+        PaymentIntentStatus.FAILED,
+        PaymentIntentStatus.SUCCEEDED,
+      ],
+      [PaymentIntentStatus.REQUIRES_ACTION]: [
+        PaymentIntentStatus.PROCESSING,
+        PaymentIntentStatus.CANCELED,
+        PaymentIntentStatus.FAILED,
+        PaymentIntentStatus.SUCCEEDED,
+      ],
+      [PaymentIntentStatus.PROCESSING]: [PaymentIntentStatus.SUCCEEDED, PaymentIntentStatus.FAILED, PaymentIntentStatus.CANCELED],
+      [PaymentIntentStatus.SUCCEEDED]: [PaymentIntentStatus.CANCELED],
+      [PaymentIntentStatus.FAILED]: [PaymentIntentStatus.REQUIRES_PAYMENT_METHOD],
+      [PaymentIntentStatus.CANCELED]: [],
+    };
+
+    return allowed[current]?.includes(next) ?? false;
+  }
+
+  async processWebhook(payload: any, signature?: string, rawBody?: string) {
+    const verified = await this.tranzilaProvider.webhookVerify(signature, payload, rawBody);
+    if (!verified.ok) {
+      throw new UnauthorizedException('Invalid webhook signature.');
+    }
+
+    const provider = this.tranzilaProvider.name;
+    const eventId = verified.eventId as string;
+    const eventType = (verified.type || '').toLowerCase();
+
+    try {
+      await this.prisma.webhookEvent.create({
+        data: {
+          provider,
+          eventId,
+          signature: signature || null,
+          payload: verified.data ?? payload ?? {},
+          processed: false,
+        },
+      });
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        this.logger.log(`Duplicate webhook ignored for ${provider}:${eventId}`);
+        return { ok: true, duplicate: true };
+      }
+      throw error;
+    }
+
+    const mappedStatus = this.webhookEventHandlers[eventType];
+    if (!mappedStatus) {
+      await this.prisma.webhookEvent.update({
+        where: { provider_eventId: { provider, eventId } },
+        data: { processed: true },
+      });
+      this.logger.warn(`Ignoring unhandled webhook type: ${eventType || 'unknown'}`);
+      return { ok: true, ignored: true };
+    }
+
+    const providerIntentId = String(payload?.providerIntentId || payload?.intentId || payload?.paymentIntentId || '');
+    if (!providerIntentId) {
+      await this.prisma.webhookEvent.update({
+        where: { provider_eventId: { provider, eventId } },
+        data: { processed: true },
+      });
+      this.logger.warn(`Webhook ${eventId} missing provider intent identifier.`);
+      return { ok: true, ignored: true };
+    }
+
+    const intent = await this.prisma.paymentIntent.findFirst({
+      where: { provider, providerIntentId },
+      include: { invoice: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!intent) {
+      await this.prisma.webhookEvent.update({
+        where: { provider_eventId: { provider, eventId } },
+        data: { processed: true },
+      });
+      this.logger.warn(`No payment intent found for providerIntentId=${providerIntentId}`);
+      return { ok: true, ignored: true };
+    }
+
+    if (!this.canTransitionIntent(intent.status, mappedStatus)) {
+      await this.prisma.webhookEvent.update({
+        where: { provider_eventId: { provider, eventId } },
+        data: { processed: true },
+      });
+      this.logger.warn(`Rejected invalid payment transition ${intent.status} -> ${mappedStatus} for intent ${intent.id}`);
+      return { ok: true, ignored: true };
+    }
+
+    await this.prisma.paymentIntent.update({
+      where: { id: intent.id },
+      data: {
+        status: mappedStatus,
+        metadata: verified.data ?? payload ?? {},
+      },
+    });
+
+    if (mappedStatus === PaymentIntentStatus.SUCCEEDED) {
+      await this.confirmPayment(intent.invoiceId);
+    } else if (mappedStatus === PaymentIntentStatus.CANCELED || mappedStatus === PaymentIntentStatus.FAILED) {
+      await this.prisma.invoice.update({
+        where: { id: intent.invoiceId },
+        data: { status: InvoiceStatus.UNPAID, collectionStatus: CollectionStatus.PAST_DUE },
+      });
+    }
+
+    await this.prisma.providerTransaction.create({
+      data: {
+        paymentIntentId: intent.id,
+        provider,
+        type: 'webhook',
+        status: mappedStatus.toLowerCase(),
+        raw: verified.data ?? payload ?? {},
+      },
+    });
+
+    await this.prisma.webhookEvent.update({
+      where: { provider_eventId: { provider, eventId } },
+      data: { processed: true },
+    });
+
+    return { ok: true };
   }
 
   async createInvoice(
