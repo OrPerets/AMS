@@ -31,14 +31,15 @@ export class TicketController {
   constructor(private tickets: TicketService) {}
 
   @Post()
-  @Roles(Role.RESIDENT)
+  @Roles(Role.RESIDENT, Role.ADMIN, Role.PM, Role.MASTER, Role.TECH)
   @UseInterceptors(FilesInterceptor('photos', 10, imageUploadOptions))
   create(@Body() dto: CreateTicketDto, @UploadedFiles() photos: Express.Multer.File[], @Request() req: any) {
+    const userId = req.user?.userId ?? req.user?.id;
     return this.tickets.create({
       unit: { connect: { id: dto.unitId } },
       severity: dto.severity,
       slaDue: dto.slaDue ? new Date(dto.slaDue) : undefined,
-    }, photos, dto.description, req.user.id);
+    }, photos, dto.description, userId);
   }
 
   @Get()

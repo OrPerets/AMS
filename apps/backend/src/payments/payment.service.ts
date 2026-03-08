@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { InvoiceStatus, PaymentIntentStatus } from '@prisma/client';
 import { TranzilaService } from './tranzila.service';
@@ -79,13 +79,33 @@ export class PaymentService {
     };
   }
 
-  createInvoice(data: { residentId: number; items: any[]; amount?: number }) {
+  private async resolveResidentId(residentId: number) {
+    if (!Number.isInteger(residentId) || residentId <= 0) {
+      throw new BadRequestException('residentId must be a positive integer.');
+    }
+
+    const resident = await this.prisma.resident.findFirst({
+      where: {
+        OR: [{ id: residentId }, { userId: residentId }],
+      },
+      select: { id: true },
+    });
+
+    if (!resident) {
+      throw new BadRequestException(`Resident not found for identifier ${residentId}.`);
+    }
+
+    return resident.id;
+  }
+
+  async createInvoice(data: { residentId: number; items: any[]; amount?: number }) {
+    const residentId = await this.resolveResidentId(data.residentId);
     const computedAmount =
       data.amount ??
       data.items.reduce((sum: number, item: any) => sum + (Number(item.quantity || 1) * Number(item.unitPrice || item.amount || 0)), 0);
     return this.prisma.invoice.create({
       data: {
-        resident: { connect: { id: data.residentId } },
+        resident: { connect: { id: residentId } },
         items: data.items,
         amount: computedAmount,
       },
@@ -269,12 +289,13 @@ export class PaymentService {
 
   // Recurring invoices
   async createRecurringInvoice(data: { residentId: number; items: any[]; amount?: number; recurrence: string; startAt?: string }) {
+    const residentId = await this.resolveResidentId(data.residentId);
     const computedAmount =
       data.amount ??
       data.items.reduce((sum: number, item: any) => sum + (Number(item.quantity || 1) * Number(item.unitPrice || item.amount || 0)), 0);
     return this.prisma.recurringInvoice.create({
       data: {
-        resident: { connect: { id: data.residentId } },
+        resident: { connect: { id: residentId } },
         items: data.items,
         amount: computedAmount,
         recurrence: data.recurrence,
