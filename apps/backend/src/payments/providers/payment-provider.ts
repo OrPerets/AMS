@@ -36,7 +36,6 @@ export interface PaymentProvider {
   confirm(params: ConfirmPaymentParams): Promise<{ status: string; raw?: any }>;
   refund(params: RefundParams): Promise<{ providerRefundId?: string; raw?: any }>;
   retrieve(providerIntentId: string): Promise<{ status: string; raw?: any }>;
-  webhookVerify(signature: string | undefined, payload: any): Promise<WebhookVerifyResult>;
+  webhookVerify(signature: string | undefined, payload: any, rawBody?: string): Promise<WebhookVerifyResult>;
 }
-
 

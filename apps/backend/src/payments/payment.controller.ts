@@ -146,12 +146,9 @@ export class PaymentController {
 
   @Post('payments/webhook')
   @Public()
-  webhook(@Body() body: any) {
-    // Accept generic webhook payload for sandbox; production should verify signature and provider
-    if (body?.invoiceId && body?.status === 'paid') {
-      return this.payments.confirmPayment(body.invoiceId);
-    }
-    return { ok: true };
+  webhook(@Body() body: any, @Req() req: any) {
+    const signature = req.headers['x-tranzila-signature'] || req.headers['x-webhook-signature'];
+    return this.payments.processWebhook(body, signature, req.rawBody);
   }
 
   @Get('invoices/:id/receipt')

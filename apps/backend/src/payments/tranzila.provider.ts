@@ -1,4 +1,5 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { PaymentProvider, CreatePaymentParams, CreatePaymentResult, ConfirmPaymentParams, RefundParams, WebhookVerifyResult } from './providers/payment-provider';
 
 type ProviderMode = 'sandbox' | 'production';
@@ -159,12 +160,25 @@ export class TranzilaProvider implements PaymentProvider {
     return { status: mapProviderStatus(raw?.status), raw: sanitizePayload(raw) };
   }
 
-  async webhookVerify(signature: string | undefined, payload: any): Promise<WebhookVerifyResult> {
+  async webhookVerify(signature: string | undefined, payload: any, rawBody?: string): Promise<WebhookVerifyResult> {
     const config = this.readConfig();
-    if (!config.webhookSecret) {
+    if (!config.webhookSecret || !signature) {
       return { ok: false };
     }
-    const ok = signature === config.webhookSecret;
-    return { ok, eventId: payload?.id || String(Date.now()), type: payload?.type || 'payment.unknown', data: sanitizePayload(payload) };
+
+    const normalizedSignature = signature.replace(/^sha256=/i, '').trim();
+    const source = rawBody ?? JSON.stringify(payload ?? {});
+    const expectedSignature = createHmac('sha256', config.webhookSecret).update(source).digest('hex');
+
+    const safeCompare =
+      normalizedSignature.length === expectedSignature.length &&
+      timingSafeEqual(Buffer.from(normalizedSignature, 'utf8'), Buffer.from(expectedSignature, 'utf8'));
+
+    return {
+      ok: safeCompare,
+      eventId: payload?.id || payload?.eventId || String(Date.now()),
+      type: payload?.type || 'payment.unknown',
+      data: sanitizePayload(payload),
+    };
   }
 }

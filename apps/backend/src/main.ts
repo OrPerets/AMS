@@ -12,6 +12,17 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.disable('x-powered-by');
 
+
+  app.use(
+    express.json({
+      verify: (req: Request & { rawBody?: string }, _res: Response, buf: Buffer) => {
+        if (req.originalUrl.includes('/api/v1/payments/webhook')) {
+          req.rawBody = buf.toString('utf8');
+        }
+      },
+    }),
+  );
+  app.use(express.urlencoded({ extended: true }));
   app.use((_req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Content-Type-Options', 'nosniff');

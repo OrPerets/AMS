@@ -94,12 +94,12 @@ Process only authenticated, idempotent webhook events and prevent forged settlem
    - Persist full event metadata (sanitized), timestamps, processing outcome.
 
 ### TODO checklist
-- [ ] Add raw-body webhook handling middleware if provider signature requires raw payload.
-- [ ] Validate signature before any business logic.
-- [ ] Persist webhook event with unique `(provider, eventId)` constraint.
-- [ ] Implement duplicate detection and no-op behavior.
-- [ ] Implement event-type allowlist and transition handler.
-- [ ] Add tests for valid signature, invalid signature, duplicate delivery, unknown event.
+- [x] Add raw-body webhook handling middleware if provider signature requires raw payload.
+- [x] Validate signature before any business logic.
+- [x] Persist webhook event with unique `(provider, eventId)` constraint.
+- [x] Implement duplicate detection and no-op behavior.
+- [x] Implement event-type allowlist and transition handler.
+- [x] Add tests for valid signature, invalid signature, duplicate delivery, unknown event.
 
 ---
 
