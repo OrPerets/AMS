@@ -94,6 +94,12 @@ export class PaymentService {
     return '90+';
   }
 
+  private csvValue(value: unknown) {
+    if (value === null || value === undefined) return '""';
+    const normalized = value instanceof Date ? value.toISOString() : String(value);
+    return `"${normalized.replace(/"/g, '""')}"`;
+  }
+
   private mapInvoice(invoice: InvoiceWithRelations) {
     const latestIntent = invoice.paymentIntents[0];
     const dueDate = this.getDueDate(new Date(invoice.createdAt), invoice.dueDate);
@@ -442,6 +448,195 @@ export class PaymentService {
       documents: residentDocuments,
       recentActivity: activity,
     };
+  }
+
+  async getCollectionsDashboard(buildingId?: number) {
+    const invoices = await this.prisma.invoice.findMany({
+      where: buildingId
+        ? {
+            resident: {
+              units: {
+                some: { buildingId },
+              },
+            },
+          }
+        : undefined,
+      include: this.invoiceInclude,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const mapped = invoices.map((invoice) => this.mapInvoice(invoice));
+    const unpaid = mapped.filter((invoice) => invoice.status !== 'PAID');
+    const totalOutstanding = unpaid.reduce((sum, invoice) => sum + invoice.amount, 0);
+    const overdue = unpaid.filter((invoice) => invoice.status === 'OVERDUE');
+    const billedThisMonth = mapped
+      .filter((invoice) => {
+        const createdAt = new Date(invoice.issueDate);
+        const now = new Date();
+        return createdAt.getMonth() === now.getMonth() && createdAt.getFullYear() === now.getFullYear();
+      })
+      .reduce((sum, invoice) => sum + invoice.amount, 0);
+    const collectedThisMonth = mapped
+      .filter((invoice) => invoice.paidAt)
+      .filter((invoice) => {
+        const paidAt = new Date(invoice.paidAt as Date);
+        const now = new Date();
+        return paidAt.getMonth() === now.getMonth() && paidAt.getFullYear() === now.getFullYear();
+      })
+      .reduce((sum, invoice) => sum + invoice.amount, 0);
+
+    const aging = unpaid.reduce(
+      (acc, invoice) => {
+        const key = invoice.agingBucket ?? 'current';
+        acc[key] = (acc[key] ?? 0) + invoice.amount;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    const debtorMap = unpaid.reduce(
+      (acc, invoice) => {
+        const key = `${invoice.residentId}`;
+        if (!acc[key]) {
+          acc[key] = {
+            residentId: invoice.residentId,
+            residentName: invoice.residentName,
+            buildingName: invoice.buildingName,
+            amount: 0,
+            overdueCount: 0,
+            promiseToPayDate: invoice.promiseToPayDate ?? null,
+          };
+        }
+        acc[key].amount += invoice.amount;
+        if (invoice.status === 'OVERDUE') acc[key].overdueCount += 1;
+        if (!acc[key].promiseToPayDate && invoice.promiseToPayDate) {
+          acc[key].promiseToPayDate = invoice.promiseToPayDate;
+        }
+        return acc;
+      },
+      {} as Record<
+        string,
+        {
+          residentId: number;
+          residentName: string;
+          buildingName: string | null;
+          amount: number;
+          overdueCount: number;
+          promiseToPayDate: Date | null;
+        }
+      >,
+    );
+
+    const followUps = unpaid
+      .filter((invoice) => invoice.collectionNotes || invoice.promiseToPayDate || invoice.lastReminderAt)
+      .map((invoice) => ({
+        invoiceId: invoice.id,
+        residentId: invoice.residentId,
+        residentName: invoice.residentName,
+        buildingName: invoice.buildingName,
+        collectionStatus: invoice.collectionStatus,
+        reminderState: invoice.reminderState,
+        promiseToPayDate: invoice.promiseToPayDate,
+        lastReminderAt: invoice.lastReminderAt,
+        collectionNotes: invoice.collectionNotes,
+      }))
+      .sort((a, b) => {
+        const left = new Date(b.lastReminderAt ?? b.promiseToPayDate ?? 0).getTime();
+        const right = new Date(a.lastReminderAt ?? a.promiseToPayDate ?? 0).getTime();
+        return left - right;
+      });
+
+    return {
+      buildingId: buildingId ?? null,
+      totals: {
+        invoiceCount: mapped.length,
+        unpaidCount: unpaid.length,
+        overdueCount: overdue.length,
+        outstandingBalance: totalOutstanding,
+        delinquencyRate: mapped.length ? Number(((overdue.length / mapped.length) * 100).toFixed(1)) : 0,
+        billedThisMonth,
+        collectedThisMonth,
+      },
+      aging,
+      topDebtors: Object.values(debtorMap)
+        .sort((a, b) => b.amount - a.amount)
+        .slice(0, 10),
+      followUps: followUps.slice(0, 20),
+    };
+  }
+
+  async exportInvoicesCsv(type: 'invoices' | 'unpaid' | 'ledger', residentId?: number, buildingId?: number) {
+    if (type === 'ledger' && residentId) {
+      const ledger = await this.getResidentLedger(residentId);
+      return [
+        ['entryId', 'invoiceId', 'type', 'amount', 'createdAt', 'summary', 'status'].join(','),
+        ...ledger.entries.map((entry) =>
+          [
+            this.csvValue(entry.id),
+            entry.invoiceId,
+            this.csvValue(entry.type),
+            entry.amount,
+            this.csvValue(entry.createdAt),
+            this.csvValue(entry.summary),
+            this.csvValue(entry.status),
+          ].join(','),
+        ),
+      ].join('\n');
+    }
+
+    const invoices = await this.prisma.invoice.findMany({
+      where: {
+        ...(residentId ? { residentId } : {}),
+        ...(type === 'unpaid' ? { status: InvoiceStatus.UNPAID } : {}),
+        ...(buildingId
+          ? {
+              resident: {
+                units: {
+                  some: { buildingId },
+                },
+              },
+            }
+          : {}),
+      },
+      include: this.invoiceInclude,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return [
+      [
+        'invoiceId',
+        'residentId',
+        'residentName',
+        'buildingName',
+        'amount',
+        'status',
+        'dueDate',
+        'agingBucket',
+        'reminderState',
+        'collectionStatus',
+        'promiseToPayDate',
+        'lastReminderAt',
+        'description',
+      ].join(','),
+      ...invoices.map((invoice) => {
+        const mapped = this.mapInvoice(invoice);
+        return [
+          mapped.id,
+          mapped.residentId,
+          this.csvValue(mapped.residentName),
+          this.csvValue(mapped.buildingName),
+          mapped.amount,
+          this.csvValue(mapped.status),
+          this.csvValue(mapped.dueDate),
+          this.csvValue(mapped.agingBucket),
+          this.csvValue(mapped.reminderState),
+          this.csvValue(mapped.collectionStatus),
+          this.csvValue(mapped.promiseToPayDate),
+          this.csvValue(mapped.lastReminderAt),
+          this.csvValue(mapped.description),
+        ].join(',');
+      }),
+    ].join('\n');
   }
 
   async initiatePayment(id: number) {

@@ -40,6 +40,9 @@ interface AssetApiRecord {
   building?: { id: number; name: string } | null;
   unit?: { id: number; number?: string | null } | null;
   maintenanceSchedules?: Array<{ nextOccurrence?: string | null; startDate?: string | null }>;
+  replacementRecommended?: boolean;
+  nextInventoryCheck?: string | null;
+  lastInventoryCheck?: string | null;
 }
 
 interface AssetCardView {
@@ -57,11 +60,26 @@ interface AssetCardView {
   nextMaintenance?: string;
   value: number;
   description?: string;
+  replacementRecommended: boolean;
+  nextInventoryCheck?: string;
+  lastInventoryCheck?: string;
+}
+
+interface LifecycleSummaryResponse {
+  summary: {
+    totalAssets: number;
+    expiringWarranty: number;
+    expiredWarranty: number;
+    replacementRecommended: number;
+    overdueInventoryChecks: number;
+    totalMaintenanceCost: number;
+  };
 }
 
 export default function AssetsPage() {
   const [assets, setAssets] = useState<AssetCardView[]>([]);
   const [buildings, setBuildings] = useState<BuildingOption[]>([]);
+  const [lifecycle, setLifecycle] = useState<LifecycleSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -110,6 +128,16 @@ export default function AssetsPage() {
     }
   };
 
+  const loadLifecycle = async (buildingId?: string) => {
+    try {
+      const suffix = buildingId && buildingId !== 'all' ? `?buildingId=${buildingId}` : '';
+      const res = await authFetch(`/api/v1/assets/lifecycle/summary${suffix}`);
+      setLifecycle(res.ok ? await res.json() : null);
+    } catch {
+      setLifecycle(null);
+    }
+  };
+
   const mapAssetRecord = (asset: AssetApiRecord): AssetCardView => {
     const nextMaintenance = asset.maintenanceSchedules?.find(
       (schedule) => schedule.nextOccurrence || schedule.startDate,
@@ -130,8 +158,15 @@ export default function AssetsPage() {
       nextMaintenance: nextMaintenance?.nextOccurrence ?? nextMaintenance?.startDate ?? undefined,
       value: asset.value ?? 0,
       description: asset.description ?? undefined,
+      replacementRecommended: asset.replacementRecommended ?? false,
+      nextInventoryCheck: asset.nextInventoryCheck ?? undefined,
+      lastInventoryCheck: asset.lastInventoryCheck ?? undefined,
     };
   };
+
+  useEffect(() => {
+    void loadLifecycle(filterBuilding);
+  }, [filterBuilding]);
 
   const filteredAssets = assets.filter((asset) => {
     const term = searchTerm.trim().toLowerCase();
@@ -330,6 +365,16 @@ export default function AssetsPage() {
         </CardContent>
       </Card>
 
+      {lifecycle && (
+        <div className="grid gap-4 md:grid-cols-5">
+          <Card><CardHeader><CardTitle>נכסים</CardTitle></CardHeader><CardContent>{lifecycle.summary.totalAssets}</CardContent></Card>
+          <Card><CardHeader><CardTitle>אחריות קרובה</CardTitle></CardHeader><CardContent>{lifecycle.summary.expiringWarranty}</CardContent></Card>
+          <Card><CardHeader><CardTitle>אחריות שפגה</CardTitle></CardHeader><CardContent>{lifecycle.summary.expiredWarranty}</CardContent></Card>
+          <Card><CardHeader><CardTitle>החלפה מומלצת</CardTitle></CardHeader><CardContent>{lifecycle.summary.replacementRecommended}</CardContent></Card>
+          <Card><CardHeader><CardTitle>ספירת מלאי באיחור</CardTitle></CardHeader><CardContent>{lifecycle.summary.overdueInventoryChecks}</CardContent></Card>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredAssets.map((asset) => (
           <Card key={asset.id} className="transition-shadow hover:shadow-md">
@@ -350,6 +395,10 @@ export default function AssetsPage() {
                 <div className="flex items-center justify-between">
                   <Badge variant={getStatusColor(asset.status)}>{getStatusLabel(asset.status)}</Badge>
                   {isMaintenanceDue(asset.nextMaintenance) && <Badge variant="warning">תחזוקה קרובה</Badge>}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {asset.replacementRecommended && <Badge variant="destructive">החלפה מומלצת</Badge>}
+                  {asset.nextInventoryCheck && new Date(asset.nextInventoryCheck) < new Date() && <Badge variant="warning">ספירת מלאי באיחור</Badge>}
                 </div>
 
                 <div className="space-y-1 text-muted-foreground">
@@ -374,6 +423,12 @@ export default function AssetsPage() {
                     <div className="flex items-center gap-2">
                       <Calendar className="h-3 w-3" />
                       <span>תחזוקה הבאה: {new Date(asset.nextMaintenance).toLocaleDateString('he-IL')}</span>
+                    </div>
+                  )}
+
+                  {asset.lastInventoryCheck && (
+                    <div className="text-xs">
+                      מלאי אחרון: {new Date(asset.lastInventoryCheck).toLocaleDateString('he-IL')}
                     </div>
                   )}
                 </div>

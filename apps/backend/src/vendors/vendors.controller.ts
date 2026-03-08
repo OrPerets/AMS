@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Role, Roles } from '../auth/roles.decorator';
 import { VendorsService } from './vendors.service';
+import { Response } from 'express';
 
 @Controller('api/v1')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -11,7 +12,13 @@ export class VendorsController {
   constructor(private readonly vendors: VendorsService) {}
 
   @Get('vendors')
-  listVendors() {
+  async listVendors(@Query('format') format?: string, @Res({ passthrough: true }) res?: Response) {
+    if (format === 'csv' && res) {
+      const csv = await this.vendors.exportVendorsCsv();
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="vendors.csv"');
+      return csv;
+    }
     return this.vendors.listVendors();
   }
 
@@ -26,7 +33,13 @@ export class VendorsController {
   }
 
   @Get('contracts')
-  listContracts() {
+  async listContracts(@Query('format') format?: string, @Res({ passthrough: true }) res?: Response) {
+    if (format === 'csv' && res) {
+      const csv = await this.vendors.exportContractsCsv();
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="contracts.csv"');
+      return csv;
+    }
     return this.vendors.listContracts();
   }
 

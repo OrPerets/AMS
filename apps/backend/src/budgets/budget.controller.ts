@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards, Query, Res } from '@nestjs/common';
 import { BudgetService } from './budget.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
@@ -9,6 +9,7 @@ import { Roles } from '../auth/roles.decorator';
 import { Role } from '../auth/roles.decorator';
 import { Request } from 'express';
 import { Req } from '@nestjs/common';
+import { Response } from 'express';
 
 @Controller('api/v1/budgets')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -52,7 +53,17 @@ export class BudgetController {
   }
 
   @Get('building/:buildingId/summary')
-  getSummary(@Param('buildingId') buildingId: string) {
+  async getSummary(
+    @Param('buildingId') buildingId: string,
+    @Query('format') format?: string,
+    @Res({ passthrough: true }) res?: Response,
+  ) {
+    if (format === 'csv' && res) {
+      const csv = await this.budgets.exportSummaryCsv(+buildingId);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="budget-summary.csv"');
+      return csv;
+    }
     return this.budgets.getSummaryForBuilding(+buildingId);
   }
 

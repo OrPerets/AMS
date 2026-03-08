@@ -434,6 +434,8 @@ model Budget {
   year        Int
   amount      Float
   actualSpent Float         @default(0)
+  warningThresholdPercent Float @default(80)
+  approvalThresholdPercent Float @default(100)
   status      BudgetStatus  @default(PLANNED)
   notes       String?
   createdAt   DateTime      @default(now())
@@ -647,6 +649,10 @@ model Asset {
   depreciationMethod String?
   status      String?
   lastInventoryCheck DateTime?
+  nextInventoryCheck DateTime?
+  replacementRecommended Boolean @default(false)
+  replacementNotes String?
+  inventoryStatus String @default("VERIFIED")
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   maintenanceSchedules MaintenanceSchedule[]

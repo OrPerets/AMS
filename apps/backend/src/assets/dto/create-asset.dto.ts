@@ -1,5 +1,5 @@
 import type { MaintenanceCategory } from '@prisma/client';
-import { IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { MAINTENANCE_CATEGORIES } from '../../common/validation/prisma-enums';
 
 export class CreateAssetDto {
@@ -61,6 +61,22 @@ export class CreateAssetDto {
   @IsOptional()
   @IsDateString()
   lastInventoryCheck?: string;
+
+  @IsOptional()
+  @IsDateString()
+  nextInventoryCheck?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  replacementRecommended?: boolean;
+
+  @IsOptional()
+  @IsString()
+  replacementNotes?: string;
+
+  @IsOptional()
+  @IsString()
+  inventoryStatus?: string;
 
   @IsOptional()
   @IsString()

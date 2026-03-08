@@ -516,6 +516,93 @@ export class MaintenanceService {
     };
   }
 
+  async getManagerExceptions(buildingId?: number) {
+    const now = new Date();
+    const [schedules, urgentTickets, workOrders] = await Promise.all([
+      this.prisma.maintenanceSchedule.findMany({
+        where: {
+          ...(buildingId ? { buildingId } : {}),
+          OR: [
+            { completionVerified: false, lastCompleted: { not: null } },
+            { nextOccurrence: { lt: now } },
+          ],
+        },
+        include: this.scheduleInclude,
+        orderBy: [{ nextOccurrence: 'asc' }, { updatedAt: 'desc' }],
+      }),
+      this.prisma.ticket.findMany({
+        where: {
+          severity: 'URGENT',
+          status: { not: 'RESOLVED' },
+          ...(buildingId ? { unit: { buildingId } } : {}),
+        },
+        include: { unit: { include: { building: true } }, workOrders: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.workOrder.findMany({
+        where: {
+          status: { notIn: ['COMPLETED', 'INVOICED'] as any },
+          ticket: buildingId ? { unit: { buildingId } } : undefined,
+        },
+        include: {
+          supplier: true,
+          ticket: { include: { unit: { include: { building: true } } } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    return {
+      buildingId: buildingId ?? null,
+      summary: {
+        unverifiedMaintenance: schedules.filter((row) => row.lastCompleted && !row.completionVerified).length,
+        overdueMaintenance: schedules.filter((row) => row.nextOccurrence && row.nextOccurrence < now).length,
+        urgentTickets: urgentTickets.length,
+        openWorkOrders: workOrders.length,
+      },
+      unverifiedMaintenance: schedules
+        .filter((row) => row.lastCompleted && !row.completionVerified)
+        .map((row) => ({
+          id: row.id,
+          title: row.title,
+          buildingId: row.buildingId,
+          buildingName: row.building.name,
+          assetId: row.assetId,
+          lastCompleted: row.lastCompleted,
+          verifiedAt: row.verifiedAt,
+        })),
+      overdueMaintenance: schedules
+        .filter((row) => row.nextOccurrence && row.nextOccurrence < now)
+        .map((row) => ({
+          id: row.id,
+          title: row.title,
+          buildingId: row.buildingId,
+          buildingName: row.building.name,
+          nextOccurrence: row.nextOccurrence,
+          priority: row.priority,
+        })),
+      urgentTickets: urgentTickets.map((ticket) => ({
+        id: ticket.id,
+        title: `Ticket #${ticket.id}`,
+        buildingId: ticket.unit.buildingId,
+        buildingName: ticket.unit.building.name,
+        unitNumber: ticket.unit.number,
+        severity: ticket.severity,
+        status: ticket.status,
+        workOrders: ticket.workOrders.length,
+      })),
+      openWorkOrders: workOrders.map((order) => ({
+        id: order.id,
+        status: order.status,
+        supplierName: order.supplier.name,
+        buildingId: order.ticket.unit.buildingId,
+        buildingName: order.ticket.unit.building.name,
+        ticketId: order.ticketId,
+        totalCost: order.totalCost,
+      })),
+    };
+  }
+
   private async findOneWithClient(id: number, client: TransactionClient) {
     return client.maintenanceSchedule.findUniqueOrThrow(this.findOneQuery(id));
   }

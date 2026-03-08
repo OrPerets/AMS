@@ -1,0 +1,9 @@
+ALTER TABLE "Budget"
+ADD COLUMN "warningThresholdPercent" DOUBLE PRECISION NOT NULL DEFAULT 80,
+ADD COLUMN "approvalThresholdPercent" DOUBLE PRECISION NOT NULL DEFAULT 100;
+
+ALTER TABLE "Asset"
+ADD COLUMN "nextInventoryCheck" TIMESTAMP(3),
+ADD COLUMN "replacementRecommended" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN "replacementNotes" TEXT,
+ADD COLUMN "inventoryStatus" TEXT NOT NULL DEFAULT 'VERIFIED';

@@ -25,6 +25,9 @@ interface Budget {
   variance: number;
   utilization: number;
   alertLevel: 'normal' | 'warning' | 'critical';
+  warningThresholdPercent: number;
+  approvalThresholdPercent: number;
+  requiresApproval: boolean;
 }
 
 interface SummaryResponse {
@@ -41,8 +44,22 @@ export default function BudgetsPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState({ name: '', year: String(currentYear), amount: '', notes: '' });
-  const [editForm, setEditForm] = useState({ name: '', amount: '', notes: '', status: 'PLANNED' });
+  const [form, setForm] = useState({
+    name: '',
+    year: String(currentYear),
+    amount: '',
+    notes: '',
+    warningThresholdPercent: '80',
+    approvalThresholdPercent: '100',
+  });
+  const [editForm, setEditForm] = useState({
+    name: '',
+    amount: '',
+    notes: '',
+    status: 'PLANNED',
+    warningThresholdPercent: '80',
+    approvalThresholdPercent: '100',
+  });
   const [expenseForm, setExpenseForm] = useState({ budgetId: '', category: 'OTHER', amount: '', description: '' });
 
   async function load() {
@@ -106,11 +123,13 @@ export default function BudgetsPage() {
           year: Number(form.year),
           amount: Number(form.amount),
           notes: form.notes || undefined,
+          warningThresholdPercent: Number(form.warningThresholdPercent || 80),
+          approvalThresholdPercent: Number(form.approvalThresholdPercent || 100),
         }),
       });
       if (!res.ok) throw new Error(await res.text());
       toast({ title: 'התקציב נוצר' });
-      setForm({ name: '', year: String(currentYear), amount: '', notes: '' });
+      setForm({ name: '', year: String(currentYear), amount: '', notes: '', warningThresholdPercent: '80', approvalThresholdPercent: '100' });
       await load();
     } catch (error) {
       console.error(error);
@@ -132,6 +151,8 @@ export default function BudgetsPage() {
           amount: Number(editForm.amount),
           notes: editForm.notes,
           status: editForm.status,
+          warningThresholdPercent: Number(editForm.warningThresholdPercent || 80),
+          approvalThresholdPercent: Number(editForm.approvalThresholdPercent || 100),
         }),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -195,6 +216,11 @@ export default function BudgetsPage() {
           <p className="text-sm text-muted-foreground">מעקב מול ביצוע, עריכת תקציבים והתרעות ניצול.</p>
         </div>
         <div className="flex gap-2">
+          {buildingId && (
+            <Button variant="outline" onClick={() => window.open(`/api/v1/budgets/building/${buildingId}/summary?format=csv`, '_blank')}>
+              יצוא תקציבים
+            </Button>
+          )}
           <Input value={buildingId} onChange={(event) => setBuildingId(event.target.value)} placeholder="מזהה בניין" className="w-40" />
           <Button variant="outline" onClick={load} disabled={loading}>רענן</Button>
         </div>
@@ -234,6 +260,8 @@ export default function BudgetsPage() {
             <Input type="number" placeholder="שנה" value={form.year} onChange={(event) => setForm({ ...form, year: event.target.value })} />
             <Input type="number" placeholder="סכום" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} />
             <Input placeholder="הערות" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
+            <Input type="number" placeholder="סף אזהרה %" value={form.warningThresholdPercent} onChange={(event) => setForm({ ...form, warningThresholdPercent: event.target.value })} />
+            <Input type="number" placeholder="סף אישור %" value={form.approvalThresholdPercent} onChange={(event) => setForm({ ...form, approvalThresholdPercent: event.target.value })} />
             <Button onClick={createBudget} disabled={submitting || !form.name || !form.amount}>שמור תקציב</Button>
           </CardContent>
         </Card>
@@ -267,6 +295,7 @@ export default function BudgetsPage() {
                   <th className="py-2">מתוכנן</th>
                   <th className="py-2">בפועל</th>
                   <th className="py-2">ניצול</th>
+                  <th className="py-2">ספי בקרה</th>
                   <th className="py-2">פעולות</th>
                 </tr>
               </thead>
@@ -279,6 +308,11 @@ export default function BudgetsPage() {
                     <td className="py-3">{formatCurrency(budget.amount)}</td>
                     <td className="py-3">{formatCurrency(budget.actualSpent)}</td>
                     <td className="py-3">{budget.utilization.toFixed(0)}%</td>
+                    <td className="py-3 text-xs">
+                      <div>אזהרה {budget.warningThresholdPercent}%</div>
+                      <div>אישור {budget.approvalThresholdPercent}%</div>
+                      {budget.requiresApproval && <Badge variant="destructive">דורש אישור</Badge>}
+                    </td>
                     <td className="py-3">
                       <Button
                         variant="outline"
@@ -290,6 +324,8 @@ export default function BudgetsPage() {
                             amount: String(budget.amount),
                             notes: budget.notes || '',
                             status: budget.status,
+                            warningThresholdPercent: String(budget.warningThresholdPercent),
+                            approvalThresholdPercent: String(budget.approvalThresholdPercent),
                           });
                         }}
                       >
@@ -313,6 +349,8 @@ export default function BudgetsPage() {
                   <option key={status} value={status}>{status}</option>
                 ))}
               </select>
+              <Input type="number" value={editForm.warningThresholdPercent} onChange={(event) => setEditForm({ ...editForm, warningThresholdPercent: event.target.value })} />
+              <Input type="number" value={editForm.approvalThresholdPercent} onChange={(event) => setEditForm({ ...editForm, approvalThresholdPercent: event.target.value })} />
               <div className="md:col-span-2 flex gap-2">
                 <Button onClick={saveBudget} disabled={submitting}>
                   <Save className="me-2 h-4 w-4" />

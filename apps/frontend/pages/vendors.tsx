@@ -144,7 +144,8 @@ export default function VendorsPage() {
             <CardDescription>כאן אפשר לזהות ספקים לא פעילים או כאלה שביטוחם או מסמכי התאימות שלהם עומדים לפוג.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => window.open('/api/v1/vendors?format=csv', '_blank')}>ייצא CSV</Button>
               <Button variant="outline" size="sm" onClick={runReminders}>שלח תזכורות תאימות</Button>
             </div>
             {vendors.map((vendor) => {

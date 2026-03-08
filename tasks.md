@@ -54,16 +54,20 @@ Status: Done on 2026-03-08
 
 ## 6. Finance And Collections
 
-- [ ] Add export flows for ledger statements, unpaid balances, invoice lists, maintenance history, vendors, and contract renewals.
-- [ ] Add aging and arrears dashboards with top debtors, delinquency rate, and monthly billed vs collected views.
-- [ ] Add promise-to-pay workflow UI and reminder follow-up timeline.
-- [ ] Add budget threshold alerts tied to approval rules.
+Status: Done on 2026-03-08
+
+- [x] Add export flows for ledger statements, unpaid balances, invoice lists, maintenance history, vendors, and contract renewals.
+- [x] Add aging and arrears dashboards with top debtors, delinquency rate, and monthly billed vs collected views.
+- [x] Add promise-to-pay workflow UI and reminder follow-up timeline.
+- [x] Add budget threshold alerts tied to approval rules.
 
 ## 7. Asset And Maintenance Controls
 
-- [ ] Add asset lifecycle indicators: warranty alerts, replacement recommendation flag, and inventory verification workflow.
-- [ ] Add maintenance cost rollups by asset.
-- [ ] Add manager exceptions for unverified maintenance and overdue high-severity work.
+Status: Done on 2026-03-08
+
+- [x] Add asset lifecycle indicators: warranty alerts, replacement recommendation flag, and inventory verification workflow.
+- [x] Add maintenance cost rollups by asset.
+- [x] Add manager exceptions for unverified maintenance and overdue high-severity work.
 
 ## 8. Admin And Security
 

@@ -149,11 +149,16 @@ export class BudgetService {
     return {
       budgets: budgets.map((budget) => {
         const utilization = budget.amount > 0 ? (budget.actualSpent / budget.amount) * 100 : 0;
+        const warningThreshold = budget.warningThresholdPercent ?? 80;
+        const approvalThreshold = budget.approvalThresholdPercent ?? 100;
         return {
           ...budget,
           variance: budget.amount - budget.actualSpent,
           utilization,
-          alertLevel: utilization >= 100 ? 'critical' : utilization >= 80 ? 'warning' : 'normal',
+          warningThresholdPercent: warningThreshold,
+          approvalThresholdPercent: approvalThreshold,
+          requiresApproval: utilization >= approvalThreshold,
+          alertLevel: utilization >= approvalThreshold ? 'critical' : utilization >= warningThreshold ? 'warning' : 'normal',
         };
       }),
       totals: {
@@ -288,5 +293,41 @@ export class BudgetService {
       orderBy: [{ incurredAt: 'desc' }],
       include: { building: true, budget: true },
     });
+  }
+
+  async exportSummaryCsv(buildingId: number) {
+    const summary = await this.getSummaryForBuilding(buildingId);
+    return [
+      [
+        'budgetId',
+        'name',
+        'year',
+        'status',
+        'planned',
+        'actual',
+        'variance',
+        'utilization',
+        'warningThresholdPercent',
+        'approvalThresholdPercent',
+        'alertLevel',
+        'requiresApproval',
+      ].join(','),
+      ...summary.budgets.map((budget) =>
+        [
+          budget.id,
+          JSON.stringify(budget.name),
+          budget.year,
+          budget.status,
+          budget.amount,
+          budget.actualSpent,
+          budget.variance,
+          budget.utilization.toFixed(2),
+          budget.warningThresholdPercent,
+          budget.approvalThresholdPercent,
+          budget.alertLevel,
+          budget.requiresApproval,
+        ].join(','),
+      ),
+    ].join('\n');
   }
 }

@@ -22,4 +22,12 @@ export class CreateBudgetDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsNumber()
+  warningThresholdPercent?: number;
+
+  @IsOptional()
+  @IsNumber()
+  approvalThresholdPercent?: number;
 }

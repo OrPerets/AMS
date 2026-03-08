@@ -28,6 +28,27 @@ export class VendorsService {
     });
   }
 
+  async exportVendorsCsv() {
+    const vendors = await this.listVendors();
+    return [
+      ['vendorId', 'name', 'contactName', 'email', 'phone', 'skills', 'rating', 'insuranceExpiry', 'complianceDocumentExpiry', 'isActive'].join(','),
+      ...vendors.map((vendor) =>
+        [
+          vendor.id,
+          JSON.stringify(vendor.name),
+          JSON.stringify(vendor.contactName ?? ''),
+          JSON.stringify(vendor.email ?? ''),
+          JSON.stringify(vendor.phone ?? ''),
+          JSON.stringify(vendor.skills.join('; ')),
+          vendor.rating ?? '',
+          vendor.insuranceExpiry?.toISOString() ?? '',
+          vendor.complianceDocumentExpiry?.toISOString() ?? '',
+          vendor.isActive,
+        ].join(','),
+      ),
+    ].join('\n');
+  }
+
   async createVendor(input: {
     name: string;
     skills?: string[];
@@ -119,6 +140,28 @@ export class VendorsService {
       },
       orderBy: [{ endDate: 'asc' }, { createdAt: 'desc' }],
     });
+  }
+
+  async exportContractsCsv() {
+    const contracts = await this.listContracts();
+    return [
+      ['contractId', 'title', 'buildingName', 'supplierName', 'ownerEmail', 'value', 'status', 'approvalStatus', 'startDate', 'endDate', 'renewalReminderDays'].join(','),
+      ...contracts.map((contract) =>
+        [
+          contract.id,
+          JSON.stringify(contract.title),
+          JSON.stringify(contract.building.name),
+          JSON.stringify(contract.supplier?.name ?? ''),
+          JSON.stringify(contract.owner?.email ?? ''),
+          contract.value ?? '',
+          JSON.stringify(contract.status),
+          JSON.stringify(contract.approvalStatus),
+          contract.startDate.toISOString(),
+          contract.endDate?.toISOString() ?? '',
+          contract.renewalReminderDays,
+        ].join(','),
+      ),
+    ].join('\n');
   }
 
   async createContract(input: {

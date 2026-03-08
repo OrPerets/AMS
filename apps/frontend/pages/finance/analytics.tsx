@@ -36,29 +36,43 @@ interface ForecastResponse {
   forecastedMonthlyProfit: number;
 }
 
+interface CollectionsSummary {
+  totals: {
+    overdueCount: number;
+    outstandingBalance: number;
+    delinquencyRate: number;
+    billedThisMonth: number;
+    collectedThisMonth: number;
+  };
+  aging: Record<string, number>;
+}
+
 export default function FinancialAnalyticsPage() {
   const [buildingId, setBuildingId] = useState('');
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [cashFlow, setCashFlow] = useState<CashFlowRow[]>([]);
   const [variance, setVariance] = useState<VarianceRow[]>([]);
   const [forecast, setForecast] = useState<ForecastResponse | null>(null);
+  const [collections, setCollections] = useState<CollectionsSummary | null>(null);
 
   async function load() {
     const qs = new URLSearchParams();
     if (buildingId) qs.set('buildingId', buildingId);
     const suffix = qs.toString() ? `?${qs.toString()}` : '';
 
-    const [summaryRes, cashFlowRes, varianceRes, forecastRes] = await Promise.all([
+    const [summaryRes, cashFlowRes, varianceRes, forecastRes, collectionsRes] = await Promise.all([
       authFetch(`/api/v1/reports/financial/summary${suffix}`),
       authFetch(`/api/v1/reports/financial/cash-flow${suffix}`),
       authFetch(`/api/v1/reports/financial/variance${suffix}`),
       authFetch(`/api/v1/reports/financial/forecast${suffix}`),
+      authFetch(`/api/v1/invoices/collections/summary${suffix}`),
     ]);
 
     setSummary(summaryRes.ok ? await summaryRes.json() : null);
     setCashFlow(cashFlowRes.ok ? await cashFlowRes.json() : []);
     setVariance(varianceRes.ok ? await varianceRes.json() : []);
     setForecast(forecastRes.ok ? await forecastRes.json() : null);
+    setCollections(collectionsRes.ok ? await collectionsRes.json() : null);
   }
 
   useEffect(() => {
@@ -96,6 +110,15 @@ export default function FinancialAnalyticsPage() {
         <MonthlyReportCard title="תחזית רווח" value={forecast?.forecastedMonthlyProfit || 0} colorScheme="balance" />
       </div>
 
+      {collections && (
+        <div className="grid gap-4 md:grid-cols-4">
+          <MonthlyReportCard title="יתרת חוב" value={collections.totals.outstandingBalance} colorScheme="expense" />
+          <MonthlyReportCard title="שיעור פיגור" value={collections.totals.delinquencyRate} currency="" />
+          <MonthlyReportCard title="חויב החודש" value={collections.totals.billedThisMonth} />
+          <MonthlyReportCard title="נגבה החודש" value={collections.totals.collectedThisMonth} colorScheme="income" />
+        </div>
+      )}
+
       <TrendChart data={trendData} title="תזרים מזומנים" />
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -120,6 +143,19 @@ export default function FinancialAnalyticsPage() {
             {(summary?.expensesByCategory || []).length === 0 && (
               <div className="text-muted-foreground">אין נתונים להצגה.</div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>התיישנות חוב</CardTitle></CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {collections && Object.entries(collections.aging).map(([bucket, amount]) => (
+              <div key={bucket} className="flex items-center justify-between border-b pb-2">
+                <span>{bucket}</span>
+                <span>{formatCurrency(amount || 0)}</span>
+              </div>
+            ))}
+            {!collections && <div className="text-muted-foreground">אין נתוני גבייה להצגה.</div>}
           </CardContent>
         </Card>
       </div>

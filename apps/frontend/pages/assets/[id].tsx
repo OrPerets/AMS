@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Wrench, DollarSign, TrendingDown, Edit, Save, X } from "lucide-react";
+import { ArrowLeft, MapPin, Wrench, DollarSign, TrendingDown, Edit, Save, ShieldCheck, X } from "lucide-react";
 import { assetSummaries, maintenanceHistory, maintenanceEvents } from "../../components/maintenance/data";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
@@ -48,11 +48,36 @@ interface DepreciationData {
   quantity: number;
 }
 
+interface AssetHealth {
+  metrics: {
+    totalMaintenanceCost: number;
+    maintenanceCount: number;
+    completedReports: number;
+    verifiedReports: number;
+    upcomingCount: number;
+  };
+  warranty?: {
+    hasWarranty: boolean;
+    status?: string;
+    daysRemaining?: number;
+    warrantyExpiry?: string;
+  };
+  lifecycle?: {
+    replacementRecommended: boolean;
+    replacementNotes?: string | null;
+    inventoryStatus?: string;
+    lastInventoryCheck?: string | null;
+    nextInventoryCheck?: string | null;
+    inventoryState?: string;
+  };
+}
+
 export default function AssetDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const [asset, setAsset] = useState<Asset | null>(null);
   const [depreciation, setDepreciation] = useState<DepreciationData | null>(null);
+  const [health, setHealth] = useState<AssetHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [editingLocation, setEditingLocation] = useState(false);
   const [newLocation, setNewLocation] = useState('');
@@ -67,9 +92,10 @@ export default function AssetDetailPage() {
 
   const loadAssetData = async () => {
     try {
-      const [assetRes, depreciationRes] = await Promise.all([
+      const [assetRes, depreciationRes, healthRes] = await Promise.all([
         authFetch(`/api/v1/assets/${id}`),
-        authFetch(`/api/v1/assets/${id}/depreciation`)
+        authFetch(`/api/v1/assets/${id}/depreciation`),
+        authFetch(`/api/v1/assets/${id}/health`),
       ]);
 
       if (assetRes.ok) {
@@ -81,6 +107,10 @@ export default function AssetDetailPage() {
       if (depreciationRes.ok) {
         const depreciationData = await depreciationRes.json();
         setDepreciation(depreciationData);
+      }
+
+      if (healthRes.ok) {
+        setHealth(await healthRes.json());
       }
     } catch (error) {
       console.error('Failed to load asset data:', error);
@@ -148,6 +178,23 @@ export default function AssetDetailPage() {
       style: 'currency',
       currency: 'ILS'
     }).format(amount);
+  };
+
+  const verifyInventory = async () => {
+    try {
+      const nextCheck = new Date();
+      nextCheck.setMonth(nextCheck.getMonth() + 6);
+      const res = await authFetch(`/api/v1/assets/${id}/inventory-verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nextInventoryCheck: nextCheck.toISOString() }),
+      });
+      if (!res.ok) throw new Error('verify failed');
+      toast({ title: 'ספירת המלאי אומתה' });
+      await loadAssetData();
+    } catch {
+      toast({ title: 'אימות המלאי נכשל', variant: 'destructive' });
+    }
   };
 
   if (loading) {
@@ -354,6 +401,47 @@ export default function AssetDetailPage() {
                 <p className="font-medium text-foreground">גיל הנכס:</p>
                 <p>{depreciation.ageYears.toFixed(1)} שנים</p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {health && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <ShieldCheck className="h-5 w-5" /> מחזור חיים ובקרות
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="rounded-lg border bg-muted/30 p-4 text-sm">
+                <p className="text-xs font-medium text-foreground">עלות תחזוקה מצטברת</p>
+                <p className="text-lg font-semibold text-foreground">{formatCurrency(health.metrics.totalMaintenanceCost)}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-4 text-sm">
+                <p className="text-xs font-medium text-foreground">תחזוקות שהושלמו</p>
+                <p className="text-lg font-semibold text-foreground">{health.metrics.completedReports}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-4 text-sm">
+                <p className="text-xs font-medium text-foreground">אימות מלאי</p>
+                <p className="text-lg font-semibold text-foreground">{health.lifecycle?.inventoryState ?? 'לא זמין'}</p>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-4 text-sm">
+                <p className="text-xs font-medium text-foreground">אחריות</p>
+                <p className="text-lg font-semibold text-foreground">{health.warranty?.status ?? 'ללא אחריות'}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {health.lifecycle?.replacementRecommended && <Badge variant="destructive">החלפה מומלצת</Badge>}
+              {health.lifecycle?.replacementNotes && <span className="text-sm text-muted-foreground">{health.lifecycle.replacementNotes}</span>}
+              <Button size="sm" variant="outline" onClick={verifyInventory}>אשר ספירת מלאי</Button>
+              <Button size="sm" variant="outline" onClick={() => window.open(`/api/v1/assets/${id}/history?format=csv`, '_blank')}>ייצא היסטוריית תחזוקה</Button>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {health.lifecycle?.lastInventoryCheck && <div>ספירת מלאי אחרונה: {format(new Date(health.lifecycle.lastInventoryCheck), "dd MMM yyyy", { locale: he })}</div>}
+              {health.lifecycle?.nextInventoryCheck && <div>ספירת מלאי הבאה: {format(new Date(health.lifecycle.nextInventoryCheck), "dd MMM yyyy", { locale: he })}</div>}
+              {health.warranty?.warrantyExpiry && <div>תוקף אחריות: {format(new Date(health.warranty.warrantyExpiry), "dd MMM yyyy", { locale: he })}</div>}
             </div>
           </CardContent>
         </Card>

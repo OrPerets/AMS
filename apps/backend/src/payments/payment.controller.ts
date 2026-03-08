@@ -29,26 +29,43 @@ export class PaymentController {
 
   @Get('invoices')
   @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT, Role.RESIDENT)
-  listInvoices(@Query('residentId') residentId?: string, @Query('status') status?: 'PENDING' | 'PAID' | 'OVERDUE') {
+  async listInvoices(
+    @Query('residentId') residentId?: string,
+    @Query('status') status?: 'PENDING' | 'PAID' | 'OVERDUE',
+    @Query('format') format?: string,
+    @Query('buildingId') buildingId?: string,
+    @Res({ passthrough: true }) res?: Response,
+  ) {
+    if (format === 'csv' && res) {
+      const csv = await this.payments.exportInvoicesCsv('invoices', residentId ? +residentId : undefined, buildingId ? +buildingId : undefined);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="invoices.csv"');
+      return csv;
+    }
     return this.payments.listInvoices(residentId ? +residentId : undefined, status);
   }
 
   @Get('invoices/unpaid')
   @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
-  listUnpaid(
+  async listUnpaid(
     @Query('residentId') residentId?: string,
     @Query('format') format?: string,
     @Res({ passthrough: true }) res?: Response,
   ) {
     const data = this.payments.listUnpaid(residentId ? +residentId : undefined);
     if (format === 'csv' && res) {
-      return data.then((invoices) => {
-        const csv = ['id,residentId,amount,status', ...invoices.map((i) => `${i.id},${i.residentId},${i.amount},${i.status}`)].join('\n');
-        res.setHeader('Content-Type', 'text/csv');
-        res.send(csv);
-      });
+      const csv = await this.payments.exportInvoicesCsv('unpaid', residentId ? +residentId : undefined);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="unpaid-invoices.csv"');
+      return csv;
     }
     return data;
+  }
+
+  @Get('invoices/collections/summary')
+  @Roles(Role.ADMIN, Role.PM, Role.ACCOUNTANT)
+  collectionsSummary(@Query('buildingId') buildingId?: string) {
+    return this.payments.getCollectionsDashboard(buildingId ? +buildingId : undefined);
   }
 
   @Post('invoices/:id/pay')
@@ -115,20 +132,7 @@ export class PaymentController {
     const effectiveResidentId = (req.user?.actAsRole ?? req.user?.role) === Role.RESIDENT ? req.user?.sub : +residentId;
     const ledger = await this.payments.getResidentLedger(effectiveResidentId);
     if (format === 'csv' && res) {
-      const csv = [
-        'entryId,invoiceId,type,amount,createdAt,summary,status',
-        ...ledger.entries.map((entry) =>
-          [
-            JSON.stringify(entry.id),
-            entry.invoiceId,
-            entry.type,
-            entry.amount,
-            new Date(entry.createdAt).toISOString(),
-            JSON.stringify(entry.summary),
-            entry.status,
-          ].join(','),
-        ),
-      ].join('\n');
+      const csv = await this.payments.exportInvoicesCsv('ledger', effectiveResidentId);
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=\"resident-ledger.csv\"');
       return csv;

@@ -173,7 +173,8 @@ export default function ContractsPage() {
             <CardDescription>רשימת החוזים כוללת בעל אחריות, ספק, מסמכים וסטטוס אישור.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => window.open('/api/v1/contracts?format=csv', '_blank')}>ייצא CSV</Button>
               <Button variant="outline" size="sm" onClick={runReminders}>שלח תזכורות חידוש</Button>
             </div>
             {contracts.map((contract) => {

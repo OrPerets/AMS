@@ -25,6 +25,11 @@ export class MaintenanceController {
     return this.maintenance.findAll();
   }
 
+  @Get('exceptions')
+  getExceptions(@Query('buildingId') buildingId?: string) {
+    return this.maintenance.getManagerExceptions(buildingId ? +buildingId : undefined);
+  }
+
   @Get('building/:buildingId/alerts')
   getAlerts(@Param('buildingId') buildingId: string, @Query('daysAhead') daysAhead?: string) {
     const ahead = daysAhead ? Number.parseInt(daysAhead, 10) : undefined;

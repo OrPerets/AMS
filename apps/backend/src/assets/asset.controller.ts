@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards, Res } from '@nestjs/common';
 import { AssetService } from './asset.service';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
@@ -8,6 +8,7 @@ import { Roles } from '../auth/roles.decorator';
 import { Role } from '../auth/roles.decorator';
 import { UpdateAssetLocationDto } from './dto/update-asset-location.dto';
 import { AssetDepreciationOptionsDto } from './dto/asset-depreciation-options.dto';
+import { Response } from 'express';
 
 @Controller('api/v1/assets')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -38,8 +39,8 @@ export class AssetController {
   }
 
   @Get()
-  findAll() {
-    return this.assets.findAll();
+  findAll(@Query('buildingId') buildingId?: string) {
+    return buildingId ? this.assets.findForBuilding(+buildingId) : this.assets.findAll();
   }
 
   @Get('building/:buildingId/inventory')
@@ -47,8 +48,24 @@ export class AssetController {
     return this.assets.getInventorySummary(+buildingId);
   }
 
+  @Get('building/:buildingId')
+  findForBuilding(@Param('buildingId') buildingId: string) {
+    return this.assets.findForBuilding(+buildingId);
+  }
+
+  @Get('lifecycle/summary')
+  getLifecycleSummary(@Query('buildingId') buildingId?: string) {
+    return this.assets.getLifecycleSummary(buildingId ? +buildingId : undefined);
+  }
+
   @Get(':id/history')
-  getHistory(@Param('id') id: string) {
+  async getHistory(@Param('id') id: string, @Query('format') format?: string, @Res({ passthrough: true }) res?: Response) {
+    if (format === 'csv' && res) {
+      const csv = await this.assets.exportMaintenanceHistoryCsv(+id);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="asset-maintenance-history.csv"');
+      return csv;
+    }
     return this.assets.getMaintenanceHistory(+id);
   }
 
@@ -62,19 +79,22 @@ export class AssetController {
     return this.assets.getWarrantyStatus(+id);
   }
 
+  @Get(':id/health')
+  getHealth(@Param('id') id: string) {
+    return this.assets.getAssetHealth(+id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.assets.findOne(+id);
   }
 
-  @Get('building/:buildingId')
-  findForBuilding(@Param('buildingId') buildingId: string) {
-    return this.assets.findForBuilding(+buildingId);
-  }
-
-  @Get(':id/health')
-  getHealth(@Param('id') id: string) {
-    return this.assets.getAssetHealth(+id);
+  @Post(':id/inventory-verify')
+  verifyInventory(
+    @Param('id') id: string,
+    @Body() body: { notes?: string; nextInventoryCheck?: string | null; replacementRecommended?: boolean; replacementNotes?: string | null },
+  ) {
+    return this.assets.verifyInventory(+id, body);
   }
 
   @Patch(':id/location')

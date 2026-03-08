@@ -39,6 +39,39 @@ interface InvoiceRow {
   collectionNotes?: string | null;
   buildingName?: string | null;
   agingBucket?: string;
+  lastReminderAt?: string | null;
+}
+
+interface CollectionsSummary {
+  totals: {
+    invoiceCount: number;
+    unpaidCount: number;
+    overdueCount: number;
+    outstandingBalance: number;
+    delinquencyRate: number;
+    billedThisMonth: number;
+    collectedThisMonth: number;
+  };
+  aging: Record<string, number>;
+  topDebtors: Array<{
+    residentId: number;
+    residentName: string;
+    buildingName: string | null;
+    amount: number;
+    overdueCount: number;
+    promiseToPayDate: string | null;
+  }>;
+  followUps: Array<{
+    invoiceId: number;
+    residentId: number;
+    residentName: string;
+    buildingName: string | null;
+    collectionStatus: string;
+    reminderState: string;
+    promiseToPayDate: string | null;
+    lastReminderAt: string | null;
+    collectionNotes: string | null;
+  }>;
 }
 
 interface RecurringInvoiceRow {
@@ -88,6 +121,7 @@ export default function PaymentsPage() {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [recurringInvoices, setRecurringInvoices] = useState<RecurringInvoiceRow[]>([]);
   const [residents, setResidents] = useState<ResidentOption[]>([]);
+  const [collectionsSummary, setCollectionsSummary] = useState<CollectionsSummary | null>(null);
   const [residentQuery, setResidentQuery] = useState('');
   const [recurringResidentQuery, setRecurringResidentQuery] = useState('');
   const [newInvoice, setNewInvoice] = useState({
@@ -139,10 +173,22 @@ export default function PaymentsPage() {
     }
   }
 
+  async function loadCollectionsSummary() {
+    try {
+      const res = await authFetch('/api/v1/invoices/collections/summary');
+      if (!res.ok) throw new Error(await res.text());
+      setCollectionsSummary(await res.json());
+    } catch (error) {
+      console.error(error);
+      setCollectionsSummary(null);
+    }
+  }
+
   useEffect(() => {
     loadInvoices();
     loadRecurringInvoices();
     loadResidents();
+    loadCollectionsSummary();
   }, []);
 
   const filteredInvoices = useMemo(
@@ -293,7 +339,7 @@ export default function PaymentsPage() {
 
   async function updateCollections(
     invoiceId: number,
-    payload: Partial<Pick<InvoiceRow, 'reminderState' | 'collectionStatus' | 'promiseToPayDate'>>,
+    payload: Partial<Pick<InvoiceRow, 'reminderState' | 'collectionStatus' | 'promiseToPayDate' | 'collectionNotes'>>,
   ) {
     try {
       const res = await authFetch(`/api/v1/invoices/${invoiceId}/collections`, {
@@ -303,7 +349,7 @@ export default function PaymentsPage() {
       });
       if (!res.ok) throw new Error(await res.text());
       toast({ title: 'סטטוס הגבייה עודכן' });
-      await loadInvoices();
+      await Promise.all([loadInvoices(), loadCollectionsSummary()]);
     } catch (error) {
       console.error(error);
       toast({ title: 'עדכון הגבייה נכשל', variant: 'destructive' });
@@ -379,9 +425,13 @@ export default function PaymentsPage() {
           <p className="text-sm text-muted-foreground">חשבוניות, סליקה, קבלות והיסטוריית תשלומים במקום אחד.</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => window.open('/api/v1/invoices?format=csv', '_blank')}>
+            <Download className="me-2 h-4 w-4" />
+            יצוא חשבוניות
+          </Button>
           <Button variant="outline" onClick={() => window.open('/api/v1/invoices/unpaid?format=csv', '_blank')}>
             <Download className="me-2 h-4 w-4" />
-            יצוא CSV
+            יצוא יתרות פתוחות
           </Button>
           <Button variant="outline" onClick={loadInvoices} disabled={loading}>
             <RefreshCw className="me-2 h-4 w-4" />
@@ -396,6 +446,55 @@ export default function PaymentsPage() {
         <Card><CardHeader><CardTitle>באיחור</CardTitle></CardHeader><CardContent>{stats.overdueCount}</CardContent></Card>
         <Card><CardHeader><CardTitle>שולמו</CardTitle></CardHeader><CardContent>{formatCurrency(stats.paidAmount)}</CardContent></Card>
       </div>
+
+      {collectionsSummary && (
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card><CardHeader><CardTitle>יתרת חוב</CardTitle></CardHeader><CardContent>{formatCurrency(collectionsSummary.totals.outstandingBalance)}</CardContent></Card>
+          <Card><CardHeader><CardTitle>שיעור פיגור</CardTitle></CardHeader><CardContent>{collectionsSummary.totals.delinquencyRate}%</CardContent></Card>
+          <Card><CardHeader><CardTitle>חויב החודש</CardTitle></CardHeader><CardContent>{formatCurrency(collectionsSummary.totals.billedThisMonth)}</CardContent></Card>
+          <Card><CardHeader><CardTitle>נגבה החודש</CardTitle></CardHeader><CardContent>{formatCurrency(collectionsSummary.totals.collectedThisMonth)}</CardContent></Card>
+        </div>
+      )}
+
+      {collectionsSummary && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>דוח התיישנות חוב</CardTitle>
+              <CardDescription>חלוקת יתרות לפי ותק הפיגור.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {Object.entries(collectionsSummary.aging).map(([bucket, amount]) => (
+                <div key={bucket} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                  <span>{bucket}</span>
+                  <span>{formatCurrency(amount)}</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>חייבים מובילים</CardTitle>
+              <CardDescription>מעקב גבייה עבור הדיירים עם היתרות הגבוהות ביותר.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {collectionsSummary.topDebtors.map((debtor) => (
+                <div key={debtor.residentId} className="rounded-lg border px-3 py-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{debtor.residentName}</span>
+                    <span>{formatCurrency(debtor.amount)}</span>
+                  </div>
+                  <div className="text-muted-foreground">
+                    {debtor.buildingName ?? 'ללא בניין'} • {debtor.overdueCount} פריטים בפיגור
+                    {debtor.promiseToPayDate ? ` • הבטיח עד ${formatDate(new Date(debtor.promiseToPayDate), locale)}` : ''}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {stats.overdueCount > 0 && (
         <Card className="border-destructive/20 bg-destructive/5">
@@ -465,6 +564,8 @@ export default function PaymentsPage() {
                         <div>תזכורת: {invoice.reminderState ?? 'NONE'}</div>
                         <div>סטטוס: {invoice.collectionStatus ?? 'CURRENT'}</div>
                         {invoice.promiseToPayDate && <div>הבטחה: {formatDate(new Date(invoice.promiseToPayDate), locale)}</div>}
+                        {invoice.lastReminderAt && <div>תזכורת אחרונה: {formatDate(new Date(invoice.lastReminderAt), locale)}</div>}
+                        {invoice.collectionNotes && <div>הערה: {invoice.collectionNotes}</div>}
                       </div>
                     </td>
                     <td className="py-3 pe-4">
@@ -500,6 +601,7 @@ export default function PaymentsPage() {
                                   reminderState: 'PROMISED',
                                   collectionStatus: 'PROMISE_TO_PAY',
                                   promiseToPayDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                                  collectionNotes: 'הבטחת תשלום נרשמה בממשק הגבייה',
                                 })
                               }
                             >
@@ -527,6 +629,34 @@ export default function PaymentsPage() {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        {collectionsSummary && (
+          <Card>
+            <CardHeader>
+              <CardTitle>ציר מעקב גבייה</CardTitle>
+              <CardDescription>תזכורות, הבטחות תשלום והערות מעקב אחרונות.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {collectionsSummary.followUps.length === 0 && <div className="text-sm text-muted-foreground">אין פעולות מעקב פעילות.</div>}
+              {collectionsSummary.followUps.map((item) => (
+                <div key={item.invoiceId} className="rounded-lg border p-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">#{item.invoiceId} · {item.residentName}</span>
+                    <Badge variant="outline">{item.collectionStatus}</Badge>
+                  </div>
+                  <div className="mt-1 text-muted-foreground">
+                    {item.buildingName ?? 'ללא בניין'} • תזכורת {item.reminderState}
+                  </div>
+                  <div className="mt-1 text-muted-foreground">
+                    {item.lastReminderAt ? `עודכן לאחרונה ${formatDate(new Date(item.lastReminderAt), locale)}` : 'טרם נשלחה תזכורת'}
+                    {item.promiseToPayDate ? ` • הבטחה עד ${formatDate(new Date(item.promiseToPayDate), locale)}` : ''}
+                  </div>
+                  {item.collectionNotes && <div className="mt-2">{item.collectionNotes}</div>}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>חשבונית חדשה</CardTitle>

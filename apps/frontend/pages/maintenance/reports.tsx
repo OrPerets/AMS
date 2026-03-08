@@ -34,11 +34,21 @@ interface CostProjection {
   byPriority: Record<string, { count: number; estimatedCost: number }>;
 }
 
+interface ExceptionSummary {
+  summary: {
+    unverifiedMaintenance: number;
+    overdueMaintenance: number;
+    urgentTickets: number;
+    openWorkOrders: number;
+  };
+}
+
 export default function MaintenanceReportsPage() {
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [schedules, setSchedules] = useState<MaintenanceSchedule[]>([]);
   const [alerts, setAlerts] = useState<MaintenanceSchedule[]>([]);
   const [projection, setProjection] = useState<CostProjection | null>(null);
+  const [exceptions, setExceptions] = useState<ExceptionSummary | null>(null);
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>('all');
   const [loading, setLoading] = useState(true);
 
@@ -68,16 +78,19 @@ export default function MaintenanceReportsPage() {
 
   const loadBuildingBreakdown = async (buildingId: number) => {
     try {
-      const [alertsRes, projectionRes] = await Promise.all([
+      const [alertsRes, projectionRes, exceptionsRes] = await Promise.all([
         authFetch(`/api/v1/maintenance/building/${buildingId}/alerts`),
         authFetch(`/api/v1/maintenance/building/${buildingId}/cost-projection`),
+        authFetch(`/api/v1/maintenance/exceptions?buildingId=${buildingId}`),
       ]);
 
       setAlerts(alertsRes.ok ? await alertsRes.json() : []);
       setProjection(projectionRes.ok ? await projectionRes.json() : null);
+      setExceptions(exceptionsRes.ok ? await exceptionsRes.json() : null);
     } catch (error) {
       setAlerts([]);
       setProjection(null);
+      setExceptions(null);
     }
   };
 
@@ -190,6 +203,15 @@ export default function MaintenanceReportsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {exceptions && (
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm">לא אומתו</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{exceptions.summary.unverifiedMaintenance}</CardContent></Card>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm">באיחור</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{exceptions.summary.overdueMaintenance}</CardContent></Card>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm">קריאות דחופות</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{exceptions.summary.urgentTickets}</CardContent></Card>
+          <Card><CardHeader className="pb-2"><CardTitle className="text-sm">הזמנות פתוחות</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{exceptions.summary.openWorkOrders}</CardContent></Card>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
