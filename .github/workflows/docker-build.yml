@@ -22,13 +22,16 @@ jobs:
             image: ams-backend
             dockerfile: ./apps/backend/Dockerfile
             build-args: ""
-            latest-tag: railway-fixed
+            tags: |
+              type=raw,value=latest
+              type=raw,value=railway-fixed
           - name: frontend
             image: ams-frontend
             dockerfile: ./apps/frontend/Dockerfile
             build-args: |
               NEXT_PUBLIC_API_BASE=${{ vars.NEXT_PUBLIC_API_BASE || 'https://ams-backend-production-fb77.up.railway.app' }}
-            latest-tag: latest
+            tags: |
+              type=raw,value=latest
 
     steps:
     - name: Checkout code
@@ -49,7 +52,7 @@ jobs:
       with:
         images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}
         tags: |
-          type=raw,value=${{ matrix.latest-tag }}
+          ${{ matrix.tags }}
           type=sha,prefix=sha-
 
     - name: Build and push ${{ matrix.name }} image
