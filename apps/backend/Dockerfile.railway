@@ -1,51 +1,33 @@
-# Railway-optimized Dockerfile for NestJS backend
-FROM node:18-alpine
+FROM node:20-alpine
 
-# Install system dependencies
 RUN apk add --no-cache libc6-compat openssl wget
 
 WORKDIR /app
 
-# Copy package files for workspace setup
 COPY package*.json ./
 COPY apps/backend/package*.json ./apps/backend/
+COPY apps/frontend/package*.json ./apps/frontend/
 COPY tsconfig*.json ./
 
-# Install all dependencies
-RUN npm install
+RUN npm ci
 
-# Copy source code
 COPY . .
 
-# Generate Prisma client and build the backend application
 WORKDIR /app/apps/backend
-RUN npx prisma generate
-RUN npx tsc -p tsconfig.json
+RUN npm run build
 
-# Create non-root user for security
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nestjs
-
-# Set up production directory structure
 WORKDIR /app
-RUN mkdir -p dist/uploads
-RUN cp -r apps/backend/dist/* dist/
-RUN cp -r apps/backend/prisma ./prisma
-RUN cp apps/backend/package*.json ./
-# Use the root node_modules (already installed)
 
-# Create uploads directory with proper permissions
-RUN mkdir -p uploads && chown -R nestjs:nodejs uploads dist
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nestjs \
+  && mkdir -p /app/apps/backend/uploads \
+  && chown -R nestjs:nodejs /app
 
 USER nestjs
 
-# Expose port (Railway will set PORT dynamically)
 EXPOSE 3000
 
-# Health check for Railway
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+  CMD sh -c 'wget --no-verbose --tries=1 --spider "http://127.0.0.1:${PORT:-3000}/health" || exit 1'
 
-# Start the application with runtime Prisma generation
-# Railway sets PORT dynamically, so we use $PORT
-CMD ["sh", "-c", "npx prisma generate && PORT=${PORT:-3000} node -r dotenv/config dist/src/main.js"]
+CMD ["sh", "-c", "cd /app/apps/backend && npx prisma migrate deploy && PORT=${PORT:-3000} node -r dotenv/config dist/src/main.js"]
