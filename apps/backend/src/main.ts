@@ -56,6 +56,21 @@ async function bootstrap() {
     }
   }
 
+  const tranzilaMode = (process.env.TRANZILA_MODE || 'sandbox').toLowerCase();
+  const missingTranzila: string[] = [];
+  if (!process.env.TRANZILA_TERMINAL_ID) {
+    missingTranzila.push('TRANZILA_TERMINAL_ID');
+  }
+  if (!process.env.TRANZILA_SECRET && !process.env.TRANZILA_PASSWORD) {
+    missingTranzila.push('TRANZILA_SECRET (or TRANZILA_PASSWORD)');
+  }
+  if (missingTranzila.length > 0) {
+    throw new Error(`[bootstrap] Missing Tranzila env vars: ${missingTranzila.join(', ')}`);
+  }
+  if (!['sandbox', 'production'].includes(tranzilaMode)) {
+    throw new Error('[bootstrap] TRANZILA_MODE must be either "sandbox" or "production".');
+  }
+
   const fallbackPort = 3000;
   const envPort = process.env.PORT ? parseInt(process.env.PORT, 10) : undefined;
   // Some platforms may inject PORT=5432 from a linked Postgres service.
