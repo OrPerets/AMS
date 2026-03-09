@@ -1,0 +1,81 @@
+/* Contact Section Styles */
+#contact {
+  background: linear-gradient(rgba(99, 114, 255, 0.02), rgba(99, 114, 255, 0.05));
+  padding: calc(3 * var(--spacing-unit)) 0;
+}
+
+#contact .section-title {
+  margin-bottom: calc(2 * var(--spacing-unit));
+}
+
+#contact .text-muted {
+  color: var(--text-color);
+  opacity: 0.7;
+  margin-bottom: calc(2 * var(--spacing-unit));
+}
+
+/* Form Layout */
+.contact-form {
+  max-width: min(100%, 600px);
+  margin: 0 auto;
+  padding: var(--spacing-unit);
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Form Groups */
+.form-group {
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.form-group:last-of-type {
+  margin-bottom: 2rem;
+}
+
+/* Form Controls */
+.form-control {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid var(--gray-light);
+  border-radius: var(--border-radius);
+  font-size: var(--font-base);
+  transition: var(--transition-smooth);
+  background: white;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(99, 114, 255, 0.1);
+}
+
+textarea.form-control {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* RTL Support */
+[dir="rtl"] .contact-form {
+  text-align: right;
+}
+
+[dir="rtl"] .form-control {
+  text-align: right;
+}
+
+/* Mobile Optimization */
+@media (max-width: 768px) {
+  #contact {
+    padding: var(--spacing-unit) 0;
+  }
+  
+  .contact-form {
+    margin: 0 var(--spacing-unit);
+  }
+  
+  .form-control {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+}

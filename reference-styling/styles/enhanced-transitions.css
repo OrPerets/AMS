@@ -1,0 +1,49 @@
+/* Enhanced Form Transitions */
+.form-enter {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+.form-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all var(--transition-smooth);
+}
+
+.form-exit {
+  opacity: 1;
+}
+
+.form-exit-active {
+  opacity: 0;
+  transform: translateY(-16px);
+  transition: all var(--transition-smooth);
+}
+
+/* Form Field Interactions */
+.field-focused {
+  transform: translateY(-2px);
+  transition: transform var(--transition-base);
+}
+
+/* Section Transitions */
+.section-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.section-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all var(--transition-smooth);
+}
+
+.section-exit {
+  opacity: 1;
+}
+
+.section-exit-active {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all var(--transition-smooth);
+}

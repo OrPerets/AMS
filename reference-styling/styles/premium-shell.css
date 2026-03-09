@@ -1,0 +1,46 @@
+/* ═══════════════════════════════════════════════════════════
+   Phase 3.1 + Phase 5 — Premium App Shell
+   Ambient gold glow · Branded header · Refined surfaces
+   ═══════════════════════════════════════════════════════════ */
+
+/* Subtle ambient gold light at the top of the form area */
+#features.form-card {
+  background:
+    linear-gradient(180deg, rgba(212, 168, 8, 0.03) 0%, transparent 280px),
+    var(--bg-subtle);
+}
+
+/* Branded report title with gold underline accent */
+.report-title {
+  position: relative;
+  padding-bottom: var(--space-3);
+}
+
+.report-title::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 2px;
+  background: var(--gradient-gold-main);
+  margin: var(--space-2) auto 0;
+  border-radius: 1px;
+  opacity: 0.7;
+}
+
+/* Footer brand accent with centered gold highlight */
+.form-footer {
+  position: relative;
+  overflow: hidden;
+}
+
+.form-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 1px;
+  background: var(--gradient-gold-main);
+  opacity: 0.4;
+}

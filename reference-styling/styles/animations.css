@@ -1,0 +1,163 @@
+/* ═══════════════════════════════════════════════════════════
+   Motion System — Intent-based animations
+   Only: feedback, transitions, emphasis
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Feedback Animations ───────────────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ── Loading States ────────────────────────────────────────── */
+
+@keyframes shimmer {
+  0% { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.loading-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(to right, var(--neutral-100) 8%, var(--neutral-200) 18%, var(--neutral-100) 33%);
+  background-size: 600px 100%;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* ── Gold Shimmer (premium) ────────────────────────────────── */
+
+@keyframes goldShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ── Micro-interactions ────────────────────────────────────── */
+
+.hover-lift {
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  will-change: transform;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.hover-lift:active {
+  transform: translateY(0);
+}
+
+/* Smooth focus ring */
+.focus-ring {
+  transition: box-shadow var(--transition-fast);
+}
+
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--gold-500);
+}
+
+/* ── Utility Classes ───────────────────────────────────────── */
+
+.fade-in {
+  animation: fadeIn var(--duration-smooth) var(--ease-entrance) forwards;
+}
+
+.fade-in-up {
+  animation: fadeInUp var(--duration-smooth) var(--ease-entrance) forwards;
+}
+
+.slide-up {
+  animation: slideUp var(--duration-smooth) var(--ease-entrance) forwards;
+}
+
+.scale-in {
+  animation: scaleIn var(--duration-base) var(--ease-entrance) forwards;
+}
+
+/* Stagger children with reduced delay */
+.stagger-children > * {
+  opacity: 0;
+  animation: fadeInUp var(--duration-smooth) var(--ease-entrance) forwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 180ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 300ms; }
+
+/* Button press */
+.btn-press:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Ripple effect */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background: radial-gradient(circle, rgba(212, 168, 8, 0.2) 10%, transparent 10.01%);
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.8s;
+}
+
+.ripple:active::after {
+  transform: scale(0, 0);
+  opacity: 0.4;
+  transition: 0s;
+}
+
+/* ── Reduced Motion ────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .stagger-children > * {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+}

@@ -7,10 +7,85 @@ import {
   MaintenanceType,
   BudgetStatus,
   ExpenseCategory,
+  CodeType,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
+const RUBINA_42_ADDRESS = 'חנה רובינא 42, הרצליה';
+
+const rubinaResidents = [
+  {
+    firstName: 'רוני',
+    lastName: 'זגאייר',
+    email: 'zagayer@gmail.com',
+    phone: '050-7876348',
+    address: 'רובינא 42, הרצליה',
+    monthlyFee: 460,
+    unitNumber: '101',
+    password: 'rubina101',
+  },
+  {
+    firstName: 'ירון',
+    lastName: 'חזן',
+    email: 'yaron.hazan@intel.com',
+    phone: '054-7885982',
+    address: 'רובינא 42, הרצליה',
+    monthlyFee: 460,
+    unitNumber: '102',
+    password: 'rubina102',
+  },
+  {
+    firstName: 'כרמל',
+    lastName: 'רודה',
+    email: 'karmel007@walla.com',
+    phone: '053-3680680',
+    address: 'רובינא 42, הרצליה',
+    monthlyFee: 460,
+    unitNumber: '103',
+    password: 'rubina103',
+  },
+  {
+    firstName: 'אילן',
+    lastName: 'מוריאנו',
+    email: 'morianolow@gmail.com',
+    phone: '050-5116014',
+    address: 'רובינא 42, הרצליה',
+    monthlyFee: 460,
+    unitNumber: '104',
+    password: 'rubina104',
+  },
+  {
+    firstName: 'יעקב',
+    lastName: 'קלינסקי',
+    email: 'ykalinsky1@gmail.com',
+    phone: '052-3579227',
+    address: 'רובינא 42, הרצליה',
+    monthlyFee: 460,
+    unitNumber: '105',
+    password: 'rubina105',
+  },
+  {
+    firstName: 'אביב',
+    lastName: 'חיים',
+    email: 'avivhaim@gmail.com',
+    phone: '054-5457087',
+    address: 'רובינא 42, הרצליה',
+    monthlyFee: 460,
+    unitNumber: '106',
+    password: 'rubina106',
+  },
+  {
+    firstName: 'גלית',
+    lastName: 'אוזן',
+    email: 'galitrozenberg@gmail.com',
+    phone: '052-7487788',
+    address: 'רובינא 42, הרצליה',
+    monthlyFee: 521,
+    unitNumber: '107',
+    password: 'rubina107',
+  },
+] as const;
 
 async function main() {
   if (process.env.NODE_ENV === 'production') {
@@ -176,24 +251,29 @@ async function main() {
     const buildYear = 1980 + (index % 30);
     const floors = 4 + (index % 6);
     const totalUnits = floors * 2;
+    const isRubina42 = label === RUBINA_42_ADDRESS;
     const building = await prisma.building.create({
       data: {
         name: label,
         address: label,
         tenantId: 1,
-        yearBuilt: buildYear,
-        floors,
-        totalUnits,
-        area: 1200 + index * 15,
-        amenities: index % 2 === 0 ? ['חדר כושר', 'חניון'] : ['לובי מפואר', 'מעלית חכמה'],
-        managerName: 'צוות ניהול עמית',
-        contactEmail: 'support@amit-housing.demo',
-        contactPhone: '+972-3-555-0101',
-        notes: 'נוצר כחלק מזריעת נתונים לדמו.',
+        yearBuilt: isRubina42 ? 1996 : buildYear,
+        floors: isRubina42 ? 4 : floors,
+        totalUnits: isRubina42 ? rubinaResidents.length : totalUnits,
+        area: isRubina42 ? 1680 : 1200 + index * 15,
+        amenities: isRubina42 ? ['לובי', 'מעלית', 'חניה'] : index % 2 === 0 ? ['חדר כושר', 'חניון'] : ['לובי מפואר', 'מעלית חכמה'],
+        managerName: isRubina42 ? 'ועד הבית רובינא 42' : 'צוות ניהול עמית',
+        contactEmail: isRubina42 ? 'board-rubina42@demo.local' : 'support@amit-housing.demo',
+        contactPhone: isRubina42 ? '09-9554242' : '+972-3-555-0101',
+        notes: isRubina42 ? 'בניין seeded עם בעלי הדירות בפועל לצורך בדיקות E2E.' : 'נוצר כחלק מזריעת נתונים לדמו.',
       },
     });
     buildings.push({ id: building.id });
   }
+
+  const rubina42Building = await prisma.building.findFirstOrThrow({
+    where: { address: RUBINA_42_ADDRESS, tenantId: 1 },
+  });
 
   // unit and tickets for demonstration
   const unit = await prisma.unit.create({
@@ -526,6 +606,244 @@ async function main() {
       channel: 'INTERNAL',
     },
   });
+
+  const rubinaBudget = await prisma.budget.create({
+    data: {
+      buildingId: rubina42Building.id,
+      name: `Operating Budget ${now.getFullYear()} - Rubina 42`,
+      year: now.getFullYear(),
+      amount: 42000,
+      status: BudgetStatus.ACTIVE,
+      notes: 'Budget sized for Rubina 42 end-to-end testing.',
+    },
+  });
+
+  await prisma.expense.createMany({
+    data: [
+      {
+        buildingId: rubina42Building.id,
+        budgetId: rubinaBudget.id,
+        category: ExpenseCategory.UTILITIES,
+        amount: 2850,
+        description: 'חשמל וניקיון שטחים משותפים',
+        incurredAt: new Date(now.getFullYear(), now.getMonth() - 1, 20),
+      },
+      {
+        buildingId: rubina42Building.id,
+        budgetId: rubinaBudget.id,
+        category: ExpenseCategory.MAINTENANCE,
+        amount: 1650,
+        description: 'תחזוקת מעלית וקריאת שירות',
+        incurredAt: new Date(now.getFullYear(), now.getMonth() - 1, 12),
+      },
+    ],
+  });
+
+  const rubinaAsset = await prisma.asset.create({
+    data: {
+      buildingId: rubina42Building.id,
+      name: 'Rubina 42 Elevator',
+      category: MaintenanceCategory.SAFETY,
+      description: 'Main passenger elevator for Rubina 42.',
+      serialNumber: 'R42-ELEV-001',
+      location: 'Lobby',
+      purchaseDate: new Date(2019, 4, 1),
+      warrantyExpiry: new Date(now.getFullYear() + 1, 4, 1),
+      status: 'OPERATIONAL',
+    },
+  });
+
+  const rubinaSchedule = await prisma.maintenanceSchedule.create({
+    data: {
+      buildingId: rubina42Building.id,
+      assetId: rubinaAsset.id,
+      title: 'בדיקת מעלית חודשית',
+      description: 'בדיקת תקינות מעלית וארון פיקוד.',
+      category: MaintenanceCategory.SAFETY,
+      type: MaintenanceType.INSPECTION,
+      frequency: 'MONTHLY',
+      startDate: now,
+      nextOccurrence: new Date(now.getFullYear(), now.getMonth() + 1, 5),
+      assignedToId: createdUsers['tech2@demo.com'].id,
+    },
+  });
+
+  await prisma.document.create({
+    data: {
+      buildingId: rubina42Building.id,
+      name: 'Rubina 42 House Committee Summary.pdf',
+      url: 'https://example.com/docs/rubina-42-committee-summary.pdf',
+      category: 'committee',
+      uploadedById: createdUsers['maya@demo.com'].id,
+    },
+  });
+
+  await prisma.buildingCode.createMany({
+    data: [
+      {
+        buildingId: rubina42Building.id,
+        codeType: CodeType.ENTRANCE,
+        code: '4242',
+        description: 'Main entrance keypad',
+        createdBy: createdUsers['maya@demo.com'].id,
+      },
+      {
+        buildingId: rubina42Building.id,
+        codeType: CodeType.ELEVATOR,
+        code: '4201',
+        description: 'Elevator service mode',
+        createdBy: createdUsers['maya@demo.com'].id,
+      },
+      {
+        buildingId: rubina42Building.id,
+        codeType: CodeType.WIFI,
+        code: 'Rubina42-Residents',
+        description: 'Lobby WiFi',
+        createdBy: createdUsers['maya@demo.com'].id,
+      },
+    ],
+  });
+
+  for (const [index, residentSeed] of rubinaResidents.entries()) {
+    const passwordHash = await bcrypt.hash(residentSeed.password, 10);
+    const user = await prisma.user.create({
+      data: {
+        email: residentSeed.email,
+        passwordHash,
+        role: Role.RESIDENT,
+        tenantId: 1,
+        phone: residentSeed.phone,
+      },
+    });
+
+    credentials.push({ email: residentSeed.email, password: residentSeed.password, role: Role.RESIDENT });
+
+    const residentProfile = await prisma.resident.create({
+      data: {
+        userId: user.id,
+        autopayEnabled: index % 2 === 0,
+        autopayConsentAt: index % 2 === 0 ? new Date(now.getFullYear(), now.getMonth() - 1, 1) : null,
+      },
+    });
+
+    const unit = await prisma.unit.create({
+      data: {
+        number: residentSeed.unitNumber,
+        buildingId: rubina42Building.id,
+        floor: Math.ceil((index + 1) / 2),
+        area: 92 + index * 3,
+        bedrooms: index === rubinaResidents.length - 1 ? 4 : 3,
+        bathrooms: 2,
+        parkingSpaces: 1,
+        residents: { connect: { id: residentProfile.id } },
+      },
+    });
+
+    const monthlyDescription = `${residentSeed.firstName} ${residentSeed.lastName} - ועד בית ${residentSeed.address}`;
+
+    const currentInvoice = await prisma.invoice.create({
+      data: {
+        residentId: residentProfile.id,
+        items: [{ description: monthlyDescription, quantity: 1, unitPrice: residentSeed.monthlyFee }],
+        amount: residentSeed.monthlyFee,
+        dueDate: new Date(now.getFullYear(), now.getMonth(), 10),
+        createdAt: new Date(now.getFullYear(), now.getMonth(), 1),
+      },
+    });
+
+    await prisma.invoice.create({
+      data: {
+        residentId: residentProfile.id,
+        items: [{ description: `${monthlyDescription} - חודש קודם`, quantity: 1, unitPrice: residentSeed.monthlyFee }],
+        amount: residentSeed.monthlyFee,
+        dueDate: new Date(now.getFullYear(), now.getMonth() - 1, 10),
+        createdAt: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+        status: index % 3 === 0 ? 'PAID' : 'UNPAID',
+      },
+    });
+
+    await prisma.recurringInvoice.create({
+      data: {
+        residentId: residentProfile.id,
+        title: 'ועד בית חודשי',
+        items: [{ description: 'תשלום חודשי ועד בית', quantity: 1, unitPrice: residentSeed.monthlyFee }],
+        amount: residentSeed.monthlyFee,
+        recurrence: 'monthly',
+        autopayEnabled: index % 2 === 0,
+        dueDaysAfterIssue: 10,
+        nextRunAt: new Date(now.getFullYear(), now.getMonth() + 1, 1),
+        lastRunAt: new Date(now.getFullYear(), now.getMonth(), 1),
+        active: true,
+      },
+    });
+
+    const paymentMethod = await prisma.paymentMethod.create({
+      data: {
+        residentId: residentProfile.id,
+        provider: 'tranzila',
+        token: `rubina42_pm_${residentProfile.id}`,
+        brand: index % 2 === 0 ? 'Visa' : 'Mastercard',
+        last4: `${4242 + index}`.slice(-4),
+        expMonth: 12,
+        expYear: now.getFullYear() + 3,
+        isDefault: true,
+      },
+    });
+
+    if (index % 3 === 0) {
+      await prisma.paymentIntent.create({
+        data: {
+          invoiceId: currentInvoice.id,
+          amount: currentInvoice.amount,
+          currency: 'NIS',
+          provider: 'tranzila',
+          status: 'SUCCEEDED',
+          providerIntentId: `rubina42_pi_${currentInvoice.id}`,
+          paymentMethodId: paymentMethod.id,
+          createdAt: new Date(now.getFullYear(), now.getMonth(), 3),
+        },
+      });
+
+      await prisma.invoice.update({
+        where: { id: currentInvoice.id },
+        data: { status: 'PAID' },
+      });
+    }
+
+    await prisma.notification.createMany({
+      data: [
+        {
+          tenantId: 1,
+          buildingId: rubina42Building.id,
+          userId: user.id,
+          title: 'עדכון ועד בית רובינא 42',
+          message: `חשבון ועד הבית ליחידה ${residentSeed.unitNumber} זמין באזור האישי.`,
+          type: 'FINANCE',
+        },
+        {
+          tenantId: 1,
+          buildingId: rubina42Building.id,
+          userId: user.id,
+          title: 'בדיקת מעלית מתוכננת',
+          message: 'תתקיים בדיקת מעלית ביום ראשון הקרוב בין 09:00 ל-11:00.',
+          type: 'MAINTENANCE',
+        },
+      ],
+    });
+
+    await prisma.communication.create({
+      data: {
+        buildingId: rubina42Building.id,
+        unitId: unit.id,
+        senderId: createdUsers['maya@demo.com'].id,
+        recipientId: user.id,
+        maintenanceScheduleId: rubinaSchedule.id,
+        subject: `ברוכים הבאים לנתוני הבדיקה של יחידה ${residentSeed.unitNumber}`,
+        message: `נוצרו עבורך נתוני בדיקה מלאים עבור ${residentSeed.firstName} ${residentSeed.lastName}, כולל חיובים, מסמכים והתראות.`,
+        channel: 'PORTAL',
+      },
+    });
+  }
 
   console.log('Seed complete. Demo credentials:');
   console.table(

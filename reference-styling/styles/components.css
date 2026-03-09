@@ -1,0 +1,225 @@
+/* Modern Component System */
+.grid {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+}
+
+/* Card Components */
+.card {
+  background: var(--background-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-md);
+  transition: all var(--transition-base);
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--gray-100);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom right, transparent, rgba(212, 168, 8, 0.03));
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--gray-200);
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+.card-image {
+  margin: calc(-1 * var(--spacing-lg));
+  margin-bottom: var(--spacing-md);
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  position: relative;
+}
+
+.card-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 60%, rgba(0, 0, 0, 0.05));
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-smooth);
+}
+
+.card:hover .card-image img {
+  transform: scale(1.03);
+}
+
+.card-body {
+  padding: 0;
+}
+
+.card-title {
+  font-size: var(--font-xl);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--text-color);
+}
+
+.card-text {
+  color: var(--text-color);
+  opacity: 0.8;
+  line-height: var(--line-height-base);
+  margin-bottom: 1rem;
+}
+
+/* Service Card */
+.service-card {
+  text-align: center;
+  padding: 2rem var(--spacing-unit);
+  background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.95));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.service-card .icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-gold-main, linear-gradient(135deg, #D4A808, #FFD966));
+  border-radius: 50%;
+  color: var(--text-on-gold, #1A1A1A);
+}
+
+/* Feature Grid */
+.features-grid {
+  display: grid;
+  gap: var(--spacing-unit);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  padding: var(--spacing-unit);
+}
+
+/* Testimonial Card */
+.testimonial-card {
+  padding: 2rem;
+  text-align: left;
+  background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.8));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.testimonial-card .quote {
+  font-size: var(--font-lg);
+  line-height: var(--line-height-loose);
+  margin-bottom: 1.5rem;
+  position: relative;
+  padding-left: 2rem;
+}
+
+.testimonial-card .quote::before {
+  content: '"';
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 4rem;
+  line-height: 1;
+  color: var(--primary-color);
+  opacity: 0.2;
+}
+
+.testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.author-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.author-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.author-info {
+  flex: 1;
+}
+
+.author-name {
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.author-title {
+  font-size: var(--font-sm);
+  color: var(--text-color);
+  opacity: 0.7;
+}
+
+/* Contact Form */
+.contact-form {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--spacing-unit);
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+/* RTL Support */
+[dir="rtl"] .testimonial-card {
+  text-align: right;
+}
+
+[dir="rtl"] .testimonial-card .quote {
+  padding-left: 0;
+  padding-right: 2rem;
+}
+
+[dir="rtl"] .testimonial-card .quote::before {
+  left: auto;
+  right: 0;
+}
+
+/* Mobile Optimization */
+@media (max-width: 768px) {
+  .card {
+    margin-bottom: var(--spacing-unit);
+  }
+  
+  .service-card {
+    padding: 1.5rem var(--spacing-unit);
+  }
+  
+  .testimonial-card {
+    padding: 1.5rem;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+}

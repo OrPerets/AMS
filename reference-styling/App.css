@@ -1,0 +1,55 @@
+@import './styles/variables.css';
+@import './styles/form-enhancements.css';
+@import './styles/features-enhanced.css';
+@import './styles/features-sections.css';
+@import './styles/mui-enhancements.css';
+@import './styles/gauge-enhanced.css';
+@import './styles/scroll-enhancements.css';
+@import './styles/enhanced-transitions.css';
+@import './styles/features-polished.css';
+@import './styles/touch-optimizations.css';
+@import './styles/enhanced-form-layouts.css';
+@import './styles/mobile.css';
+@import './styles/animations.css';
+@import './styles/typography.css';
+@import './styles/navigation.css';
+@import './styles/feedback.css';
+@import './styles/components.css';
+@import './styles/sections.css';
+@import './styles/rtl.css';
+@import './styles/form.css';
+@import './styles/contact.css';
+@import './styles/premium-shell.css';
+@import './styles/premium-wow.css';
+@import './styles/motion-delight.css';
+
+/* Base Styles */
+body {
+  font-family: 'Heebo', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+}
+
+/* Mobile-First Media Queries */
+@media screen and (max-width: 768px) {
+  #features {
+    padding: 0;
+    width: 100%;
+  }
+  #about,
+  #services,
+  #testimonials,
+  #team,
+  #contact,
+  #footer {
+    width: 95%;
+  }
+
+  #portfolio {
+    width: 100%;
+  }
+
+  #menu {
+    width: 100%;
+  }
+}

@@ -1,0 +1,93 @@
+/* Touch-Optimized Interactions */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--spacing-sm, 0.5rem) var(--spacing-lg, 1.5rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Smooth Touch Feedback */
+.touch-feedback {
+  position: relative;
+  overflow: hidden;
+}
+
+.touch-feedback::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.3) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  transform: scale(2);
+  transition: all 0.5s ease-out;
+}
+
+.touch-feedback:active::after {
+  opacity: 1;
+  transform: scale(0);
+  transition: all 0.2s ease-out;
+}
+
+/* Prevent iOS Double-tap Zoom */
+.no-double-tap {
+  touch-action: manipulation;
+}
+
+/* Touch devices: enforce minimum 44×44px touch targets */
+@media (hover: none) and (pointer: coarse) {
+  .btn,
+  .btn-custom,
+  .form-input,
+  .MuiButton-root,
+  .MuiIconButton-root,
+  .MuiCheckbox-root,
+  .MuiFormControlLabel-root,
+  .navbar-toggle,
+  .nav-link,
+  .nav-link[role="button"],
+  .navbar-nav .nav-link button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .btn-custom.btn-lg,
+  .floor-toggle-btn {
+    min-height: 48px;
+  }
+
+  /* Floor buttons and nav: increase tap area */
+  .navbar-nav .nav-link,
+  .navbar-nav .nav-link button {
+    padding: 0.875rem 1rem;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* MUI Autocomplete/Select input */
+  .MuiAutocomplete-root .MuiInputBase-root,
+  .MuiSelect-select,
+  .MuiOutlinedInput-input {
+    min-height: 44px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  /* Checkbox rows: more spacing so taps don't hit wrong control */
+  .MuiFormControlLabel-root {
+    padding: 10px 0;
+    margin-left: 0;
+    margin-right: 0;
+    min-height: 48px;
+  }
+
+  .MuiFormControlLabel-root .MuiCheckbox-root {
+    padding: 10px;
+  }
+}

@@ -1,0 +1,570 @@
+/* ═══════════════════════════════════════════════════════════
+   Navigation — Premium Dark Header with Animated Gold
+   Luxury brand feel · Animated shimmer · Glass depth
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Keyframes ────────────────────────────────────────────── */
+
+@keyframes navGoldShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes navAccentFlow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes navLogoGlow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 0.7; transform: scale(1.12); }
+}
+
+@keyframes navBrandReveal {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes navFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Base Navbar ──────────────────────────────────────────── */
+
+.navbar {
+  background:
+    linear-gradient(180deg,
+      rgba(10, 10, 10, 0.98) 0%,
+      rgba(18, 18, 18, 0.97) 100%);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  padding: 0 var(--spacing-unit);
+  padding-top: env(safe-area-inset-top, 0px);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-navbar, 3000);
+  border-bottom: none;
+  transition:
+    box-shadow var(--duration-smooth, 320ms) var(--ease-standard, ease),
+    background var(--duration-smooth, 320ms) var(--ease-standard, ease);
+  box-shadow:
+    0 1px 0 rgba(212, 168, 8, 0.12),
+    0 4px 24px rgba(0, 0, 0, 0.35);
+  isolation: isolate;
+}
+
+.navbar--scrolled {
+  box-shadow:
+    0 1px 0 rgba(212, 168, 8, 0.18),
+    0 8px 32px rgba(0, 0, 0, 0.45),
+    0 2px 16px rgba(212, 168, 8, 0.06);
+}
+
+/* ── Animated Gold Accent Line ────────────────────────────── */
+
+.navbar__accent-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background:
+    linear-gradient(90deg,
+      transparent 0%,
+      #B8920A 15%,
+      #FFD966 30%,
+      #F5D442 50%,
+      #FFD966 70%,
+      #B8920A 85%,
+      transparent 100%);
+  background-size: 200% 100%;
+  animation: navAccentFlow 4s ease-in-out infinite;
+  z-index: 1;
+}
+
+.navbar__accent-line::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background:
+    linear-gradient(180deg,
+      rgba(212, 168, 8, 0.15) 0%,
+      transparent 100%);
+  pointer-events: none;
+}
+
+/* ── Container ────────────────────────────────────────────── */
+
+.navbar > .container {
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Header Row ───────────────────────────────────────────── */
+
+.navbar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.7rem 0;
+  min-height: 64px;
+}
+
+/* ── Brand / Logo ─────────────────────────────────────────── */
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  padding: 0;
+  min-width: 0;
+  overflow: hidden;
+  gap: 0.85rem;
+  animation: navBrandReveal 0.6s var(--ease-entrance, ease) both;
+}
+
+.navbar-brand__logo-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.navbar-brand img {
+  height: 54px;
+  width: 54px;
+  min-width: 54px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid rgba(212, 168, 8, 0.35);
+  object-fit: cover;
+  box-shadow:
+    0 0 16px rgba(212, 168, 8, 0.22),
+    0 4px 12px rgba(0, 0, 0, 0.35);
+  position: relative;
+  z-index: 1;
+  transition:
+    border-color var(--duration-base, 200ms) ease,
+    box-shadow var(--duration-base, 200ms) ease,
+    transform var(--duration-base, 200ms) ease;
+}
+
+.navbar-brand:hover img,
+.navbar-brand:focus img {
+  border-color: rgba(212, 168, 8, 0.65);
+  box-shadow:
+    0 0 24px rgba(212, 168, 8, 0.35),
+    0 4px 12px rgba(0, 0, 0, 0.35);
+  transform: scale(1.03);
+}
+
+.navbar-brand__logo-glow {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(212, 168, 8, 0.2) 0%,
+    transparent 70%
+  );
+  animation: navLogoGlow 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Brand Text — Animated Gold ───────────────────────────── */
+
+.navbar-brand__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.navbar-brand__name {
+  font-size: 1.6rem;
+  font-weight: var(--weight-bold, 700);
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  background:
+    linear-gradient(90deg,
+      #D4A808 0%,
+      #FFE599 25%,
+      #F5D442 50%,
+      #FFE599 75%,
+      #D4A808 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: navGoldShimmer 4s ease-in-out infinite;
+}
+
+.navbar-brand__tagline {
+  font-size: 1rem;
+  font-weight: var(--weight-medium, 500);
+  color: rgba(212, 168, 8, 0.5);
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  transition: color var(--duration-base, 200ms) ease;
+}
+
+.navbar-brand:hover .navbar-brand__tagline,
+.navbar-brand:focus .navbar-brand__tagline {
+  color: rgba(212, 168, 8, 0.8);
+}
+
+/* ── Hamburger Toggle ─────────────────────────────────────── */
+
+.navbar-toggle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  gap: 5px;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: var(--radius-sm, 6px);
+  transition:
+    background var(--duration-base, 200ms) ease,
+    opacity var(--duration-base, 200ms) ease;
+  opacity: 0.7;
+}
+
+.navbar-toggle:hover,
+.navbar-toggle:focus-visible {
+  background: rgba(212, 168, 8, 0.08);
+  opacity: 1;
+}
+
+.navbar-toggle span {
+  display: block;
+  width: 20px;
+  height: 1.5px;
+  background: linear-gradient(90deg, #D4A808, #FFD966);
+  transition:
+    transform var(--duration-smooth, 320ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    opacity var(--duration-fast, 120ms) ease,
+    width var(--duration-base, 200ms) ease;
+  border-radius: 1px;
+}
+
+.navbar-toggle span:nth-child(2) {
+  width: 14px;
+}
+
+.navbar-toggle:hover span:nth-child(2) {
+  width: 20px;
+}
+
+.navbar-toggle.active span:nth-child(1) {
+  transform: rotate(45deg) translate(4.5px, 4.5px);
+}
+
+.navbar-toggle.active span:nth-child(2) {
+  opacity: 0;
+  width: 0;
+}
+
+.navbar-toggle.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(4.5px, -4.5px);
+}
+
+.navbar-toggle.active {
+  opacity: 1;
+}
+
+/* ── Full-screen Mobile Menu ──────────────────────────────── */
+
+.navbar.menu-open {
+  position: fixed;
+  inset: 0;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at top center, rgba(212, 168, 8, 0.06) 0%, transparent 50%),
+    linear-gradient(180deg, #0A0A0A 0%, #111111 50%, #0A0A0A 100%);
+}
+
+.navbar.menu-open > .container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  max-width: 100%;
+}
+
+/* ── Collapse / Nav Links ─────────────────────────────────── */
+
+.navbar-collapse {
+  padding: 1rem 1.5rem;
+  opacity: 0;
+  transition:
+    opacity var(--duration-smooth, 320ms) ease,
+    visibility var(--duration-smooth, 320ms) ease;
+  visibility: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  flex: 1;
+  display: none;
+}
+
+.navbar-collapse.show {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 1;
+  visibility: visible;
+}
+
+.navbar-nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.nav-item {
+  margin: 0.5rem 0;
+}
+
+.navbar-collapse.show .nav-item {
+  margin: 1.25rem 0;
+  animation: navFadeIn 0.4s ease both;
+}
+
+.navbar-collapse.show .nav-item:nth-child(1) { animation-delay: 0.1s; }
+.navbar-collapse.show .nav-item:nth-child(2) { animation-delay: 0.2s; }
+.navbar-collapse.show .nav-item:nth-child(3) { animation-delay: 0.3s; }
+
+/* ── Nav Link ─────────────────────────────────────────────── */
+
+.nav-link,
+.nav-link[role="button"],
+.navbar-nav .nav-link button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem 1.25rem;
+  min-height: 48px;
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  font-weight: var(--weight-medium, 500);
+  font-size: var(--font-base, 1rem);
+  border-radius: var(--radius-md, 10px);
+  transition:
+    all var(--duration-base, 200ms) ease;
+  background: transparent;
+  border: 1px solid transparent;
+  text-align: center;
+  width: 100%;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.navbar-collapse.show .nav-link {
+  font-size: 1.4rem;
+  font-weight: var(--weight-semibold, 600);
+  padding: 1.25rem 2rem;
+  min-height: 60px;
+  border: 1px solid rgba(212, 168, 8, 0.08);
+  border-radius: var(--radius-lg, 14px);
+}
+
+.nav-link__text {
+  position: relative;
+  z-index: 1;
+}
+
+.nav-link:hover,
+.nav-link:focus-visible {
+  background: rgba(212, 168, 8, 0.08);
+  border-color: rgba(212, 168, 8, 0.15);
+  color: var(--gold-400, #FFCC33);
+}
+
+.nav-link.active {
+  color: var(--gold-400, #FFCC33);
+  background: rgba(212, 168, 8, 0.1);
+  border-color: rgba(212, 168, 8, 0.2);
+}
+
+.navbar-collapse.show .nav-link.active {
+  background:
+    linear-gradient(135deg,
+      rgba(212, 168, 8, 0.12) 0%,
+      rgba(212, 168, 8, 0.05) 100%);
+  border-color: rgba(212, 168, 8, 0.25);
+  box-shadow:
+    0 0 20px rgba(212, 168, 8, 0.08),
+    inset 0 1px 0 rgba(212, 168, 8, 0.1);
+}
+
+.navbar-collapse.show .nav-link:hover {
+  background: rgba(212, 168, 8, 0.12);
+  border-color: rgba(212, 168, 8, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(212, 168, 8, 0.1);
+}
+
+/* ── Responsive: Very Narrow Screens ──────────────────────── */
+
+@media (max-width: 380px) {
+  .navbar-brand__name {
+    font-size: 1.35rem;
+  }
+  .navbar-brand__tagline {
+    font-size: 0.85rem;
+  }
+  .navbar-brand img {
+    height: 46px;
+    width: 46px;
+    min-width: 46px;
+  }
+  .navbar-brand__logo-glow {
+    inset: -6px;
+  }
+}
+
+/* ── Responsive: Medium Phones (390–430px) ────────────────── */
+
+@media (min-width: 390px) and (max-width: 430px) {
+  .navbar-brand__name {
+    font-size: 1.5rem;
+  }
+}
+
+/* ── Responsive: Desktop ──────────────────────────────────── */
+
+@media (min-width: 768px) {
+  .navbar-toggle {
+    display: none;
+  }
+
+  .navbar.menu-open {
+    position: sticky;
+    inset: unset;
+    height: auto;
+    display: block;
+    overflow: visible;
+    background:
+      linear-gradient(180deg,
+        rgba(10, 10, 10, 0.98) 0%,
+        rgba(18, 18, 18, 0.97) 100%);
+  }
+
+  .navbar.menu-open > .container {
+    display: block;
+  }
+
+  .navbar-collapse,
+  .navbar-collapse.show {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    opacity: 1;
+    visibility: visible;
+    padding: 0;
+    box-shadow: none;
+    background: transparent;
+    flex: none;
+    overflow: visible;
+  }
+
+  .navbar-nav {
+    display: flex;
+    align-items: center;
+  }
+
+  .nav-item {
+    margin: 0 0.5rem;
+  }
+
+  .navbar-collapse.show .nav-item {
+    animation: none;
+    margin: 0 0.5rem;
+  }
+
+  .nav-link,
+  .navbar-collapse.show .nav-link {
+    padding: 0.5rem 1rem;
+    font-size: var(--font-base, 1rem);
+    font-weight: var(--weight-medium, 500);
+    min-height: 40px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md, 10px);
+  }
+
+  .navbar-brand__name {
+    font-size: 1.75rem;
+  }
+
+  .navbar-brand__tagline {
+    font-size: 1.05rem;
+  }
+
+  .navbar-brand img {
+    height: 62px;
+    width: 62px;
+    min-width: 62px;
+    border-radius: 50%;
+  }
+}
+
+/* ── Reduced Motion ───────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .navbar-brand__name {
+    animation: none;
+    background: linear-gradient(90deg, #D4A808, #FFD966, #D4A808);
+    background-size: 100% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .navbar__accent-line {
+    animation: none;
+    background-size: 100% 100%;
+  }
+
+  .navbar-brand__logo-glow {
+    animation: none;
+    opacity: 0.4;
+  }
+
+  .navbar-brand {
+    animation: none;
+    opacity: 1;
+  }
+
+  .navbar-collapse.show .nav-item {
+    animation: none;
+    opacity: 1;
+  }
+
+  .navbar-collapse.show .nav-link:hover {
+    transform: none;
+  }
+}

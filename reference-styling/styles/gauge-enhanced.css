@@ -1,0 +1,48 @@
+/* Enhanced Gauge Chart Styles */
+.gauge-container {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  margin: var(--spacing-md) 0;
+  border: 1px solid var(--gray-100);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.gauge-container:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--gray-200);
+}
+
+.gauge-container svg {
+  overflow: visible;
+  max-width: 100%;
+  height: auto;
+}
+
+.gauge-container path {
+  transition: all var(--transition-smooth);
+}
+
+.gauge-container text {
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+
+/* Mobile: larger slider thumb for touch (28px for easy grip) */
+@media (hover: none) and (pointer: coarse) {
+  .slider-enhanced .MuiSlider-thumb,
+  .MuiSlider-thumb {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .gauge-container {
+    padding: var(--spacing-md);
+  }
+}

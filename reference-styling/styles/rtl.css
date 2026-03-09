@@ -1,0 +1,76 @@
+/* ═══════════════════════════════════════════════════════════
+   RTL Support — Phase 5.5
+   Validated for Hebrew content and RTL layout
+   ═══════════════════════════════════════════════════════════ */
+
+[dir="rtl"] {
+  text-align: right;
+}
+
+/* Navigation in RTL uses natural flex direction — no reverse needed */
+
+[dir="rtl"] .nav-link {
+  text-align: right;
+}
+
+[dir="rtl"] .form-label {
+  text-align: right;
+}
+
+[dir="rtl"] .feedback-message {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .toast {
+  right: 50%;
+  left: auto;
+  transform: translateX(50%);
+}
+
+[dir="rtl"] .toast.success,
+[dir="rtl"] .toast.error,
+[dir="rtl"] .toast.warning,
+[dir="rtl"] .toast.info {
+  border-left: none;
+  border-right: 4px solid;
+}
+
+[dir="rtl"] .section-title::after {
+  left: auto;
+  right: 50%;
+  transform: translateX(50%);
+}
+
+[dir="rtl"] .testimonial-card {
+  text-align: right;
+}
+
+[dir="rtl"] .testimonial-author {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .service-card {
+  text-align: right;
+}
+
+/* Input field icons position for RTL */
+[dir="rtl"] .form-control.valid,
+[dir="rtl"] .form-control.invalid {
+  background-position: left 1rem center;
+  padding-right: 1rem;
+  padding-left: 2.5rem;
+}
+
+/* Loading spinner position for RTL */
+[dir="rtl"] .loading::after {
+  right: 50%;
+  left: auto;
+  margin: -12px -12px 0 0;
+}
+
+/* Button loading spinner position for RTL */
+[dir="rtl"] .button-loading::after {
+  right: 50%;
+  left: auto;
+  margin: -10px -10px 0 0;
+}

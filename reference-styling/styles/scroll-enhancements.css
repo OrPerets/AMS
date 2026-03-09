@@ -1,0 +1,40 @@
+/* Enhanced Scrolling Experience */
+.features-container {
+  scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar */
+.features-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.features-container::-webkit-scrollbar-track {
+  background: var(--gray-50);
+  border-radius: var(--radius-full);
+}
+
+.features-container::-webkit-scrollbar-thumb {
+  background: var(--gray-200);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-base);
+}
+
+.features-container::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-300);
+}
+
+/* Smooth Section Transitions */
+.form-section {
+  scroll-margin-top: var(--spacing-xl);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .features-container::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .form-section {
+    scroll-margin-top: var(--spacing-lg);
+  }
+}

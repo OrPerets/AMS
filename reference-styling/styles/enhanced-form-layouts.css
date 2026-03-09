@@ -1,0 +1,73 @@
+/* Form Section Layouts */
+.form-section {
+  display: grid;
+  gap: var(--spacing-lg);
+}
+
+.form-section > * + * {
+  margin-top: var(--spacing-md);
+}
+
+.form-grid {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.form-grid-compact {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+/* Enhanced Section Transitions */
+.section-fade {
+  animation: sectionFadeIn var(--transition-smooth) ease-out;
+}
+
+@keyframes sectionFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Mobile: single column, full width */
+@media (max-width: 640px) {
+  .form-section {
+    gap: var(--spacing-md);
+    width: 100%;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+    width: 100%;
+  }
+
+  .form-grid-compact {
+    grid-template-columns: 1fr;
+  }
+
+  .form-field {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .form-section {
+    gap: var(--spacing-md);
+  }
+
+  .form-grid {
+    gap: var(--spacing-sm);
+  }
+}

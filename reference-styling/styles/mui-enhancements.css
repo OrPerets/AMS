@@ -1,0 +1,122 @@
+/* ═══════════════════════════════════════════════════════════
+   Material UI Overrides — Gold focus, premium surfaces
+   ═══════════════════════════════════════════════════════════ */
+
+.MuiTextField-root {
+  width: 100%;
+  margin-bottom: var(--spacing-md) !important;
+}
+
+.MuiInputBase-root {
+  font-family: var(--font-family-base, 'Heebo', 'Inter', sans-serif) !important;
+  background-color: var(--bg-surface, #FFFFFF) !important;
+  border-radius: var(--radius-md, 10px) !important;
+  transition: all var(--transition-base) !important;
+}
+
+.MuiOutlinedInput-notchedOutline {
+  border-color: var(--border-default, #E8E8E5) !important;
+  transition: all var(--transition-base) !important;
+}
+
+.MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: var(--border-strong, #D4D4D0) !important;
+}
+
+.MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--gold-500, #D4A808) !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 0 3px rgba(212, 168, 8, 0.1);
+}
+
+/* Select */
+.MuiSelect-select {
+  padding: var(--spacing-sm) var(--spacing-md) !important;
+}
+
+.MuiMenu-paper {
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 1px solid var(--border-subtle, #F0F0ED);
+}
+
+.MuiMenuItem-root {
+  font-family: var(--font-family-base, 'Heebo', 'Inter', sans-serif) !important;
+  min-height: 44px !important;
+}
+
+.MuiMenuItem-root:hover {
+  background-color: var(--neutral-50, #FAFAFA) !important;
+}
+
+.MuiMenuItem-root.Mui-selected {
+  background-color: var(--gold-50, #FFF9E6) !important;
+}
+
+/* Labels */
+.MuiInputLabel-root {
+  font-family: var(--font-family-base, 'Heebo', 'Inter', sans-serif) !important;
+  font-weight: var(--weight-medium, 500) !important;
+  color: var(--text-secondary, #5C5C5C) !important;
+  font-size: 16px !important;
+}
+
+.MuiInputLabel-root.Mui-focused {
+  color: var(--gold-600, #B8920A) !important;
+}
+
+/* Sliders */
+.MuiSlider-root {
+  color: var(--gold-500, #D4A808) !important;
+}
+
+.MuiSlider-thumb {
+  width: 18px !important;
+  height: 18px !important;
+  background: var(--bg-surface, #FFFFFF) !important;
+  border: 2px solid var(--gold-500, #D4A808) !important;
+  transition: all var(--transition-base) !important;
+}
+
+.MuiSlider-thumb:hover {
+  box-shadow: 0 0 0 8px rgba(212, 168, 8, 0.12) !important;
+}
+
+.MuiSlider-track {
+  height: 4px !important;
+}
+
+/* Checkboxes */
+.MuiCheckbox-root.Mui-checked {
+  color: var(--gold-500, #D4A808) !important;
+}
+
+/* Form row layout */
+.form-row {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin-bottom: var(--spacing-lg);
+}
+
+/* RTL */
+[dir="rtl"] .MuiInputBase-root {
+  text-align: right;
+}
+
+[dir="rtl"] .MuiInputLabel-root {
+  right: var(--spacing-sm);
+  left: auto;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+
+  .MuiInputBase-root {
+    font-size: 16px !important;
+  }
+}

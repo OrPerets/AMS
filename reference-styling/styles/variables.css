@@ -1,0 +1,21 @@
+/* ═══════════════════════════════════════════════════════════
+   Variables — Semantic aliases derived from tokens.css
+   Only contains values NOT already defined in tokens.css
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* RGB base values for alpha compositing */
+  --primary-base: 10, 10, 10;
+  --success-base: 27, 138, 74;
+  --warning-base: 180, 83, 9;
+  --error-base: 220, 38, 38;
+  --gold-base: 212, 168, 8;
+
+  /* Responsive spacing (clamp-based) */
+  --spacing-xs: clamp(0.25rem, 0.5vw, 0.5rem);
+  --spacing-sm: clamp(0.5rem, 1vw, 0.75rem);
+  --spacing-md: clamp(1rem, 2vw, 1.5rem);
+  --spacing-lg: clamp(1.5rem, 3vw, 2rem);
+  --spacing-xl: clamp(2rem, 4vw, 3rem);
+  --spacing-2xl: clamp(3rem, 6vw, 4rem);
+}

@@ -1,0 +1,224 @@
+/* iOS-Specific Touch Enhancements */
+@supports (-webkit-touch-callout: none) {
+  .action-button {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  
+  .form-input,
+  .form-select,
+  .form-textarea {
+    -webkit-appearance: none;
+    border-radius: var(--radius-md);
+  }
+}
+
+/* Enhanced Feature Sections */
+.input-wrapper {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-content {
+  padding: var(--spacing-lg);
+  background: var(--surface-color);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-100);
+  transition: all var(--transition-base);
+}
+
+.form-content:hover {
+  border-color: var(--gray-200);
+  box-shadow: var(--shadow-md);
+}
+.floors-grid {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin: var(--spacing-md) 0;
+}
+
+.floor-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--gray-100);
+  transition: all var(--transition-base);
+}
+
+.floor-card:hover {
+  border-color: var(--gray-200);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Section Specific Styling for Features */
+.features-section {
+  position: relative;
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  background: var(--surface-color);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-100);
+  transition: all var(--transition-base);
+}
+
+.features-section:hover {
+  border-color: var(--gray-200);
+  box-shadow: var(--shadow-md);
+}
+
+/* Form Layout Improvements */
+.form-row {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin-bottom: var(--spacing-lg);
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+/* Material UI Customizations */
+.MuiOutlinedInput-root {
+  font-family: var(--font-sans);
+  background: white;
+  border-radius: var(--radius-md) !important;
+  transition: all var(--transition-base);
+}
+
+.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: var(--gray-300);
+}
+
+.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--primary-light);
+  border-width: 2px;
+  box-shadow: 0 0 0 3px rgba(91, 106, 245, 0.12);
+}
+
+/* Enhanced Buttons */
+.button-group {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+}
+
+.action-button {
+  min-height: 44px;
+  min-width: 120px;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-200);
+  background: white;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-button.primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: white;
+  border: none;
+}
+
+.action-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.action-button.primary:hover {
+  background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+}
+
+.action-button:active {
+  transform: translateY(0);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .features-section {
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+
+  .button-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .action-button {
+    width: 100%;
+  }
+}
+
+/* Loading States */
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+  position: relative;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+/* Section Transitions */
+.features-section {
+  animation: sectionFadeIn var(--transition-smooth) ease-out;
+}
+
+@keyframes sectionFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enhanced Mobile Styling */
+@media (max-width: 768px) {
+  .features-section {
+    margin: var(--spacing-md) var(--spacing-sm);
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+  
+  .form-row {
+    margin-bottom: var(--spacing-md);
+  }
+}
+
+/* RTL Support */
+.features-container {
+  direction: rtl;
+}
+
+.features-container input,
+.features-container button {
+  text-align: right;
+}
