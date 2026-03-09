@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, PencilLine, Save } from 'lucide-react';
-import { authFetch } from '../../lib/auth';
+import { authFetch, downloadAuthenticatedFile } from '../../lib/auth';
 import { BudgetChart } from '../../components/ui/budget-chart';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -217,7 +217,7 @@ export default function BudgetsPage() {
         </div>
         <div className="flex gap-2">
           {buildingId && (
-            <Button variant="outline" onClick={() => window.open(`/api/v1/budgets/building/${buildingId}/summary?format=csv`, '_blank')}>
+            <Button variant="outline" onClick={() => downloadAuthenticatedFile(`/api/v1/budgets/building/${buildingId}/summary?format=csv`, `budget-summary-${buildingId}.csv`)}>
               יצוא תקציבים
             </Button>
           )}

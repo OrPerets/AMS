@@ -351,21 +351,21 @@ export default function Buildings() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">ניהול בניינים</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">ניהול בניינים</h1>
           <p className="text-muted-foreground">
             ניהול רכוש והתחזוקה של הבניינים במערכת
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
-          <div className="relative hidden sm:block">
+        <div className="page-header-actions">
+          <div className="relative w-full sm:w-auto">
             <Input
               placeholder="חיפוש בניינים..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-[220px]"
+              className="w-full sm:w-[220px]"
             />
           </div>
           <Button 
@@ -373,10 +373,11 @@ export default function Buildings() {
             size="icon"
             onClick={handleRefresh}
             disabled={refreshing}
+            className="shrink-0"
           >
             <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
           </Button>
-          <Button onClick={handleCreateBuilding}>
+          <Button onClick={handleCreateBuilding} className="w-full sm:w-auto">
             <Plus className="me-2 h-4 w-4" />
             בניין חדש
           </Button>
@@ -384,7 +385,7 @@ export default function Buildings() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="page-kpi-grid">
         <KpiCard
           title="סה״כ בניינים"
           value={formatNumber(kpis.totalBuildings)}
@@ -423,13 +424,13 @@ export default function Buildings() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4">
+      <div className="page-filter-bar rounded-xl border bg-card p-3">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">סינון:</span>
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue placeholder="סטטוס" />
           </SelectTrigger>
           <SelectContent>
@@ -445,6 +446,7 @@ export default function Buildings() {
             variant="outline"
             size="sm"
             onClick={() => setStatusFilter('all')}
+            className="w-full sm:w-auto"
           >
             נקה סינונים
           </Button>
@@ -459,6 +461,47 @@ export default function Buildings() {
             data={filteredBuildings}
             searchPlaceholder="חיפוש בניינים..."
             onRowClick={handleViewBuilding}
+            mobileCardRender={(building) => {
+              const status = building.status as keyof typeof statusConfig;
+              const config = statusConfig[status] ?? { label: String(building.status ?? 'לא ידוע'), variant: 'outline' as const };
+              const occupancyRate = building.totalUnits && building.occupiedUnits
+                ? Math.round((building.occupiedUnits / building.totalUnits) * 100)
+                : 0;
+
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-semibold">#{building.id} · {building.name}</div>
+                      <div className="text-sm text-muted-foreground">{building.address || 'ללא כתובת'}</div>
+                    </div>
+                    <Badge variant={config.variant}>{config.label}</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">יחידות</div>
+                      <div className="font-medium">{building.occupiedUnits || 0}/{building.totalUnits || 0}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">תפוסה</div>
+                      <div className="font-medium">{occupancyRate}%</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">מנהל</div>
+                      <div className="font-medium">{building.manager || 'לא הוקצה'}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">בדיקה אחרונה</div>
+                      <div className="font-medium">{building.lastInspection ? new Date(building.lastInspection).toLocaleDateString('he-IL') : 'לא בוצעה'}</div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" onClick={(event) => { event.stopPropagation(); handleViewBuilding(building); }}>צפה</Button>
+                    <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); handleEditBuilding(building); }}>ערוך</Button>
+                  </div>
+                </div>
+              );
+            }}
           />
         </CardContent>
       </Card>

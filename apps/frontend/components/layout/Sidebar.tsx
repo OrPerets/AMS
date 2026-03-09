@@ -358,9 +358,8 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
 
       {/* Mobile Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 z-30 flex w-64 flex-col border-e bg-background transition-transform duration-300 md:hidden",
+        "fixed inset-y-0 end-0 z-30 flex w-[min(85vw,20rem)] max-w-full flex-col border-e bg-background shadow-2xl transition-transform duration-300 md:hidden",
         open ? "translate-x-0" : (
-          // RTL: slide to right when closed, LTR: slide to left when closed
           "translate-x-full"
         ),
         className

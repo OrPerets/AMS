@@ -555,11 +555,11 @@ export default function TicketsPage() {
   return (
     <div className="space-y-6">
       {/* ── Hero ── */}
-      <section className="overflow-hidden rounded-[30px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_24%),linear-gradient(135deg,_#234178,_#3a5c99_50%,_#5a7db5)] text-white shadow-[0_30px_80px_-42px_rgba(35,65,120,0.35)]">
-        <div className="space-y-6 p-6 lg:p-8">
+      <section className="overflow-hidden rounded-[24px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_24%),linear-gradient(135deg,_#234178,_#3a5c99_50%,_#5a7db5)] text-white shadow-[0_30px_80px_-42px_rgba(35,65,120,0.35)] sm:rounded-[30px]">
+        <div className="space-y-6 p-4 sm:p-6 lg:p-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <Badge variant="outline" className="border-white/20 bg-white/10 text-white">
                   מרכז שליטה לקריאות שירות
                 </Badge>
@@ -569,24 +569,24 @@ export default function TicketsPage() {
                 </span>
               </div>
               <div className="space-y-2">
-                <h1 className="text-4xl font-black tracking-tight">קריאות שירות</h1>
-                <p className="max-w-3xl text-base leading-7 text-slate-200">
+                <h1 className="text-3xl font-black tracking-tight sm:text-4xl">קריאות שירות</h1>
+                <p className="max-w-3xl text-sm leading-6 text-slate-200 sm:text-base sm:leading-7">
                   מסך עבודה למיון, שיוך, מעקב SLA ועדכון מהיר של קריאות פתוחות בלי לקפוץ בין כמה מסכים.
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <Button className="bg-white text-slate-950 hover:bg-slate-100" onClick={() => setCreateOpen(true)}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Button className="w-full bg-white text-slate-950 hover:bg-slate-100 sm:w-auto" onClick={() => setCreateOpen(true)}>
                 <Plus className="me-2 h-4 w-4" />
                 קריאה חדשה
               </Button>
-              <Button variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10" onClick={exportCurrentView}>
+              <Button variant="outline" className="w-full border-white/20 bg-white/5 text-white hover:bg-white/10 sm:w-auto" onClick={exportCurrentView}>
                 ייצוא
               </Button>
               <Button
                 variant="outline"
-                className="border-white/20 bg-white/5 text-white hover:bg-white/10"
+                className="w-full border-white/20 bg-white/5 text-white hover:bg-white/10 sm:w-auto"
                 onClick={() => loadDispatch(selectedTicket?.id)}
               >
                 <RefreshCw className={`me-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -607,7 +607,7 @@ export default function TicketsPage() {
                 />
               </div>
 
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <Select value={savedView} onValueChange={handleSavedView}>
                   <SelectTrigger className="border-white/10 bg-slate-950/30 text-white">
                     <SelectValue placeholder="תצוגות שמורות" />
@@ -661,7 +661,7 @@ export default function TicketsPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <SummaryCard title="פתוחות" value={dispatchData?.summary.open ?? 0} icon={ShieldAlert} tone="default" />
               <SummaryCard title="לא הוקצו" value={dispatchData?.summary.unassigned ?? 0} icon={UserRound} tone="warning" />
               <SummaryCard title="בטיפול" value={dispatchData?.summary.inProgress ?? 0} icon={Wrench} tone="default" />
@@ -674,8 +674,8 @@ export default function TicketsPage() {
       </section>
 
       {/* ── Queue Tabs ── */}
-      <section className="rounded-[28px] border border-slate-200 bg-white p-3 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.3)]">
-        <div className="flex flex-wrap gap-2">
+      <section className="rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.3)] sm:rounded-[28px]">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {(Object.keys(queueLabels) as QueueKey[]).map((key) => {
             const count = dispatchData?.queueCounts[key] ?? 0;
             const isActive = queue === key;
@@ -713,7 +713,7 @@ export default function TicketsPage() {
         {/* ── Work Queue ── */}
         <Card className="rounded-[28px] border-slate-200">
           <CardHeader className="space-y-4">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>תור עבודה</CardTitle>
                 <CardDescription>
@@ -726,7 +726,7 @@ export default function TicketsPage() {
               </Badge>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="סטטוס" />
@@ -812,7 +812,7 @@ export default function TicketsPage() {
                         : `border-slate-200 ${severityBorderColors[ticket.severity]} bg-slate-50/70 hover:border-slate-300 hover:bg-white hover:shadow-sm`
                     } ${isUrgent && !isSelected ? 'ring-1 ring-rose-200' : ''}`}
                   >
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0 flex-1 space-y-2.5">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <Badge variant={isSelected ? 'secondary' : 'outline'} className="text-[11px]">#{ticket.id}</Badge>
@@ -855,7 +855,7 @@ export default function TicketsPage() {
                       </div>
 
                       <div
-                        className={`grid shrink-0 gap-2 sm:grid-cols-2 lg:w-[200px] lg:grid-cols-1 ${isSelected ? 'text-slate-200' : 'text-slate-600'}`}
+                        className={`grid gap-2 sm:grid-cols-2 lg:w-[200px] lg:shrink-0 lg:grid-cols-1 ${isSelected ? 'text-slate-200' : 'text-slate-600'}`}
                       >
                         <div className="rounded-xl border border-current/10 px-3 py-2 text-sm">
                           <p className="text-[11px] opacity-60">מטפל</p>
@@ -891,7 +891,7 @@ export default function TicketsPage() {
         {/* ── Detail Panel ── */}
         <Card className="rounded-[28px] border-slate-200">
           <CardHeader className="space-y-4">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>פרטי קריאה</CardTitle>
                 <CardDescription>שינוי סטטוס, שיוך, עדכונים וצפייה בהיסטוריה מאותו מסך.</CardDescription>
@@ -911,7 +911,7 @@ export default function TicketsPage() {
             {selectedTicket ? (
               <div className="space-y-6">
                 {/* ── Ticket Header ── */}
-                <section className="rounded-[26px] border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100/60 p-5">
+                <section className="rounded-[22px] border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100/60 p-4 sm:rounded-[26px] sm:p-5">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
@@ -921,12 +921,12 @@ export default function TicketsPage() {
                         <SlaBadge state={selectedTicket.slaState} />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-black leading-tight text-slate-950">{selectedTicket.title}</h2>
+                        <h2 className="text-xl font-black leading-tight text-slate-950 sm:text-2xl">{selectedTicket.title}</h2>
                         <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">{selectedTicket.description}</p>
                       </div>
                     </div>
 
-                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="grid gap-2 sm:grid-cols-2">
                       <DetailMetric label="בניין" value={selectedTicket.building.name} />
                       <DetailMetric label="יחידה" value={selectedTicket.unit.number} />
                       <DetailMetric label="קטגוריה" value={selectedTicket.category} />
@@ -1024,7 +1024,7 @@ export default function TicketsPage() {
                         rows={5}
                         placeholder="כתוב עדכון, תיאום הגעה, סיכום טיפול או הערה תפעולית"
                       />
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-sm text-slate-500">העדכון יישמר כהערה בציר הזמן של הקריאה.</p>
                         <Button onClick={handleAddNote} disabled={addingNote || !newNote.trim()}>
                           {addingNote ? 'שומר...' : 'הוסף עדכון'}

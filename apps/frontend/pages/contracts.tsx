@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { authFetch } from '../lib/auth';
+import { authFetch, downloadAuthenticatedFile } from '../lib/auth';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -174,7 +174,7 @@ export default function ContractsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => window.open('/api/v1/contracts?format=csv', '_blank')}>ייצא CSV</Button>
+              <Button variant="outline" size="sm" onClick={() => downloadAuthenticatedFile('/api/v1/contracts?format=csv', 'contracts.csv')}>ייצא CSV</Button>
               <Button variant="outline" size="sm" onClick={runReminders}>שלח תזכורות חידוש</Button>
             </div>
             {contracts.map((contract) => {

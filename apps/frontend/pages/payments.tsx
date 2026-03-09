@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, Download, Plus, Receipt, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/router';
-import { authFetch, getEffectiveRole } from '../lib/auth';
+import { authFetch, downloadAuthenticatedFile, getEffectiveRole, openAuthenticatedFile } from '../lib/auth';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -264,7 +264,7 @@ export default function PaymentsPage() {
       if (!res.ok) throw new Error(await res.text());
       toast({ title: `חשבונית #${invoiceId} סולקה` });
       await loadInvoices();
-      window.open(`/api/v1/invoices/${invoiceId}/receipt`, '_blank');
+      await openAuthenticatedFile(`/api/v1/invoices/${invoiceId}/receipt`);
     } catch (error) {
       console.error(error);
       toast({ title: 'סליקת התשלום נכשלה', variant: 'destructive' });
@@ -382,7 +382,7 @@ export default function PaymentsPage() {
     return (
       <div className="space-y-2">
         {items.map((item, index) => (
-          <div key={index} className="grid gap-2 md:grid-cols-5">
+          <div key={index} className="grid gap-2 rounded-xl border p-3 md:grid-cols-5 md:border-0 md:p-0">
             <Input
               className="md:col-span-2"
               placeholder="תיאור"
@@ -413,7 +413,7 @@ export default function PaymentsPage() {
                 setItems(next);
               }}
             />
-            <div className="flex items-center text-sm font-medium">{formatCurrency(Number(item.quantity || 0) * Number(item.unitPrice || 0))}</div>
+            <div className="flex items-center text-sm font-medium md:justify-end">{formatCurrency(Number(item.quantity || 0) * Number(item.unitPrice || 0))}</div>
           </div>
         ))}
         <Button
@@ -441,29 +441,29 @@ export default function PaymentsPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div className="space-y-6">
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-semibold">תשלומים</h1>
+          <h1 className="text-2xl font-semibold sm:text-3xl">תשלומים</h1>
           <p className="text-sm text-muted-foreground">חשבוניות, סליקה, קבלות והיסטוריית תשלומים במקום אחד.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => window.open('/api/v1/invoices?format=csv', '_blank')}>
+        <div className="page-header-actions">
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => downloadAuthenticatedFile('/api/v1/invoices?format=csv', 'invoices.csv')}>
             <Download className="me-2 h-4 w-4" />
             יצוא חשבוניות
           </Button>
-          <Button variant="outline" onClick={() => window.open('/api/v1/invoices/unpaid?format=csv', '_blank')}>
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => downloadAuthenticatedFile('/api/v1/invoices/unpaid?format=csv', 'unpaid-invoices.csv')}>
             <Download className="me-2 h-4 w-4" />
             יצוא יתרות פתוחות
           </Button>
-          <Button variant="outline" onClick={loadInvoices} disabled={loading}>
+          <Button variant="outline" className="w-full sm:w-auto" onClick={loadInvoices} disabled={loading}>
             <RefreshCw className="me-2 h-4 w-4" />
             רענון
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="page-kpi-grid">
         <Card><CardHeader><CardTitle>חשבוניות</CardTitle></CardHeader><CardContent>{stats.total}</CardContent></Card>
         <Card><CardHeader><CardTitle>פתוחות</CardTitle></CardHeader><CardContent>{formatCurrency(stats.pendingAmount)}</CardContent></Card>
         <Card><CardHeader><CardTitle>באיחור</CardTitle></CardHeader><CardContent>{stats.overdueCount}</CardContent></Card>
@@ -471,7 +471,7 @@ export default function PaymentsPage() {
       </div>
 
       {collectionsSummary && (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="page-kpi-grid">
           <Card><CardHeader><CardTitle>יתרת חוב</CardTitle></CardHeader><CardContent>{formatCurrency(collectionsSummary.totals.outstandingBalance)}</CardContent></Card>
           <Card><CardHeader><CardTitle>שיעור פיגור</CardTitle></CardHeader><CardContent>{collectionsSummary.totals.delinquencyRate}%</CardContent></Card>
           <Card><CardHeader><CardTitle>חויב החודש</CardTitle></CardHeader><CardContent>{formatCurrency(collectionsSummary.totals.billedThisMonth)}</CardContent></Card>
@@ -542,14 +542,60 @@ export default function PaymentsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant={statusFilter === 'ALL' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('ALL')}>הכל</Button>
             <Button variant={statusFilter === 'PENDING' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('PENDING')}>ממתינות</Button>
             <Button variant={statusFilter === 'OVERDUE' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('OVERDUE')}>באיחור</Button>
             <Button variant={statusFilter === 'PAID' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('PAID')}>שולמו</Button>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="space-y-3 md:hidden">
+            {filteredInvoices.map((invoice) => (
+              <div key={invoice.id} className="rounded-xl border p-3 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-medium">#{invoice.id} · {invoice.description}</div>
+                    <div className="text-muted-foreground">{invoice.residentName}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      פירעון: {formatDate(new Date(invoice.dueDate), locale)} · {invoice.buildingName ?? 'ללא בניין'}
+                    </div>
+                  </div>
+                  <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'warning'}>
+                    {statusLabel[invoice.status]}
+                  </Badge>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                  <div><span className="text-muted-foreground">סכום</span><div className="font-medium text-sm">{formatCurrency(invoice.amount)}</div></div>
+                  <div><span className="text-muted-foreground">גבייה</span><div className="font-medium text-sm">{invoice.collectionStatus ?? 'CURRENT'}</div></div>
+                </div>
+                {invoice.history.length > 0 && (
+                  <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+                    {invoice.history.slice(0, 2).map((entry) => (
+                      <div key={`${entry.kind}-${entry.id}`}>
+                        {entry.kind === 'PAYMENT' ? 'תשלום' : 'החזר'} {formatCurrency(entry.amount)} · {entry.status}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {invoice.status !== 'PAID' && (
+                    <Button size="sm" onClick={() => settleInvoice(invoice.id)} disabled={settlingId === invoice.id}>
+                      {settlingId === invoice.id ? 'מסלק...' : 'סליקה'}
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" onClick={() => openAuthenticatedFile(`/api/v1/invoices/${invoice.id}/receipt`)}>
+                    <Receipt className="me-2 h-4 w-4" />
+                    קבלה
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {!loading && filteredInvoices.length === 0 && (
+              <div className="py-6 text-center text-muted-foreground">אין חשבוניות להצגה.</div>
+            )}
+          </div>
+
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left">
@@ -632,7 +678,7 @@ export default function PaymentsPage() {
                             </Button>
                           </>
                         )}
-                        <Button variant="outline" size="sm" onClick={() => window.open(`/api/v1/invoices/${invoice.id}/receipt`, '_blank')}>
+                        <Button variant="outline" size="sm" onClick={() => openAuthenticatedFile(`/api/v1/invoices/${invoice.id}/receipt`)}>
                           <Receipt className="me-2 h-4 w-4" />
                           קבלה
                         </Button>
@@ -709,9 +755,9 @@ export default function PaymentsPage() {
               readOnly
             />
             {renderItemsEditor(newInvoice.items, (items) => setNewInvoice({ ...newInvoice, items }))}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="font-medium">סה"כ: {formatCurrency(computeTotal(newInvoice.items))}</div>
-              <Button onClick={submitInvoice} disabled={submitting || !newInvoice.residentId}>צור חשבונית</Button>
+              <Button className="w-full sm:w-auto" onClick={submitInvoice} disabled={submitting || !newInvoice.residentId}>צור חשבונית</Button>
             </div>
           </CardContent>
         </Card>
@@ -750,9 +796,9 @@ export default function PaymentsPage() {
               onChange={(event) => setRecurring({ ...recurring, recurrence: event.target.value })}
             />
             {renderItemsEditor(recurring.items, (items) => setRecurring({ ...recurring, items }))}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="font-medium">סה"כ: {formatCurrency(computeTotal(recurring.items))}</div>
-              <Button onClick={submitRecurring} disabled={submitting || !recurring.residentId}>שמור מחזורי</Button>
+              <Button className="w-full sm:w-auto" onClick={submitRecurring} disabled={submitting || !recurring.residentId}>שמור מחזורי</Button>
             </div>
           </CardContent>
         </Card>
@@ -764,7 +810,36 @@ export default function PaymentsPage() {
           <CardDescription>שליטה על חיובים חודשיים, עצירה זמנית והפקה ידנית לצורך בדיקה.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="overflow-x-auto">
+          <div className="space-y-3 md:hidden">
+            {recurringInvoices.map((invoice) => (
+              <div key={invoice.id} className="rounded-xl border p-3 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-medium">{invoice.title || `חיוב #${invoice.id}`}</div>
+                    <div className="text-muted-foreground">{invoice.residentName}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {invoice.recurrence} · הרצה הבאה {formatDate(new Date(invoice.nextRunAt), locale)}
+                    </div>
+                  </div>
+                  <Badge variant={invoice.active ? 'success' : 'secondary'}>{invoice.active ? 'פעיל' : 'מושהה'}</Badge>
+                </div>
+                <div className="mt-2 font-medium">{formatCurrency(invoice.amount)}</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => runRecurringNow(invoice.id)}>
+                    הפק עכשיו
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => toggleRecurringInvoice(invoice.id, !invoice.active)}>
+                    {invoice.active ? 'השהה' : 'הפעל'}
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {!recurringInvoices.length && (
+              <div className="py-6 text-center text-muted-foreground">אין חיובים מחזוריים.</div>
+            )}
+          </div>
+
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left">

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Bell, CreditCard, FileText, MessageSquare, Ticket, Wrench } from 'lucide-react';
-import { authFetch } from '../../lib/auth';
+import { authFetch, downloadAuthenticatedFile, openAuthenticatedFile } from '../../lib/auth';
 import { Badge } from '../../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -302,26 +302,26 @@ export default function ResidentAccountPage() {
   );
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div className="space-y-6">
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-semibold">האזור האישי של הדייר</h1>
+          <h1 className="text-2xl font-semibold sm:text-3xl">האזור האישי של הדייר</h1>
           <p className="text-sm text-muted-foreground">יתרה, מסמכים, קריאות שירות והודעות במקום אחד.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="page-header-actions">
           {context.residentId ? (
-            <Button variant="outline" onClick={() => window.open(`/api/v1/invoices/ledger?residentId=${context.residentId}&format=csv`, '_blank')}>
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => downloadAuthenticatedFile(`/api/v1/invoices/ledger?residentId=${context.residentId}&format=csv`, 'resident-ledger.csv')}>
               ייצוא דוח יתרה
             </Button>
           ) : null}
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="w-full sm:w-auto">
             <Link href="/settings">העדפות התראות</Link>
           </Button>
-          <Button variant="outline" onClick={loadAccount}>רענון</Button>
+          <Button variant="outline" className="w-full sm:w-auto" onClick={loadAccount}>רענון</Button>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="page-kpi-grid">
         <Card><CardHeader><CardTitle>יתרה נוכחית</CardTitle></CardHeader><CardContent>{formatCurrency(summary?.currentBalance ?? 0)}</CardContent></Card>
         <Card><CardHeader><CardTitle>חשבוניות פתוחות</CardTitle></CardHeader><CardContent>{summary?.unpaidInvoices ?? 0}</CardContent></Card>
         <Card><CardHeader><CardTitle>קריאות פתוחות</CardTitle></CardHeader><CardContent>{summary?.openTickets ?? context.tickets.filter((ticket) => ticket.status !== 'RESOLVED').length}</CardContent></Card>
@@ -343,24 +343,24 @@ export default function ResidentAccountPage() {
             ) : null}
 
             <div className="rounded-lg border p-3 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="font-medium">כרטיסים שמורים וחיוב אוטומטי</div>
                   <div className="text-xs text-muted-foreground">ניהול כרטיס ברירת מחדל וגבייה אוטומטית לחשבוניות מחזוריות.</div>
                 </div>
-                <Button size="sm" variant={autopayEnabled ? 'default' : 'outline'} onClick={() => toggleAutopay(!autopayEnabled)}>
+                <Button size="sm" className="w-full sm:w-auto" variant={autopayEnabled ? 'default' : 'outline'} onClick={() => toggleAutopay(!autopayEnabled)}>
                   {autopayEnabled ? 'חיוב אוטומטי פעיל' : 'הפעל חיוב אוטומטי'}
                 </Button>
               </div>
 
               <div className="space-y-2">
                 {paymentMethods.map((method) => (
-                  <div key={method.id} className="flex items-center justify-between rounded border p-2 text-xs">
+                  <div key={method.id} className="flex flex-col gap-3 rounded border p-2 text-xs sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="font-medium">{method.brand || method.provider} •••• {method.last4 || 'XXXX'}</div>
                       <div className="text-muted-foreground">{method.expMonth || '--'}/{method.expYear || '--'} {method.networkTokenized ? '· tokenized' : ''}</div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {!method.isDefault ? <Button size="sm" variant="outline" onClick={() => setDefaultCard(method.id)}>ברירת מחדל</Button> : <Badge variant="success">ברירת מחדל</Badge>}
                       <Button size="sm" variant="outline" onClick={() => removeCard(method.id)}>הסר</Button>
                     </div>
@@ -369,7 +369,7 @@ export default function ResidentAccountPage() {
                 {!paymentMethods.length ? <div className="text-xs text-muted-foreground">אין כרטיסים שמורים.</div> : null}
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <input className="rounded border px-2 py-1 text-xs" placeholder="provider" value={newCard.provider} onChange={(e) => setNewCard((c) => ({ ...c, provider: e.target.value }))} />
                 <input className="rounded border px-2 py-1 text-xs" placeholder="token" value={newCard.token} onChange={(e) => setNewCard((c) => ({ ...c, token: e.target.value }))} />
                 <input className="rounded border px-2 py-1 text-xs" placeholder="brand" value={newCard.brand} onChange={(e) => setNewCard((c) => ({ ...c, brand: e.target.value }))} />
@@ -381,7 +381,7 @@ export default function ResidentAccountPage() {
             </div>
             {(finance?.invoices || []).slice(0, 6).map((invoice) => (
               <div key={invoice.id} className="rounded-lg border p-3">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <div className="font-medium">#{invoice.id} · {invoice.description}</div>
                     <div className="text-xs text-muted-foreground">פירעון: {formatDate(new Date(invoice.dueDate), locale)}</div>
@@ -393,7 +393,7 @@ export default function ResidentAccountPage() {
                       </Badge>
                       {invoice.receiptNumber ? (
                         <div className="mt-2">
-                          <Button size="sm" variant="outline" onClick={() => window.open(`/api/v1/invoices/${invoice.id}/receipt`, '_blank')}>
+                          <Button size="sm" variant="outline" onClick={() => openAuthenticatedFile(`/api/v1/invoices/${invoice.id}/receipt`)}>
                             הורד קבלה
                           </Button>
                         </div>
@@ -406,7 +406,7 @@ export default function ResidentAccountPage() {
                         </div>
                       ) : null}
                       {payableStatuses.has(invoice.status) ? (
-                        <div className="mt-2 flex justify-end">
+                        <div className="mt-2 flex justify-start sm:justify-end">
                           <Button
                             size="sm"
                             onClick={() => initiatePayment(invoice.id)}
@@ -452,7 +452,7 @@ export default function ResidentAccountPage() {
           <CardContent className="space-y-3">
             {context.notifications.slice(0, 6).map((item) => (
               <div key={item.id} className="rounded-lg border p-3">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <div className="font-medium">{item.title}</div>
                     <div className="text-xs text-muted-foreground">{item.message}</div>
@@ -527,7 +527,7 @@ export default function ResidentAccountPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             {finance.ledger.slice(0, 10).map((entry) => (
-              <div key={entry.id} className="flex items-center justify-between rounded-lg border p-3">
+              <div key={entry.id} className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="font-medium">{entry.type}</div>
                   <div className="text-xs text-muted-foreground">{entry.summary}</div>

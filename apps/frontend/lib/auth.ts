@@ -117,6 +117,75 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
   }
 }
 
+function getFilenameFromDisposition(disposition: string | null): string | null {
+  if (!disposition) return null;
+
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {
+      return utf8Match[1];
+    }
+  }
+
+  const quotedMatch = disposition.match(/filename=\"([^\"]+)\"/i);
+  if (quotedMatch?.[1]) return quotedMatch[1];
+
+  const plainMatch = disposition.match(/filename=([^;]+)/i);
+  return plainMatch?.[1]?.trim() ?? null;
+}
+
+async function fetchAuthenticatedBlob(path: string, init: RequestInit = {}) {
+  const response = await authFetch(path, init);
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return {
+    blob: await response.blob(),
+    contentType: response.headers.get('Content-Type'),
+    filename: getFilenameFromDisposition(response.headers.get('Content-Disposition')),
+  };
+}
+
+export async function openAuthenticatedFile(path: string, init: RequestInit = {}) {
+  if (!isBrowser()) return;
+
+  const popup = window.open('', '_blank', 'noopener,noreferrer');
+  try {
+    const { blob, contentType } = await fetchAuthenticatedBlob(path, init);
+    const objectUrl = URL.createObjectURL(blob);
+
+    if (popup) {
+      popup.location.href = objectUrl;
+    } else {
+      window.open(objectUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    const revokeDelay = contentType?.includes('pdf') ? 60_000 : 10_000;
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), revokeDelay);
+  } catch (error) {
+    popup?.close();
+    throw error;
+  }
+}
+
+export async function downloadAuthenticatedFile(path: string, fallbackFilename: string, init: RequestInit = {}) {
+  if (!isBrowser()) return;
+
+  const { blob, filename } = await fetchAuthenticatedBlob(path, init);
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = window.document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = filename || fallbackFilename;
+  anchor.rel = 'noopener noreferrer';
+  window.document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
+}
+
 export async function refreshTokens(): Promise<boolean> {
   const token = getRefreshToken();
   if (!token) return false;

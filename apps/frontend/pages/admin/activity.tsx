@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Download, RefreshCw, ShieldCheck } from 'lucide-react';
-import { authFetch } from '../../lib/auth';
+import { authFetch, downloadAuthenticatedFile } from '../../lib/auth';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -54,7 +54,7 @@ export default function AdminActivityPage() {
           <p className="text-sm text-muted-foreground">מעקב אחרי שינויים פיננסיים, הרשאות, מסמכים ופעולות תפעוליות.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => window.open('/api/admin/activity/export', '_blank')}>
+          <Button variant="outline" onClick={() => downloadAuthenticatedFile('/api/admin/activity/export', 'activity-export.csv')}>
             <Download className="me-2 h-4 w-4" />
             יצוא CSV
           </Button>

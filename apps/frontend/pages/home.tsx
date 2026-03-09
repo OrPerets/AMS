@@ -173,24 +173,24 @@ export default function Home() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Welcome Section */}
-      <div className="text-center space-y-4">
-        <div className="flex items-center justify-center space-x-3 mb-6">
-          <div className="h-12 w-12 bg-primary rounded-lg flex items-center justify-center">
+      <div className="space-y-4 text-center">
+        <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 sm:flex-row sm:justify-center sm:text-start">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary">
             <span className="text-2xl font-bold text-primary-foreground">ע</span>
           </div>
-          <div className="text-right">
-            <h1 className="text-4xl font-bold text-foreground">
+          <div className="space-y-1 text-center sm:text-right">
+            <h1 className="text-3xl font-bold text-foreground sm:text-4xl">
               ברוכים הבאים לעמית אקסלנס
             </h1>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-base text-muted-foreground sm:text-xl">
               מערכת ניהול אחזקות מתקדמת
             </p>
           </div>
         </div>
         
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <Badge variant="outline" className="text-sm">
             <Users className="h-3 w-3 me-1" />
             {getRoleTitle(userRole)}
@@ -204,18 +204,18 @@ export default function Home() {
 
       {/* Quick Actions Grid */}
       <div>
-        <h2 className="text-2xl font-semibold mb-6 text-center">פעולות מהירות</h2>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <h2 className="mb-4 text-center text-2xl font-semibold sm:mb-6">פעולות מהירות</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {userActions.map((action) => {
             const Icon = action.icon;
             return (
               <Link key={action.href} href={action.href}>
-                <Card className="group cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] border-2 hover:border-primary/20">
+                <Card className="group h-full cursor-pointer border-2 transition-all duration-200 hover:scale-[1.02] hover:border-primary/20 hover:shadow-lg">
                   <CardHeader className="text-center pb-4">
-                    <div className={`w-16 h-16 rounded-full ${action.color} mx-auto mb-4 flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
+                    <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${action.color} transition-transform duration-200 group-hover:scale-110 sm:h-16 sm:w-16`}>
                       <Icon className="h-8 w-8 text-white" />
                     </div>
-                    <CardTitle className="text-xl">{action.title}</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl">{action.title}</CardTitle>
                     <CardDescription className="text-center">
                       {action.description}
                     </CardDescription>
@@ -234,7 +234,7 @@ export default function Home() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">מערכת פעילה</CardTitle>
@@ -284,11 +284,11 @@ export default function Home() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <Button variant="outline">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button variant="outline" className="w-full sm:w-auto">
               צור קשר עם התמיכה
             </Button>
-            <Button variant="ghost">
+            <Button variant="ghost" className="w-full sm:w-auto">
               מדריך למשתמש
             </Button>
           </div>

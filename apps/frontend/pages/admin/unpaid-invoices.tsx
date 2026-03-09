@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Download, ReceiptText } from 'lucide-react';
-import { authFetch } from '../../lib/auth';
+import { authFetch, downloadAuthenticatedFile } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
@@ -91,7 +91,7 @@ export default function UnpaidInvoices() {
             variant="outline"
             onClick={() => {
               const query = residentId ? `?residentId=${residentId}&format=csv` : '?format=csv';
-              window.open(`/api/v1/invoices/unpaid${query}`, '_blank');
+              downloadAuthenticatedFile(`/api/v1/invoices/unpaid${query}`, 'unpaid-invoices.csv');
             }}
           >
             <Download className="me-2 h-4 w-4" />

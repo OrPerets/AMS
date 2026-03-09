@@ -11,7 +11,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
-import { authFetch } from "../../lib/auth";
+import { authFetch, downloadAuthenticatedFile } from "../../lib/auth";
 import { toast } from "../../components/ui/use-toast";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -229,22 +229,22 @@ export default function AssetDetailPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-4">
+      <header className="page-header">
         <div>
           <p className="text-sm text-muted-foreground">פרטי נכס</p>
-          <h1 className="text-3xl font-bold text-foreground">{asset.name}</h1>
+          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">{asset.name}</h1>
           <p className="text-sm text-muted-foreground">
             {asset.building?.name ?? `בניין #${asset.buildingId}`}
             {asset.unit?.number ? ` • יחידה ${asset.unit.number}` : ''}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline">
+        <div className="page-header-actions">
+          <Button asChild variant="outline" className="w-full sm:w-auto">
             <Link href={`/assets/${asset.id}/edit`} className="flex items-center gap-2">
               <Edit className="h-4 w-4" /> ערוך
             </Link>
           </Button>
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="w-full sm:w-auto">
             <Link href="/assets" className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" /> חזרה לרשימה
             </Link>
@@ -252,7 +252,7 @@ export default function AssetDetailPage() {
         </div>
       </header>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">מזהה</CardTitle>
@@ -331,8 +331,8 @@ export default function AssetDetailPage() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between">
-              <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground flex-1">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex-1 rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
                 <p className="text-xs font-medium text-foreground">מיקום נוכחי</p>
               <p>{asset.location || 'לא הוגדר'}</p>
               {asset.unit?.number && (
@@ -343,7 +343,7 @@ export default function AssetDetailPage() {
                 variant="outline" 
                 size="sm" 
                 onClick={() => setEditingLocation(true)}
-                className="ml-4"
+                className="w-full sm:ms-4 sm:w-auto"
               >
                 <Edit className="me-2 h-4 w-4" />
                 עדכן מיקום
@@ -362,7 +362,7 @@ export default function AssetDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg border bg-muted/30 p-4 text-sm">
                 <p className="text-xs font-medium text-foreground">ערך מקורי</p>
                 <p className="text-lg font-semibold text-foreground">
@@ -388,7 +388,7 @@ export default function AssetDetailPage() {
                 </p>
               </div>
             </div>
-            <div className="mt-4 grid gap-4 md:grid-cols-3">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="text-sm text-muted-foreground">
                 <p className="font-medium text-foreground">שיטת פחת:</p>
                 <p>{depreciation.method === 'STRAIGHT_LINE' ? 'קו ישר' : depreciation.method}</p>
@@ -414,7 +414,7 @@ export default function AssetDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg border bg-muted/30 p-4 text-sm">
                 <p className="text-xs font-medium text-foreground">עלות תחזוקה מצטברת</p>
                 <p className="text-lg font-semibold text-foreground">{formatCurrency(health.metrics.totalMaintenanceCost)}</p>
@@ -436,7 +436,7 @@ export default function AssetDetailPage() {
               {health.lifecycle?.replacementRecommended && <Badge variant="destructive">החלפה מומלצת</Badge>}
               {health.lifecycle?.replacementNotes && <span className="text-sm text-muted-foreground">{health.lifecycle.replacementNotes}</span>}
               <Button size="sm" variant="outline" onClick={verifyInventory}>אשר ספירת מלאי</Button>
-              <Button size="sm" variant="outline" onClick={() => window.open(`/api/v1/assets/${id}/history?format=csv`, '_blank')}>ייצא היסטוריית תחזוקה</Button>
+              <Button size="sm" variant="outline" onClick={() => downloadAuthenticatedFile(`/api/v1/assets/${id}/history?format=csv`, `asset-${id}-history.csv`)}>ייצא היסטוריית תחזוקה</Button>
             </div>
             <div className="text-sm text-muted-foreground">
               {health.lifecycle?.lastInventoryCheck && <div>ספירת מלאי אחרונה: {format(new Date(health.lifecycle.lastInventoryCheck), "dd MMM yyyy", { locale: he })}</div>}
@@ -456,7 +456,7 @@ export default function AssetDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="rounded-lg border bg-muted/30 p-4 text-sm">
                 <p className="text-xs font-medium text-foreground">ערך רכישה</p>
                 <p className="text-lg font-semibold text-foreground">

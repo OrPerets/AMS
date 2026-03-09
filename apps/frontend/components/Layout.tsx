@@ -150,20 +150,20 @@ export default function Layout({ children }: Props) {
       
       {/* Main Content */}
       <main className={cn(
-        "app-main flex flex-col overflow-hidden",
+        "app-main flex min-w-0 flex-col overflow-hidden",
         sidebarCollapsed ? "md:ms-16" : "md:ms-64",
         "transition-all duration-300"
       )}>
         {/* Breadcrumbs */}
-        <div className="border-b bg-background/50 backdrop-blur-sm">
-          <div className="container px-4 py-3 sm:px-6">
+        <div className="border-b bg-background/85 backdrop-blur-sm">
+          <div className="container px-3 py-3 sm:px-6">
             <Breadcrumbs />
           </div>
         </div>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto">
-          <div className="container px-4 py-6 sm:px-6">
+        <div className="flex-1 overflow-x-hidden overflow-y-auto">
+          <div className="container px-3 py-4 sm:px-6 sm:py-6 safe-pb">
             <ErrorBoundary fallback={CompactErrorFallback}>
               {children}
             </ErrorBoundary>

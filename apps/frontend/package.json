@@ -6,7 +6,8 @@
     "dev": "PORT=3001 next dev",
     "build": "next build",
     "start": "mkdir -p .next/standalone/apps/frontend/.next && rm -rf .next/standalone/apps/frontend/.next/static && cp -R .next/static .next/standalone/apps/frontend/.next/static && HOSTNAME=0.0.0.0 PORT=${PORT:-3001} node .next/standalone/apps/frontend/server.js",
-    "start:prod": "npm run start"
+    "start:prod": "npm run start",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -49,6 +50,7 @@
     "zod": "^4.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.1.12",
     "@types/node": "^24.3.0",
     "@types/react": "19.1.11",

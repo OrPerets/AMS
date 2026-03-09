@@ -65,6 +65,7 @@ interface DataTableProps<TData, TValue> {
   onRowClick?: (row: TData) => void;
   filterableColumns?: FilterableColumn<TData>[];
   onFiltersChange?: (filters: Record<string, string[]>) => void;
+  mobileCardRender?: (row: TData) => React.ReactNode;
 }
 
 export function DataTable<TData, TValue>({
@@ -76,6 +77,7 @@ export function DataTable<TData, TValue>({
   onRowClick,
   filterableColumns,
   onFiltersChange,
+  mobileCardRender,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -83,6 +85,15 @@ export function DataTable<TData, TValue>({
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
   const [columnValueFilters, setColumnValueFilters] = useState<Record<string, string[]>>({});
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   const resolvedFilters = useMemo(() => {
     if (!filterableColumns || filterableColumns.length === 0) {
@@ -186,16 +197,16 @@ export function DataTable<TData, TValue>({
   return (
     <div className={cn("space-y-4", className)}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <div className="flex flex-1 items-center space-x-2">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           {/* Global Search */}
-          <div className="relative">
+          <div className="relative w-full sm:max-w-sm">
             <Search className="absolute start-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={searchPlaceholder}
               value={globalFilter ?? ""}
               onChange={(event) => setGlobalFilter(String(event.target.value))}
-              className="ps-8 max-w-sm"
+              className="w-full ps-8"
             />
           </div>
           
@@ -207,7 +218,7 @@ export function DataTable<TData, TValue>({
               onChange={(event) =>
                 table.getColumn(searchKey)?.setFilterValue(event.target.value)
               }
-              className="max-w-sm"
+              className="w-full sm:max-w-sm"
             />
           )}
         </div>
@@ -215,7 +226,7 @@ export function DataTable<TData, TValue>({
         {/* Column visibility */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ms-auto">
+            <Button variant="outline" className="w-full sm:ms-auto sm:w-auto">
               <SlidersHorizontal className="me-2 h-4 w-4" />
               עמודות
               <ChevronDown className="ms-2 h-4 w-4" />
@@ -316,7 +327,8 @@ export function DataTable<TData, TValue>({
 
       {/* Table */}
       <div className="rounded-md border data-table">
-        <div className="overflow-x-auto">
+        {!isMobile || !mobileCardRender ? (
+        <div className="overflow-x-auto mobile-scroll-shadow">
           <table className="w-full">
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -382,16 +394,44 @@ export function DataTable<TData, TValue>({
             </tbody>
           </table>
         </div>
+        ) : table.getRowModel().rows?.length ? (
+          <div className="space-y-3 p-3">
+            {table.getRowModel().rows.map((row) => (
+              <div
+                key={row.id}
+                className={cn(
+                  "rounded-xl border bg-card p-3 shadow-sm",
+                  onRowClick && "cursor-pointer"
+                )}
+                onClick={() => onRowClick?.(row.original)}
+              >
+                {mobileCardRender(row.original)}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-12">
+            {hasActiveFilters || globalFilter ? (
+              <EmptySearchResults />
+            ) : (
+              <EmptyState
+                title="אין נתונים להצגה"
+                description="לא נמצאו רשומות במערכת."
+                type="empty"
+              />
+            )}
+          </div>
+        )}
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between px-2">
-        <div className="flex-1 text-sm text-muted-foreground">
+      <div className="flex flex-col gap-3 px-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex-1 text-xs text-muted-foreground sm:text-sm">
           {table.getFilteredSelectedRowModel().rows.length} מתוך{" "}
           {table.getFilteredRowModel().rows.length} שורות נבחרו.
         </div>
-        <div className="flex items-center space-x-6 lg:space-x-8">
-          <div className="flex items-center space-x-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-4 lg:gap-8">
+          <div className="flex items-center justify-between gap-2 sm:justify-start">
             <p className="text-sm font-medium">שורות בעמוד</p>
             <Select
               value={`${table.getState().pagination.pageSize}`}
@@ -399,7 +439,7 @@ export function DataTable<TData, TValue>({
                 table.setPageSize(Number(value));
               }}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-8 w-[88px]">
                 <SelectValue placeholder={table.getState().pagination.pageSize} />
               </SelectTrigger>
               <SelectContent side="top">
@@ -411,11 +451,11 @@ export function DataTable<TData, TValue>({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+          <div className="flex items-center justify-center text-sm font-medium sm:min-w-[100px]">
             עמוד {table.getState().pagination.pageIndex + 1} מתוך{" "}
             {table.getPageCount()}
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-end gap-2">
             <Button
               variant="outline"
               className="hidden h-8 w-8 p-0 lg:flex"

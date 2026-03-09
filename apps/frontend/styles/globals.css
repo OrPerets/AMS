@@ -209,6 +209,7 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
   }
 
   html {
@@ -321,6 +322,7 @@
     grid-template-columns: auto 1fr;
     grid-template-rows: auto 1fr auto;
     min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .app-header {
@@ -347,6 +349,7 @@
         "main"
         "footer";
       grid-template-columns: 1fr;
+      min-height: 100dvh;
     }
   }
 
@@ -440,6 +443,30 @@
   /* Glass effect */
   .glass {
     @apply bg-background/80 backdrop-blur-sm border border-border/50;
+  }
+
+  .page-header {
+    @apply flex flex-col gap-3 md:flex-row md:items-center md:justify-between;
+  }
+
+  .page-header-actions {
+    @apply flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center;
+  }
+
+  .page-kpi-grid {
+    @apply grid gap-4 sm:grid-cols-2 xl:grid-cols-4;
+  }
+
+  .page-filter-bar {
+    @apply flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center;
+  }
+
+  .mobile-scroll-shadow {
+    mask-image: linear-gradient(to left, transparent, black 16px, black calc(100% - 16px), transparent);
+  }
+
+  .safe-pb {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
   }
 
   /* Gradient text */
