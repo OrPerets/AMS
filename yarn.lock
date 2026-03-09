@@ -1558,7 +1558,7 @@
   resolved "https://registry.npmjs.org/@lukeed/csprng/-/csprng-1.1.0.tgz"
   integrity sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==
 
-"@nestjs/common@^10.0.0 || ^11.0.0", "@nestjs/common@^11.0.0", "@nestjs/common@^11.1.16", "@nestjs/common@^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0", "@nestjs/common@11.1.16":
+"@nestjs/common@^10.0.0 || ^11.0.0", "@nestjs/common@^11.1.16", "@nestjs/common@^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0", "@nestjs/common@11.1.16":
   version "11.1.16"
   resolved "https://registry.npmjs.org/@nestjs/common/-/common-11.1.16.tgz"
   integrity sha512-JSIeW+USuMJkkcNbiOdcPkVCeI3TSnXstIVEPpp3HiaKnPRuSbUUKm9TY9o/XpIcPHWUOQItAtC5BiAwFdVITQ==
@@ -1569,7 +1569,7 @@
     tslib "2.8.1"
     uid "2.0.2"
 
-"@nestjs/core@^11.0.0", "@nestjs/core@^11.1.16", "@nestjs/core@11.1.16":
+"@nestjs/core@^11.1.16", "@nestjs/core@11.1.16":
   version "11.1.16"
   resolved "https://registry.npmjs.org/@nestjs/core/-/core-11.1.16.tgz"
   integrity sha512-tXWXyCiqWthelJjrE0KLFjf0O98VEt+WPVx5CrqCf+059kIxJ8y1Vw7Cy7N4fwQafWNrmFL2AfN87DDMbVAY0w==
@@ -1594,7 +1594,7 @@
   resolved "https://registry.npmjs.org/@nestjs/passport/-/passport-11.0.5.tgz"
   integrity sha512-ulQX6mbjlws92PIM15Naes4F4p2JoxGnIJuUsdXQPT+Oo2sqQmENEZXM7eYuimocfHnKlcfZOuyzbA33LwUlOQ==
 
-"@nestjs/platform-express@^11.0.0", "@nestjs/platform-express@^11.1.16", "@nestjs/platform-express@11.1.16":
+"@nestjs/platform-express@^11.1.16", "@nestjs/platform-express@11.1.16":
   version "11.1.16"
   resolved "https://registry.npmjs.org/@nestjs/platform-express/-/platform-express-11.1.16.tgz"
   integrity sha512-IOegr5+ZfUiMKgk+garsSU4MOkPRhm46e6w8Bp1GcO4vCdl9Piz6FlWAzKVfa/U3Hn/DdzSVJOW3TWcQQFdBDw==
@@ -1605,7 +1605,7 @@
     path-to-regexp "8.3.0"
     tslib "2.8.1"
 
-"@nestjs/platform-socket.io@^11.0.0", "@nestjs/platform-socket.io@^11.1.16", "@nestjs/platform-socket.io@11.1.16":
+"@nestjs/platform-socket.io@^11.1.16", "@nestjs/platform-socket.io@11.1.16":
   version "11.1.16"
   resolved "https://registry.npmjs.org/@nestjs/platform-socket.io/-/platform-socket.io-11.1.16.tgz"
   integrity sha512-3fYQTi8F2hb7HDkes/ArGhY8lkjB/Df29F5CN4cjbk4cmfpRVy89p6N1BC7PjVOHMAzdwqeX8FabqspdSAnywA==
@@ -1613,7 +1613,7 @@
     socket.io "4.8.3"
     tslib "2.8.1"
 
-"@nestjs/websockets@^11.0.0", "@nestjs/websockets@^11.1.16", "@nestjs/websockets@11.1.16":
+"@nestjs/websockets@^11.1.16", "@nestjs/websockets@11.1.16":
   version "11.1.16"
   resolved "https://registry.npmjs.org/@nestjs/websockets/-/websockets-11.1.16.tgz"
   integrity sha512-kfLhCFsq6139JVFCQpbFB6LOEjZzdpE7JzXsZtRbVjqmsgTKVSIh8gKRgzpcq27rbLNqHhhZavboOltOfSxZow==
@@ -4889,7 +4889,9 @@ diff-sequences@^29.6.3:
   integrity sha512-EjePK1srD3P08o2j4f0ExnylqRs5B9tJjcp9t1krH2qRi8CCdsYfwe9JgSLurFBWwq4uOlipzfk5fHNvwFKr8Q==
 
 diff@^4.0.1:
-  version "4.0.2"
+  version "4.0.4"
+  resolved "https://registry.npmjs.org/diff/-/diff-4.0.4.tgz"
+  integrity sha512-X07nttJQkwkfKfvTPG/KSnE2OMdcUCao6+eXF3wmnIQRn2aPAHH3VxDbDOdegkd6JbPsXqShpvEOHfAT+nCNwQ==
 
 dotenv@^16.0.0, dotenv@^16.6.1:
   version "16.6.1"
@@ -6593,7 +6595,9 @@ jiti@*, jiti@^2.4.2, jiti@^2.5.1:
   integrity sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==
 
 js-yaml@^3.13.1:
-  version "3.14.1"
+  version "3.14.2"
+  resolved "https://registry.npmjs.org/js-yaml/-/js-yaml-3.14.2.tgz"
+  integrity sha512-PMSmkqxr106Xa156c2M265Z+FTrPl+oxd/rgOQy2tijQeK5TxQ43psO1ZCwhVOSdnn+RzkzlRz/eY4BgJBYVpg==
   dependencies:
     argparse "^1.0.7"
     esprima "^4.0.0"
@@ -7069,7 +7073,9 @@ mimic-fn@^2.1.0:
   integrity sha512-OqbOk5oEQeAZ8WXWydlu9HJjz9WVdEIvamMCcXmuqUYjTknH/sqsWvhQ3vgwKFRR1HpjvNBKQ37nbJgYzGqGcg==
 
 minimatch@^3.0.4, minimatch@^3.1.1:
-  version "3.1.2"
+  version "3.1.5"
+  resolved "https://registry.npmjs.org/minimatch/-/minimatch-3.1.5.tgz"
+  integrity sha512-VgjWUsnnT6n+NUk6eZq77zeFdpW2LWDzP6zFGrCbHXiYNul5Dzqk2HHQ5uFH2DNW5Xbp8+jVzaeNt94ssEEl4w==
   dependencies:
     brace-expansion "^1.1.7"
 
@@ -7081,7 +7087,9 @@ minimatch@^3.1.2:
     brace-expansion "^5.0.2"
 
 minimatch@^5.1.0:
-  version "5.1.6"
+  version "5.1.9"
+  resolved "https://registry.npmjs.org/minimatch/-/minimatch-5.1.9.tgz"
+  integrity sha512-7o1wEA2RyMP7Iu7GNba9vc0RWWGACJOCZBJX2GJWip0ikV+wcOsgVuY9uE8CPiyQhkGFSlhuSkZPavN7u1c2Fw==
   dependencies:
     brace-expansion "^2.0.1"
 
@@ -8854,7 +8862,7 @@ v8-to-istanbul@^9.0.1:
     "@types/istanbul-lib-coverage" "^2.0.1"
     convert-source-map "^2.0.0"
 
-validator@^13.15.22:
+validator@13.15.26:
   version "13.15.26"
   resolved "https://registry.npmjs.org/validator/-/validator-13.15.26.tgz"
   integrity sha512-spH26xU080ydGggxRyR1Yhcbgx+j3y5jbNXk/8L+iRvdIEQ4uTRH2Sgf2dokud6Q4oAtsbNvJ1Ft+9xmm6IZcA==

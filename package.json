@@ -36,6 +36,7 @@
     },
     "diff": "4.0.4",
     "fast-xml-parser": "5.4.2",
+    "fsevents": "2.3.2",
     "minimatch": "10.2.4",
     "next": "15.5.10",
     "tar": "7.5.10",
