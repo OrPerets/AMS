@@ -9,9 +9,10 @@ import { StripeProvider } from './providers/stripe.provider';
 import { PaymentRoutingStrategy } from './providers/payment-routing.strategy';
 import { ActivityModule } from '../activity/activity.module';
 import { ApprovalModule } from '../approval/approval.module';
+import { NotificationModule } from '../notifications/notification.module';
 
 @Module({
-  imports: [ActivityModule, ApprovalModule],
+  imports: [ActivityModule, ApprovalModule, NotificationModule],
   controllers: [PaymentController],
   providers: [PaymentService, PrismaService, TranzilaService, ReceiptService, TranzilaProvider, StripeProvider, PaymentRoutingStrategy],
 })

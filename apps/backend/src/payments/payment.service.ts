@@ -17,6 +17,7 @@ import { PaymentRoutingStrategy } from './providers/payment-routing.strategy';
 import { PaymentProvider, RoutingContext } from './providers/payment-provider';
 import { ApprovalService } from '../approval/approval.service';
 import { Role } from '../auth/roles.decorator';
+import { NotificationService } from '../notifications/notification.service';
 
 type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
   include: {
@@ -38,6 +39,7 @@ export class PaymentService {
     private routingStrategy: PaymentRoutingStrategy,
     private activity: ActivityService,
     private approvals: ApprovalService,
+    private notifications: NotificationService,
   ) {}
 
   private getProviderByName(name: string): PaymentProvider {
@@ -120,6 +122,36 @@ export class PaymentService {
     if (value === null || value === undefined) return '""';
     const normalized = value instanceof Date ? value.toISOString() : String(value);
     return `"${normalized.replace(/"/g, '""')}"`;
+  }
+
+  private async createResidentNotification(
+    residentId: number,
+    title: string,
+    message: string,
+    type: string,
+    metadata?: Record<string, any>,
+  ) {
+    const resident = await this.prisma.resident.findUnique({
+      where: { id: residentId },
+      select: {
+        id: true,
+        userId: true,
+        user: { select: { tenantId: true } },
+        units: { select: { buildingId: true } },
+      },
+    });
+
+    if (!resident?.userId) return null;
+
+    return this.notifications.create({
+      title,
+      message,
+      type,
+      tenantId: resident.user?.tenantId ?? undefined,
+      userId: resident.userId,
+      buildingId: resident.units?.[0]?.buildingId ?? undefined,
+      metadata,
+    });
   }
 
   private toIntentStatus(status: string): PaymentIntentStatus {
@@ -436,10 +468,17 @@ export class PaymentService {
     if (mappedStatus === PaymentIntentStatus.SUCCEEDED) {
       await this.confirmPayment(intent.invoiceId);
     } else if (mappedStatus === PaymentIntentStatus.CANCELED || mappedStatus === PaymentIntentStatus.FAILED) {
-      await this.prisma.invoice.update({
+      const updatedInvoice = await this.prisma.invoice.update({
         where: { id: intent.invoiceId },
         data: { status: InvoiceStatus.UNPAID, collectionStatus: CollectionStatus.PAST_DUE },
       });
+      await this.createResidentNotification(
+        updatedInvoice.residentId,
+        'תשלום לא הושלם',
+        `לא ניתן היה להשלים את התשלום עבור חשבונית #${updatedInvoice.id}. אפשר לנסות שוב מהאזור האישי.`,
+        'PAYMENT_FAILED',
+        { invoiceId: updatedInvoice.id, paymentIntentId: intent.id, status: mappedStatus },
+      );
     }
 
     await this.prisma.providerTransaction.create({
@@ -1032,6 +1071,13 @@ export class PaymentService {
     await this.logInvoiceActivity(invoice, userId, 'PAYMENT_CONFIRMED', `התשלום עבור חשבונית #${invoice.id} אושר.`, ActivitySeverity.INFO, {
       amount: invoice.amount,
     });
+    await this.createResidentNotification(
+      invoice.residentId,
+      'התשלום התקבל בהצלחה',
+      `התקבל תשלום עבור חשבונית #${invoice.id} בסך ${invoice.amount} ש"ח.`,
+      'PAYMENT_CONFIRMED',
+      { invoiceId: invoice.id, amount: invoice.amount, paymentIntentId: latestIntent.id },
+    );
     return invoice;
   }
 
@@ -1473,7 +1519,7 @@ export class PaymentService {
       await this.prisma.paymentMethod.updateMany({ where: { residentId: resident.id, isDefault: true }, data: { isDefault: false } });
     }
 
-    return this.prisma.paymentMethod.create({
+    const method = await this.prisma.paymentMethod.create({
       data: {
         residentId: resident.id,
         provider: data.provider,
@@ -1486,6 +1532,16 @@ export class PaymentService {
         isDefault: nextIsDefault,
       },
     });
+
+    await this.createResidentNotification(
+      resident.id,
+      'נשמר כרטיס חדש',
+      `נשמר אמצעי תשלום חדש${method.last4 ? ` המסתיים ב-${method.last4}` : ''}.`,
+      'PAYMENT_METHOD_ADDED',
+      { paymentMethodId: method.id, last4: method.last4, provider: method.provider },
+    );
+
+    return method;
   }
 
   async setDefaultPaymentMethod(id: number, actorUserId?: number, actorRole?: Role, residentId?: number) {
@@ -1496,7 +1552,15 @@ export class PaymentService {
     }
 
     await this.prisma.paymentMethod.updateMany({ where: { residentId: resident.id, isDefault: true }, data: { isDefault: false } });
-    return this.prisma.paymentMethod.update({ where: { id }, data: { isDefault: true } });
+    const updated = await this.prisma.paymentMethod.update({ where: { id }, data: { isDefault: true } });
+    await this.createResidentNotification(
+      resident.id,
+      'כרטיס ברירת המחדל עודכן',
+      `אמצעי התשלום${updated.last4 ? ` המסתיים ב-${updated.last4}` : ''} הוגדר כברירת מחדל.`,
+      'PAYMENT_METHOD_DEFAULT_CHANGED',
+      { paymentMethodId: updated.id, last4: updated.last4 },
+    );
+    return updated;
   }
 
   async removePaymentMethod(id: number, actorUserId?: number, actorRole?: Role, residentId?: number) {
@@ -1513,6 +1577,13 @@ export class PaymentService {
         await this.prisma.paymentMethod.update({ where: { id: replacement.id }, data: { isDefault: true } });
       }
     }
+    await this.createResidentNotification(
+      resident.id,
+      'כרטיס הוסר מהחשבון',
+      `אמצעי תשלום${method.last4 ? ` המסתיים ב-${method.last4}` : ''} הוסר מאזור התשלומים.`,
+      'PAYMENT_METHOD_REMOVED',
+      { paymentMethodId: method.id, last4: method.last4 },
+    );
     return { ok: true };
   }
 
@@ -1523,7 +1594,7 @@ export class PaymentService {
   ) {
     const resident = await this.resolveResidentForPaymentSettings(actorUserId, actorRole, data.residentId);
     const retrySchedule = (data.retrySchedule ?? [1, 3, 7]).filter((day) => Number.isInteger(day) && day > 0);
-    return this.prisma.resident.update({
+    const updated = await this.prisma.resident.update({
       where: { id: resident.id },
       data: {
         autopayEnabled: Boolean(data.enabled),
@@ -1532,6 +1603,16 @@ export class PaymentService {
       },
       select: { id: true, autopayEnabled: true, autopayRetrySchedule: true, autopayConsentAt: true },
     });
+    await this.createResidentNotification(
+      resident.id,
+      data.enabled ? 'חיוב אוטומטי הופעל' : 'חיוב אוטומטי הושבת',
+      data.enabled
+        ? 'חיוב אוטומטי הופעל לחשבוניות מחזוריות. ניתן לעדכן או לכבות אותו בכל עת.'
+        : 'חיוב אוטומטי הושבת. תשלומים הבאים ימתינו לאישור ידני.',
+      'AUTOPAY_SETTINGS_UPDATED',
+      { autopayEnabled: updated.autopayEnabled, retrySchedule: updated.autopayRetrySchedule },
+    );
+    return updated;
   }
 
   async getAutopayPreferences(actorUserId?: number, actorRole?: Role, residentId?: number) {
@@ -1556,17 +1637,7 @@ export class PaymentService {
     metadata: Record<string, any>,
     type: 'AUTOPAY_SUCCESS' | 'AUTOPAY_FAILURE',
   ) {
-    const resident = await this.prisma.resident.findUnique({ where: { id: residentId }, select: { userId: true } });
-    if (!resident?.userId) return;
-    await this.prisma.notification.create({
-      data: {
-        userId: resident.userId,
-        title,
-        message,
-        type,
-        metadata,
-      },
-    });
+    await this.createResidentNotification(residentId, title, message, type, metadata);
   }
 
   private async attemptAutopayForInvoice(invoiceId: number, residentId: number, recurringId: number) {

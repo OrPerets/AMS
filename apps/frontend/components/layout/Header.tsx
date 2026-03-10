@@ -9,6 +9,8 @@ import { useTheme, useDirection, useLocale } from '../../lib/providers';
 import { cn } from '../../lib/utils';
 import UserMenu from './UserMenu';
 import { authFetch, getCurrentUserId } from '../../lib/auth';
+import { websocketService } from '../../lib/websocket';
+import { emitNotificationsChanged, subscribeToNotificationsChanged } from '../../lib/notification-events';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,6 +72,7 @@ export default function Header({
       setNotifications(prev => 
         prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       );
+      emitNotificationsChanged();
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
     }
@@ -78,10 +81,22 @@ export default function Header({
   useEffect(() => {
     setMounted(true);
     loadNotifications();
-    
+
+    const handleNewNotification = (event: { notification?: any }) => {
+      if (!event.notification) return;
+      setNotifications((prev) => [event.notification, ...prev.filter((item) => item.id !== event.notification.id)].slice(0, 5));
+    };
+
+    const unsubscribe = subscribeToNotificationsChanged(loadNotifications);
+    websocketService.on('new_notification', handleNewNotification);
+
     // Refresh notifications every 30 seconds
     const interval = setInterval(loadNotifications, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+      websocketService.off('new_notification', handleNewNotification);
+    };
   }, [currentUserId]);
 
   const toggleTheme = () => {

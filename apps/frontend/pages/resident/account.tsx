@@ -6,9 +6,12 @@ import { authFetch, downloadAuthenticatedFile, openAuthenticatedFile } from '../
 import { Badge } from '../../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
 import { toast } from '../../components/ui/use-toast';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
+import { websocketService } from '../../lib/websocket';
 
 type AccountContext = {
   user: { id: number; email: string; phone?: string | null; role: string };
@@ -62,6 +65,17 @@ export default function ResidentAccountPage() {
   }, []);
 
   useEffect(() => {
+    const handleNewNotification = () => {
+      loadAccount();
+    };
+
+    websocketService.on('new_notification', handleNewNotification);
+    return () => {
+      websocketService.off('new_notification', handleNewNotification);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!router.isReady) return;
 
     const rawIntentId = router.query.intentId || router.query.paymentIntentId || router.query.payment_intent || router.query.paymentId;
@@ -75,6 +89,44 @@ export default function ResidentAccountPage() {
   }, [router.isReady, router.query.intentId, router.query.paymentIntentId, router.query.payment_intent, router.query.paymentId]);
 
   const payableStatuses = useMemo(() => new Set(['UNPAID', 'OVERDUE']), []);
+
+  function translateInvoiceStatus(status: string) {
+    const labels: Record<string, string> = {
+      PAID: 'שולם',
+      OVERDUE: 'בפיגור',
+      UNPAID: 'טרם שולם',
+      PENDING: 'ממתין לתשלום',
+    };
+    return labels[status] || status;
+  }
+
+  function translateIntentStatus(status: string) {
+    const labels: Record<string, string> = {
+      SUCCEEDED: 'הושלם',
+      PROCESSING: 'בטיפול',
+      FAILED: 'נכשל',
+      REQUIRES_ACTION: 'נדרש אימות',
+      REQUIRES_PAYMENT_METHOD: 'נדרש אמצעי תשלום',
+      REQUIRES_CONFIRMATION: 'ממתין לאישור',
+      CANCELED: 'בוטל',
+    };
+    return labels[status] || status;
+  }
+
+  function translateCardBrand(value?: string | null) {
+    const labels: Record<string, string> = {
+      visa: 'ויזה',
+      mastercard: 'מאסטרקארד',
+      ישראכרט: 'ישראכרט',
+      isracard: 'ישראכרט',
+      amex: 'אמריקן אקספרס',
+      diners: 'דיינרס',
+      tranzila: 'טרנזילה',
+      stripe: 'Stripe',
+    };
+    if (!value) return 'כרטיס שמור';
+    return labels[value.toLowerCase()] || value;
+  }
 
   function mapPaymentStatus(status: string) {
     if (status === 'SUCCEEDED') {
@@ -357,8 +409,10 @@ export default function ResidentAccountPage() {
                 {paymentMethods.map((method) => (
                   <div key={method.id} className="flex flex-col gap-3 rounded border p-2 text-xs sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <div className="font-medium">{method.brand || method.provider} •••• {method.last4 || 'XXXX'}</div>
-                      <div className="text-muted-foreground">{method.expMonth || '--'}/{method.expYear || '--'} {method.networkTokenized ? '· tokenized' : ''}</div>
+                      <div className="font-medium">{translateCardBrand(method.brand || method.provider)} •••• {method.last4 || 'XXXX'}</div>
+                      <div className="text-muted-foreground">
+                        תוקף {method.expMonth || '--'}/{method.expYear || '--'}{method.networkTokenized ? ' · נשמר באופן מאובטח' : ''}
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {!method.isDefault ? <Button size="sm" variant="outline" onClick={() => setDefaultCard(method.id)}>ברירת מחדל</Button> : <Badge variant="success">ברירת מחדל</Badge>}
@@ -369,13 +423,33 @@ export default function ResidentAccountPage() {
                 {!paymentMethods.length ? <div className="text-xs text-muted-foreground">אין כרטיסים שמורים.</div> : null}
               </div>
 
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <input className="rounded border px-2 py-1 text-xs" placeholder="provider" value={newCard.provider} onChange={(e) => setNewCard((c) => ({ ...c, provider: e.target.value }))} />
-                <input className="rounded border px-2 py-1 text-xs" placeholder="token" value={newCard.token} onChange={(e) => setNewCard((c) => ({ ...c, token: e.target.value }))} />
-                <input className="rounded border px-2 py-1 text-xs" placeholder="brand" value={newCard.brand} onChange={(e) => setNewCard((c) => ({ ...c, brand: e.target.value }))} />
-                <input className="rounded border px-2 py-1 text-xs" placeholder="last4" value={newCard.last4} onChange={(e) => setNewCard((c) => ({ ...c, last4: e.target.value }))} />
-                <input className="rounded border px-2 py-1 text-xs" placeholder="exp month" value={newCard.expMonth} onChange={(e) => setNewCard((c) => ({ ...c, expMonth: e.target.value }))} />
-                <input className="rounded border px-2 py-1 text-xs" placeholder="exp year" value={newCard.expYear} onChange={(e) => setNewCard((c) => ({ ...c, expYear: e.target.value }))} />
+              <div className="rounded-lg border border-dashed p-3">
+                <div className="mb-3">
+                  <div className="font-medium">הוספת כרטיס חדש</div>
+                  <div className="text-xs text-muted-foreground">המזהה המאובטח מתקבל מספק הסליקה. אין צורך להזין מספר כרטיס מלא או קוד אבטחה.</div>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="card-brand">סוג הכרטיס</Label>
+                    <Input id="card-brand" placeholder="למשל: ויזה" value={newCard.brand} onChange={(e) => setNewCard((c) => ({ ...c, brand: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="card-last4">4 ספרות אחרונות</Label>
+                    <Input id="card-last4" inputMode="numeric" maxLength={4} placeholder="1234" value={newCard.last4} onChange={(e) => setNewCard((c) => ({ ...c, last4: e.target.value.replace(/\D/g, '').slice(0, 4) }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="card-exp-month">חודש תפוגה</Label>
+                    <Input id="card-exp-month" inputMode="numeric" placeholder="MM" value={newCard.expMonth} onChange={(e) => setNewCard((c) => ({ ...c, expMonth: e.target.value.replace(/\D/g, '').slice(0, 2) }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="card-exp-year">שנת תפוגה</Label>
+                    <Input id="card-exp-year" inputMode="numeric" placeholder="YYYY" value={newCard.expYear} onChange={(e) => setNewCard((c) => ({ ...c, expYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))} />
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <Label htmlFor="card-token">מזהה מאובטח של הכרטיס</Label>
+                    <Input id="card-token" placeholder="הדבק/י כאן את המזהה המאובטח שקיבלת מטופס הסליקה" value={newCard.token} onChange={(e) => setNewCard((c) => ({ ...c, token: e.target.value }))} />
+                  </div>
+                </div>
               </div>
               <Button size="sm" onClick={addCard}>הוסף כרטיס שמור</Button>
             </div>
@@ -389,7 +463,7 @@ export default function ResidentAccountPage() {
                     <div className="text-right">
                       <div className="font-medium">{formatCurrency(invoice.amount)}</div>
                       <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'warning'}>
-                        {invoice.status}
+                        {translateInvoiceStatus(invoice.status)}
                       </Badge>
                       {invoice.receiptNumber ? (
                         <div className="mt-2">
@@ -401,7 +475,7 @@ export default function ResidentAccountPage() {
                       {paymentAttempts[invoice.id] ? (
                         <div className="mt-2 text-xs text-muted-foreground">
                           <div>ניסיון תשלום: #{paymentAttempts[invoice.id].intentId}</div>
-                          <div>סטטוס עדכני: {paymentAttempts[invoice.id].status}</div>
+                          <div>סטטוס עדכני: {translateIntentStatus(paymentAttempts[invoice.id].status)}</div>
                           <div>עודכן: {formatDate(new Date(paymentAttempts[invoice.id].attemptedAt), locale)}</div>
                         </div>
                       ) : null}

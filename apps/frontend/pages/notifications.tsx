@@ -11,6 +11,7 @@ import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { NotificationCenter, NotificationItem } from '../components/ui/notification-center';
 import { toast } from '../components/ui/use-toast';
+import { emitNotificationsChanged } from '../lib/notification-events';
 
 interface NotificationPreferences {
   email: boolean;
@@ -124,6 +125,7 @@ export default function NotificationsPage() {
         const next = [normalizeNotifications([notification])[0], ...current.filter((item) => item.id !== notification.id)];
         return next;
       });
+      emitNotificationsChanged();
       toast({
         title: 'התקבלה התראה חדשה',
         description: notification.title,
@@ -173,6 +175,7 @@ export default function NotificationsPage() {
       const response = await authFetch(`/api/v1/notifications/${id}/read`, { method: 'POST' });
       if (!response.ok) throw new Error(await response.text());
       setNotifications((current) => current.map((item) => (item.id === id ? { ...item, read: true } : item)));
+      emitNotificationsChanged();
     } catch {
       toast({
         title: 'לא ניתן לסמן כנקרא',
@@ -187,6 +190,7 @@ export default function NotificationsPage() {
     try {
       await Promise.all(unreadIds.map((id) => authFetch(`/api/v1/notifications/${id}/read`, { method: 'POST' })));
       setNotifications((current) => current.map((item) => ({ ...item, read: true })));
+      emitNotificationsChanged();
       toast({ title: 'כל ההתראות סומנו כנקראו' });
     } catch {
       toast({

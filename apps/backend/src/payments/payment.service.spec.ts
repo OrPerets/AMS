@@ -7,6 +7,7 @@ describe('PaymentService webhook processing', () => {
   let tranzilaProvider: any;
   let stripeProvider: any;
   let routingStrategy: any;
+  let notificationService: any;
 
   beforeEach(() => {
     prisma = {
@@ -76,6 +77,10 @@ describe('PaymentService webhook processing', () => {
       shouldFailover: jest.fn().mockReturnValue(true),
     };
 
+    notificationService = {
+      create: jest.fn(),
+    };
+
     service = new PaymentService(
       prisma as any,
       { generate: jest.fn() } as any,
@@ -84,6 +89,7 @@ describe('PaymentService webhook processing', () => {
       routingStrategy as any,
       { log: jest.fn() } as any,
       {} as any,
+      notificationService as any,
     );
   });
 
@@ -148,6 +154,7 @@ describe('PaymentService webhook processing', () => {
       provider: 'tranzila',
       providerIntentId: 'pi_456',
     });
+    prisma.invoice.update.mockResolvedValue({ id: 102, residentId: 10 });
 
     await expect(service.processWebhook({ id: 'evt-4', intentId: 'pi_456' }, 'sig')).resolves.toEqual({ ok: true });
 
@@ -187,7 +194,7 @@ describe('PaymentService webhook processing', () => {
   });
 
 it('adds a resident payment method and marks first method as default', async () => {
-    prisma.resident.findUnique.mockResolvedValue({ id: 10, userId: 99 });
+    prisma.resident.findUnique.mockResolvedValue({ id: 10, userId: 99, units: [] });
     prisma.paymentMethod.count.mockResolvedValue(0);
     prisma.paymentMethod.create.mockResolvedValue({ id: 300, residentId: 10, isDefault: true, networkTokenized: true });
 
@@ -244,8 +251,8 @@ it('adds a resident payment method and marks first method as default', async () 
     const result = await service.runDueRecurring();
 
     expect(result.generated).toBe(1);
-    expect(prisma.notification.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ userId: 99, type: 'AUTOPAY_SUCCESS' }) }),
+    expect(notificationService.create).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 99, type: 'AUTOPAY_SUCCESS' }),
     );
   });
 

@@ -193,11 +193,11 @@ export default function AdminNotifications() {
                   <div>
                     <p className="font-medium">{notification.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      {notification.type || 'CUSTOM'} • {new Date(notification.createdAt).toLocaleString('he-IL')}
+                      {notification.type || 'מותאם אישית'} • {new Date(notification.createdAt).toLocaleString('he-IL')}
                     </p>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {notification.userId ? `User ${notification.userId}` : notification.buildingId ? `Building ${notification.buildingId}` : 'Global'}
+                    {notification.userId ? `משתמש ${notification.userId}` : notification.buildingId ? `בניין ${notification.buildingId}` : 'כללי'}
                   </span>
                 </div>
               </div>

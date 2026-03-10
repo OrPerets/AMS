@@ -163,7 +163,7 @@ export default function UnpaidInvoices() {
                   <TableCell>
                     <div>
                       <p>{invoice.residentName || `דייר ${invoice.residentId}`}</p>
-                      <p className="text-xs text-muted-foreground">Resident #{invoice.residentId}</p>
+                      <p className="text-xs text-muted-foreground">מזהה דייר #{invoice.residentId}</p>
                     </div>
                   </TableCell>
                   <TableCell>{formatCurrency(invoice.amount)}</TableCell>
@@ -171,7 +171,7 @@ export default function UnpaidInvoices() {
                   <TableCell>{invoice.status}</TableCell>
                   <TableCell>
                     <div className="text-sm text-muted-foreground">
-                      <p>{invoice.paymentMethod || 'manual / none'}</p>
+                      <p>{invoice.paymentMethod || 'ידני / ללא אמצעי תשלום'}</p>
                       <p>{invoice.history?.length || 0} אירועים</p>
                     </div>
                   </TableCell>

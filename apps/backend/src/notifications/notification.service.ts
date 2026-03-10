@@ -33,8 +33,8 @@ type TemplateParams = Record<string, string>;
 
 const templates: Record<NotificationTemplate, { subject: string; body: string }> = {
   [NotificationTemplate.TICKET_STATUS]: {
-    subject: 'Ticket {{id}} status: {{status}}',
-    body: 'Ticket {{id}} is now {{status}}.',
+    subject: 'עדכון קריאה #{{id}}',
+    body: 'סטטוס הקריאה #{{id}} עודכן ל-{{status}}.',
   },
   [NotificationTemplate.ANNOUNCEMENT]: {
     subject: '{{title}}',
