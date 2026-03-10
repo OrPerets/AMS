@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
-import { useLocale } from '../../lib/providers';
+import { useDirection, useLocale } from '../../lib/providers';
 import { getTokenPayload } from '../../lib/auth';
 
 interface SidebarProps {
@@ -253,6 +253,7 @@ const getNavigationGroups = (role: string, t: (key: string) => string): Navigati
 export default function Sidebar({ className, open, onClose, collapsed }: SidebarProps) {
   const router = useRouter();
   const { t } = useLocale();
+  const { direction } = useDirection();
   const [userRole, setUserRole] = useState<string>('RESIDENT');
   const [mounted, setMounted] = useState(false);
 
@@ -358,10 +359,13 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
 
       {/* Mobile Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 end-0 z-30 flex w-[min(85vw,20rem)] max-w-full flex-col border-e bg-background shadow-2xl transition-transform duration-300 md:hidden",
-        open ? "translate-x-0" : (
-          "translate-x-full"
-        ),
+        "fixed inset-y-0 z-30 flex w-[min(85vw,20rem)] max-w-full flex-col border-e bg-background shadow-2xl transition-transform duration-300 md:hidden",
+        direction === 'rtl' ? "start-0" : "end-0",
+        open
+          ? "translate-x-0"
+          : direction === 'rtl'
+            ? "translate-x-full"
+            : "-translate-x-full",
         className
       )}>
         <div className="flex h-16 items-center justify-between border-b px-6">
