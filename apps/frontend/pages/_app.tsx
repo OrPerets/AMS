@@ -8,7 +8,6 @@ import 'react-day-picker/dist/style.css';
 import Layout from '../components/Layout';
 import { AppProviders } from '../lib/providers';
 import { cn } from '../lib/utils';
-import { Toaster } from '../components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { PwaBootstrap } from '../components/pwa/PwaBootstrap';
 import { PwaInstallPrompt } from '../components/pwa/PwaInstallPrompt';
@@ -47,7 +46,6 @@ export default function MyApp({ Component, pageProps }: AppProps) {
           <Component {...pageProps} />
         </Layout>
         <PwaInstallPrompt />
-        <Toaster />
         <SonnerToaster position="top-center" richColors />
       </AppProviders>
     </div>

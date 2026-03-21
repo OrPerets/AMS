@@ -19,7 +19,7 @@ export function PageHero({
   className?: string;
 }) {
   return (
-    <section className={cn('surface-hero overflow-hidden rounded-2xl sm:rounded-[28px] border border-white/10 text-white', className)}>
+    <section className={cn('dark-surface surface-hero overflow-hidden rounded-2xl sm:rounded-[28px] border border-white/10 text-white', className)}>
       <div className="grid gap-4 p-3.5 sm:gap-5 sm:p-5 lg:grid-cols-[1.2fr_0.8fr] lg:gap-8 lg:p-8">
         <div className="space-y-3.5 sm:space-y-5">
           <div className="space-y-2 sm:space-y-3">

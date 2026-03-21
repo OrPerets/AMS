@@ -249,7 +249,7 @@ export function GlobalCommandPalette({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl overflow-hidden border-white/10 bg-slate-950/95 text-white shadow-modal backdrop-blur-xl">
+      <DialogContent className="dark-surface max-w-3xl overflow-hidden border-white/10 bg-slate-950/95 text-white shadow-modal backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <Command className="h-5 w-5 text-primary" />

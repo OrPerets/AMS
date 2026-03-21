@@ -287,7 +287,7 @@ export default function HomePage() {
       </Card>
 
       <Dialog open={onboardingOpen} onOpenChange={setOnboardingOpen}>
-        <DialogContent className="max-w-lg sm:max-w-2xl border-white/10 bg-slate-950/95 text-white shadow-modal backdrop-blur-xl mx-3 sm:mx-auto">
+        <DialogContent className="dark-surface max-w-lg sm:max-w-2xl border-white/10 bg-slate-950/95 text-white shadow-modal backdrop-blur-xl mx-3 sm:mx-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-white text-base sm:text-lg">
               <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
