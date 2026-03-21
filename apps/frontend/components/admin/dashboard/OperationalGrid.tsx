@@ -14,8 +14,8 @@ export function OperationalGrid({
   formatDate: (value: string | Date) => string;
 }) {
   return (
-    <section className="grid gap-6 xl:grid-cols-2">
-      <Card className="rounded-[28px] border-subtle-border">
+    <section className="grid gap-4 sm:gap-6 xl:grid-cols-2">
+      <Card className="rounded-xl sm:rounded-[24px] border-subtle-border">
         <CardHeader>
           <CardTitle>עומס קריאות לפי בניין</CardTitle>
           <CardDescription>מבט מבצעי חי על לחץ, דחיפות וחריגות SLA. המדד נשאר בזמן אמת גם כשחלון הזמן משתנה.</CardDescription>
@@ -54,9 +54,9 @@ export function OperationalGrid({
         </CardContent>
       </Card>
 
-      <div className="grid gap-6">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="rounded-[28px] border-subtle-border">
+      <div className="grid gap-4 sm:gap-6">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+          <Card className="rounded-xl sm:rounded-[24px] border-subtle-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-primary" />
@@ -89,7 +89,7 @@ export function OperationalGrid({
             </CardContent>
           </Card>
 
-          <Card className="rounded-[28px] border-subtle-border">
+          <Card className="rounded-xl sm:rounded-[24px] border-subtle-border">
             <CardHeader>
               <CardTitle>צווארי בקבוק</CardTitle>
               <CardDescription>הנקודות שמאטות טיפול, אישור או גבייה כרגע.</CardDescription>
@@ -112,8 +112,8 @@ export function OperationalGrid({
           </Card>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-          <Card className="rounded-[28px] border-subtle-border">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+          <Card className="rounded-xl sm:rounded-[24px] border-subtle-border">
             <CardHeader>
               <CardTitle>תחזוקה בחלון הנבחר</CardTitle>
               <CardDescription>מועדים קרובים, מטפלים משויכים ופריטים שחרגו עד סוף החלון שנבחר.</CardDescription>
@@ -147,7 +147,7 @@ export function OperationalGrid({
             </CardContent>
           </Card>
 
-          <Card className="rounded-[28px] border-subtle-border">
+          <Card className="rounded-xl sm:rounded-[24px] border-subtle-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bell className="h-5 w-5 text-primary" />

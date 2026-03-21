@@ -72,48 +72,48 @@
   }
 
   .dark {
-    --background: 24 18% 8%;
-    --foreground: 42 20% 96%;
-    --page-background: 24 18% 8%;
-    --card: 26 16% 10%;
-    --card-foreground: 42 20% 96%;
-    --popover: 25 17% 11%;
-    --popover-foreground: 42 20% 96%;
-    --elevated-surface: 26 16% 12%;
-    --muted-surface: 26 14% 16%;
+    --background: 25 14% 12%;
+    --foreground: 42 18% 96%;
+    --page-background: 25 14% 11%;
+    --card: 26 13% 14%;
+    --card-foreground: 42 18% 96%;
+    --popover: 26 13% 15%;
+    --popover-foreground: 42 18% 96%;
+    --elevated-surface: 26 13% 16%;
+    --muted-surface: 26 11% 19%;
     --inverted-surface: 42 20% 98%;
-    --primary: 39 82% 57%;
-    --primary-foreground: 24 21% 8%;
-    --secondary: 26 14% 16%;
-    --secondary-foreground: 42 20% 96%;
-    --muted: 26 14% 16%;
-    --muted-foreground: 32 10% 72%;
-    --accent: 42 24% 94%;
-    --accent-foreground: 24 18% 8%;
+    --primary: 39 78% 58%;
+    --primary-foreground: 25 18% 8%;
+    --secondary: 26 12% 19%;
+    --secondary-foreground: 42 18% 96%;
+    --muted: 26 12% 19%;
+    --muted-foreground: 32 10% 68%;
+    --accent: 42 22% 92%;
+    --accent-foreground: 25 14% 10%;
     --destructive: 0 72% 55%;
     --destructive-foreground: 42 20% 98%;
-    --success: 148 52% 44%;
+    --success: 148 48% 46%;
     --success-foreground: 42 20% 98%;
-    --warning: 39 82% 57%;
-    --warning-foreground: 24 21% 8%;
-    --info: 214 68% 63%;
-    --info-foreground: 24 21% 8%;
-    --border: 28 12% 20%;
-    --input: 28 12% 20%;
-    --ring: 39 82% 57%;
-    --focus-ring: 43 96% 75%;
-    --subtle-border: 28 12% 20%;
-    --strong-border: 31 10% 38%;
-    --disabled-text: 30 8% 56%;
-    --tertiary-text: 32 10% 72%;
-    --inverse-text: 24 18% 8%;
+    --warning: 39 78% 58%;
+    --warning-foreground: 25 18% 8%;
+    --info: 214 64% 62%;
+    --info-foreground: 25 18% 8%;
+    --border: 28 10% 22%;
+    --input: 28 10% 22%;
+    --ring: 39 78% 58%;
+    --focus-ring: 43 90% 72%;
+    --subtle-border: 28 10% 22%;
+    --strong-border: 31 9% 36%;
+    --disabled-text: 30 7% 52%;
+    --tertiary-text: 32 9% 68%;
+    --inverse-text: 25 14% 10%;
 
-    --surface-shadow-card: 0 22px 44px -30px rgb(0 0 0 / 0.5);
-    --surface-shadow-raised: 0 34px 80px -34px rgb(0 0 0 / 0.58);
-    --surface-shadow-modal: 0 56px 140px -42px rgb(0 0 0 / 0.72);
+    --surface-shadow-card: 0 18px 36px -24px rgb(0 0 0 / 0.4);
+    --surface-shadow-raised: 0 28px 64px -30px rgb(0 0 0 / 0.48);
+    --surface-shadow-modal: 0 48px 120px -38px rgb(0 0 0 / 0.62);
     --surface-shadow-hero:
-      0 42px 120px -50px rgb(0 0 0 / 0.7),
-      inset 0 1px 0 rgb(255 255 255 / 0.08);
+      0 36px 100px -44px rgb(0 0 0 / 0.6),
+      inset 0 1px 0 rgb(255 255 255 / 0.06);
   }
 
   body {
@@ -149,7 +149,19 @@
 
   @media (max-width: 640px) {
     body {
-      line-height: 1.58;
+      line-height: 1.55;
+    }
+
+    h1 {
+      font-size: 1.65rem;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+    }
+
+    h3 {
+      font-size: 1.15rem;
     }
 
     h1,
@@ -217,28 +229,28 @@
 
   .surface-hero {
     background:
-      radial-gradient(circle at top right, hsl(var(--gold-300) / 0.22), transparent 24%),
-      linear-gradient(135deg, hsl(24 18% 10%), hsl(28 20% 14%) 48%, hsl(var(--gold-800)) 100%);
+      radial-gradient(circle at top right, hsl(var(--gold-300) / 0.2), transparent 28%),
+      linear-gradient(135deg, hsl(25 16% 14%), hsl(28 18% 17%) 48%, hsl(var(--gold-800)) 100%);
     box-shadow: var(--surface-shadow-hero);
   }
 
   .resident-landing-hero {
     background:
-      radial-gradient(circle at top right, hsl(var(--gold-300) / 0.2), transparent 26%),
-      linear-gradient(145deg, hsl(27 16% 16%), hsl(30 18% 20%) 52%, hsl(35 52% 31%) 100%);
+      radial-gradient(circle at top right, hsl(var(--gold-300) / 0.18), transparent 28%),
+      linear-gradient(145deg, hsl(27 14% 18%), hsl(30 16% 22%) 52%, hsl(35 48% 33%) 100%);
   }
 
   @media (max-width: 640px) {
     .surface-hero {
       background:
-        radial-gradient(circle at top right, hsl(var(--gold-300) / 0.18), transparent 26%),
-        linear-gradient(160deg, hsl(24 18% 10%), hsl(28 18% 13%) 54%, hsl(var(--gold-800)) 100%);
+        radial-gradient(circle at top right, hsl(var(--gold-300) / 0.16), transparent 30%),
+        linear-gradient(160deg, hsl(25 14% 16%), hsl(28 16% 18%) 54%, hsl(var(--gold-700) / 0.85) 100%);
     }
 
     .resident-landing-hero {
       background:
-        radial-gradient(circle at top right, hsl(var(--gold-300) / 0.18), transparent 28%),
-        linear-gradient(160deg, hsl(28 15% 18%), hsl(30 16% 22%) 55%, hsl(35 45% 34%) 100%);
+        radial-gradient(circle at top right, hsl(var(--gold-300) / 0.16), transparent 30%),
+        linear-gradient(160deg, hsl(28 13% 20%), hsl(30 14% 24%) 55%, hsl(35 42% 35%) 100%);
     }
   }
 

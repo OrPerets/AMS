@@ -68,7 +68,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       {error ? (
         <InlineErrorPanel
           className="border-warning/40 bg-warning/5 text-foreground"

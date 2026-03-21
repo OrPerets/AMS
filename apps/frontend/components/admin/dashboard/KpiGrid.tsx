@@ -22,7 +22,7 @@ const kpiDescriptions: Record<string, string> = {
 
 export function KpiGrid({ data }: { data: DashboardResponse }) {
   return (
-    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <section className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 xl:grid-cols-3">
       {kpiCards.map((card) => {
         const value =
           card.key === 'unpaidBalance'
@@ -34,19 +34,19 @@ export function KpiGrid({ data }: { data: DashboardResponse }) {
         return (
           <Card
             key={card.key}
-            className={`group overflow-hidden rounded-[26px] border-t-[3px] border-subtle-border ${card.accent} shadow-[0_20px_50px_-36px_rgba(15,23,42,0.25)] transition-shadow hover:shadow-[0_25px_60px_-32px_rgba(15,23,42,0.35)]`}
+            className={`group overflow-hidden rounded-xl sm:rounded-[22px] border-t-[3px] border-subtle-border ${card.accent} shadow-elevation-2 transition-shadow hover:shadow-elevation-3`}
           >
             <CardContent className="p-0">
-              <div className="flex items-center justify-between px-5 py-5">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{card.title}</p>
-                  <p className="mt-2 text-3xl font-black text-foreground">{value}</p>
+              <div className="flex items-center justify-between px-3 py-3 sm:px-5 sm:py-5">
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{card.title}</p>
+                  <p className="mt-1 sm:mt-2 text-xl sm:text-2xl font-black text-foreground">{value}</p>
                 </div>
-                <div className={`rounded-2xl ${card.iconBg} p-3 transition-transform group-hover:scale-105`}>
-                  <Icon className="h-5 w-5" />
+                <div className={`shrink-0 rounded-xl sm:rounded-2xl ${card.iconBg} p-2 sm:p-3 transition-transform group-hover:scale-105`}>
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
               </div>
-              <div className="border-t border-subtle-border bg-muted/35 px-5 py-3 text-sm text-muted-foreground">
+              <div className="hidden sm:block border-t border-subtle-border bg-muted/35 px-5 py-3 text-sm text-muted-foreground">
                 {kpiDescriptions[card.key]}
               </div>
             </CardContent>

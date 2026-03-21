@@ -446,7 +446,7 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
 
       {/* Mobile Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 z-30 flex w-[min(calc(100vw-1rem),24rem)] max-w-full flex-col border-e border-white/10 bg-background/95 shadow-modal backdrop-blur-xl transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] md:hidden",
+        "fixed inset-y-0 z-30 flex w-[min(calc(100vw-2.5rem),22rem)] max-w-full flex-col border-e bg-background shadow-modal backdrop-blur-xl transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] md:hidden",
         direction === 'rtl' ? "start-0" : "end-0",
         open
           ? "translate-x-0"
@@ -461,30 +461,30 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
       aria-label={t('shell.mainNavigation')}
       aria-hidden={!open}
       data-state={open ? 'open' : 'closed'}>
-        <div className="safe-pt flex min-h-16 items-center justify-between border-b px-4 sm:px-6">
+        <div className="safe-pt flex min-h-14 items-center justify-between border-b px-3.5">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold">
               A
             </div>
-            <span>{t('app.shortName')}</span>
+            <span className="text-sm">{t('app.shortName')}</span>
           </Link>
-          <Button ref={closeButtonRef} variant="ghost" size="icon" onClick={onClose} aria-label={t('shell.closeNavigation')}>
-            <X className="h-5 w-5" />
+          <Button ref={closeButtonRef} variant="ghost" size="icon-sm" onClick={onClose} aria-label={t('shell.closeNavigation')}>
+            <X className="h-4.5 w-4.5" />
             <span className="sr-only">{t('shell.closeNavigation')}</span>
           </Button>
         </div>
         
-        <nav className="scrollbar-hide flex-1 space-y-6 overflow-y-auto px-4 py-4">
+        <nav className="scrollbar-hide flex-1 space-y-4 overflow-y-auto px-3 py-3">
           {navigationGroups.map((group) => {
             const filteredItems = group.items.filter(item => item.roles.includes(userRole));
             if (filteredItems.length === 0) return null;
 
             return (
-              <div key={group.title} className="space-y-2">
-                <h4 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <div key={group.title} className="space-y-1">
+                <h4 className="px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                   {group.title}
                 </h4>
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {filteredItems.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.href);
@@ -495,13 +495,13 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
                         href={item.href}
                         onClick={onClose}
                         className={cn(
-                          "touch-target flex min-h-11 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors",
+                          "touch-target flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-colors",
                           active
                             ? "bg-primary text-primary-foreground shadow-sm"
-                            : "text-foreground/70 hover:bg-accent hover:text-accent-foreground"
+                            : "text-foreground/75 hover:bg-muted active:bg-muted/80"
                         )}
                       >
-                        <Icon className="h-5 w-5" />
+                        <Icon className="h-[18px] w-[18px] shrink-0" />
                         <span>{item.title}</span>
                       </Link>
                     );
@@ -512,24 +512,24 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
           })}
         </nav>
 
-        <div className="border-t px-4 py-4 safe-pb">
-          <div className="grid gap-3">
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="justify-start" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-                {theme === 'light' ? <Moon className="me-2 h-4 w-4" /> : <Sun className="me-2 h-4 w-4" />}
+        <div className="border-t px-3 py-3 safe-pb">
+          <div className="grid gap-2">
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+                {theme === 'light' ? <Moon className="me-1.5 h-3.5 w-3.5" /> : <Sun className="me-1.5 h-3.5 w-3.5" />}
                 {t('shell.theme')}
               </Button>
-              <Button variant="outline" className="justify-start" onClick={toggleLocaleAndDirection}>
-                <Globe className="me-2 h-4 w-4" />
+              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={toggleLocaleAndDirection}>
+                <Globe className="me-1.5 h-3.5 w-3.5" />
                 {locale === 'he' ? 'English' : 'עברית'}
               </Button>
             </div>
             <Link
               href="/settings"
               onClick={onClose}
-              className="touch-target flex min-h-11 items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              className="touch-target flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted"
             >
-              <Settings className="h-5 w-5" />
+              <Settings className="h-[18px] w-[18px]" />
               <span>{t('shell.settings')}</span>
             </Link>
           </div>
