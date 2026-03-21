@@ -181,26 +181,14 @@ export default function ResidentRequestsPage() {
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label="משוך כדי לרענן בקשות דייר" />
 
       <PageHero
+        compact
         kicker="שירות עצמי לדייר"
         eyebrow={<StatusBadge label="שירות דיירים" tone="finance" />}
         title="בקשות דייר"
-        description="המסלול הפך פשוט יותר: בוחרים סוג פנייה ברור, ממלאים רק את השדות הרלוונטיים, ורואים היסטוריה מחולקת לפי בקשות פתוחות והושלמו."
         actions={
-          <Button asChild variant="hero">
+          <Button asChild variant="hero" size="sm">
             <Link href="/create-call">פתח קריאת תחזוקה</Link>
           </Button>
-        }
-        aside={
-          <div className="grid gap-2.5 text-white sm:grid-cols-2 sm:gap-3">
-            <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-white/55">בקשות פתוחות</div>
-              <div className="mt-2 text-2xl font-black">{openRequests.length}</div>
-            </div>
-            <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-white/55">סה"כ היסטוריה</div>
-              <div className="mt-2 text-2xl font-black">{history.length}</div>
-            </div>
-          </div>
         }
       />
 

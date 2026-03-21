@@ -8,6 +8,7 @@ export function PageHero({
   description,
   actions,
   aside,
+  compact,
   className,
 }: {
   eyebrow?: React.ReactNode;
@@ -16,8 +17,24 @@ export function PageHero({
   description?: React.ReactNode;
   actions?: React.ReactNode;
   aside?: React.ReactNode;
+  compact?: boolean;
   className?: string;
 }) {
+  if (compact) {
+    return (
+      <section className={cn('dark-surface surface-hero overflow-hidden rounded-xl sm:rounded-2xl border border-white/10 text-white', className)}>
+        <div className="flex flex-col gap-2.5 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4 lg:p-6">
+          <div className="min-w-0 space-y-1">
+            {eyebrow ? <div className="flex flex-wrap items-center gap-1.5">{eyebrow}</div> : null}
+            <h1 className="text-base font-bold leading-tight text-white sm:text-lg md:text-xl">{title}</h1>
+            {kicker ? <div className="text-[11px] text-white/65 sm:text-xs">{kicker}</div> : null}
+          </div>
+          {actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className={cn('dark-surface surface-hero overflow-hidden rounded-2xl sm:rounded-[28px] border border-white/10 text-white', className)}>
       <div className="grid gap-4 p-3.5 sm:gap-5 sm:p-5 lg:grid-cols-[1.2fr_0.8fr] lg:gap-8 lg:p-8">
@@ -35,7 +52,7 @@ export function PageHero({
           </div>
           {actions ? <div className="flex flex-wrap gap-2 sm:flex-row sm:gap-3">{actions}</div> : null}
         </div>
-        {aside ? <div className="self-start rounded-xl sm:rounded-[24px] border border-white/10 bg-black/15 p-3 backdrop-blur sm:p-4">{aside}</div> : null}
+        {aside ? <div className="hidden sm:block self-start rounded-xl sm:rounded-[24px] border border-white/10 bg-black/15 p-3 backdrop-blur sm:p-4">{aside}</div> : null}
       </div>
     </section>
   );

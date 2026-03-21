@@ -204,18 +204,10 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8">
       <PageHero
+        compact
         kicker={t('settings.heroKicker')}
         eyebrow={<StatusBadge label={t('settings.heroBadge')} tone="finance" />}
         title={t('settings.heroTitle')}
-        description={t('settings.heroDescription')}
-        aside={
-          <div className="space-y-3 text-white">
-            <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-white/55">{t('settings.saveState')}</div>
-              <div className="mt-2 text-base font-semibold">{saveMessage ?? t('settings.noRecentSave')}</div>
-            </div>
-          </div>
-        }
       />
 
       {loadError ? <InlineErrorPanel title={t('settings.loadErrorTitle')} description={loadError} onRetry={loadSettings} /> : null}

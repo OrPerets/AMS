@@ -244,46 +244,46 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label={t('notifications.pullToRefresh')} />
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('notifications.title')}</h1>
-          <p className="text-muted-foreground">{t('notifications.description')}</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-tight sm:text-3xl">{t('notifications.title')}</h1>
+          <p className="text-sm text-muted-foreground sm:text-base">{t('notifications.description')}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => loadNotifications()}>
-            <RefreshCw className="me-2 h-4 w-4" />
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {notifications.some((notification) => !notification.read) && (
+            <Button size="sm" onClick={markAllAsRead}>{t('common.markAllAsRead')}</Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => loadNotifications()}>
+            <RefreshCw className="me-1.5 h-3.5 w-3.5" />
             {t('notifications.refresh')}
           </Button>
-          {notifications.some((notification) => !notification.read) && (
-            <Button onClick={markAllAsRead}>{t('common.markAllAsRead')}</Button>
-          )}
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 grid-cols-3 sm:gap-4">
         <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>{t('notifications.total')}</CardDescription>
-            <CardTitle>{notifications.length}</CardTitle>
+          <CardHeader className="p-3 pb-1 sm:p-6 sm:pb-3">
+            <CardDescription className="text-[11px] sm:text-sm">{t('notifications.unread')}</CardDescription>
+            <CardTitle className="text-lg sm:text-2xl">{notifications.filter((notification) => !notification.read).length}</CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">{t('notifications.totalHelp')}</CardContent>
+          <CardContent className="hidden p-3 pt-0 text-sm text-muted-foreground sm:block sm:p-6 sm:pt-0">{t('notifications.unreadHelp')}</CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>{t('notifications.unread')}</CardDescription>
-            <CardTitle>{notifications.filter((notification) => !notification.read).length}</CardTitle>
+          <CardHeader className="p-3 pb-1 sm:p-6 sm:pb-3">
+            <CardDescription className="text-[11px] sm:text-sm">{t('notifications.total')}</CardDescription>
+            <CardTitle className="text-lg sm:text-2xl">{notifications.length}</CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">{t('notifications.unreadHelp')}</CardContent>
+          <CardContent className="hidden p-3 pt-0 text-sm text-muted-foreground sm:block sm:p-6 sm:pt-0">{t('notifications.totalHelp')}</CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>{t('notifications.live')}</CardDescription>
-            <CardTitle className="flex items-center gap-2">
-              <Radio className={`h-4 w-4 ${liveConnected ? 'text-emerald-500' : 'text-amber-500'}`} />
-              {liveConnected ? t('notifications.liveConnected') : t('notifications.liveDisconnected')}
+          <CardHeader className="p-3 pb-1 sm:p-6 sm:pb-3">
+            <CardDescription className="text-[11px] sm:text-sm">{t('notifications.live')}</CardDescription>
+            <CardTitle className="flex items-center gap-1.5 text-lg sm:gap-2 sm:text-2xl">
+              <Radio className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${liveConnected ? 'text-emerald-500' : 'text-amber-500'}`} />
+              <span className="text-xs sm:text-base">{liveConnected ? t('notifications.liveConnected') : t('notifications.liveDisconnected')}</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">{t('notifications.liveHelp')}</CardContent>
+          <CardContent className="hidden p-3 pt-0 text-sm text-muted-foreground sm:block sm:p-6 sm:pt-0">{t('notifications.liveHelp')}</CardContent>
         </Card>
       </div>
 
