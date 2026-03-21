@@ -223,38 +223,38 @@ Turn notifications from a generic feed into a useful enterprise inbox that helps
 
 ### 1. Redesign the notification model for actionability
 
-- [ ] Define notification priority levels: Critical, Needs Action, Informational, Completed/Archived.
-- [ ] Define display rules for urgency, unread state, and SLA relevance.
-- [ ] Add source context and recommended next action to each notification item.
-- [ ] Identify which notification types should open a detail screen versus perform a quick action.
+- [x] Define notification priority levels: Critical, Needs Action, Informational, Completed/Archived.
+- [x] Define display rules for urgency, unread state, and SLA relevance.
+- [x] Add source context and recommended next action to each notification item.
+- [x] Identify which notification types should open a detail screen versus perform a quick action.
 
 ### 2. Improve the notification page
 
-- [ ] Rebuild the page around triage sections rather than a flat chronological list.
-- [ ] Add mobile-friendly filter chips for unread, urgent, assigned to me, and archived.
-- [ ] Keep batch actions visible but not dominant.
-- [ ] Make the first screen show the highest-value or most urgent items.
-- [ ] Preserve filter and search state when users navigate away and back.
+- [x] Rebuild the page around triage sections rather than a flat chronological list.
+- [x] Add mobile-friendly filter chips for unread, urgent, assigned to me, and archived.
+- [x] Keep batch actions visible but not dominant.
+- [x] Make the first screen show the highest-value or most urgent items.
+- [x] Preserve filter and search state when users navigate away and back.
 
 ### 3. Simplify the header notification experience
 
-- [ ] Reduce the mobile header notification surface to a lightweight preview.
-- [ ] Replace mobile dropdown-heavy behavior with a route or sheet pattern.
-- [ ] Limit preview content to the most important items.
-- [ ] Add a clear transition into the full notification workspace.
+- [x] Reduce the mobile header notification surface to a lightweight preview.
+- [x] Replace mobile dropdown-heavy behavior with a route or sheet pattern.
+- [x] Limit preview content to the most important items.
+- [x] Add a clear transition into the full notification workspace.
 
 ### 4. Improve notification preferences UX
 
-- [ ] Group preferences by channel and by event type.
-- [ ] Reduce cognitive overload in the settings/preferences UI.
-- [ ] Explain the consequence of toggling each preference.
-- [ ] Ensure saved state feedback is immediate and clear.
+- [x] Group preferences by channel and by event type.
+- [x] Reduce cognitive overload in the settings/preferences UI.
+- [x] Explain the consequence of toggling each preference.
+- [x] Ensure saved state feedback is immediate and clear.
 
 ### 5. QA and metrics
 
-- [ ] Test unread count accuracy across shell and notification page.
-- [ ] Test live updates and read-state changes under real-time events.
-- [ ] Validate mobile usability with large numbers of notifications.
+- [x] Test unread count accuracy across shell and notification page.
+- [x] Test live updates and read-state changes under real-time events.
+- [x] Validate mobile usability with large numbers of notifications.
 
 ## Acceptance criteria
 
@@ -280,38 +280,38 @@ Make the marketing/entry experience feel premium, trustworthy, and enterprise-ap
 
 ### 1. Reduce decorative overload
 
-- [ ] Audit all non-essential motion on the landing page.
-- [ ] Remove or reduce infinite decorative animations that do not support comprehension.
-- [ ] Disable touch-interactive particle behavior on mobile devices.
-- [ ] Respect reduced-motion settings across hero experiences.
-- [ ] Keep only one premium motion signature for the hero.
+- [x] Audit all non-essential motion on the landing page.
+- [x] Remove or reduce infinite decorative animations that do not support comprehension.
+- [x] Disable touch-interactive particle behavior on mobile devices.
+- [x] Respect reduced-motion settings across hero experiences.
+- [x] Keep only one premium motion signature for the hero.
 
 ### 2. Strengthen enterprise trust signals
 
-- [ ] Rework above-the-fold content so proof points appear earlier.
-- [ ] Add stronger messaging around reliability, operational control, and security.
-- [ ] Highlight role-based workflows and business outcomes rather than generic feature claims.
-- [ ] Clarify the primary CTA path for invited users versus evaluators.
+- [x] Rework above-the-fold content so proof points appear earlier.
+- [x] Add stronger messaging around reliability, operational control, and security.
+- [x] Highlight role-based workflows and business outcomes rather than generic feature claims.
+- [x] Clarify the primary CTA path for invited users versus evaluators.
 
 ### 3. Improve readability and scan behavior
 
-- [ ] Review contrast and readability of gold-on-dark treatments.
-- [ ] Simplify headline, subheadline, and CTA hierarchy.
-- [ ] Reduce visual competition between logo effects, particles, gradients, and type animation.
-- [ ] Ensure the first screen reads clearly without motion.
+- [x] Review contrast and readability of gold-on-dark treatments.
+- [x] Simplify headline, subheadline, and CTA hierarchy.
+- [x] Reduce visual competition between logo effects, particles, gradients, and type animation.
+- [x] Ensure the first screen reads clearly without motion.
 
 ### 4. Align login entry with enterprise expectations
 
-- [ ] Add trust/support messaging to the login experience.
-- [ ] Add a visible recovery path for password issues.
-- [ ] Reserve space for future enterprise auth methods if needed.
-- [ ] Clarify error states for invalid credentials versus provisioning/access issues.
+- [x] Add trust/support messaging to the login experience.
+- [x] Add a visible recovery path for password issues.
+- [x] Reserve space for future enterprise auth methods if needed.
+- [x] Clarify error states for invalid credentials versus provisioning/access issues.
 
 ### 5. QA and performance review
 
-- [ ] Review mobile battery and perceived performance impact of visual effects.
-- [ ] Test landing readability on bright screens and low-power devices.
-- [ ] Confirm the page still feels premium after motion reduction.
+- [x] Review mobile battery and perceived performance impact of visual effects.
+- [x] Test landing readability on bright screens and low-power devices.
+- [x] Confirm the page still feels premium after motion reduction.
 
 ## Acceptance criteria
 
