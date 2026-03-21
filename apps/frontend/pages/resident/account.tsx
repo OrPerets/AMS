@@ -585,7 +585,7 @@ export default function ResidentAccountPage() {
   ];
 
   return (
-    <div className="space-y-8 pb-28 lg:pb-0">
+    <div className="space-y-5 sm:space-y-8 pb-28 lg:pb-0">
       <PageHero
         className="resident-landing-hero"
         kicker="שירות עצמי לדייר"
@@ -625,7 +625,7 @@ export default function ResidentAccountPage() {
         }
       />
 
-      <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="grid gap-3 sm:gap-4 xl:grid-cols-[0.95fr_1.05fr]">
         <Card variant="featured">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -634,14 +634,14 @@ export default function ResidentAccountPage() {
             </CardTitle>
             <CardDescription>הבדלה ברורה בין מה שדחוף, מה רק לידיעה, ומה כבר מאחוריך.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3">
+          <CardContent className="grid gap-2.5 sm:gap-3">
             {attentionCards.map((item) => (
-              <div key={item.key} className="rounded-[22px] border border-subtle-border bg-background/90 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1.5">
+              <div key={item.key} className="rounded-xl sm:rounded-[20px] border border-subtle-border bg-background/90 p-3 sm:p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1 sm:space-y-1.5">
                     <StatusBadge label={item.label} tone={item.tone} />
-                    <div className="font-semibold text-foreground">{item.title}</div>
-                    <div className="text-sm leading-6 text-muted-foreground">{item.description}</div>
+                    <div className="text-sm sm:text-base font-semibold text-foreground">{item.title}</div>
+                    <div className="text-xs sm:text-sm leading-5 sm:leading-6 text-muted-foreground">{item.description}</div>
                   </div>
                 </div>
               </div>
@@ -657,23 +657,23 @@ export default function ResidentAccountPage() {
             </CardTitle>
             <CardDescription>פרטים אישיים, יחידות משויכות ופעולות מהירות שממשיכות איתך גם במובייל.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-[22px] border border-subtle-border bg-muted/30 p-4">
-                <div className="text-sm font-semibold text-foreground">{context.user.email}</div>
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <CardContent className="space-y-3 sm:space-y-5">
+            <div className="grid gap-2.5 sm:gap-4 md:grid-cols-2">
+              <div className="rounded-xl sm:rounded-[20px] border border-subtle-border bg-muted/30 p-3 sm:p-4">
+                <div className="text-xs sm:text-sm font-semibold text-foreground">{context.user.email}</div>
+                <div className="mt-1.5 sm:mt-2 flex flex-wrap items-center gap-2 text-xs sm:text-sm text-muted-foreground">
                   <Badge variant="finance">{getUserRoleLabel(context.user.role)}</Badge>
                   {context.user.phone ? (
                     <span className="inline-flex items-center gap-1.5">
-                      <Phone className="h-3.5 w-3.5" />
+                      <Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                       {context.user.phone}
                     </span>
                   ) : null}
                 </div>
               </div>
-              <div className="rounded-[22px] border border-subtle-border bg-muted/30 p-4">
-                <div className="text-sm font-semibold text-foreground">דירות ובניינים משויכים</div>
-                <div className="mt-2 space-y-2 text-sm text-muted-foreground">
+              <div className="rounded-xl sm:rounded-[20px] border border-subtle-border bg-muted/30 p-3 sm:p-4">
+                <div className="text-xs sm:text-sm font-semibold text-foreground">דירות ובניינים</div>
+                <div className="mt-1.5 sm:mt-2 space-y-1.5 text-xs sm:text-sm text-muted-foreground">
                   {context.units.map((unit) => (
                     <div key={unit.id}>
                       {unit.building.name} · דירה {unit.number}
@@ -683,14 +683,14 @@ export default function ResidentAccountPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Button variant="outline" className="justify-between" asChild>
-                <Link href="/settings">העדפות והתראות</Link>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+              <Button variant="outline" size="sm" className="justify-between sm:h-11 sm:px-5 sm:text-sm" asChild>
+                <Link href="/settings">העדפות</Link>
               </Button>
-              <Button variant="outline" className="justify-between" asChild>
+              <Button variant="outline" size="sm" className="justify-between sm:h-11 sm:px-5 sm:text-sm" asChild>
                 <Link href="/resident/requests">בקשות דייר</Link>
               </Button>
-              <Button variant="outline" className="justify-between" onClick={() => void loadAccount()}>
+              <Button variant="outline" size="sm" className="col-span-2 sm:col-span-1 justify-between sm:h-11 sm:px-5 sm:text-sm" onClick={() => void loadAccount()}>
                 רענן נתונים
               </Button>
             </div>
@@ -698,7 +698,7 @@ export default function ResidentAccountPage() {
         </Card>
       </div>
 
-      <section id="payments-section" className="space-y-4">
+      <section id="payments-section" className="space-y-3 sm:space-y-4">
         <SectionHeader
           title="תשלומים"
           subtitle="מה לתשלום, מה שולם, ואיך נראית ההיסטוריה בלי מונחים טכניים מיותרים."
@@ -718,7 +718,7 @@ export default function ResidentAccountPage() {
           }
         />
 
-        <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <div className="grid gap-4 sm:gap-6 xl:grid-cols-[0.95fr_1.05fr]">
           <Card variant="elevated">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -852,8 +852,8 @@ export default function ResidentAccountPage() {
                       ) : null}
                     </div>
 
-                    <div className="space-y-3 lg:w-56 lg:text-end">
-                      <div className="text-2xl font-black text-foreground">{formatCurrency(invoice.amount)}</div>
+                    <div className="space-y-2 sm:space-y-3 lg:w-56 lg:text-end">
+                      <div className="text-xl sm:text-2xl font-black text-foreground">{formatCurrency(invoice.amount)}</div>
                       {invoice.receiptNumber ? (
                         <Button size="sm" variant="outline" className="w-full lg:w-auto" onClick={() => openAuthenticatedFile(`/api/v1/invoices/${invoice.id}/receipt`)}>
                           הורד קבלה
@@ -884,10 +884,10 @@ export default function ResidentAccountPage() {
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-3 sm:space-y-4">
         <SectionHeader
-          title="קריאות שירות ומעקב טיפול"
-          subtitle="סטטוס אנושי, שלבי טיפול ברורים, והיסטוריה שמסבירה מה קרה ומתי."
+          title="קריאות שירות"
+          subtitle="סטטוס, שלבי טיפול והיסטוריה."
           meta={`${openTickets.length} פתוחות`}
         />
 
@@ -932,20 +932,20 @@ export default function ResidentAccountPage() {
                       </Button>
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="text-xs font-semibold uppercase tracking-[0.22em] text-tertiary">איפה הקריאה עומדת</div>
-                      <div className="grid gap-3 md:grid-cols-4">
+                    <div className="space-y-2 sm:space-y-3">
+                      <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] text-tertiary">שלבי טיפול</div>
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
                         {ticketProgress.map((step, index) => {
                           const isActive = index <= getTicketProgressIndex(ticket.status);
                           return (
                             <div
                               key={`${ticket.id}-${step}`}
-                              className={`rounded-[20px] border px-4 py-3 text-sm ${
+                              className={`rounded-xl sm:rounded-[18px] border px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm ${
                                 isActive ? 'border-primary/25 bg-primary/10 text-foreground' : 'border-subtle-border bg-muted/20 text-muted-foreground'
                               }`}
                             >
-                              <div className="text-xs uppercase tracking-[0.18em] text-tertiary">שלב {index + 1}</div>
-                              <div className="mt-1 font-semibold">{getStatusLabel(step, 'he')}</div>
+                              <div className="text-[10px] sm:text-xs uppercase tracking-[0.16em] text-tertiary">שלב {index + 1}</div>
+                              <div className="mt-0.5 sm:mt-1 font-semibold">{getStatusLabel(step, 'he')}</div>
                             </div>
                           );
                         })}
@@ -983,7 +983,7 @@ export default function ResidentAccountPage() {
         )}
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+      <div className="grid gap-4 sm:gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <section className="space-y-4">
           <SectionHeader
             title="מסמכים ופרסומים"
@@ -1111,10 +1111,10 @@ export default function ResidentAccountPage() {
         </section>
       </div>
 
-      <section className="space-y-4">
+      <section className="space-y-3 sm:space-y-4">
         <SectionHeader
           title="הבניין שלי"
-          subtitle="אנשי קשר, הנחיות חירום, שירותי הבניין ומה שחשוב לדעת כשצריך לפעול מהר."
+          subtitle="אנשי קשר, הנחיות חירום ושירותי הבניין."
           meta={primaryBuilding?.name || 'פרטי בניין'}
         />
 
@@ -1232,10 +1232,10 @@ export default function ResidentAccountPage() {
 
 function SummaryCard({ label, value, description }: { label: string; value: string | number; description: string }) {
   return (
-    <div className="rounded-[22px] border border-white/14 bg-white/8 p-4">
-      <div className="text-xs tracking-[0.14em] text-white/68">{label}</div>
-      <div className="mt-2 text-2xl font-black text-white">{value}</div>
-      <div className="mt-1 text-sm text-white/82">{description}</div>
+    <div className="rounded-xl sm:rounded-[20px] border border-white/12 bg-white/7 p-2.5 sm:p-3.5">
+      <div className="text-[10px] sm:text-xs tracking-[0.12em] text-white/65">{label}</div>
+      <div className="mt-1 text-lg font-black text-white sm:mt-2 sm:text-2xl">{value}</div>
+      <div className="mt-0.5 text-[11px] text-white/75 sm:mt-1 sm:text-sm">{description}</div>
     </div>
   );
 }

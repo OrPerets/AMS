@@ -138,42 +138,42 @@ export default function HomePage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       <motion.div variants={heroVariants} initial="initial" animate="animate">
         <PageHero
           eyebrow={
             <>
               <StatusBadge label={snapshot.eyebrowLabel} tone="finance" />
-              <Badge variant="outline" className="border-white/15 bg-white/8 text-white/80">
+              <Badge variant="outline" className="border-white/15 bg-white/8 text-white/80 text-[11px] sm:text-xs">
                 {snapshot.roleTitle}
               </Badge>
             </>
           }
-          kicker="מרכז עבודה מותאם אישית"
+          kicker="מרכז עבודה"
           title={snapshot.headline}
           description={snapshot.description}
           actions={
             <>
               {snapshot.nextActions[0] ? (
-                <Button asChild variant="hero">
+                <Button asChild variant="hero" size="sm" className="sm:h-11 sm:px-5 sm:text-sm">
                   <Link href={snapshot.nextActions[0].href}>{snapshot.nextActions[0].title}</Link>
                 </Button>
               ) : null}
-              <Button variant="outline" className="border-white/15 bg-white/8 text-white hover:bg-white/12" onClick={() => setOnboardingOpen(true)}>
-                <Sparkles className="me-2 h-4 w-4" />
-                פתח מסלול מהיר
+              <Button variant="outline" size="sm" className="border-white/15 bg-white/8 text-white hover:bg-white/12 sm:h-11 sm:px-5 sm:text-sm" onClick={() => setOnboardingOpen(true)}>
+                <Sparkles className="me-1.5 h-3.5 w-3.5" />
+                מסלול מהיר
               </Button>
             </>
           }
           aside={
-            <div className="space-y-4">
-              <div className="text-xs tracking-[0.18em] text-white/68">רגעים שדורשים ממך תשומת לב</div>
-              <div className="grid gap-3">
+            <div className="space-y-3">
+              <div className="text-[11px] tracking-[0.16em] text-white/65 sm:text-xs sm:tracking-[0.18em]">דורש תשומת לב</div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-1 sm:gap-3">
                 {snapshot.metrics.slice(0, 3).map((metric) => (
-                  <div key={metric.label} className="rounded-[22px] border border-white/10 bg-white/5 p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-white/50">{metric.label}</div>
-                    <div className="mt-2 text-2xl font-black">{metric.value}</div>
-                    <div className="mt-1 text-sm leading-6 text-white/65">{metric.hint}</div>
+                  <div key={metric.label} className="rounded-xl sm:rounded-[20px] border border-white/10 bg-white/5 p-2.5 sm:p-3.5">
+                    <div className="text-[10px] sm:text-xs uppercase tracking-[0.16em] text-white/50">{metric.label}</div>
+                    <div className="mt-1 text-lg font-black sm:mt-2 sm:text-2xl">{metric.value}</div>
+                    <div className="mt-0.5 hidden sm:block text-sm leading-6 text-white/65">{metric.hint}</div>
                   </div>
                 ))}
               </div>
@@ -182,7 +182,7 @@ export default function HomePage() {
         />
       </motion.div>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
         {snapshot.metrics.map((metric, index) => (
           <motion.div
             key={metric.label}
@@ -195,7 +195,7 @@ export default function HomePage() {
         ))}
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+      <section className="grid gap-4 sm:gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <Card variant="elevated" className="overflow-hidden">
           <CardHeader>
             <SectionHeader
@@ -280,46 +280,46 @@ export default function HomePage() {
           />
         </CardHeader>
         <CardContent>
-          <pre className="overflow-x-auto rounded-[24px] border border-subtle-border bg-muted/35 p-5 text-sm leading-7 text-foreground/88">
+          <pre className="overflow-x-auto rounded-xl sm:rounded-[22px] border border-subtle-border bg-muted/35 p-3 sm:p-5 text-xs sm:text-sm leading-6 sm:leading-7 text-foreground/88 whitespace-pre-wrap">
 {snapshot.digestMarkdown}
           </pre>
         </CardContent>
       </Card>
 
       <Dialog open={onboardingOpen} onOpenChange={setOnboardingOpen}>
-        <DialogContent className="max-w-2xl border-white/10 bg-slate-950/95 text-white shadow-modal backdrop-blur-xl">
+        <DialogContent className="max-w-lg sm:max-w-2xl border-white/10 bg-slate-950/95 text-white shadow-modal backdrop-blur-xl mx-3 sm:mx-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-white">
-              <Sparkles className="h-5 w-5 text-primary" />
-              מסלול פתיחה פרימיום
+            <DialogTitle className="flex items-center gap-2 text-white text-base sm:text-lg">
+              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              מסלול פתיחה
             </DialogTitle>
-            <DialogDescription className="text-white/65">
-              שלושה צעדים קצרים כדי לגרום למסך הזה לעבוד בשבילך ולא להפך.
+            <DialogDescription className="text-white/65 text-xs sm:text-sm">
+              שלושה צעדים קצרים כדי להתחיל בקלות.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-3">
+          <div className="grid gap-2.5 sm:gap-3">
             {onboardingSteps.map((step, index) => (
-              <div key={step.title} className="rounded-[24px] border border-white/10 bg-white/6 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 font-semibold text-primary">
+              <div key={step.title} className="rounded-xl sm:rounded-[22px] border border-white/10 bg-white/6 p-3 sm:p-4">
+                <div className="flex items-start gap-2.5 sm:gap-3">
+                  <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl sm:rounded-2xl bg-primary/15 text-sm sm:text-base font-semibold text-primary shrink-0">
                     {index + 1}
                   </div>
-                  <div className="space-y-1">
-                    <div className="font-semibold text-white">{step.title}</div>
-                    <div className="text-sm leading-7 text-white/65">{step.description}</div>
+                  <div className="space-y-0.5 sm:space-y-1">
+                    <div className="text-sm sm:text-base font-semibold text-white">{step.title}</div>
+                    <div className="text-xs sm:text-sm leading-5 sm:leading-7 text-white/65">{step.description}</div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" className="border-white/10 bg-white/6 text-white hover:bg-white/12" onClick={() => setOnboardingOpen(false)}>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-3">
+            <Button variant="outline" size="sm" className="border-white/10 bg-white/6 text-white hover:bg-white/12 sm:h-11 sm:px-5 sm:text-sm" onClick={() => setOnboardingOpen(false)}>
               אחר כך
             </Button>
-            <Button onClick={completeOnboarding}>
-              הפעל חוויית עבודה מותאמת
+            <Button size="sm" className="sm:h-11 sm:px-5 sm:text-sm" onClick={completeOnboarding}>
+              הפעל חוויה מותאמת
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -620,12 +620,12 @@ function MetricCard({ metric }: { metric: HomeMetric }) {
   };
 
   return (
-    <Card className={`rounded-[28px] ${tones[metric.tone]}`}>
-      <CardHeader className="pb-2">
-        <CardDescription>{metric.label}</CardDescription>
-        <CardTitle className="text-3xl">{metric.value}</CardTitle>
+    <Card className={`rounded-xl sm:rounded-[24px] ${tones[metric.tone]}`}>
+      <CardHeader className="pb-1 sm:pb-2">
+        <CardDescription className="text-xs">{metric.label}</CardDescription>
+        <CardTitle className="text-xl sm:text-2xl">{metric.value}</CardTitle>
       </CardHeader>
-      <CardContent className="text-sm leading-6 text-muted-foreground">{metric.hint}</CardContent>
+      <CardContent className="text-xs sm:text-sm leading-5 sm:leading-6 text-muted-foreground">{metric.hint}</CardContent>
     </Card>
   );
 }
@@ -636,17 +636,17 @@ function ActionCard({ action }: { action: HomeAction }) {
   return (
     <Link
       href={action.href}
-      className={`group flex items-start gap-4 rounded-[24px] border border-subtle-border bg-gradient-to-br ${action.accent} p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-card`}
+      className={`group flex items-start gap-3 sm:gap-4 rounded-xl sm:rounded-[22px] border border-subtle-border bg-gradient-to-br ${action.accent} p-3 sm:p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-card active:translate-y-0`}
     >
-      <div className="rounded-[20px] bg-background/85 p-3 text-primary shadow-sm">
-        <Icon className="h-5 w-5" />
+      <div className="rounded-xl sm:rounded-[18px] bg-background/85 p-2.5 sm:p-3 text-primary shadow-sm">
+        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
       </div>
-      <div className="min-w-0 flex-1 space-y-1">
+      <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-1">
         <div className="flex items-center gap-2">
-          <div className="font-semibold text-foreground">{action.title}</div>
-          <ArrowLeft className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-foreground" />
+          <div className="text-sm sm:text-base font-semibold text-foreground">{action.title}</div>
+          <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-foreground" />
         </div>
-        <div className="text-sm leading-7 text-muted-foreground">{action.description}</div>
+        <div className="text-xs sm:text-sm leading-5 sm:leading-7 text-muted-foreground">{action.description}</div>
       </div>
     </Link>
   );
