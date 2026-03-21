@@ -16,6 +16,7 @@ import { TicketService } from './ticket.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { AssignTicketDto } from './dto/assign-ticket.dto';
 import { UpdateTicketStatusDto } from './dto/update-ticket-status.dto';
+import { UpdateTicketSeverityDto } from './dto/update-ticket-severity.dto';
 import { CreateTicketCommentDto } from './dto/create-ticket-comment.dto';
 import { UpdateTicketCommentDto } from './dto/update-ticket-comment.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -40,6 +41,21 @@ export class TicketController {
       severity: dto.severity,
       slaDue: dto.slaDue ? new Date(dto.slaDue) : undefined,
     }, photos, dto.description, userId);
+  }
+
+  @Post('triage-preview')
+  @Roles(Role.ADMIN, Role.PM, Role.MASTER, Role.TECH, Role.RESIDENT)
+  triagePreview(
+    @Body()
+    body: {
+      description?: string;
+      ticketId?: number;
+      buildingId?: number;
+      currentAssigneeId?: number;
+      currentCategory?: string;
+    },
+  ) {
+    return this.tickets.previewTriage(body);
   }
 
   @Get()
@@ -86,6 +102,12 @@ export class TicketController {
   @Roles(Role.ADMIN, Role.PM, Role.TECH)
   updateStatus(@Param('id') id: string, @Body() dto: UpdateTicketStatusDto) {
     return this.tickets.updateStatus(+id, dto.status);
+  }
+
+  @Patch(':id/severity')
+  @Roles(Role.ADMIN, Role.PM)
+  updateSeverity(@Param('id') id: string, @Body() dto: UpdateTicketSeverityDto) {
+    return this.tickets.updateSeverity(+id, dto.severity);
   }
 
   @Post(':id/comments')

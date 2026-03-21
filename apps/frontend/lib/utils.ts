@@ -1,35 +1,53 @@
 // /Users/orperetz/Documents/AMS/apps/frontend/lib/utils.ts
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { getIntlLocale, getStoredLocale, normalizeLocale } from "./i18n";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: Date | string, locale: string = 'he-IL'): string {
+function resolveLocale(locale?: string): string {
+  if (locale) {
+    return getIntlLocale(locale);
+  }
+
+  return getIntlLocale(getStoredLocale());
+}
+
+export function formatDate(date: Date | string, locale?: string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return new Intl.DateTimeFormat(locale, {
+  return new Intl.DateTimeFormat(resolveLocale(locale), {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   }).format(dateObj);
 }
 
-export function formatCurrency(amount: number, currency: string = 'ILS', locale: string = 'he-IL'): string {
-  return new Intl.NumberFormat(locale, {
+export function formatDateTime(date: Date | string, locale?: string): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return new Intl.DateTimeFormat(resolveLocale(locale), {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(dateObj);
+}
+
+export function formatCurrency(amount: number, currency: string = 'ILS', locale?: string): string {
+  return new Intl.NumberFormat(resolveLocale(locale), {
     style: 'currency',
     currency,
   }).format(amount);
 }
 
-export function formatNumber(number: number, locale: string = 'he-IL'): string {
-  return new Intl.NumberFormat(locale).format(number);
+export function formatNumber(number: number, locale?: string): string {
+  return new Intl.NumberFormat(resolveLocale(locale)).format(number);
 }
 
 export function getDirectionFromLocale(locale: string): 'rtl' | 'ltr' {
-  const rtlLocales = ['he', 'ar', 'fa', 'ur'];
-  const langCode = locale.split('-')[0];
-  return rtlLocales.includes(langCode) ? 'rtl' : 'ltr';
+  return normalizeLocale(locale) === 'en' ? 'ltr' : 'rtl';
 }
 
 export function sleep(ms: number): Promise<void> {
@@ -101,6 +119,126 @@ export function getStatusLabel(status: string, locale: string = 'he'): string {
 
   const labels = locale === 'he' ? hebrewLabels : englishLabels;
   return labels[status?.toUpperCase()] || status;
+}
+
+export function humanizeEnum(value: string): string {
+  return value
+    .toLowerCase()
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+export function getTicketStatusTone(status: string): 'neutral' | 'active' | 'success' | 'warning' | 'danger' {
+  switch (status?.toUpperCase()) {
+    case 'RESOLVED':
+    case 'COMPLETED':
+    case 'PAID':
+      return 'success';
+    case 'IN_PROGRESS':
+    case 'ASSIGNED':
+      return 'active';
+    case 'OVERDUE':
+    case 'FAILED':
+    case 'CANCELED':
+      return 'danger';
+    case 'OPEN':
+    case 'UNPAID':
+    case 'PENDING':
+    default:
+      return 'warning';
+  }
+}
+
+export function getResidentRequestStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    SUBMITTED: 'התקבלה',
+    IN_REVIEW: 'בטיפול',
+    COMPLETED: 'הושלמה',
+    CLOSED: 'נסגרה',
+  };
+  return labels[status?.toUpperCase()] || getStatusLabel(status, 'he') || humanizeEnum(status);
+}
+
+export function getResidentRequestStatusTone(status: string): 'neutral' | 'active' | 'success' | 'warning' | 'danger' {
+  switch (status?.toUpperCase()) {
+    case 'COMPLETED':
+      return 'success';
+    case 'CLOSED':
+      return 'neutral';
+    case 'IN_REVIEW':
+      return 'active';
+    case 'SUBMITTED':
+    default:
+      return 'warning';
+  }
+}
+
+export function getRequestTypeLabel(requestType: string): string {
+  const labels: Record<string, string> = {
+    MOVING: 'הודעת מעבר',
+    PARKING: 'בקשת חניה',
+    DOCUMENT: 'בקשת מסמך',
+    CONTACT_UPDATE: 'עדכון פרטי קשר',
+    GENERAL: 'בקשה כללית',
+  };
+  return labels[requestType?.toUpperCase()] || humanizeEnum(requestType);
+}
+
+export function getVoteTypeLabel(voteType: string): string {
+  const labels: Record<string, string> = {
+    YES_NO: 'כן / לא',
+    MULTIPLE_CHOICE: 'בחירה מרובה',
+    RATING: 'דירוג',
+  };
+  return labels[voteType?.toUpperCase()] || humanizeEnum(voteType);
+}
+
+export function getMaintenanceCategoryLabel(category: string): string {
+  const labels: Record<string, string> = {
+    GENERAL: 'כללי',
+    ELECTRICAL: 'חשמל',
+    PLUMBING: 'אינסטלציה',
+    HVAC: 'מיזוג ואוורור',
+    SAFETY: 'בטיחות',
+  };
+  return labels[category?.toUpperCase()] || humanizeEnum(category);
+}
+
+export function getMaintenanceTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    PREVENTIVE: 'מונעת',
+    CORRECTIVE: 'מתקנת',
+    INSPECTION: 'בדיקה',
+  };
+  return labels[type?.toUpperCase()] || humanizeEnum(type);
+}
+
+export function getMaintenanceFrequencyLabel(frequency: string): string {
+  const labels: Record<string, string> = {
+    DAILY: 'יומי',
+    WEEKLY: 'שבועי',
+    MONTHLY: 'חודשי',
+    QUARTERLY: 'רבעוני',
+    ANNUAL: 'שנתי',
+  };
+  return labels[frequency?.toUpperCase()] || humanizeEnum(frequency);
+}
+
+export function getPriorityTone(priority: string): 'neutral' | 'active' | 'success' | 'warning' | 'danger' {
+  switch (priority?.toUpperCase()) {
+    case 'CRITICAL':
+    case 'URGENT':
+    case 'HIGH':
+      return 'danger';
+    case 'MEDIUM':
+      return 'warning';
+    case 'LOW':
+      return 'success';
+    default:
+      return 'neutral';
+  }
 }
 
 // File helpers

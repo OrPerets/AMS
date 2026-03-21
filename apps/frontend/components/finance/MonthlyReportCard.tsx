@@ -1,5 +1,8 @@
 import React from 'react';
+import { ArrowDownLeft, ArrowUpRight, Minus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { StatusBadge } from '../ui/status-badge';
+import { cn } from '../../lib/utils';
 
 interface MonthlyReportCardProps {
   title: string;
@@ -16,58 +19,50 @@ export function MonthlyReportCard({
   currency = '₪',
   colorScheme = 'default',
 }: MonthlyReportCardProps) {
-  const changePercentage = previousValue && previousValue !== 0
-    ? ((value - previousValue) / previousValue) * 100
-    : 0;
-
+  const hasPrevious = typeof previousValue === 'number' && (previousValue > 0 || previousValue < 0);
+  const changePercentage = hasPrevious ? ((value - previousValue) / previousValue) * 100 : 0;
+  const hasChange = typeof previousValue === 'number' && (changePercentage > 0 || changePercentage < 0);
   const isPositive = changePercentage > 0;
-  const hasChange = previousValue !== undefined && changePercentage !== 0;
 
-  const getColorClasses = () => {
-    switch (colorScheme) {
-      case 'income':
-        return 'text-green-700 dark:text-green-400';
-      case 'expense':
-        return 'text-red-700 dark:text-red-400';
-      case 'balance':
-        return value >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400';
-      default:
-        return 'text-gray-900 dark:text-gray-100';
-    }
-  };
+  const palette = {
+    default: 'text-foreground',
+    income: 'text-success',
+    expense: 'text-destructive',
+    balance: value >= 0 ? 'text-success' : 'text-destructive',
+  }[colorScheme];
 
-  const getChangeColor = () => {
-    if (colorScheme === 'expense') {
-      // For expenses, decrease is good (green), increase is bad (red)
-      return isPositive ? 'text-red-600' : 'text-green-600';
-    }
-    // For income and balance, increase is good
-    return isPositive ? 'text-green-600' : 'text-red-600';
-  };
+  const tone = colorScheme === 'expense' ? (isPositive ? 'danger' : 'success') : isPositive ? 'success' : 'danger';
+  const TrendIcon = hasChange ? (isPositive ? ArrowUpRight : ArrowDownLeft) : Minus;
+  const label = Math.abs(changePercentage).toFixed(1) + '% ' + (isPositive ? 'מעלה' : 'מטה');
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className={`text-2xl font-bold ${getColorClasses()}`}>
-          {currency}{value.toLocaleString()}
+    <Card variant="metric">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle className="text-base">{title}</CardTitle>
+          <StatusBadge
+            label={colorScheme === 'expense' ? 'הוצאה' : colorScheme === 'income' ? 'הכנסה' : 'סיכום'}
+            tone={colorScheme === 'expense' ? 'danger' : colorScheme === 'income' ? 'success' : 'finance'}
+          />
         </div>
-        {hasChange && (
-          <div className="flex items-center mt-2 text-sm">
-            <span className={getChangeColor()}>
-              {isPositive ? '▲' : '▼'} {Math.abs(changePercentage).toFixed(1)}%
-            </span>
-            <span className="text-gray-500 dark:text-gray-400 mr-1">
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className={cn('text-3xl font-black', palette)}>
+          {currency}
+          {value.toLocaleString()}
+        </div>
+        {hasChange ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <StatusBadge label={label} tone={tone} className="text-[11px]" />
+            <span className="inline-flex items-center gap-1.5">
+              <TrendIcon className="h-4 w-4" />
               לעומת התקופה הקודמת
             </span>
           </div>
+        ) : (
+          <div className="text-sm text-muted-foreground">אין שינוי מהתקופה הקודמת</div>
         )}
       </CardContent>
     </Card>
   );
 }
-

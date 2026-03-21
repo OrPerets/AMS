@@ -49,6 +49,7 @@
     "start": "npm --workspace apps/backend run start:prod",
     "start:prod": "npm --workspace apps/backend run start:prod",
     "test": "echo 'No tests yet'",
+    "test:sprint-10": "npm --workspace apps/frontend run test:e2e:qa",
     "db:reset": "npm --workspace apps/backend run prisma:reset",
     "seed:test": "SEED_SCALE=small npm --workspace apps/backend run prisma:seed",
     "db:deploy": "npm --workspace apps/backend run prisma:deploy",

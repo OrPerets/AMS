@@ -1,12 +1,12 @@
 // /Users/orperetz/Documents/AMS/apps/frontend/components/layout/Header.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Menu, Sun, Moon, Globe, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
+import { Menu, Sun, Moon, Globe, ChevronLeft, ChevronRight, Bell, Command, Search } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useTheme, useDirection, useLocale } from '../../lib/providers';
-import { cn } from '../../lib/utils';
+import { cn, formatDateTime } from '../../lib/utils';
 import UserMenu from './UserMenu';
 import { authFetch, getCurrentUserId } from '../../lib/auth';
 import { websocketService } from '../../lib/websocket';
@@ -25,17 +25,19 @@ interface HeaderProps {
   onMenuClick?: () => void;
   sidebarCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onCommandPaletteOpen?: () => void;
 }
 
 export default function Header({
   className,
   onMenuClick,
   sidebarCollapsed,
-  onToggleCollapse
+  onToggleCollapse,
+  onCommandPaletteOpen,
 }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const { direction, setDirection } = useDirection();
-  const { locale, setLocale } = useLocale();
+  const { locale, setLocale, t } = useLocale();
   const [mounted, setMounted] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -124,7 +126,7 @@ export default function Header({
             className="md:hidden"
           >
             <Menu className="h-5 w-5" />
-            <span className="sr-only">פתח תפריט</span>
+            <span className="sr-only">{t('header.openMenu')}</span>
           </Button>
 
           {/* Desktop collapse button */}
@@ -139,7 +141,7 @@ export default function Header({
             ) : (
               sidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />
             )}
-            <span className="sr-only">הסתר/הצג סיידבר</span>
+            <span className="sr-only">{t('header.toggleSidebar')}</span>
           </Button>
 
           {/* Logo */}
@@ -148,16 +150,40 @@ export default function Header({
               A
             </div>
             <span className="hidden truncate font-bold md:inline-block">
-              עמית אקסלנס אחזקות
+              {t('app.shortName')}
             </span>
           </Link>
         </div>
 
-        {/* Center section: Empty for now */}
-        <div className="hidden flex-1 md:block"></div>
+        <div className="hidden flex-1 justify-center md:flex">
+          <Button
+            variant="outline"
+            className="h-10 min-w-[22rem] justify-between rounded-full border-subtle-border bg-card/88 text-muted-foreground shadow-card backdrop-blur transition hover:border-strong-border hover:bg-muted/70"
+            onClick={onCommandPaletteOpen}
+          >
+            <span className="flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              {t('header.searchPlaceholder')}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-subtle-border bg-background px-2 py-1 text-[11px] font-semibold text-foreground">
+              <Command className="h-3 w-3" />
+              K
+            </span>
+          </Button>
+        </div>
 
         {/* Right section: Controls & User Menu */}
         <div className="flex items-center gap-1 sm:gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onCommandPaletteOpen}
+            className="h-9 w-9 shrink-0"
+            aria-label={t('header.openCommandPalette')}
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+
           {/* Theme toggle - only render after mount */}
           {mounted && (
             <Button
@@ -171,7 +197,7 @@ export default function Header({
               ) : (
                 <Sun className="h-4 w-4" />
               )}
-              <span className="sr-only">החלף ערכת נושא</span>
+              <span className="sr-only">{t('header.toggleTheme')}</span>
             </Button>
           )}
 
@@ -182,7 +208,7 @@ export default function Header({
                 variant="ghost"
                 size="icon"
                 className="relative h-9 w-9 shrink-0"
-                aria-label="התראות"
+                aria-label={t('header.notifications')}
               >
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
@@ -194,16 +220,16 @@ export default function Header({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto sm:w-80 w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)]">
               <DropdownMenuLabel className="text-sm font-semibold">
-                התראות אחרונות
+                {t('header.notifications')}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               {loading ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
-                  טוען התראות...
+                  {t('common.loading')}
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
-                  אין התראות חדשות
+                  {t('header.noNotifications')}
                 </div>
               ) : (
                 notifications.map((notification) => (
@@ -222,12 +248,7 @@ export default function Header({
                       {notification.message}
                     </span>
                     <span className="text-[11px] text-muted-foreground">
-                      {new Date(notification.createdAt).toLocaleDateString('he-IL', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      {formatDateTime(notification.createdAt, locale)}
                     </span>
                   </DropdownMenuItem>
                 ))
@@ -235,7 +256,7 @@ export default function Header({
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild className="justify-center text-sm font-medium text-primary">
                 <Link href="/notifications">
-                  הצג את כל ההתראות
+                  {t('header.viewAllNotifications')}
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -248,9 +269,10 @@ export default function Header({
               size="icon"
               onClick={toggleDirection}
               className="hidden h-9 w-9 shrink-0 sm:inline-flex"
+              aria-label={t('header.toggleLocale')}
             >
               <Globe className="h-4 w-4" />
-              <span className="sr-only">החלף שפה וכיוון</span>
+              <span className="sr-only">{t('header.toggleLocale')}</span>
             </Button>
           )}
 

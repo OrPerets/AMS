@@ -8,7 +8,6 @@ import {
   Building, 
   Home, 
   Users, 
-  MapPin,
   MoreHorizontal,
   RefreshCw,
   Filter,
@@ -29,8 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
-import { Skeleton, SkeletonCard, SkeletonTable } from '../components/ui/skeleton';
-import { EmptyBuildings } from '../components/ui/empty-state';
+import { Skeleton } from '../components/ui/skeleton';
 import { 
   Select,
   SelectContent,
@@ -54,6 +52,28 @@ interface Building {
   lastInspection?: string;
 }
 
+interface BuildingOverview {
+  building: Building;
+  metrics: {
+    totalUnits: number;
+    openTickets: number;
+    activeMaintenanceSchedules: number;
+    assetCount: number;
+    activeContracts: number;
+  };
+  financial: {
+    planned: number;
+    actual: number;
+    variance: number;
+  };
+  upcomingMaintenance: Array<{
+    id: number;
+    title: string;
+    nextOccurrence?: string | null;
+    priority?: string | null;
+  }>;
+}
+
 const statusConfig = {
   ACTIVE: { label: 'פעיל', variant: 'success' as const },
   MAINTENANCE: { label: 'תחזוקה', variant: 'warning' as const },
@@ -62,6 +82,9 @@ const statusConfig = {
 
 export default function Buildings() {
   const [buildings, setBuildings] = useState<Building[]>([]);
+  const [selectedBuildingId, setSelectedBuildingId] = useState<number | null>(null);
+  const [selectedOverview, setSelectedOverview] = useState<BuildingOverview | null>(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -79,9 +102,10 @@ export default function Buildings() {
           ? (data as any).items
           : [];
         setBuildings(list);
+        setSelectedBuildingId((current) => current ?? list[0]?.id ?? null);
       } else {
         // Mock data for demo
-        setBuildings([
+        const fallback = [
           {
             id: 1,
             name: 'אפרים קישון 5, הרצליה',
@@ -126,7 +150,9 @@ export default function Buildings() {
             createdAt: '2024-01-03T14:45:00Z',
             lastInspection: '2024-01-02T09:30:00Z'
           }
-        ]);
+        ];
+        setBuildings(fallback);
+        setSelectedBuildingId((current) => current ?? fallback[0]?.id ?? null);
       }
     } catch (error: any) {
       toast({
@@ -145,6 +171,30 @@ export default function Buildings() {
   useEffect(() => {
     loadBuildings();
   }, []);
+
+  useEffect(() => {
+    if (!selectedBuildingId) {
+      setSelectedOverview(null);
+      return;
+    }
+
+    const loadOverview = async () => {
+      try {
+        setOverviewLoading(true);
+        const response = await authFetch(`/api/v1/buildings/${selectedBuildingId}/overview`);
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+        setSelectedOverview((await response.json()) as BuildingOverview);
+      } catch {
+        setSelectedOverview(null);
+      } finally {
+        setOverviewLoading(false);
+      }
+    };
+
+    void loadOverview();
+  }, [selectedBuildingId]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -173,6 +223,19 @@ export default function Buildings() {
       return statusMatch && searchMatch;
     });
   }, [buildings, statusFilter, search]);
+
+  useEffect(() => {
+    if (!filteredBuildings.length) {
+      setSelectedBuildingId(null);
+      setSelectedOverview(null);
+      return;
+    }
+
+    const stillVisible = filteredBuildings.some((building) => building.id === selectedBuildingId);
+    if (!stillVisible) {
+      setSelectedBuildingId(filteredBuildings[0].id);
+    }
+  }, [filteredBuildings, selectedBuildingId]);
 
   // Calculate KPIs
   const kpis = useMemo(() => {
@@ -348,6 +411,8 @@ export default function Buildings() {
     );
   }
 
+  const selectedBuilding = filteredBuildings.find((building) => building.id === selectedBuildingId) ?? null;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -453,15 +518,19 @@ export default function Buildings() {
         )}
       </div>
 
-      {/* Data Table */}
-      <Card>
-        <CardContent className="p-0">
-          <DataTable
-            columns={columns}
-            data={filteredBuildings}
-            searchPlaceholder="חיפוש בניינים..."
-            onRowClick={handleViewBuilding}
-            mobileCardRender={(building) => {
+      <div className="grid gap-6 xl:grid-cols-[1.35fr_0.9fr]">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle>רשימת בניינים</CardTitle>
+            <CardDescription>בחירה מתוך הרשימה מציגה סיכום תפעולי ופיננסי מימין בלי לעזוב את המסך.</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <DataTable
+              columns={columns}
+              data={filteredBuildings}
+              searchPlaceholder="חיפוש בניינים..."
+              onRowClick={(building) => setSelectedBuildingId(building.id)}
+              mobileCardRender={(building) => {
               const status = building.status as keyof typeof statusConfig;
               const config = statusConfig[status] ?? { label: String(building.status ?? 'לא ידוע'), variant: 'outline' as const };
               const occupancyRate = building.totalUnits && building.occupiedUnits
@@ -496,15 +565,123 @@ export default function Buildings() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant={selectedBuildingId === building.id ? 'default' : 'outline'} onClick={(event) => { event.stopPropagation(); setSelectedBuildingId(building.id); }}>בחר</Button>
                     <Button size="sm" onClick={(event) => { event.stopPropagation(); handleViewBuilding(building); }}>צפה</Button>
                     <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); handleEditBuilding(building); }}>ערוך</Button>
                   </div>
                 </div>
               );
-            }}
-          />
-        </CardContent>
-      </Card>
+              }}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200">
+          <CardHeader>
+            <CardTitle>חלונית פרטי בניין</CardTitle>
+            <CardDescription>אותו דפוס master-detail של המסך התפעולי, מותאם לניהול בניינים.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {selectedBuilding ? (
+              <>
+                <div className="rounded-2xl border bg-muted/30 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-lg font-semibold text-foreground">{selectedBuilding.name}</div>
+                      <div className="text-sm text-muted-foreground">{selectedBuilding.address || 'ללא כתובת'}</div>
+                    </div>
+                    <Badge variant={statusConfig[selectedBuilding.status as keyof typeof statusConfig]?.variant || 'outline'}>
+                      {statusConfig[selectedBuilding.status as keyof typeof statusConfig]?.label || 'לא ידוע'}
+                    </Badge>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button size="sm" onClick={() => handleViewBuilding(selectedBuilding)}>
+                      <Eye className="me-2 h-4 w-4" />
+                      עמוד מלא
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleEditBuilding(selectedBuilding)}>
+                      <Edit className="me-2 h-4 w-4" />
+                      ערוך
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <DetailBox label="יחידות" value={String(selectedOverview?.metrics.totalUnits ?? selectedBuilding.totalUnits ?? 0)} />
+                  <DetailBox label="קריאות פתוחות" value={String(selectedOverview?.metrics.openTickets ?? 0)} />
+                  <DetailBox label="משימות תחזוקה" value={String(selectedOverview?.metrics.activeMaintenanceSchedules ?? 0)} />
+                  <DetailBox label="חוזים פעילים" value={String(selectedOverview?.metrics.activeContracts ?? 0)} />
+                </div>
+
+                <div className="rounded-2xl border border-subtle-border bg-muted/30 p-4">
+                  <div className="text-sm font-semibold text-foreground">תמונה פיננסית</div>
+                  {overviewLoading ? (
+                    <div className="mt-3 space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-5/6" />
+                      <Skeleton className="h-4 w-4/6" />
+                    </div>
+                  ) : (
+                    <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center justify-between">
+                        <span>מתוכנן</span>
+                        <span className="font-medium text-foreground">{formatNumber(selectedOverview?.financial.planned ?? 0)} ₪</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>בפועל</span>
+                        <span className="font-medium text-foreground">{formatNumber(selectedOverview?.financial.actual ?? 0)} ₪</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>פער</span>
+                        <span className={cn('font-medium', (selectedOverview?.financial.variance ?? 0) < 0 ? 'text-destructive' : 'text-success')}>
+                          {formatNumber(selectedOverview?.financial.variance ?? 0)} ₪
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-2xl border border-subtle-border bg-muted/30 p-4">
+                  <div className="text-sm font-semibold text-foreground">תחזוקה קרובה</div>
+                  <div className="mt-3 space-y-2">
+                    {overviewLoading ? (
+                      <>
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                      </>
+                    ) : selectedOverview?.upcomingMaintenance?.length ? (
+                      selectedOverview.upcomingMaintenance.map((item) => (
+                        <div key={item.id} className="rounded-xl border border-subtle-border bg-background px-3 py-2.5 text-sm">
+                          <div className="font-medium text-foreground">{item.title}</div>
+                          <div className="mt-1 text-muted-foreground">
+                            {item.nextOccurrence ? new Date(item.nextOccurrence).toLocaleDateString('he-IL') : 'ללא מועד'}
+                            {item.priority ? ` · ${item.priority}` : ''}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-muted-foreground">אין תחזוקה קרובה להצגה.</div>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-subtle-border p-8 text-center text-sm text-muted-foreground">
+                בחר בניין מהרשימה כדי לקבל תמונת מצב ותזכורות פעולה.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function DetailBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-subtle-border bg-background px-3 py-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 text-lg font-semibold text-foreground">{value}</div>
     </div>
   );
 }

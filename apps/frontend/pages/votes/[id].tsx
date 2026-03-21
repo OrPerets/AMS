@@ -3,11 +3,15 @@ import { useRouter } from 'next/router';
 import { authFetch } from '../../lib/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { Badge } from '../../components/ui/badge';
+import { EmptyState } from '../../components/ui/empty-state';
+import { InlineErrorPanel } from '../../components/ui/inline-feedback';
+import { DetailPanelSkeleton } from '../../components/ui/page-states';
 import { RadioGroup, RadioGroupItem } from '../../components/ui/radio-group';
 import { Label } from '../../components/ui/label';
+import { StatusBadge } from '../../components/ui/status-badge';
 import { Textarea } from '../../components/ui/textarea';
 import { toast } from 'sonner';
+import { getVoteTypeLabel } from '../../lib/utils';
 
 interface VoteOption {
   id: number;
@@ -39,6 +43,7 @@ export default function VoteDetailsPage() {
   const [rating, setRating] = useState<number>(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -47,13 +52,17 @@ export default function VoteDetailsPage() {
 
   const loadVote = async () => {
     try {
+      setError(null);
       const res = await authFetch(`/api/v1/votes/${id}`);
       if (res.ok) {
         const data = await res.json();
         setVote(data);
+      } else {
+        throw new Error(await res.text());
       }
     } catch (error) {
       console.error('Error loading vote:', error);
+      setError('לא ניתן לטעון את פרטי ההצבעה כרגע.');
     } finally {
       setLoading(false);
     }
@@ -107,8 +116,17 @@ export default function VoteDetailsPage() {
     }
   };
 
-  if (loading) return <div className="p-6">טוען...</div>;
-  if (!vote) return <div className="p-6">הצבעה לא נמצאה</div>;
+  if (loading) return <DetailPanelSkeleton />;
+  if (error) return <InlineErrorPanel title="פרטי ההצבעה לא נטענו" description={error} onRetry={loadVote} />;
+  if (!vote) {
+    return (
+      <Card variant="elevated">
+        <CardContent className="p-10">
+          <EmptyState title="הצבעה לא נמצאה" description="ייתכן שההצבעה הוסרה או שכבר אין לך גישה אליה." type="empty" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   const canVote = vote.isActive && !vote.isClosed && !vote.userHasVoted && new Date(vote.endDate) > new Date();
 
@@ -118,15 +136,16 @@ export default function VoteDetailsPage() {
         <Button variant="outline" onClick={() => router.push('/votes')}>
           חזרה
         </Button>
-        <Badge className={vote.isClosed ? 'bg-gray-500' : 'bg-blue-500'}>
-          {vote.isClosed ? 'סגור' : 'פעיל'}
-        </Badge>
+        <StatusBadge label={vote.isClosed ? 'סגור' : 'פעיל'} tone={vote.isClosed ? 'neutral' : 'active'} />
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">{vote.title}</CardTitle>
-          {vote.description && <p className="text-gray-600">{vote.description}</p>}
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge label={getVoteTypeLabel(vote.voteType)} tone="finance" />
+            {vote.description ? <p className="text-muted-foreground">{vote.description}</p> : null}
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
@@ -216,4 +235,3 @@ export default function VoteDetailsPage() {
     </div>
   );
 }
-

@@ -2,12 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { authFetch, getCurrentUserId } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
+import { MobileActionBar } from '../../components/ui/mobile-action-bar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Textarea } from '../../components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { DetailPanelSkeleton } from '../../components/ui/page-states';
 import { getStatusLabel } from '../../lib/utils';
 import { toast } from '../../components/ui/use-toast';
 import { MessageSquare, Send, Edit, Trash2 } from 'lucide-react';
+import { triggerHaptic } from '../../lib/mobile';
 
 interface TicketComment {
   id: number;
@@ -66,6 +69,7 @@ export default function TicketDetails() {
         body: JSON.stringify({ status }),
       });
       toast({ title: 'סטטוס עודכן' });
+      triggerHaptic('success');
       load();
     } catch (e: any) {
       toast({ title: 'שגיאה', description: e?.message || 'נסו שוב', variant: 'destructive' });
@@ -85,6 +89,7 @@ export default function TicketDetails() {
         body: JSON.stringify({ assigneeId: currentUserId }),
       });
       toast({ title: 'הקריאה הוקצתה' });
+      triggerHaptic('success');
       load();
     } catch (e: any) {
       toast({ title: 'שגיאה', description: e?.message || 'נסו שוב', variant: 'destructive' });
@@ -101,6 +106,7 @@ export default function TicketDetails() {
         body: JSON.stringify({ content: newComment }),
       });
       toast({ title: 'תגובה נוספה' });
+      triggerHaptic('success');
       setNewComment('');
       load();
     } catch (e: any) {
@@ -118,6 +124,7 @@ export default function TicketDetails() {
         body: JSON.stringify({ content: editCommentContent }),
       });
       toast({ title: 'תגובה עודכנה' });
+      triggerHaptic('success');
       setEditingComment(null);
       setEditCommentContent('');
       load();
@@ -134,6 +141,7 @@ export default function TicketDetails() {
         method: 'DELETE',
       });
       toast({ title: 'תגובה נמחקה' });
+      triggerHaptic('success');
       load();
     } catch (e: any) {
       toast({ title: 'שגיאה', description: e?.message || 'נסו שוב', variant: 'destructive' });
@@ -150,10 +158,10 @@ export default function TicketDetails() {
     setEditCommentContent('');
   };
 
-  if (!ticket) return <div>טוען...</div>;
+  if (!ticket) return <DetailPanelSkeleton />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24 lg:pb-0">
       <div className="space-y-4">
         <h1 className="text-2xl font-bold">קריאה #{ticket.id}</h1>
         {ticket.unit?.building && (
@@ -168,7 +176,7 @@ export default function TicketDetails() {
             מוקצה ל: {ticket.assignedTo.email} ({ticket.assignedTo.role})
           </div>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Select value={ticket.status} onValueChange={updateStatus}>
             <SelectTrigger className="w-[180px]">
               <SelectValue />
@@ -181,6 +189,9 @@ export default function TicketDetails() {
             </SelectContent>
           </Select>
           <Button onClick={assignToMe}>הקצה לי</Button>
+          <Button variant="outline" onClick={() => document.getElementById('ticket-comment-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+            הוסף תגובה
+          </Button>
         </div>
         {ticket.photos?.length > 0 && (
           <div className="grid grid-cols-2 gap-2">
@@ -201,7 +212,7 @@ export default function TicketDetails() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Add Comment Form */}
-          <div className="space-y-2">
+          <div className="space-y-2" id="ticket-comment-form">
             <Textarea
               placeholder="הוסף תגובה..."
               value={newComment}
@@ -276,6 +287,23 @@ export default function TicketDetails() {
           </div>
         </CardContent>
       </Card>
+
+      <MobileActionBar
+        title={`קריאה #${ticket.id}`}
+        description={`סטטוס נוכחי: ${getStatusLabel(ticket.status)}`}
+        aside={
+          <Button variant="ghost" size="sm" onClick={() => document.getElementById('ticket-comment-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+            תגובה
+          </Button>
+        }
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Button onClick={assignToMe}>הקצה לי</Button>
+          <Button variant="outline" onClick={() => document.getElementById('ticket-comment-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+            הוסף תגובה
+          </Button>
+        </div>
+      </MobileActionBar>
     </div>
   );
 }

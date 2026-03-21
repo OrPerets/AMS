@@ -5,7 +5,6 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { ChevronLeft, ChevronRight, Home } from 'lucide-react';
-import { cn } from '../../lib/utils';
 import { useDirection, useLocale } from '../../lib/providers';
 
 interface BreadcrumbItem {
@@ -27,39 +26,40 @@ export default function Breadcrumbs() {
 
     const labelMap: Record<string, string> = {
       // Main sections
-      home: 'סקירה כללית',
-      admin: 'ניהול המערכת',
-      dashboard: 'לוח ניהול',
+      home: t('nav.homeOverview'),
+      admin: t('nav.group.admin'),
+      configuration: t('nav.configuration'),
+      dashboard: t('nav.dashboard'),
       // Operations
-      tickets: 'קריאות שירות',
-      maintenance: 'תחזוקה מתוכננת',
-      tech: 'משימות שטח',
-      jobs: 'משימות שטח',
-      communications: 'מרכז תקשורת',
+      tickets: t('nav.tickets'),
+      maintenance: t('nav.maintenance'),
+      tech: t('nav.techJobs'),
+      jobs: t('nav.techJobs'),
+      communications: t('nav.communications'),
       // Property Management
-      buildings: 'בניינים ויחידות',
-      assets: 'ציוד ונכסים',
-      documents: 'מסמכים',
+      buildings: t('nav.buildings'),
+      assets: t('nav.assets'),
+      documents: t('nav.documents'),
       // Financial
-      payments: 'תשלומים',
-      finance: 'ניהול פיננסי',
-      budgets: 'תקציבים והוצאות',
-      reports: 'דוחות פיננסיים',
-      analytics: 'ניתוח פיננסי',
-      'unpaid-invoices': 'חשבוניות ממתינות',
+      payments: t('nav.payments'),
+      finance: t('nav.group.finance'),
+      budgets: t('nav.budgets'),
+      reports: t('nav.financeReports'),
+      analytics: 'Analytics',
+      'unpaid-invoices': t('nav.unpaidInvoices'),
       // System
-      notifications: 'התראות',
-      settings: 'הגדרות',
-      support: 'תמיכה',
-      privacy: 'פרטיות',
-      terms: 'תנאי שימוש',
+      notifications: t('nav.notifications'),
+      settings: t('nav.settings'),
+      support: t('nav.support'),
+      privacy: t('nav.privacy'),
+      terms: t('nav.terms'),
     };
 
     const items: BreadcrumbItem[] = [{ title: t('nav.home'), href: '/' }];
     segments.forEach((segment, index) => {
       const href = `/${segments.slice(0, index + 1).join('/')}`;
       const isNumeric = /^\d+$/.test(segment);
-      const title = labelMap[segment] || (isNumeric ? 'פרטים' : decodeURIComponent(segment).replace(/-/g, ' '));
+      const title = labelMap[segment] || (isNumeric ? t('common.untitledDetails') : decodeURIComponent(segment).replace(/-/g, ' '));
       items.push({ title, href });
     });
 

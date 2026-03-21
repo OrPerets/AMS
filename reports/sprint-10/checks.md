@@ -1,14 +1,19 @@
 # Sprint 10 Checks
 
 - Status: DONE
-- Frontend rewrite and backend auth integration: PASS
-- CORS preflight and protected-route enforcement: PASS
-- Document upload pipeline and static file retrieval: PASS
-- Ticket photo upload pipeline and static file retrieval: PASS
-- Work-order photo upload pipeline and static file retrieval: PASS
-- Browser-compatibility matrix review: PASS
-- Mobile responsiveness and touch upload affordances: PASS
+- QA command: `npm run test:sprint-10`
+- Result: PASS
+- Playwright coverage: `15/15` checks passed
+- Tier-1 screenshot capture: PASS
+- Shell/forms/tables/dialogs accessibility spot checks: PASS
+- RTL critical-workflow validation: PASS
+- Small/medium/large phone breakpoint coverage: PASS
+- Dark-mode parity check: PASS
+- Slow-network resilience check: PASS
+- Retry and recovery validation under failing APIs: PASS
+- Rollout plan and role-based launch notes prepared: PASS
 
 ## Residual Notes
 
-- Cross-browser coverage is based on standards-compliant shared code paths (`fetch`, `FormData`, native file inputs, flex/grid layouts, Next rewrites) plus local end-to-end smoke checks; no external multi-browser farm was used in this session.
+- The suite currently runs on the local `mobile-chromium` Playwright project with mocked API fixtures. It is a deterministic regression harness, not a substitute for production analytics.
+- The Next.js dev server emits a non-blocking `allowedDevOrigins` warning during local Playwright runs.

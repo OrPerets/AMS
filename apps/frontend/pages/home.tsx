@@ -1,299 +1,653 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { 
-  Building, 
-  Ticket, 
-  CreditCard, 
-  Wrench, 
-  BarChart3,
-  Users,
+import { motion } from 'framer-motion';
+import {
   ArrowLeft,
-  Calendar,
-  Clock,
-  CheckCircle,
-  Truck
+  Bell,
+  BrainCircuit,
+  Building2,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  Command,
+  CreditCard,
+  FileText,
+  Sparkles,
+  Ticket,
+  TriangleAlert,
+  Wrench,
 } from 'lucide-react';
+import { authFetch, getCurrentUserId, getEffectiveRole } from '../lib/auth';
+import { formatCurrency, formatDate } from '../lib/utils';
+import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { getTokenPayload } from '../lib/auth';
-import { useLocale } from '../lib/providers';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { EmptyState } from '../components/ui/empty-state';
+import { MobileCardSkeleton } from '../components/ui/page-states';
+import { PageHero } from '../components/ui/page-hero';
+import { SectionHeader } from '../components/ui/section-header';
+import { StatusBadge } from '../components/ui/status-badge';
+import { toast } from '../components/ui/use-toast';
 
-const quickActions = [
-  {
-    title: 'קריאות שירות',
-    description: 'צפייה וניהול קריאות שירות',
-    icon: Ticket,
-    href: '/tickets',
-    color: 'bg-blue-500',
-    roles: ['ADMIN', 'PM', 'TECH', 'RESIDENT']
-  },
-  {
-    title: 'דשבורד ניהול',
-    description: 'סקירה כללית של המערכת',
-    icon: BarChart3,
-    href: '/admin/dashboard',
-    color: 'bg-purple-500',
-    roles: ['ADMIN', 'PM']
-  },
-  {
-    title: 'משימות היום',
-    description: 'רשימת משימות לטכנאי',
-    icon: Wrench,
-    href: '/tech/jobs',
-    color: 'bg-green-500',
-    roles: ['TECH']
-  },
-  {
-    title: 'תשלומים',
-    description: 'ניהול חשבוניות ותשלומים',
-    icon: CreditCard,
-    href: '/payments',
-    color: 'bg-yellow-500',
-    roles: ['ADMIN', 'PM', 'ACCOUNTANT']
-  },
-  {
-    title: 'ניהול בניינים',
-    description: 'מידע על בניינים ויחידות',
-    icon: Building,
-    href: '/buildings',
-    color: 'bg-indigo-500',
-    roles: ['ADMIN', 'PM']
-  },
-  {
-    title: 'יומן תפעול',
-    description: 'תכנון פורטפוליו של תחזוקה, חוזים ופירעונות',
-    icon: Calendar,
-    href: '/operations/calendar',
-    color: 'bg-cyan-600',
-    roles: ['ADMIN', 'PM', 'ACCOUNTANT']
-  },
-  {
-    title: 'הודעות ממוקדות',
-    description: 'שליחת הודעות לפי בניין, קומה ויחידות',
-    icon: CheckCircle,
-    href: '/communications/announcements',
-    color: 'bg-fuchsia-600',
-    roles: ['ADMIN', 'PM']
-  },
-  {
-    title: 'ספקים וחוזים',
-    description: 'ניהול קבלנים, חידושי חוזים ותאימות',
-    icon: Truck,
-    href: '/vendors',
-    color: 'bg-orange-500',
-    roles: ['ADMIN', 'PM', 'ACCOUNTANT']
-  },
-  {
-    title: 'יומן פעילות',
-    description: 'בקרה ואודיט על פעולות רגישות',
-    icon: CheckCircle,
-    href: '/admin/activity',
-    color: 'bg-rose-500',
-    roles: ['ADMIN', 'PM', 'ACCOUNTANT', 'MASTER']
-  },
-  {
-    title: 'מרכז אישורים',
-    description: 'ניהול הוצאות, מחיקות מסמך והתאמות יתרה ממתינות',
-    icon: CheckCircle,
-    href: '/admin/approvals',
-    color: 'bg-red-500',
-    roles: ['ADMIN', 'PM', 'ACCOUNTANT']
-  },
-  {
-    title: 'איכות נתונים',
-    description: 'כפילויות, שדות חסרים וקישורים לא תקינים',
-    icon: CheckCircle,
-    href: '/admin/data-quality',
-    color: 'bg-slate-600',
-    roles: ['ADMIN', 'PM', 'ACCOUNTANT']
-  },
-  {
-    title: 'אזור אישי',
-    description: 'יתרה, מסמכים וקריאות שירות',
-    icon: Users,
-    href: '/resident/account',
-    color: 'bg-emerald-500',
-    roles: ['RESIDENT']
-  },
-  {
-    title: 'בקשות דייר',
-    description: 'מעבר, חניה, מסמכים ועדכון פרטים',
-    icon: Ticket,
-    href: '/resident/requests',
-    color: 'bg-teal-500',
-    roles: ['RESIDENT']
-  },
-];
+type RoleKey = 'ADMIN' | 'PM' | 'TECH' | 'RESIDENT' | 'ACCOUNTANT' | 'MASTER';
 
-export default function Home() {
-  const router = useRouter();
-  const [userRole, setUserRole] = useState<string>('RESIDENT');
+type HomeMetric = {
+  label: string;
+  value: string | number;
+  hint: string;
+  tone: 'success' | 'warning' | 'info' | 'neutral';
+};
+
+type HomeAction = {
+  title: string;
+  description: string;
+  href: string;
+  icon: typeof Ticket;
+  accent: string;
+};
+
+type HomeSnapshot = {
+  roleTitle: string;
+  headline: string;
+  description: string;
+  eyebrowLabel: string;
+  metrics: HomeMetric[];
+  nextActions: HomeAction[];
+  spotlightTitle: string;
+  spotlightDescription: string;
+  spotlightItems: string[];
+  digestTitle: string;
+  digestMarkdown: string;
+};
+
+const roleTitles: Record<RoleKey, string> = {
+  ADMIN: 'מנהל מערכת',
+  PM: 'מנהל נכס',
+  TECH: 'טכנאי',
+  RESIDENT: 'דייר',
+  ACCOUNTANT: 'כספים וגבייה',
+  MASTER: 'מנהל ראשי',
+};
+
+const heroVariants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } },
+};
+
+export default function HomePage() {
+  const [role, setRole] = useState<RoleKey>('RESIDENT');
   const [mounted, setMounted] = useState(false);
-  const { t } = useLocale();
+  const [loading, setLoading] = useState(true);
+  const [snapshot, setSnapshot] = useState<HomeSnapshot | null>(null);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const currentUserId = getCurrentUserId();
 
   useEffect(() => {
     setMounted(true);
-    const payload = getTokenPayload();
-    setUserRole(payload?.actAsRole || payload?.role || 'RESIDENT');
+    setRole((getEffectiveRole() as RoleKey) || 'RESIDENT');
   }, []);
 
-  // Listen for route changes to re-read token payload (for role changes)
   useEffect(() => {
-    const payload = getTokenPayload();
-    setUserRole(payload?.actAsRole || payload?.role || 'RESIDENT');
-  }, [router.pathname]);
+    if (!mounted) return;
+    const effectiveRole = (getEffectiveRole() as RoleKey) || 'RESIDENT';
+    setRole(effectiveRole);
+    void loadSnapshot(effectiveRole);
+  }, [mounted]);
 
-  if (!mounted) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">טוען...</p>
-        </div>
-      </div>
-    );
+  useEffect(() => {
+    if (!mounted || !currentUserId) return;
+    const key = `amit-onboarding:v8:${currentUserId}:${role}`;
+    const seen = window.localStorage.getItem(key);
+    setOnboardingOpen(!seen);
+  }, [currentUserId, mounted, role]);
+
+  async function loadSnapshot(activeRole: RoleKey) {
+    try {
+      setLoading(true);
+      const next = await buildSnapshot(activeRole, currentUserId);
+      setSnapshot(next);
+    } catch {
+      toast({
+        title: 'טעינת מרכז העבודה נכשלה',
+        description: 'לא ניתן לבנות כרגע את הסיכום המותאם. מוצגת תצורת ברירת מחדל.',
+        variant: 'destructive',
+      });
+      setSnapshot(buildFallbackSnapshot(activeRole));
+    } finally {
+      setLoading(false);
+    }
   }
 
-  const userActions = quickActions.filter(action => 
-    action.roles.includes(userRole)
-  );
+  const onboardingSteps = useMemo(() => getOnboardingSteps(role), [role]);
 
-  const getRoleTitle = (role: string) => {
-    const roleTitles = {
-      'ADMIN': 'מנהל מערכת',
-      'PM': 'מנהל נכס',
-      'TECH': 'טכנאי',
-      'RESIDENT': 'דייר',
-      'ACCOUNTANT': 'רואה חשבון',
-      'MASTER': 'מנהל ראשי'
+  function completeOnboarding() {
+    if (currentUserId && typeof window !== 'undefined') {
+      window.localStorage.setItem(`amit-onboarding:v8:${currentUserId}:${role}`, new Date().toISOString());
+    }
+    setOnboardingOpen(false);
+    toast({
+      title: 'המסלול האישי הופעל',
+      description: 'מרכז העבודה ימשיך להדגיש עבורך את הפעולה הכי רלוונטית בכל כניסה.',
+      variant: 'success',
+    });
+  }
+
+  if (!mounted || loading || !snapshot) {
+    return <MobileCardSkeleton cards={4} />;
+  }
+
+  return (
+    <div className="space-y-8">
+      <motion.div variants={heroVariants} initial="initial" animate="animate">
+        <PageHero
+          eyebrow={
+            <>
+              <StatusBadge label={snapshot.eyebrowLabel} tone="finance" />
+              <Badge variant="outline" className="border-white/15 bg-white/8 text-white/80">
+                {snapshot.roleTitle}
+              </Badge>
+            </>
+          }
+          kicker="Sprint 8 / Personalized experience"
+          title={snapshot.headline}
+          description={snapshot.description}
+          actions={
+            <>
+              {snapshot.nextActions[0] ? (
+                <Button asChild variant="hero">
+                  <Link href={snapshot.nextActions[0].href}>{snapshot.nextActions[0].title}</Link>
+                </Button>
+              ) : null}
+              <Button variant="outline" className="border-white/15 bg-white/8 text-white hover:bg-white/12" onClick={() => setOnboardingOpen(true)}>
+                <Sparkles className="me-2 h-4 w-4" />
+                פתח מסלול מהיר
+              </Button>
+            </>
+          }
+          aside={
+            <div className="space-y-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-white/55">רגעים שדורשים ממך תשומת לב</div>
+              <div className="grid gap-3">
+                {snapshot.metrics.slice(0, 3).map((metric) => (
+                  <div key={metric.label} className="rounded-[22px] border border-white/10 bg-white/5 p-4">
+                    <div className="text-xs uppercase tracking-[0.18em] text-white/50">{metric.label}</div>
+                    <div className="mt-2 text-2xl font-black">{metric.value}</div>
+                    <div className="mt-1 text-sm leading-6 text-white/65">{metric.hint}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          }
+        />
+      </motion.div>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {snapshot.metrics.map((metric, index) => (
+          <motion.div
+            key={metric.label}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 + index * 0.05, duration: 0.32 }}
+          >
+            <MetricCard metric={metric} />
+          </motion.div>
+        ))}
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <Card variant="elevated" className="overflow-hidden">
+          <CardHeader>
+            <SectionHeader
+              title="הפעולה הבאה שכדאי לבצע"
+              subtitle="המערכת כבר ממיינת מה הכי חשוב לפי התפקיד, הסיכון והעומסים הנוכחיים."
+              meta="Next-best-action"
+            />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {snapshot.nextActions.length ? (
+              snapshot.nextActions.map((action, index) => (
+                <motion.div
+                  key={action.href}
+                  initial={{ opacity: 0, x: 14 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.12 + index * 0.05, duration: 0.28 }}
+                >
+                  <ActionCard action={action} />
+                </motion.div>
+              ))
+            ) : (
+              <EmptyState
+                type="action"
+                title="הכול בשליטה"
+                description="אין כרגע משימה דחופה שממתינה לך. זה זמן טוב לסגור לולאות, לעבור על דוחות או לרענן נהלים."
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card variant="featured" className="overflow-hidden">
+          <CardHeader>
+            <SectionHeader
+              title={snapshot.spotlightTitle}
+              subtitle={snapshot.spotlightDescription}
+              meta="Predictive + premium"
+            />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {snapshot.spotlightItems.length ? (
+              snapshot.spotlightItems.map((item, index) => (
+                <motion.div
+                  key={item}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.14 + index * 0.05, duration: 0.28 }}
+                  className="rounded-[22px] border border-primary/15 bg-primary/6 p-4 text-sm leading-7"
+                >
+                  {item}
+                </motion.div>
+              ))
+            ) : (
+              <EmptyState
+                type="empty"
+                title="אין חריגות חריפות כרגע"
+                description="זה סימן טוב. אפשר להשתמש בזמן הזה כדי לבצע פעולות מניעה, לשפר תיעוד או ללטש תהליכי שירות."
+              />
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      <Card variant="elevated" className="overflow-hidden">
+        <CardHeader>
+          <SectionHeader
+            title={snapshot.digestTitle}
+            subtitle="המערכת מייצרת עבורך ניסוח שבועי מוכן לשיתוף או להעתקה."
+            meta="Auto digest"
+            actions={
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => navigator.clipboard.writeText(snapshot.digestMarkdown)}>
+                  העתק תקציר
+                </Button>
+                <Button asChild>
+                  <Link href={snapshot.nextActions[0]?.href || '/home'}>
+                    המשך לעבודה
+                    <ArrowLeft className="ms-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            }
+          />
+        </CardHeader>
+        <CardContent>
+          <pre className="overflow-x-auto rounded-[24px] border border-subtle-border bg-muted/35 p-5 text-sm leading-7 text-foreground/88">
+{snapshot.digestMarkdown}
+          </pre>
+        </CardContent>
+      </Card>
+
+      <Dialog open={onboardingOpen} onOpenChange={setOnboardingOpen}>
+        <DialogContent className="max-w-2xl border-white/10 bg-slate-950/95 text-white shadow-modal backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <Sparkles className="h-5 w-5 text-primary" />
+              מסלול פתיחה פרימיום
+            </DialogTitle>
+            <DialogDescription className="text-white/65">
+              שלושה צעדים קצרים כדי לגרום למסך הזה לעבוד בשבילך ולא להפך.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-3">
+            {onboardingSteps.map((step, index) => (
+              <div key={step.title} className="rounded-[24px] border border-white/10 bg-white/6 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 font-semibold text-primary">
+                    {index + 1}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="font-semibold text-white">{step.title}</div>
+                    <div className="text-sm leading-7 text-white/65">{step.description}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" className="border-white/10 bg-white/6 text-white hover:bg-white/12" onClick={() => setOnboardingOpen(false)}>
+              אחר כך
+            </Button>
+            <Button onClick={completeOnboarding}>
+              הפעל חוויית עבודה מותאמת
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+async function buildSnapshot(role: RoleKey, currentUserId: number | null): Promise<HomeSnapshot> {
+  if (role === 'RESIDENT' && currentUserId) {
+    const response = await authFetch(`/api/v1/invoices/account/${currentUserId}`);
+    if (!response.ok) throw new Error('resident snapshot failed');
+    const data = await response.json();
+
+    const nextActions: HomeAction[] = [
+      data.summary?.overdueInvoices
+        ? {
+            title: 'סגור תשלום בפיגור',
+            description: 'יש כרגע חיובים שדורשים טיפול מיידי כדי למנוע פנייה לשירות.',
+            href: '/resident/account#payments',
+            icon: CreditCard,
+            accent: 'from-rose-500/18 to-orange-500/18',
+          }
+        : {
+            title: 'בדוק את האזור האישי',
+            description: 'תמונת מצב של תשלומים, מסמכים וקריאות פתוחות במקום אחד.',
+            href: '/resident/account',
+            icon: CreditCard,
+            accent: 'from-emerald-500/18 to-cyan-500/18',
+          },
+      {
+        title: 'פתח בקשת דייר',
+        description: 'למעבר, מסמך, חניה או עדכון פרטים בלי לחפש את הטופס הנכון.',
+        href: '/resident/requests',
+        icon: ClipboardList,
+        accent: 'from-primary/18 to-amber-500/18',
+      },
+      {
+        title: 'פתח קריאת תחזוקה',
+        description: 'מסלול שירות מהיר עם מצלמה והתקדמות טיפול ברורה.',
+        href: '/create-call',
+        icon: Ticket,
+        accent: 'from-sky-500/18 to-indigo-500/18',
+      },
+    ];
+
+    return {
+      roleTitle: roleTitles[role],
+      headline: 'הכול מרוכז עבורך במקום אחד',
+      description: 'המסך הזה מחליף פתיחה גנרית בסיכום אישי: מה דחוף, מה פתוח ומה הכי כדאי לבצע עכשיו כדי לסגור לולאות מהר.',
+      eyebrowLabel: 'Resident flow',
+      metrics: [
+        { label: 'יתרה נוכחית', value: formatCurrency(data.summary?.currentBalance ?? 0), hint: 'תמונת מצב מיידית של מצב החשבון.', tone: 'info' },
+        { label: 'חיובים שלא שולמו', value: data.summary?.unpaidInvoices ?? 0, hint: 'כולל גם חיובים לקראת מועד פירעון.', tone: 'warning' },
+        { label: 'פיגורים פעילים', value: data.summary?.overdueInvoices ?? 0, hint: 'כאן כדאי להתחיל כדי למנוע עיכובים מיותרים.', tone: 'warning' },
+        { label: 'קריאות פתוחות', value: data.summary?.openTickets ?? 0, hint: 'סטטוס שירות נוכחי בלי לחפש בין מסכים.', tone: 'neutral' },
+      ],
+      nextActions,
+      spotlightTitle: 'תובנות חכמות לשבוע הקרוב',
+      spotlightDescription: 'המערכת מזהה מה דורש ממך פעולה ומה כבר במסלול תקין.',
+      spotlightItems: [
+        data.summary?.overdueInvoices
+          ? `יש ${data.summary.overdueInvoices} חיובים בפיגור. כדאי להתחיל משם כדי לעצור מעקב ידני וצוותי גבייה.`
+          : 'אין כרגע פיגורים פעילים, כך שאפשר להתמקד במסמכים, אוטופיי או פתיחת פניות חדשות.',
+        data.tickets?.length
+          ? `יש ${data.summary?.openTickets ?? 0} קריאות פתוחות. מתוך המסך האישי אפשר לראות מי מטפל ומה העדכון האחרון.`
+          : 'אין קריאות פעילות כרגע. אם משהו משתנה, מסלול פתיחת הקריאה מוכן כבר מהמסך הראשי.',
+        `יש ${data.summary?.unreadNotifications ?? 0} התראות לא נקראו שמרוכזות במרכז ההתראות שלך.`,
+      ],
+      digestTitle: 'תקציר שבועי אוטומטי לדייר',
+      digestMarkdown: [
+        `# מצב אישי שבועי`,
+        `- תאריך: ${formatDate(new Date())}`,
+        `- יתרה נוכחית: ${formatCurrency(data.summary?.currentBalance ?? 0)}`,
+        `- חיובים שלא שולמו: ${data.summary?.unpaidInvoices ?? 0}`,
+        `- קריאות שירות פתוחות: ${data.summary?.openTickets ?? 0}`,
+        `- התראות לא נקראו: ${data.summary?.unreadNotifications ?? 0}`,
+        ``,
+        `פעולה מומלצת: ${nextActions[0]?.title ?? 'בדיקה תקופתית של החשבון והפניות.'}`,
+      ].join('\n'),
     };
-    return roleTitles[role as keyof typeof roleTitles] || 'משתמש';
+  }
+
+  if (role === 'TECH' && currentUserId) {
+    const [ticketsResponse, notificationsResponse] = await Promise.all([
+      authFetch(`/api/v1/tickets?view=dispatch&assigneeId=${currentUserId}&limit=24`),
+      authFetch(`/api/v1/notifications/user/${currentUserId}`),
+    ]);
+    if (!ticketsResponse.ok || !notificationsResponse.ok) throw new Error('tech snapshot failed');
+    const tickets = await ticketsResponse.json();
+    const notifications = await notificationsResponse.json();
+    const urgentCount = tickets.items?.filter((item: any) => item.severity === 'URGENT' && item.status !== 'RESOLVED').length ?? 0;
+    const riskCount =
+      (tickets.riskSummary?.atRisk ?? 0) + (tickets.riskSummary?.dueToday ?? 0) + (tickets.riskSummary?.breached ?? 0);
+
+    return {
+      roleTitle: roleTitles[role],
+      headline: 'היום שלך כבר מסודר לפי דחיפות',
+      description: 'במקום לפתוח כמה מסכים, המרכז מציג את הקריאות שהכי חשוב להתחיל מהן, את עומס הסיכון ואת נקודות החיכוך שעלולות לעכב יציאה לשטח.',
+      eyebrowLabel: 'Field operations',
+      metrics: [
+        { label: 'קריאות פעילות', value: tickets.summary?.inProgress ?? tickets.meta?.total ?? 0, hint: 'כל מה שכבר משויך אליך ומצריך טיפול.', tone: 'info' },
+        { label: 'בהולות', value: urgentCount, hint: 'כדאי לפתוח אותן לפני כל עבודה אחרת.', tone: 'warning' },
+        { label: 'בסיכון SLA', value: riskCount, hint: 'חריגות או סיכונים שמצריכים עדכון מהיר.', tone: 'warning' },
+        { label: 'התראות חדשות', value: Array.isArray(notifications) ? notifications.filter((item: any) => !item.read).length : 0, hint: 'עדכונים שיכולים לשנות את סדר העבודה שלך.', tone: 'neutral' },
+      ],
+      nextActions: [
+        {
+          title: urgentCount ? 'טפל בקריאה בהולה' : 'פתח את משימות השטח',
+          description: urgentCount ? 'יש כרגע קריאה בהולה שמחכה להתחלת טיפול.' : 'המשך לעומס המשימות שלך עם מסלול התחלה מהיר.',
+          href: '/tech/jobs',
+          icon: Wrench,
+          accent: 'from-amber-500/18 to-rose-500/18',
+        },
+        {
+          title: 'עדכן קריאות בלוח העבודה',
+          description: 'כדי שהצוות יראה התקדמות, הערות וסטטוסים בזמן אמת.',
+          href: '/tickets',
+          icon: Ticket,
+          accent: 'from-sky-500/18 to-indigo-500/18',
+        },
+        {
+          title: 'בדוק התראות תפעוליות',
+          description: 'שינויים, תיאומי גישה או פניות חדשות שקשורות לשטח.',
+          href: '/notifications',
+          icon: Bell,
+          accent: 'from-primary/18 to-cyan-500/18',
+        },
+      ],
+      spotlightTitle: 'אינטליגנציה תפעולית לטכנאי',
+      spotlightDescription: 'במקום לעבור ידנית על כל הרשימה, המערכת מציפה את נקודות הסיכון שכדאי לטפל בהן ראשונות.',
+      spotlightItems: [
+        urgentCount ? `יש ${urgentCount} קריאות בהולות פתוחות. מומלץ לאשר התחלת טיפול כדי להוריד חרדה אצל הלקוח.` : 'אין כרגע קריאות בהולות פתוחות, כך שאפשר להתקדם לפי תכנון מסודר.',
+        riskCount ? `זוהו ${riskCount} קריאות בסיכון SLA. עדכון קצר מהנייד יכול לעצור הסלמה מיותרת.` : 'אין כרגע קריאות בסיכון SLA מעל הסף שהוגדר.',
+        `מרכז ההתראות כולל ${Array.isArray(notifications) ? notifications.length : 0} פריטים אחרונים כדי שלא תפספס שינויי גישה או תיאום.`,
+      ],
+      digestTitle: 'תדריך שבועי אוטומטי לטכנאי',
+      digestMarkdown: [
+        `# תדריך שטח`,
+        `- תאריך: ${formatDate(new Date())}`,
+        `- קריאות פעילות: ${tickets.summary?.inProgress ?? tickets.meta?.total ?? 0}`,
+        `- קריאות בהולות: ${urgentCount}`,
+        `- סיכוני SLA: ${riskCount}`,
+        `- התראות שלא נקראו: ${Array.isArray(notifications) ? notifications.filter((item: any) => !item.read).length : 0}`,
+        ``,
+        `מיקוד השבוע: להתחיל מהקריאות עם סיכון SLA גבוה, ולסגור לפחות עדכון אחד לכל טיפול שנמצא בשטח.`,
+      ].join('\n'),
+    };
+  }
+
+  const [ticketsResponse, exceptionsResponse, operationsResponse, notificationsResponse] = await Promise.all([
+    authFetch('/api/v1/tickets?view=dispatch&limit=40'),
+    authFetch('/api/v1/maintenance/exceptions'),
+    authFetch('/api/v1/operations/calendar'),
+    currentUserId ? authFetch(`/api/v1/notifications/user/${currentUserId}`) : Promise.resolve(null),
+  ]);
+  if (!ticketsResponse.ok || !exceptionsResponse.ok || !operationsResponse.ok) throw new Error('ops snapshot failed');
+
+  const tickets = await ticketsResponse.json();
+  const exceptions = await exceptionsResponse.json();
+  const operations = await operationsResponse.json();
+  const notifications = notificationsResponse?.ok ? await notificationsResponse.json() : [];
+  const riskCount = (tickets.riskSummary?.atRisk ?? 0) + (tickets.riskSummary?.dueToday ?? 0) + (tickets.riskSummary?.breached ?? 0);
+  const openWorkOrders = exceptions.summary?.openWorkOrders ?? 0;
+
+  const nextActions: HomeAction[] = [
+    {
+      title: riskCount ? 'פתח את לוח הקריאות המסוכן' : 'פתח את לוח הקריאות',
+      description: riskCount
+        ? `יש כרגע ${riskCount} קריאות עם סיכון SLA או חריגה שמחכות להחלטה.`
+        : 'בדוק את מצב התור, השיוכים והתגובות האחרונות בלי לעבור בין מסכים.',
+      href: '/tickets',
+      icon: Ticket,
+      accent: 'from-primary/18 to-amber-500/18',
+    },
+    {
+      title: 'עבור ליומן התפעול',
+      description: `מרוכזים שם ${operations.summary?.total ?? 0} אירועים קרובים של תחזוקה, חוזים ופירעונות.`,
+      href: '/operations/calendar',
+      icon: CalendarClock,
+      accent: 'from-sky-500/18 to-cyan-500/18',
+    },
+    {
+      title: role === 'ACCOUNTANT' ? 'עבור למסך התשלומים' : 'עבור ללוח הניהול',
+      description: role === 'ACCOUNTANT' ? 'גבייה, פירעונות וניתוח מגמות במקום אחד.' : 'תמונת מערכת רחבה עם KPI, סיכונים ואירועים ניהוליים.',
+      href: role === 'ACCOUNTANT' ? '/payments' : '/admin/dashboard',
+      icon: role === 'ACCOUNTANT' ? CreditCard : Building2,
+      accent: 'from-emerald-500/18 to-lime-500/18',
+    },
+  ];
+
+  return {
+    roleTitle: roleTitles[role],
+    headline: role === 'ACCOUNTANT' ? 'המספרים מספרים איפה לפעול קודם' : 'מרכז העבודה שלך כבר ממוין לפי סיכון והשפעה',
+    description:
+      role === 'ACCOUNTANT'
+        ? 'המסך מציף נקודות גבייה, עומסים תפעוליים ואירועים קרובים כדי לחבר בין כספים לתפעול, במקום לנתח כל רשימה בנפרד.'
+        : 'במקום פתיחה גנרית, קיבלת סיכום שמבליט חריגות SLA, תחזוקה לא מאומתת, עומס עבודה והמהלך הבא שכדאי לבצע.',
+    eyebrowLabel: role === 'ACCOUNTANT' ? 'Finance control' : 'Operations intelligence',
+    metrics: [
+      { label: 'קריאות פתוחות', value: tickets.summary?.open ?? 0, hint: 'כלל התור הפעיל כרגע במערכת.', tone: 'info' },
+      { label: 'סיכון SLA', value: riskCount, hint: 'כולל קריאות בחריגה, יעד היום או סיכון קרוב.', tone: 'warning' },
+      { label: 'תחזוקה לא מאומתת', value: exceptions.summary?.unverifiedMaintenance ?? 0, hint: 'פעולות שבוצעו אבל עדיין לא נסגרו כראוי.', tone: 'warning' },
+      { label: 'הזמנות עבודה פתוחות', value: openWorkOrders, hint: 'מסמן איפה יש חיכוך בין מוקד, ספק ואישור.', tone: 'neutral' },
+    ],
+    nextActions,
+    spotlightTitle: role === 'ACCOUNTANT' ? 'אותות שבועיים לכספים' : 'אותות חכמים מהמערכת',
+    spotlightDescription:
+      role === 'ACCOUNTANT'
+        ? 'המערכת מחברת בין אירועי תפעול, חוזים ופירעונות כדי שתוכל לפעול מוקדם ולא רק להגיב.'
+        : 'זיהוי חריגות תחזוקה, צווארי בקבוק והמסכים שבהם כדאי להתערב קודם.',
+    spotlightItems: [
+      riskCount
+        ? `זוהו ${riskCount} קריאות בסיכון SLA. זהו כרגע צוואר הבקבוק המרכזי במסלול השירות.`
+        : 'אין כרגע צבר קריאות מסוכן, כך שאפשר לעבור למניעה ולאופטימיזציה.',
+      exceptions.summary?.unverifiedMaintenance
+        ? `יש ${exceptions.summary.unverifiedMaintenance} פעולות תחזוקה שבוצעו ועדיין לא אומתו. זה סיכון שקט שכדאי לסגור.`
+        : 'אין כרגע פעולות תחזוקה ממתינות לאימות, וזה משחרר זמן להסתכלות קדימה.',
+      operations.summary?.total
+        ? `ביומן התפעול מחכים ${operations.summary.total} אירועים קרובים. שימוש ביומן עכשיו חוסך הפתעות מאוחרות יותר.`
+        : 'לא זוהו אירועים תפעוליים חריגים בטווח הקרוב.',
+    ],
+    digestTitle: role === 'ACCOUNTANT' ? 'דוח שבועי אוטומטי לכספים' : 'תקציר ניהולי אוטומטי לשבוע הקרוב',
+    digestMarkdown: [
+      role === 'ACCOUNTANT' ? '# תקציר כספים שבועי' : '# תקציר תפעולי שבועי',
+      `- תאריך: ${formatDate(new Date())}`,
+      `- קריאות פתוחות: ${tickets.summary?.open ?? 0}`,
+      `- קריאות בסיכון SLA: ${riskCount}`,
+      `- תחזוקה לא מאומתת: ${exceptions.summary?.unverifiedMaintenance ?? 0}`,
+      `- הזמנות עבודה פתוחות: ${openWorkOrders}`,
+      `- אירועים ביומן התפעול: ${operations.summary?.total ?? 0}`,
+      `- התראות שלא נקראו: ${Array.isArray(notifications) ? notifications.filter((item: any) => !item.read).length : 0}`,
+      ``,
+      `המלצה לשבוע הקרוב: ${nextActions[0].description}`,
+    ].join('\n'),
+  };
+}
+
+function buildFallbackSnapshot(role: RoleKey): HomeSnapshot {
+  return {
+    roleTitle: roleTitles[role],
+    headline: 'מרכז עבודה חכם בבנייה',
+    description: 'החיבור לנתונים לא הצליח כרגע, אבל שכבת הניווט, המסלול האישי והפעולות המומלצות כבר מוכנים.',
+    eyebrowLabel: 'Fallback mode',
+    metrics: [
+      { label: 'מצב נתונים', value: 'לא זמין', hint: 'נסה לרענן בעוד רגע.', tone: 'warning' },
+      { label: 'מרכז התראות', value: 'מוכן', hint: 'הניווט וההתראות ממשיכים לעבוד.', tone: 'success' },
+      { label: 'פעולות מהירות', value: 3, hint: 'המסכים המרכזיים עדיין זמינים.', tone: 'info' },
+      { label: 'מסלול אישי', value: 'פעיל', hint: 'אפשר לפתוח את מסלול הפתיחה המותאם.', tone: 'neutral' },
+    ],
+    nextActions: [
+      { title: 'עבור ללוח הקריאות', description: 'המסך הקריטי ביותר ממשיך להיות זמין גם בלי תמונת מצב מלאה.', href: '/tickets', icon: Ticket, accent: 'from-primary/18 to-amber-500/18' },
+      { title: 'פתח התראות', description: 'בדוק אם יש עדכונים אחרונים שמצריכים פעולה ידנית.', href: '/notifications', icon: Bell, accent: 'from-sky-500/18 to-indigo-500/18' },
+      { title: 'רענן את הדף', description: 'ברוב המקרים החיבור יחזור ויבנה מחדש את הסיכום המותאם.', href: '/home', icon: Command, accent: 'from-emerald-500/18 to-lime-500/18' },
+    ],
+    spotlightTitle: 'מה עדיין כן עובד',
+    spotlightDescription: 'גם בזמן תקלה זמנית נשמרת דרך קצרה לחזור לעבודה.',
+    spotlightItems: [
+      'שכבת הפקודות החוצת-מערכת זמינה דרך Cmd/Ctrl + K.',
+      'מרכז ההתראות נשאר נגיש כדי שלא תפספס אירועים חדשים.',
+      'המסלולים המרכזיים זמינים גם בלי בניית סיכום עשיר.',
+    ],
+    digestTitle: 'תקציר זמני',
+    digestMarkdown: ['# תקציר זמני', `- תאריך: ${formatDate(new Date())}`, '- מצב נתונים: לא זמין כרגע', '- פעולה מומלצת: פתח את אחד המסכים המרכזיים והמשך עבודה רגילה עד לחזרת הקישוריות.'].join('\n'),
+  };
+}
+
+function getOnboardingSteps(role: RoleKey) {
+  const shared = [
+    {
+      title: 'התחל מהכרטיס העליון',
+      description: 'שלושת המדדים הראשונים מייצגים את צוואר הבקבוק שלך עכשיו, לא סתם נתונים יפים.',
+    },
+    {
+      title: 'השתמש בפעולה המומלצת הראשונה',
+      description: 'המערכת ממיינת עבורך את המסך שכדאי לפתוח ראשון לפי תפקיד וסיכון פעיל.',
+    },
+  ];
+
+  const roleSpecific: Record<RoleKey, { title: string; description: string }> = {
+    ADMIN: { title: 'בדוק חריגות תחזוקה וסיכון SLA יחד', description: 'זו הצטלבות שמזהה איפה נדרש תיאום ניהולי ולא רק טיפול בודד.' },
+    PM: { title: 'הפעל triage חכם מתוך לוח הקריאות', description: 'המערכת כבר ממליצה על קטגוריה, עדיפות ושיוך, כדי לחסוך סבב ניחושים ידני.' },
+    TECH: { title: 'סגור לולאה עם עדכון קצר מהשטח', description: 'עדכון אחד בזמן מקטין הסלמה ומשאיר את התמונה הניהולית נקייה.' },
+    RESIDENT: { title: 'עקוב אחרי שירות ותשלומים מאותו מסך', description: 'אין צורך יותר לדלג בין אזור אישי, בקשות וקריאות כדי להבין את מצבך.' },
+    ACCOUNTANT: { title: 'שלב יומן תפעול עם גבייה', description: 'כך תזהה חידושי חוזים, פירעונות והתראות לפני שהם הופכים לבור עבודה.' },
+    MASTER: { title: 'התחל מסיכונים רוחביים', description: 'מרכז העבודה מיועד להציף לך חריגות שמצטברות בין צוותים, לא רק משימות בודדות.' },
+  };
+
+  return [...shared, roleSpecific[role]];
+}
+
+function MetricCard({ metric }: { metric: HomeMetric }) {
+  const tones = {
+    success: 'border-emerald-500/20 bg-emerald-500/6',
+    warning: 'border-amber-500/20 bg-amber-500/6',
+    info: 'border-sky-500/20 bg-sky-500/6',
+    neutral: 'border-subtle-border bg-background',
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      {/* Welcome Section */}
-      <div className="space-y-4 text-center">
-        <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 sm:flex-row sm:justify-center sm:text-start">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary">
-            <span className="text-2xl font-bold text-primary-foreground">ע</span>
-          </div>
-          <div className="space-y-1 text-center sm:text-right">
-            <h1 className="text-3xl font-bold text-foreground sm:text-4xl">
-              ברוכים הבאים לעמית אקסלנס
-            </h1>
-            <p className="text-base text-muted-foreground sm:text-xl">
-              מערכת ניהול אחזקות מתקדמת
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <Badge variant="outline" className="text-sm">
-            <Users className="h-3 w-3 me-1" />
-            {getRoleTitle(userRole)}
-          </Badge>
-          <Badge variant="outline" className="text-sm">
-            <Calendar className="h-3 w-3 me-1" />
-            {new Date().toLocaleDateString('he-IL')}
-          </Badge>
-        </div>
+    <Card className={`rounded-[28px] ${tones[metric.tone]}`}>
+      <CardHeader className="pb-2">
+        <CardDescription>{metric.label}</CardDescription>
+        <CardTitle className="text-3xl">{metric.value}</CardTitle>
+      </CardHeader>
+      <CardContent className="text-sm leading-6 text-muted-foreground">{metric.hint}</CardContent>
+    </Card>
+  );
+}
+
+function ActionCard({ action }: { action: HomeAction }) {
+  const Icon = action.icon;
+
+  return (
+    <Link
+      href={action.href}
+      className={`group flex items-start gap-4 rounded-[24px] border border-subtle-border bg-gradient-to-br ${action.accent} p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-card`}
+    >
+      <div className="rounded-[20px] bg-background/85 p-3 text-primary shadow-sm">
+        <Icon className="h-5 w-5" />
       </div>
-
-      {/* Quick Actions Grid */}
-      <div>
-        <h2 className="mb-4 text-center text-2xl font-semibold sm:mb-6">פעולות מהירות</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {userActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link key={action.href} href={action.href}>
-                <Card className="group h-full cursor-pointer border-2 transition-all duration-200 hover:scale-[1.02] hover:border-primary/20 hover:shadow-lg">
-                  <CardHeader className="text-center pb-4">
-                    <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${action.color} transition-transform duration-200 group-hover:scale-110 sm:h-16 sm:w-16`}>
-                      <Icon className="h-8 w-8 text-white" />
-                    </div>
-                    <CardTitle className="text-lg sm:text-xl">{action.title}</CardTitle>
-                    <CardDescription className="text-center">
-                      {action.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-center pt-0">
-                    <Button variant="outline" className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                      כניסה
-                      <ArrowLeft className="ms-2 h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className="flex items-center gap-2">
+          <div className="font-semibold text-foreground">{action.title}</div>
+          <ArrowLeft className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-foreground" />
         </div>
+        <div className="text-sm leading-7 text-muted-foreground">{action.description}</div>
       </div>
-
-      {/* Quick Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">מערכת פעילה</CardTitle>
-            <CheckCircle className="h-4 w-4 text-success" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">תקינה</div>
-            <p className="text-xs text-muted-foreground">
-              כל המערכות פועלות כהלכה
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">זמן תגובה</CardTitle>
-            <Clock className="h-4 w-4 text-info" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">&lt; 2 שעות</div>
-            <p className="text-xs text-muted-foreground">
-              זמן תגובה ממוצע
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">שביעות רצון</CardTitle>
-            <Users className="h-4 w-4 text-warning" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">98%</div>
-            <p className="text-xs text-muted-foreground">
-              מהדיירים מרוצים מהשירות
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Help Section */}
-      <Card className="bg-muted/30">
-        <CardHeader>
-          <CardTitle>זקוקים לעזרה?</CardTitle>
-          <CardDescription>
-            אנחנו כאן כדי לעזור לכם. ניתן לפנות אלינו בכל שאלה או בעיה.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button variant="outline" className="w-full sm:w-auto">
-              צור קשר עם התמיכה
-            </Button>
-            <Button variant="ghost" className="w-full sm:w-auto">
-              מדריך למשתמש
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    </Link>
   );
 }

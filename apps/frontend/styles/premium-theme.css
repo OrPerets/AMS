@@ -1,0 +1,228 @@
+@layer base {
+  :root {
+    --gold-50: 44 100% 96%;
+    --gold-100: 43 96% 89%;
+    --gold-200: 42 92% 80%;
+    --gold-300: 41 87% 68%;
+    --gold-400: 39 82% 57%;
+    --gold-500: 38 76% 47%;
+    --gold-600: 36 70% 38%;
+    --gold-700: 34 63% 30%;
+    --gold-800: 32 55% 23%;
+    --gold-900: 30 47% 16%;
+
+    --neutral-0: 42 20% 98%;
+    --neutral-50: 40 18% 96%;
+    --neutral-100: 36 16% 92%;
+    --neutral-200: 34 13% 84%;
+    --neutral-300: 31 10% 72%;
+    --neutral-400: 30 8% 56%;
+    --neutral-500: 28 9% 40%;
+    --neutral-600: 28 11% 27%;
+    --neutral-700: 26 14% 18%;
+    --neutral-800: 24 18% 12%;
+    --neutral-900: 24 21% 8%;
+
+    --background: var(--neutral-0);
+    --foreground: var(--neutral-900);
+    --page-background: 42 33% 97%;
+    --card: 0 0% 100%;
+    --card-foreground: var(--neutral-900);
+    --popover: 0 0% 100%;
+    --popover-foreground: var(--neutral-900);
+    --elevated-surface: 0 0% 100%;
+    --muted-surface: 42 24% 94%;
+    --inverted-surface: 25 18% 10%;
+    --primary: 38 76% 47%;
+    --primary-foreground: 24 21% 8%;
+    --secondary: 42 24% 94%;
+    --secondary-foreground: 26 14% 18%;
+    --muted: 42 24% 94%;
+    --muted-foreground: 28 9% 40%;
+    --accent: 24 18% 12%;
+    --accent-foreground: 42 20% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 42 20% 98%;
+    --success: 148 52% 32%;
+    --success-foreground: 42 20% 98%;
+    --warning: 35 82% 45%;
+    --warning-foreground: 24 21% 8%;
+    --info: 214 56% 40%;
+    --info-foreground: 42 20% 98%;
+    --border: 36 16% 86%;
+    --input: 36 16% 86%;
+    --ring: 38 76% 47%;
+    --focus-ring: 38 82% 57%;
+    --subtle-border: 36 16% 86%;
+    --strong-border: 30 10% 72%;
+    --disabled-text: 30 8% 56%;
+    --tertiary-text: 28 9% 40%;
+    --inverse-text: 42 20% 98%;
+    --radius: 1rem;
+
+    --surface-shadow-card: 0 18px 40px -30px rgb(32 24 12 / 0.22);
+    --surface-shadow-raised: 0 28px 64px -34px rgb(32 24 12 / 0.28);
+    --surface-shadow-modal: 0 42px 120px -42px rgb(20 12 6 / 0.35);
+    --surface-shadow-hero:
+      0 36px 110px -52px rgb(35 24 9 / 0.55),
+      inset 0 1px 0 rgb(255 255 255 / 0.12);
+
+    --font-sans: var(--font-heebo), system-ui, -apple-system, sans-serif;
+    --font-display: var(--font-fraunces), Georgia, serif;
+  }
+
+  .dark {
+    --background: 24 18% 8%;
+    --foreground: 42 20% 96%;
+    --page-background: 24 18% 8%;
+    --card: 26 16% 10%;
+    --card-foreground: 42 20% 96%;
+    --popover: 25 17% 11%;
+    --popover-foreground: 42 20% 96%;
+    --elevated-surface: 26 16% 12%;
+    --muted-surface: 26 14% 16%;
+    --inverted-surface: 42 20% 98%;
+    --primary: 39 82% 57%;
+    --primary-foreground: 24 21% 8%;
+    --secondary: 26 14% 16%;
+    --secondary-foreground: 42 20% 96%;
+    --muted: 26 14% 16%;
+    --muted-foreground: 32 10% 72%;
+    --accent: 42 24% 94%;
+    --accent-foreground: 24 18% 8%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 42 20% 98%;
+    --success: 148 52% 44%;
+    --success-foreground: 42 20% 98%;
+    --warning: 39 82% 57%;
+    --warning-foreground: 24 21% 8%;
+    --info: 214 68% 63%;
+    --info-foreground: 24 21% 8%;
+    --border: 28 12% 20%;
+    --input: 28 12% 20%;
+    --ring: 39 82% 57%;
+    --focus-ring: 43 96% 75%;
+    --subtle-border: 28 12% 20%;
+    --strong-border: 31 10% 38%;
+    --disabled-text: 30 8% 56%;
+    --tertiary-text: 32 10% 72%;
+    --inverse-text: 24 18% 8%;
+
+    --surface-shadow-card: 0 22px 44px -30px rgb(0 0 0 / 0.5);
+    --surface-shadow-raised: 0 34px 80px -34px rgb(0 0 0 / 0.58);
+    --surface-shadow-modal: 0 56px 140px -42px rgb(0 0 0 / 0.72);
+    --surface-shadow-hero:
+      0 42px 120px -50px rgb(0 0 0 / 0.7),
+      inset 0 1px 0 rgb(255 255 255 / 0.08);
+  }
+
+  body {
+    background: hsl(var(--page-background));
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.15;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+  }
+
+  h2 {
+    font-size: 1.875rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    h1 {
+      font-size: 3rem;
+    }
+
+    h2 {
+      font-size: 2.5rem;
+    }
+
+    h3 {
+      font-size: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    h1 {
+      font-size: 3.75rem;
+    }
+
+    h2 {
+      font-size: 3rem;
+    }
+
+    h3 {
+      font-size: 2.25rem;
+    }
+  }
+
+  *:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--focus-ring)), 0 0 0 4px hsl(var(--background));
+  }
+
+  button:focus-visible {
+    box-shadow: 0 0 0 2px hsl(var(--focus-ring)), 0 0 0 4px hsl(var(--background));
+  }
+}
+
+@layer utilities {
+  .surface-card {
+    border-color: hsl(var(--subtle-border));
+    background: hsl(var(--card));
+    box-shadow: var(--surface-shadow-card);
+  }
+
+  .surface-elevated {
+    border-color: hsl(var(--subtle-border));
+    background: hsl(var(--elevated-surface));
+    box-shadow: var(--surface-shadow-raised);
+  }
+
+  .surface-muted {
+    border-color: hsl(var(--subtle-border));
+    background: hsl(var(--muted-surface));
+  }
+
+  .surface-hero {
+    background:
+      radial-gradient(circle at top right, hsl(var(--gold-300) / 0.22), transparent 24%),
+      linear-gradient(135deg, hsl(24 18% 10%), hsl(28 20% 14%) 48%, hsl(var(--gold-800)) 100%);
+    box-shadow: var(--surface-shadow-hero);
+  }
+
+  .text-tertiary {
+    color: hsl(var(--tertiary-text));
+  }
+
+  .text-inverse {
+    color: hsl(var(--inverse-text));
+  }
+
+  .text-disabled {
+    color: hsl(var(--disabled-text));
+  }
+
+  .brand-divider {
+    background: linear-gradient(90deg, transparent, hsl(var(--gold-400) / 0.7), transparent);
+  }
+}

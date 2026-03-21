@@ -1,7 +1,8 @@
 // /Users/orperetz/Documents/AMS/apps/frontend/pages/_app.tsx
 import type { AppProps } from 'next/app';
-import { Inter, Heebo } from 'next/font/google';
+import { Fraunces, Heebo, Inter } from 'next/font/google';
 import '../styles/globals.css';
+import '../styles/premium-theme.css';
 import 'react-day-picker/dist/style.css';
 import Layout from '../components/Layout';
 import { AppProviders } from '../lib/providers';
@@ -22,9 +23,15 @@ const heebo = Heebo({
   display: 'swap',
 });
 
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-fraunces',
+  display: 'swap',
+});
+
 export default function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <div className={cn(inter.variable, heebo.variable, "font-sans")}>
+    <div className={cn(inter.variable, heebo.variable, fraunces.variable, "font-sans")}>
       <AppProviders>
         <Layout>
           <Component {...pageProps} />
