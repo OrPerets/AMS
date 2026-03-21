@@ -113,7 +113,6 @@ export const useTheme = () => {
 };
 
 // Direction Provider
-type Direction = "rtl" | "ltr";
 
 type DirectionProviderProps = {
   children: React.ReactNode;
