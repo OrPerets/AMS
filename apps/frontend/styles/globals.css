@@ -431,14 +431,14 @@
     .app-shell {
       grid-template-areas:
         "header"
-        "main"
-        "footer";
+        "main";
       grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
       min-height: 100dvh;
     }
 
     .app-main {
-      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
     }
   }
 

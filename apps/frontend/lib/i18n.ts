@@ -86,6 +86,10 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'shell.theme': 'ערכת נושא',
     'shell.language': 'שפה',
 
+    'bottomNav.label': 'ניווט ראשי',
+    'bottomNav.more': 'עוד',
+    'bottomNav.moreMenu': 'ניווט נוסף',
+
     'header.openMenu': 'פתח תפריט',
     'header.toggleSidebar': 'הסתר או הצג סרגל ניווט',
     'header.searchPlaceholder': 'חפש מסך, קריאה או בניין',
@@ -395,6 +399,10 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'shell.settings': 'Settings',
     'shell.theme': 'Theme',
     'shell.language': 'Language',
+
+    'bottomNav.label': 'Main navigation',
+    'bottomNav.more': 'More',
+    'bottomNav.moreMenu': 'More navigation',
 
     'header.openMenu': 'Open menu',
     'header.toggleSidebar': 'Show or hide navigation',
