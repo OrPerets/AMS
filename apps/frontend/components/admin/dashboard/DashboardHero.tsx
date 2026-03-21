@@ -31,7 +31,7 @@ export function DashboardHero({
   occupancyRate: number;
 }) {
   return (
-    <section className="surface-hero overflow-hidden rounded-2xl sm:rounded-[28px] border border-white/10 text-white">
+    <section className="dark-surface surface-hero overflow-hidden rounded-2xl sm:rounded-[28px] border border-white/10 text-white">
       <div className="grid gap-4 p-3.5 sm:gap-5 sm:p-5 lg:grid-cols-[1.15fr_0.85fr] lg:gap-8 lg:p-8">
         <div className="space-y-3.5 sm:space-y-5">
           <div className="space-y-2 sm:space-y-3">

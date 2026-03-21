@@ -189,36 +189,48 @@ export default function MayaDashboard() {
     const token = getAccessToken();
     if (token) {
       websocketService.connect(token);
-      
-      // Listen for new tickets
-      websocketService.on('new_ticket', (data: any) => {
+
+      const handleNewTicket = (data: any) => {
         toast({
           title: "קריאה חדשה!",
           description: `קריאה מספר ${data.ticket.id} נפתחה בבניין ${data.ticket.unit.building.name}`,
           variant: "default",
         });
         loadDashboardData(); // Refresh data
-      });
+      };
       
-      // Listen for ticket updates
-      websocketService.on('ticket_updated', (data: any) => {
+      const handleTicketUpdated = (data: any) => {
         toast({
           title: "עדכון קריאה",
           description: `קריאה מספר ${data.ticket.id} עודכנה`,
           variant: "default",
         });
         loadDashboardData(); // Refresh data
-      });
+      };
       
-      // Listen for notifications
-      websocketService.on('new_notification', (data: any) => {
+      const handleNewNotification = (data: any) => {
         toast({
           title: data.notification.title,
           description: data.notification.message,
           variant: "default",
         });
         loadDashboardData(); // Refresh data
-      });
+      };
+      
+      // Listen for new tickets
+      websocketService.on('new_ticket', handleNewTicket);
+      
+      // Listen for ticket updates
+      websocketService.on('ticket_updated', handleTicketUpdated);
+      
+      // Listen for notifications
+      websocketService.on('new_notification', handleNewNotification);
+
+      return () => {
+        websocketService.off('new_ticket', handleNewTicket);
+        websocketService.off('ticket_updated', handleTicketUpdated);
+        websocketService.off('new_notification', handleNewNotification);
+      };
     }
     
     // Fallback polling in case WebSocket fails
@@ -226,9 +238,6 @@ export default function MayaDashboard() {
     
     return () => {
       clearInterval(interval);
-      websocketService.off('new_ticket', () => {});
-      websocketService.off('ticket_updated', () => {});
-      websocketService.off('new_notification', () => {});
     };
   }, []);
 
