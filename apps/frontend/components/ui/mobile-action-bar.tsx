@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Sparkles, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from './button';
+import { useRegisterBottomSurface } from '../../lib/bottom-surface';
 
 type MobileActionBarProps = {
   title: React.ReactNode;
@@ -19,9 +20,14 @@ export function MobileActionBar({
   className,
 }: MobileActionBarProps) {
   const [open, setOpen] = React.useState(false);
+  const { refCallback, essentialOffset } = useRegisterBottomSurface('mobile-action-bar', 'contextual');
 
   return (
-    <div className={cn('mobile-bottom-bar lg:hidden', className)}>
+    <div
+      ref={refCallback}
+      className={cn('mobile-bottom-bar lg:hidden', className)}
+      style={{ bottom: `${essentialOffset}px` }}
+    >
       <div className="safe-pb safe-px flex justify-center pt-2">
         <div className="pointer-events-auto thumb-zone w-full max-w-md">
           <div className="rounded-2xl border border-subtle-border/80 bg-card/97 p-1.5 shadow-elevation-3 backdrop-blur-xl">

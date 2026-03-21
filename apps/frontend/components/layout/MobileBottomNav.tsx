@@ -28,6 +28,7 @@ import {
 import { cn } from '../../lib/utils';
 import { useDirection, useLocale } from '../../lib/providers';
 import { getTokenPayload } from '../../lib/auth';
+import { useRegisterBottomSurface } from '../../lib/bottom-surface';
 
 type NavItem = {
   label: string;
@@ -169,6 +170,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   const [moreOpen, setMoreOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const moreSheetRef = React.useRef<HTMLDivElement>(null);
+  const { refCallback: navRef } = useRegisterBottomSurface('mobile-bottom-nav', 'essential');
 
   useEffect(() => {
     setMounted(true);
@@ -221,6 +223,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   return (
     <>
       <nav
+        ref={navRef}
         className={cn(
           'fixed inset-x-0 bottom-0 z-40 border-t bg-background/92 backdrop-blur-lg md:hidden',
           'safe-pb thumb-zone',

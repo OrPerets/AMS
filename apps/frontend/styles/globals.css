@@ -195,6 +195,9 @@
     --pwa-right-inset: env(safe-area-inset-right, 0px);
     --pwa-bottom-inset: env(safe-area-inset-bottom, 0px);
     --pwa-left-inset: env(safe-area-inset-left, 0px);
+
+    --bottom-surface-offset: 0px;
+    --bottom-essential-offset: 0px;
   }
 
   .dark {
@@ -438,7 +441,10 @@
     }
 
     .app-main {
-      padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: max(
+        calc(60px + env(safe-area-inset-bottom, 0px)),
+        var(--bottom-surface-offset, 0px)
+      );
     }
   }
 
@@ -572,6 +578,10 @@
     bottom: 0;
     z-index: 40;
     pointer-events: none;
+  }
+
+  .z-45 {
+    z-index: 45;
   }
 
   .thumb-zone {
