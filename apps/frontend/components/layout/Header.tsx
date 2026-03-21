@@ -112,16 +112,16 @@ export default function Header({
 
   return (
     <header className={cn(
-      "sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-sm",
+      "sticky top-0 z-40 w-full border-b bg-background/85 backdrop-blur-md",
       className
     )}>
-      <div className="container flex h-16 items-center justify-between gap-2 px-3 sm:px-6">
+      <div className="container flex h-14 sm:h-16 items-center justify-between gap-1.5 sm:gap-2 px-3 sm:px-6">
         {/* Left section: Menu & Logo */}
-        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-4">
           {/* Mobile menu button */}
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
             onClick={onMenuClick}
             className="md:hidden"
           >
@@ -145,8 +145,8 @@ export default function Header({
           </Button>
 
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
+          <Link href="/" className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs sm:text-sm">
               A
             </div>
             <span className="hidden truncate font-bold md:inline-block">
@@ -173,12 +173,12 @@ export default function Header({
         </div>
 
         {/* Right section: Controls & User Menu */}
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-0.5 sm:gap-1.5">
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
             onClick={onCommandPaletteOpen}
-            className="h-9 w-9 shrink-0"
+            className="shrink-0 sm:h-9 sm:w-9"
             aria-label={t('header.openCommandPalette')}
           >
             <Search className="h-4 w-4" />
@@ -188,9 +188,9 @@ export default function Header({
           {mounted && (
             <Button
               variant="ghost"
-              size="icon"
+              size="icon-sm"
               onClick={toggleTheme}
-              className="h-9 w-9 shrink-0"
+              className="hidden sm:inline-flex sm:h-9 sm:w-9 shrink-0"
             >
               {theme === 'light' ? (
                 <Moon className="h-4 w-4" />
@@ -206,13 +206,13 @@ export default function Header({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                size="icon"
-                className="relative h-9 w-9 shrink-0"
+                size="icon-sm"
+                className="relative shrink-0 sm:h-9 sm:w-9"
                 aria-label={t('header.notifications')}
               >
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
-                  <span className="absolute -end-1 -top-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                  <span className="absolute -end-0.5 -top-0.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
                     {unreadCount}
                   </span>
                 )}
@@ -266,9 +266,9 @@ export default function Header({
           {mounted && (
             <Button
               variant="ghost"
-              size="icon"
+              size="icon-sm"
               onClick={toggleDirection}
-              className="hidden h-9 w-9 shrink-0 sm:inline-flex"
+              className="hidden shrink-0 sm:inline-flex sm:h-9 sm:w-9"
               aria-label={t('header.toggleLocale')}
             >
               <Globe className="h-4 w-4" />

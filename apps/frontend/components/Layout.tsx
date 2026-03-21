@@ -168,14 +168,14 @@ export default function Layout({ children }: Props) {
       )} id="main-content" tabIndex={-1}>
         {/* Breadcrumbs */}
         <div className="border-b bg-background/85 backdrop-blur-sm">
-          <div className="container px-3 py-3 sm:px-6">
+          <div className="container px-3 py-2 sm:px-6 sm:py-3">
             <Breadcrumbs />
           </div>
         </div>
 
         {/* Page Content */}
         <div className="flex-1 overflow-x-hidden overflow-y-auto min-h-0" data-scroll-container="app">
-          <div className="container min-h-full px-3 py-4 sm:px-6 sm:py-6 safe-pb">
+          <div className="container min-h-full px-3 py-3 sm:px-6 sm:py-6 safe-pb">
             <ErrorBoundary fallback={CompactErrorFallback}>
               {children}
             </ErrorBoundary>
