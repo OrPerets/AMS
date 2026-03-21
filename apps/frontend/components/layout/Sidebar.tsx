@@ -378,7 +378,7 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
         </div>
         
         <TooltipProvider delayDuration={150}>
-          <nav className="flex-1 space-y-6 overflow-y-auto p-4">
+          <nav className="scrollbar-hide flex-1 space-y-6 overflow-y-auto p-4">
             {navigationGroups.map((group) => {
               const filteredItems = group.items.filter(item => item.roles.includes(userRole));
               if (filteredItems.length === 0) return null;
@@ -474,7 +474,7 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
           </Button>
         </div>
         
-        <nav className="flex-1 space-y-6 overflow-y-auto px-4 py-4">
+        <nav className="scrollbar-hide flex-1 space-y-6 overflow-y-auto px-4 py-4">
           {navigationGroups.map((group) => {
             const filteredItems = group.items.filter(item => item.roles.includes(userRole));
             if (filteredItems.length === 0) return null;
