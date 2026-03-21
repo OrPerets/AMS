@@ -32,9 +32,9 @@ export function DashboardHero({
 }) {
   return (
     <section className="surface-hero overflow-hidden rounded-[30px] border border-white/10 text-white">
-      <div className="grid gap-8 p-6 lg:grid-cols-[1.15fr_0.85fr] lg:p-8">
-        <div className="space-y-6">
-          <div className="space-y-3">
+      <div className="grid gap-5 p-4 sm:gap-6 sm:p-5 lg:grid-cols-[1.15fr_0.85fr] lg:gap-8 lg:p-8">
+        <div className="space-y-5 sm:space-y-6">
+          <div className="space-y-2.5 sm:space-y-3">
             <div className="flex items-center gap-3">
               <Badge variant="outline" className="border-white/20 bg-white/10 text-white">
                 מרכז שליטה לפעילות השוטפת
@@ -45,19 +45,19 @@ export function DashboardHero({
               </span>
             </div>
             <div className="space-y-2">
-              <p className="text-lg font-medium text-white/70">{getGreeting()}</p>
-              <h1 className="text-4xl font-black tracking-tight">לוח בקרה ניהולי</h1>
-              <p className="max-w-2xl text-base leading-7 text-slate-200">
+              <p className="text-sm font-medium text-white/82 sm:text-base">{getGreeting()}</p>
+              <h1 className="max-w-[11ch] text-[2rem] font-black leading-[1.02] tracking-[-0.03em] sm:text-[2.45rem] lg:text-5xl">לוח בקרה ניהולי</h1>
+              <p className="max-w-2xl text-sm leading-6 text-white/86 sm:text-[15px] sm:leading-7">
                 {`כרגע יש ${data.portfolioKpis.openTickets} קריאות פתוחות, ${data.portfolioKpis.slaBreaches} חריגות SLA ויתרת חוב של `}
                 <strong>{new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 0 }).format(data.portfolioKpis.unpaidBalance)}</strong>.
               </p>
-              <p className="max-w-2xl text-sm leading-6 text-slate-300">
+              <p className="max-w-2xl text-sm leading-6 text-white/72">
                 המדדים המבצעיים נשארים חיים, בעוד שהחלון שנבחר משפיע על סגירות, פעילות משתמשים, התראות ותחזוקה קרובה.
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3">
             <Button asChild className="bg-white text-slate-950 hover:bg-slate-100">
               <Link href="/tickets">צפה בקריאות</Link>
             </Button>
@@ -76,10 +76,10 @@ export function DashboardHero({
           </div>
         </div>
 
-        <div className="space-y-4 self-start rounded-[26px] border border-white/10 bg-white/5 p-4 backdrop-blur">
+        <div className="space-y-4 self-start rounded-[24px] border border-white/10 bg-black/18 p-3.5 backdrop-blur sm:rounded-[26px] sm:p-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">בניין</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-white/62">בניין</p>
               <Select value={buildingId} onValueChange={setBuildingId}>
                 <SelectTrigger className="border-white/10 bg-slate-950/30 text-white">
                   <SelectValue placeholder="כל הבניינים" />
@@ -96,7 +96,7 @@ export function DashboardHero({
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">טווח זמן</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-white/62">טווח זמן</p>
               <Select value={range} onValueChange={setRange}>
                 <SelectTrigger className="border-white/10 bg-slate-950/30 text-white">
                   <SelectValue />
@@ -110,7 +110,7 @@ export function DashboardHero({
             </div>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-2.5 sm:gap-3 md:grid-cols-2 xl:grid-cols-4">
             <HeroMetric label="תפוסה" value={`${occupancyRate}%`} sublabel={`${data.portfolioKpis.occupiedUnits} יחידות מאוכלסות`} />
             <HeroMetric label="נפתחו בטווח" value={data.portfolioKpis.createdInRange} sublabel={data.filters.rangeLabel} />
             <HeroMetric label="נסגרו בטווח" value={data.portfolioKpis.resolvedInRange} sublabel={`היום: ${data.portfolioKpis.resolvedToday}`} />
@@ -136,10 +136,10 @@ function HeroMetric({
   sublabel: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-      <p className="text-xs font-medium text-slate-400">{label}</p>
-      <p className="mt-1.5 text-2xl font-bold">{value}</p>
-      <p className="mt-2 text-xs text-slate-300">{sublabel}</p>
+    <div className="rounded-[20px] border border-white/10 bg-black/18 p-3.5 sm:rounded-2xl sm:p-4">
+      <p className="text-[11px] font-medium text-white/62">{label}</p>
+      <p className="mt-1 text-[1.55rem] font-bold leading-none sm:mt-1.5 sm:text-2xl">{value}</p>
+      <p className="mt-1.5 text-xs leading-5 text-white/78 sm:mt-2">{sublabel}</p>
     </div>
   );
 }

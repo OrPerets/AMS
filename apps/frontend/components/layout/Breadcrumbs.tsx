@@ -45,7 +45,7 @@ export default function Breadcrumbs() {
       finance: t('nav.group.finance'),
       budgets: t('nav.budgets'),
       reports: t('nav.financeReports'),
-      analytics: 'Analytics',
+      analytics: 'ניתוח פיננסי',
       'unpaid-invoices': t('nav.unpaidInvoices'),
       // System
       notifications: t('nav.notifications'),

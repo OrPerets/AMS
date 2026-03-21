@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Bell, Wrench } from 'lucide-react';
 import { Badge } from '../../ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
+import { getNotificationTypeLabel, getPriorityLabel } from '../../../lib/utils';
 import { DashboardResponse } from './types';
 import { LoadBadge, MetricPill } from './primitives';
 
@@ -132,7 +133,7 @@ export function OperationalGrid({
                         <p className="text-sm text-muted-foreground">{item.buildingName}</p>
                       </div>
                       <Badge variant={item.priority === 'CRITICAL' || item.priority === 'HIGH' ? 'warning' : 'outline'}>
-                        {item.priority}
+                        {getPriorityLabel(item.priority)}
                       </Badge>
                     </div>
                     <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
@@ -162,7 +163,7 @@ export function OperationalGrid({
                 >
                   <div className="mb-2 flex items-center justify-between gap-3">
                     <p className={`font-semibold ${!item.read ? 'text-foreground' : 'text-muted-foreground'}`}>{item.title}</p>
-                    <Badge variant={!item.read ? 'default' : 'outline'}>{item.type || 'SYSTEM'}</Badge>
+                    <Badge variant={!item.read ? 'default' : 'outline'}>{getNotificationTypeLabel(item.type || 'SYSTEM')}</Badge>
                   </div>
                   <p className="text-sm leading-6 text-muted-foreground">{item.message}</p>
                   <p className="mt-2 text-xs text-tertiary">

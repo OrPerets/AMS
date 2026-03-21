@@ -181,8 +181,8 @@ export default function VotesPage() {
   return (
     <div className="space-y-8">
       <PageHero
-        kicker="Sprint 3 page quality pass"
-        eyebrow={<StatusBadge label="Resident Governance" tone="finance" />}
+        kicker="ניהול החלטות בניין"
+        eyebrow={<StatusBadge label="ממשל דיירים" tone="finance" />}
         title="הצבעות בניין"
         description="המסך אוחד לשפה המשותפת: בחירת בניין אמיתית, חלוקה בין סבבים פעילים/עתידיים/סגורים, ומשובי כשלון ברורים במקום לוגיקה קשיחה."
         actions={

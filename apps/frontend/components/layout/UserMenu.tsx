@@ -17,6 +17,7 @@ import {
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { getTokenPayload, logout } from '../../lib/auth';
 import { useLocale } from '../../lib/providers';
+import { getUserRoleLabel } from '../../lib/utils';
 
 export default function UserMenu() {
   const router = useRouter();
@@ -57,14 +58,7 @@ export default function UserMenu() {
           ACCOUNTANT: 'Accountant',
           MASTER: 'Master access',
         }
-      : {
-          ADMIN: 'מנהל מערכת',
-          PM: 'מנהל בניין',
-          TECH: 'טכנאי שטח',
-          RESIDENT: 'דייר',
-          ACCOUNTANT: 'חשבונות',
-          MASTER: 'גישה ראשית',
-        };
+      : {};
 
   const handleLogout = () => {
     logout();
@@ -88,7 +82,7 @@ export default function UserMenu() {
               {displayName}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
-              {roleLabels[currentRole] || currentRole}
+              {roleLabels[currentRole] || getUserRoleLabel(currentRole)}
               {isImpersonating && (
                 <span className="ms-1 text-warning">({t('userMenu.impersonating')})</span>
               )}

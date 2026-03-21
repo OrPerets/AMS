@@ -130,6 +130,88 @@ export function humanizeEnum(value: string): string {
     .join(' ');
 }
 
+export function getUserRoleLabel(role: string): string {
+  const labels: Record<string, string> = {
+    ADMIN: 'מנהל מערכת',
+    PM: 'מנהל נכס',
+    TECH: 'טכנאי שטח',
+    RESIDENT: 'דייר',
+    ACCOUNTANT: 'חשבונות',
+    MASTER: 'גישה ראשית',
+  };
+
+  return labels[role?.toUpperCase()] || humanizeEnum(role);
+}
+
+export function getPriorityLabel(priority: string): string {
+  const labels: Record<string, string> = {
+    LOW: 'נמוכה',
+    MEDIUM: 'בינונית',
+    HIGH: 'גבוהה',
+    URGENT: 'דחופה',
+    CRITICAL: 'קריטית',
+  };
+
+  return labels[priority?.toUpperCase()] || humanizeEnum(priority);
+}
+
+export function getNotificationTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    SYSTEM: 'מערכת',
+    PAYMENT: 'תשלום',
+    MAINTENANCE: 'תחזוקה',
+    TICKET: 'קריאה',
+    ANNOUNCEMENT: 'הודעה',
+    REMINDER: 'תזכורת',
+    EMERGENCY: 'חירום',
+  };
+
+  return labels[type?.toUpperCase()] || humanizeEnum(type);
+}
+
+export function getDataQualitySummaryLabel(key: string): string {
+  const labels: Record<string, string> = {
+    residentPhones: 'טלפונים כפולים לדיירים',
+    supplierContacts: 'אנשי קשר כפולים לספקים',
+    unitNumbers: 'מספרי יחידות כפולים',
+    buildingsMissingFields: 'בניינים עם חוסרים',
+    unitsMissingFields: 'יחידות עם חוסרים',
+    suppliersMissingFields: 'ספקים עם חוסרים',
+    contractsMissingFields: 'חוזים עם חוסרים',
+    inactiveBuildings: 'בניינים לא פעילים',
+    inactiveUnits: 'יחידות לא פעילות',
+    buildingsWithoutUnits: 'בניינים ללא יחידות',
+    unitsWithoutResidents: 'יחידות ללא דיירים',
+    invalidDocumentLinks: 'קישורי מסמכים לא תקינים',
+  };
+
+  return labels[key] || humanizeEnum(key);
+}
+
+export function getDashboardWidgetGroupLabel(group: string): string {
+  const labels: Record<string, string> = {
+    overview: 'סקירה',
+    operations: 'תפעול',
+    risk: 'סיכונים',
+    system: 'מערכת',
+  };
+
+  return labels[group] || humanizeEnum(group);
+}
+
+export function getAuditActionLabel(action: string): string {
+  const labels: Record<string, string> = {
+    IMPERSONATION_STARTED: 'התחזות החלה',
+    IMPERSONATION_ENDED: 'התחזות הסתיימה',
+    LOGIN: 'כניסה למערכת',
+    LOGOUT: 'יציאה מהמערכת',
+    PASSWORD_RESET: 'איפוס סיסמה',
+    USER_UPDATED: 'פרטי משתמש עודכנו',
+  };
+
+  return labels[action?.toUpperCase()] || humanizeEnum(action);
+}
+
 export function getTicketStatusTone(status: string): 'neutral' | 'active' | 'success' | 'warning' | 'danger' {
   switch (status?.toUpperCase()) {
     case 'RESOLVED':

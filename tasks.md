@@ -497,6 +497,69 @@ The app should be comfortable, legible, and thumb-friendly for residents and fie
 
 ---
 
+## Sprint 7.5 — Mobile Hebrew Readability and Dark-Surface Cleanup
+
+**Goal:** Resolve the mobile issues visible in the current screenshots so the app reads clearly, stays fully Hebrew, and feels intentionally composed on dark branded surfaces.
+
+### Experience target
+
+On mobile, every key screen should feel calm and readable: smaller but confident typography, cleaner spacing, stronger contrast on black/gold surfaces, and no leftover English labels anywhere in the flow.
+
+### Step-by-step TODO
+
+#### 1. Fix readability on black / dark branded areas
+
+- [x] Audit all dark hero, dashboard, and metric surfaces for low-contrast text, weak hierarchy, and washed-out secondary copy.
+- [x] Raise contrast for secondary and tertiary text on black/brown branded surfaces without breaking the palette.
+- [x] Reduce visual noise inside dark sections by removing unnecessary nested outlines, duplicate surface treatments, and low-value text blocks.
+- [x] Ensure dark-surface cards use one clear hierarchy:
+  - section label,
+  - primary number or headline,
+  - one short supporting line.
+- [ ] Validate readability on real Android mobile screenshots, not desktop browser emulation only.
+
+#### 2. Resize mobile typography and spacing
+
+- [x] Add mobile-specific type ramps for Hebrew headings, KPI numerals, labels, helper text, and CTA buttons.
+- [x] Reduce oversized hero and dashboard text on small phones while preserving brand presence.
+- [x] Rebalance line-length, line-height, and vertical spacing so large Hebrew headings do not break awkwardly across 2 to 4 lines.
+- [x] Review all cards and stacked sections for excessive height caused by desktop spacing values leaking into mobile.
+- [x] Confirm primary actions remain prominent after typography downsizing.
+
+#### 3. Eliminate leftover English from the app
+
+- [x] Audit resident, manager, and admin mobile screens for untranslated strings such as breadcrumbs, KPI labels, filter labels, severity chips, and category names.
+- [x] Replace mixed-language UI states where Hebrew labels still include English values such as `HIGH`, `NORMAL`, `total`, `contracts`, `compliance`, and `maintenance`.
+- [x] Ensure empty states, chart labels, enum mappings, and dynamically loaded backend values also resolve to Hebrew.
+- [x] Add a regression checklist for mixed-language screens before each release.
+
+Regression checklist before each release:
+- resident hero / requests / votes first viewport
+- manager-admin dashboard hero, notifications, maintenance, and configuration screens
+- breadcrumbs, role labels, KPI/supporting copy, severity and priority chips
+- dynamically loaded enum values for status, role, notification type, maintenance priority, and data-quality summaries
+
+#### 4. Apply the attached frontend composition rules to mobile screens
+
+- [x] Rework the first viewport of branded mobile screens so each reads as one composition instead of a stack of unrelated cards.
+- [x] Keep the product or section identity as a hero-level signal and prevent supporting copy or utility controls from overpowering it.
+- [x] Remove card-like treatment from sections that do not need container affordance, especially in hero areas.
+- [x] Preserve the existing palette and product flow while adding:
+  - stronger full-bleed branded surfaces,
+  - clearer single-purpose sections,
+  - one dominant action group per viewport,
+  - subtle motion for hierarchy rather than decoration.
+- [x] Confirm every updated mobile screen still works on desktop without introducing a split visual language.
+
+### Acceptance criteria
+
+- No mobile screenshot shows unreadable light-gray text on dark branded backgrounds.
+- No key mobile screen uses desktop-sized typography or oversized spacing.
+- No English UI strings remain in Hebrew production flows.
+- The first viewport of resident and manager mobile screens reads as one branded composition with one clear primary action.
+
+---
+
 ## Sprint 8 — “Wow” Layer: Delight, Intelligence, and Memorable Differentiators
 
 **Goal:** Add the features that make the product feel special, modern, and hard to forget.
@@ -638,6 +701,9 @@ Users should not merely say “it works”; they should say “this is smart” 
 - [ ] supplier assignment UI
 - [ ] mobile sidebar rebuild
 - [ ] mobile camera-first upload
+- [ ] mobile dark-surface readability pass
+- [ ] mobile Hebrew typography downscale
+- [ ] full Hebrew localization audit for dashboard and reporting screens
 - [ ] tech workload visualization
 - [ ] configuration center for admins
 

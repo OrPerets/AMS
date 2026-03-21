@@ -67,51 +67,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(201,156,72,0.14),_transparent_28%),linear-gradient(180deg,_rgba(250,247,240,0.96),_rgba(245,240,230,0.82))] px-4 py-8">
       <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="surface-hero overflow-hidden rounded-[34px] border border-white/10 px-6 py-8 text-white lg:px-8 lg:py-10">
-          <div className="mb-6 flex justify-end">
-            <Button variant="outline" size="sm" className="border-white/15 bg-white/8 text-white hover:bg-white/12" onClick={toggleLocale}>
-              <Globe className="me-2 h-4 w-4" />
-              {t('login.switchLanguage')}
-            </Button>
-          </div>
-          <div className="space-y-8">
-            <div className="flex flex-wrap items-center gap-3">
-              <StatusBadge label={t('login.badgeBrand')} tone="finance" className="border-white/15 bg-white/10 text-white" />
-              <StatusBadge label={t('login.badgePalette')} tone="success" className="border-emerald-300/20 bg-emerald-400/10 text-emerald-100" />
-            </div>
-
-            <div className="space-y-4">
-              <div className="inline-flex h-16 w-16 items-center justify-center rounded-[22px] border border-white/10 bg-white/10 text-white shadow-card">
-                <Building2 className="h-8 w-8" />
-              </div>
-              <div className="space-y-3">
-                <p className="text-sm font-semibold uppercase tracking-[0.28em] text-white/60">{t('login.eyebrow')}</p>
-                <h1 className="max-w-xl text-5xl text-white lg:text-6xl">{t('login.title')}</h1>
-                <p className="max-w-2xl text-base leading-7 text-white/72">
-                  {t('login.description')}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[24px] border border-white/10 bg-black/10 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-white/50">{t('login.brandCardTitle')}</p>
-                <p className="mt-3 text-2xl font-black">01</p>
-                <p className="mt-2 text-sm text-white/70">{t('login.brandCardBody')}</p>
-              </div>
-              <div className="rounded-[24px] border border-white/10 bg-black/10 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-white/50">{t('login.flowCardTitle')}</p>
-                <p className="mt-3 text-2xl font-black">02</p>
-                <p className="mt-2 text-sm text-white/70">{t('login.flowCardBody')}</p>
-              </div>
-              <div className="rounded-[24px] border border-white/10 bg-black/10 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-white/50">{t('login.trustCardTitle')}</p>
-                <p className="mt-3 text-2xl font-black">03</p>
-                <p className="mt-2 text-sm text-white/70">{t('login.trustCardBody')}</p>
-              </div>
-            </div>
-          </div>
-        </section>
 
         <Card variant="featured" className="mx-auto w-full max-w-xl rounded-[32px] border-primary/20">
           <CardHeader className="space-y-4 pb-6 text-center">

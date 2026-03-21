@@ -29,7 +29,7 @@ import { SectionHeader } from '../../components/ui/section-header';
 import { Switch } from '../../components/ui/switch';
 import { StatusBadge } from '../../components/ui/status-badge';
 import { toast } from '../../components/ui/use-toast';
-import { formatCurrency, formatDate, getStatusLabel, getTicketStatusTone, humanizeEnum } from '../../lib/utils';
+import { formatCurrency, formatDate, getPriorityLabel, getStatusLabel, getTicketStatusTone, getUserRoleLabel, humanizeEnum } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
 import { websocketService } from '../../lib/websocket';
 import { triggerHaptic } from '../../lib/mobile';
@@ -158,10 +158,24 @@ function translateCardBrand(value?: string | null) {
     amex: 'אמריקן אקספרס',
     diners: 'דיינרס',
     tranzila: 'טרנזילה',
-    stripe: 'Stripe',
+    stripe: 'סטרייפ',
   };
   if (!value) return 'כרטיס שמור';
   return labels[value.toLowerCase()] || value;
+}
+
+function translateLedgerType(type: string) {
+  const labels: Record<string, string> = {
+    INVOICE: 'חשבונית',
+    PAYMENT: 'תשלום',
+    REFUND: 'זיכוי',
+    CREDIT: 'זיכוי',
+    DEBIT: 'חיוב',
+    LATE_FEE: 'עמלת פיגור',
+    ADJUSTMENT: 'התאמה',
+  };
+
+  return labels[type?.toUpperCase()] || humanizeEnum(type);
 }
 
 function mapPaymentStatus(status: string) {
@@ -230,8 +244,8 @@ function getTicketTimeline(ticket: AccountContext['tickets'][number]): TicketTim
       id: `work-order-${workOrder.id}`,
       title: workOrder.status === 'COMPLETED' ? 'הטיפול הושלם בשטח' : 'הוזמן ספק לטיפול',
       description: workOrder.supplier?.name
-        ? `הספק ${workOrder.supplier.name} עודכן בסטטוס ${humanizeEnum(workOrder.status)}.`
-        : `נוצרה הזמנת עבודה והסטטוס הוא ${humanizeEnum(workOrder.status)}.`,
+        ? `הספק ${workOrder.supplier.name} עודכן בסטטוס ${getStatusLabel(workOrder.status, 'he')}.`
+        : `נוצרה הזמנת עבודה והסטטוס הוא ${getStatusLabel(workOrder.status, 'he')}.`,
       createdAt: workOrder.createdAt,
       tone: workOrder.status === 'COMPLETED' ? ('success' as const) : ('active' as const),
     })),
@@ -488,7 +502,7 @@ export default function ResidentAccountPage() {
         .map((invoice) => ['חשבונית', invoice.issueDate || invoice.dueDate, invoice.description, invoice.amount, translateInvoiceStatus(invoice.status)]),
       ...finance.ledger
         .filter((entry) => new Date(entry.createdAt).getFullYear() === year)
-        .map((entry) => ['תנועת חשבון', entry.createdAt, entry.summary, entry.amount, humanizeEnum(entry.type)]),
+        .map((entry) => ['תנועת חשבון', entry.createdAt, entry.summary, entry.amount, translateLedgerType(entry.type)]),
     ];
 
     if (rows.length === 1) {
@@ -573,7 +587,7 @@ export default function ResidentAccountPage() {
   return (
     <div className="space-y-8 pb-28 lg:pb-0">
       <PageHero
-        kicker="Resident self-service"
+        kicker="שירות עצמי לדייר"
         eyebrow={<StatusBadge label="האזור האישי" tone="finance" />}
         title="האזור האישי של הדייר"
         description={`שלום ${accountDisplayName}, ריכזנו במקום אחד את מה שצריך לדעת עכשיו: תשלום קרוב, פניות פתוחות, מסמכים חדשים ופרטי הבניין.`}
@@ -597,7 +611,7 @@ export default function ResidentAccountPage() {
           </>
         }
         aside={
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
             <SummaryCard label="פניות פתוחות" value={openTickets.length} description="קריאות שירות שממתינות לעדכון" />
             <SummaryCard
               label="תשלום קרוב"
@@ -647,7 +661,7 @@ export default function ResidentAccountPage() {
               <div className="rounded-[22px] border border-subtle-border bg-muted/30 p-4">
                 <div className="text-sm font-semibold text-foreground">{context.user.email}</div>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                  <Badge variant="finance">{context.user.role === 'RESIDENT' ? 'דייר' : context.user.role}</Badge>
+                  <Badge variant="finance">{getUserRoleLabel(context.user.role)}</Badge>
                   {context.user.phone ? (
                     <span className="inline-flex items-center gap-1.5">
                       <Phone className="h-3.5 w-3.5" />
@@ -748,7 +762,7 @@ export default function ResidentAccountPage() {
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-1">
                           <div className="font-semibold text-foreground">
-                            {translateCardBrand(method.brand || method.provider)} •••• {method.last4 || 'XXXX'}
+                            {translateCardBrand(method.brand || method.provider)} •••• {method.last4 || '••••'}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             תוקף {method.expMonth || '--'}/{method.expYear || '--'}{method.networkTokenized ? ' · נשמר בצורה מאובטחת' : ''}
@@ -902,7 +916,7 @@ export default function ResidentAccountPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <StatusBadge label={getStatusLabel(ticket.status, 'he')} tone={getTicketStatusTone(ticket.status)} />
                           <Badge variant="outline">קריאה #{ticket.id}</Badge>
-                          {ticket.severity ? <Badge variant={ticket.severity === 'URGENT' ? 'warning' : 'outline'}>{humanizeEnum(ticket.severity)}</Badge> : null}
+                          {ticket.severity ? <Badge variant={ticket.severity === 'URGENT' ? 'warning' : 'outline'}>{getPriorityLabel(ticket.severity)}</Badge> : null}
                         </div>
                         <div>
                           <div className="font-semibold text-foreground">{ticket.unit.building.name} · דירה {ticket.unit.number}</div>

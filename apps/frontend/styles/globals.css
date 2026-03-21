@@ -648,6 +648,24 @@
   }
 }
 
+@media (max-width: 640px) {
+  @layer base {
+    body {
+      font-size: 0.97rem;
+    }
+  }
+
+  @layer utilities {
+    .page-kpi-grid {
+      @apply gap-3;
+    }
+
+    .page-filter-bar {
+      @apply gap-2.5;
+    }
+  }
+}
+
 /* Animation performance optimizations */
 @media (prefers-reduced-motion: reduce) {
   * {

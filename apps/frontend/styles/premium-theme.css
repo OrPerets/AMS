@@ -136,15 +136,27 @@
   }
 
   h1 {
-    font-size: 2.25rem;
+    font-size: 2rem;
   }
 
   h2 {
-    font-size: 1.875rem;
+    font-size: 1.65rem;
   }
 
   h3 {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
+  }
+
+  @media (max-width: 640px) {
+    body {
+      line-height: 1.58;
+    }
+
+    h1,
+    h2,
+    h3 {
+      text-wrap: balance;
+    }
   }
 
   @media (min-width: 768px) {
@@ -208,6 +220,14 @@
       radial-gradient(circle at top right, hsl(var(--gold-300) / 0.22), transparent 24%),
       linear-gradient(135deg, hsl(24 18% 10%), hsl(28 20% 14%) 48%, hsl(var(--gold-800)) 100%);
     box-shadow: var(--surface-shadow-hero);
+  }
+
+  @media (max-width: 640px) {
+    .surface-hero {
+      background:
+        radial-gradient(circle at top right, hsl(var(--gold-300) / 0.18), transparent 26%),
+        linear-gradient(160deg, hsl(24 18% 10%), hsl(28 18% 13%) 54%, hsl(var(--gold-800)) 100%);
+    }
   }
 
   .text-tertiary {

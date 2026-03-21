@@ -149,7 +149,7 @@ export default function HomePage() {
               </Badge>
             </>
           }
-          kicker="Sprint 8 / Personalized experience"
+          kicker="מרכז עבודה מותאם אישית"
           title={snapshot.headline}
           description={snapshot.description}
           actions={
@@ -167,7 +167,7 @@ export default function HomePage() {
           }
           aside={
             <div className="space-y-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-white/55">רגעים שדורשים ממך תשומת לב</div>
+              <div className="text-xs tracking-[0.18em] text-white/68">רגעים שדורשים ממך תשומת לב</div>
               <div className="grid gap-3">
                 {snapshot.metrics.slice(0, 3).map((metric) => (
                   <div key={metric.label} className="rounded-[22px] border border-white/10 bg-white/5 p-4">
@@ -201,7 +201,7 @@ export default function HomePage() {
             <SectionHeader
               title="הפעולה הבאה שכדאי לבצע"
               subtitle="המערכת כבר ממיינת מה הכי חשוב לפי התפקיד, הסיכון והעומסים הנוכחיים."
-              meta="Next-best-action"
+              meta="הפעולה הבאה"
             />
           </CardHeader>
           <CardContent className="space-y-3">
@@ -231,7 +231,7 @@ export default function HomePage() {
             <SectionHeader
               title={snapshot.spotlightTitle}
               subtitle={snapshot.spotlightDescription}
-              meta="Predictive + premium"
+              meta="חיזוי והכוונה"
             />
           </CardHeader>
           <CardContent className="space-y-3">
@@ -263,7 +263,7 @@ export default function HomePage() {
           <SectionHeader
             title={snapshot.digestTitle}
             subtitle="המערכת מייצרת עבורך ניסוח שבועי מוכן לשיתוף או להעתקה."
-            meta="Auto digest"
+            meta="סיכום אוטומטי"
             actions={
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => navigator.clipboard.writeText(snapshot.digestMarkdown)}>

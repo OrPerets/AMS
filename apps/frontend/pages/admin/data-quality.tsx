@@ -5,6 +5,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { toast } from '../../components/ui/use-toast';
+import { getDataQualitySummaryLabel } from '../../lib/utils';
 
 type DataQualityReport = {
   summary: Record<string, number>;
@@ -71,7 +72,7 @@ export default function AdminDataQualityPage() {
         {summaryEntries.map(([key, value]) => (
           <Card key={key}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{key}</CardTitle>
+              <CardTitle className="text-sm">{getDataQualitySummaryLabel(key)}</CardTitle>
             </CardHeader>
             <CardContent className="text-2xl font-semibold">{value}</CardContent>
           </Card>

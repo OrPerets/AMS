@@ -6,49 +6,50 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { PageHero } from '../../components/ui/page-hero';
 import { SectionHeader } from '../../components/ui/section-header';
 import { ADMIN_DASHBOARD_WIDGETS, DASHBOARD_WIDGET_GROUP_ORDER } from '../../components/admin/dashboard/widget-registry';
+import { getDashboardWidgetGroupLabel, getUserRoleLabel } from '../../lib/utils';
 
 const configurationSections = [
   {
     id: 'branding',
-    title: 'Branding',
+    title: 'מיתוג',
     icon: Brush,
-    status: 'foundation ready',
+    status: 'תשתית מוכנה',
     summary: 'מאגד את נכסי המותג, זהות שולח, וצבעי המערכת למבנה שניתן להפוך בהמשך להגדרות דייר אמיתיות.',
     bullets: ['צבעי המותג החדשים כבר חלים בדשבורד.', 'השלב הבא: העלאת לוגו/שם מותג ברמת דייר.', 'יש לשמור על טוקנים, לא צבעים קשיחים.'],
     href: '/settings',
   },
   {
     id: 'business-hours',
-    title: 'Business Hours',
+    title: 'שעות פעילות',
     icon: Clock3,
-    status: 'planned view',
+    status: 'בתכנון',
     summary: 'מייצר בית ברור למדיניות זמינות, חלונות תמיכה, והחרגות סוף שבוע/חג.',
     bullets: ['שעות הפעילות ישפיעו בהמשך על SLA וחיווי סיכון.', 'המסך מגדיר בעלים ברור למדיניות תפעול.', 'מומלץ לשמור חלונות נפרדים לדיירים, ספקים וחירום.'],
     href: '/admin/dashboard',
   },
   {
     id: 'sla',
-    title: 'SLA Policies',
+    title: 'מדיניות SLA',
     icon: TimerReset,
-    status: 'planned view',
+    status: 'בתכנון',
     summary: 'ממפה סוגי קריאות, זמני תגובה והסלמות כדי שהדשבורד והדיספאץ׳ יישענו על מקור אחד.',
     bullets: ['חריגות SLA כבר מוצגות בדשבורד.', 'השלב הבא: טבלאות יעד לפי חומרה/שעות.', 'יש לקשר בעתיד לתורים, הסלמות והתראות.'],
     href: '/tickets',
   },
   {
     id: 'payment-terms',
-    title: 'Payment Terms',
+    title: 'תנאי תשלום',
     icon: CreditCard,
-    status: 'planned view',
+    status: 'בתכנון',
     summary: 'מרכז את כללי חיוב, חלונות גבייה, ואכיפת איחורים תחת בעלות אדמינית אחת.',
     bullets: ['הדשבורד כבר מציג חוב, פיגורים וחייבים מובילים.', 'השלב הבא: יישור מול תנאי תשלום ופעולות גבייה.', 'רצוי להצמיד תבניות תזכורת לערוצי התראה.'],
     href: '/payments',
   },
   {
     id: 'notification-templates',
-    title: 'Notification Templates',
+    title: 'תבניות התראה',
     icon: BellRing,
-    status: 'active tooling',
+    status: 'כלי פעיל',
     summary: 'מחבר בין מחולל ההתראות הקיים לבין ספריית תבניות ומדיניות שפה/ערוץ.',
     bullets: ['כבר יש מסך שליחת התראות לאדמין.', 'השלב הבא: ניהול ספריית תבניות ו-preview לפי ערוץ.', 'צריך להגדיר אילו תבניות קשורות ל-SLA, גבייה וחירום.'],
     href: '/admin/notifications',
@@ -64,19 +65,45 @@ const permissionMatrix = [
   { role: 'RESIDENT', finance: 'view-own, download-own', operations: 'view-own, create-request', documents: 'view-public, view-shared', admin: 'none' },
 ];
 
+function translatePermissionSummary(value: string) {
+  const labels: Record<string, string> = {
+    view: 'צפייה',
+    export: 'ייצוא',
+    approve: 'אישור',
+    impersonate: 'התחזות',
+    manage: 'ניהול',
+    share: 'שיתוף',
+    security: 'אבטחה',
+    none: 'ללא',
+    'delete-request': 'בקשת מחיקה',
+    'manage-assigned': 'ניהול משויך',
+    'view-assigned': 'צפייה משויכת',
+    'view-own': 'צפייה אישית',
+    'download-own': 'הורדה אישית',
+    'create-request': 'פתיחת בקשה',
+    'view-public': 'צפייה ציבורית',
+    'view-shared': 'צפייה משותפת',
+  };
+
+  return value
+    .split(',')
+    .map((part) => labels[part.trim()] || part.trim())
+    .join(' • ');
+}
+
 export default function AdminConfigurationPage() {
   return (
     <div className="space-y-8">
       <PageHero
-        kicker="Admin control center"
-        eyebrow={<Badge variant="outline">Configuration</Badge>}
+        kicker="מרכז שליטה אדמיני"
+        eyebrow={<Badge variant="outline">תצורה</Badge>}
         title="מרכז הגדרות ותצורה"
         description="מסך מרוכז לאזורים האדמיניים שעד עכשיו היו מפוזרים: מדיניות, תבניות, הרשאות וארכיטקטורת הווידג׳טים של הדשבורד."
         aside={
           <div className="space-y-3 text-white">
             <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-white/55">Sprint 6</div>
-              <div className="mt-2 text-base font-semibold">Command center + discoverable configuration</div>
+              <div className="text-xs tracking-[0.18em] text-white/68">שלב תצורה</div>
+              <div className="mt-2 text-base font-semibold">מרכז שליטה ברור עם מדיניות, תבניות והרשאות במקום אחד</div>
             </div>
           </div>
         }
@@ -105,7 +132,7 @@ export default function AdminConfigurationPage() {
                             <CardDescription>{section.status}</CardDescription>
                           </div>
                         </div>
-                        <Badge variant={section.status === 'active tooling' || section.status === 'foundation ready' ? 'success' : 'outline'}>
+                        <Badge variant={section.status === 'כלי פעיל' || section.status === 'תשתית מוכנה' ? 'success' : 'outline'}>
                           {section.status}
                         </Badge>
                       </div>
@@ -181,21 +208,21 @@ export default function AdminConfigurationPage() {
             <table className="min-w-full border-separate border-spacing-y-3 text-sm">
               <thead>
                 <tr className="text-right text-muted-foreground">
-                  <th className="px-4 py-2">Role</th>
-                  <th className="px-4 py-2">Finance</th>
-                  <th className="px-4 py-2">Operations</th>
-                  <th className="px-4 py-2">Documents</th>
-                  <th className="px-4 py-2">Admin</th>
+                  <th className="px-4 py-2">תפקיד</th>
+                  <th className="px-4 py-2">פיננסים</th>
+                  <th className="px-4 py-2">תפעול</th>
+                  <th className="px-4 py-2">מסמכים</th>
+                  <th className="px-4 py-2">אדמין</th>
                 </tr>
               </thead>
               <tbody>
                 {permissionMatrix.map((row) => (
                   <tr key={row.role} className="rounded-2xl bg-card shadow-sm">
-                    <td className="rounded-s-2xl border border-border px-4 py-4 font-semibold text-foreground">{row.role}</td>
-                    <td className="border-y border-border px-4 py-4 text-muted-foreground">{row.finance}</td>
-                    <td className="border-y border-border px-4 py-4 text-muted-foreground">{row.operations}</td>
-                    <td className="border-y border-border px-4 py-4 text-muted-foreground">{row.documents}</td>
-                    <td className="rounded-e-2xl border border-border px-4 py-4 text-muted-foreground">{row.admin}</td>
+                    <td className="rounded-s-2xl border border-border px-4 py-4 font-semibold text-foreground">{getUserRoleLabel(row.role)}</td>
+                    <td className="border-y border-border px-4 py-4 text-muted-foreground">{translatePermissionSummary(row.finance)}</td>
+                    <td className="border-y border-border px-4 py-4 text-muted-foreground">{translatePermissionSummary(row.operations)}</td>
+                    <td className="border-y border-border px-4 py-4 text-muted-foreground">{translatePermissionSummary(row.documents)}</td>
+                    <td className="rounded-e-2xl border border-border px-4 py-4 text-muted-foreground">{translatePermissionSummary(row.admin)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -215,7 +242,7 @@ export default function AdminConfigurationPage() {
             {DASHBOARD_WIDGET_GROUP_ORDER.map((group) => (
               <div key={group} className="rounded-[24px] border border-border bg-muted/20 p-4">
                 <div className="mb-3 flex items-center justify-between">
-                  <h3 className="font-semibold capitalize text-foreground">{group}</h3>
+                  <h3 className="font-semibold text-foreground">{getDashboardWidgetGroupLabel(group)}</h3>
                   <Badge variant="outline">{ADMIN_DASHBOARD_WIDGETS.filter((widget) => widget.group === group).length}</Badge>
                 </div>
                 <div className="space-y-3">
@@ -227,7 +254,7 @@ export default function AdminConfigurationPage() {
                           <p className="mt-1 text-xs leading-5 text-muted-foreground">{widget.description}</p>
                         </div>
                         <Badge variant={widget.canHide && widget.canReorder ? 'success' : 'secondary'}>
-                          {widget.canHide && widget.canReorder ? 'ready' : 'fixed'}
+                          {widget.canHide && widget.canReorder ? 'מוכן' : 'קבוע'}
                         </Badge>
                       </div>
                     </div>

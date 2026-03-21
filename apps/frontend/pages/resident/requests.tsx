@@ -181,8 +181,8 @@ export default function ResidentRequestsPage() {
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label="משוך כדי לרענן בקשות דייר" />
 
       <PageHero
-        kicker="Resident self-service refined"
-        eyebrow={<StatusBadge label="Resident Service" tone="finance" />}
+        kicker="שירות עצמי לדייר"
+        eyebrow={<StatusBadge label="שירות דיירים" tone="finance" />}
         title="בקשות דייר"
         description="המסלול הפך פשוט יותר: בוחרים סוג פנייה ברור, ממלאים רק את השדות הרלוונטיים, ורואים היסטוריה מחולקת לפי בקשות פתוחות והושלמו."
         actions={
@@ -191,7 +191,7 @@ export default function ResidentRequestsPage() {
           </Button>
         }
         aside={
-          <div className="grid gap-3 sm:grid-cols-2 text-white">
+          <div className="grid gap-2.5 text-white sm:grid-cols-2 sm:gap-3">
             <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-white/55">בקשות פתוחות</div>
               <div className="mt-2 text-2xl font-black">{openRequests.length}</div>
@@ -248,7 +248,7 @@ export default function ResidentRequestsPage() {
             <SectionHeader
               title="פרטי הפנייה"
               subtitle="שדות חובה ברורים יותר, עם הסבר קצר על כל אזור כדי לקצר ניסוח ולצמצם פניות חסרות."
-              meta="Sprint 3"
+              meta="טופס ממוקד"
             />
 
             <div className="grid gap-4 md:grid-cols-2">

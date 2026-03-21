@@ -3,6 +3,7 @@ import { Settings2, ShieldCheck } from 'lucide-react';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
+import { getAuditActionLabel, getUserRoleLabel } from '../../../lib/utils';
 import { DashboardResponse } from './types';
 import { MetricPill, MiniStat } from './primitives';
 
@@ -149,7 +150,7 @@ export function RiskAndSystemGrid({
               <div className="space-y-2">
                 {Object.entries(data.systemAdmin.roleCounts).map(([role, count]) => (
                   <div key={role} className="flex items-center justify-between rounded-2xl border border-subtle-border bg-card px-4 py-3">
-                    <span className="font-medium text-foreground">{role}</span>
+                    <span className="font-medium text-foreground">{getUserRoleLabel(role)}</span>
                     <span className="text-sm font-semibold text-muted-foreground">{count}</span>
                   </div>
                 ))}
@@ -188,10 +189,10 @@ export function RiskAndSystemGrid({
                 <div key={user.id} className="rounded-2xl border border-subtle-border bg-card p-4">
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-medium text-foreground">{user.email}</p>
-                    <Badge variant="outline">{user.role}</Badge>
+                    <Badge variant="outline">{getUserRoleLabel(user.role)}</Badge>
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Tenant {user.tenantId} • {user.phone || 'ללא טלפון'}
+                    סביבת לקוח {user.tenantId} • {user.phone || 'ללא טלפון'}
                   </p>
                 </div>
               ))}
@@ -200,7 +201,7 @@ export function RiskAndSystemGrid({
               {data.systemAdmin.recentImpersonationEvents.map((event) => (
                 <div key={event.id} className="rounded-2xl border border-subtle-border bg-card p-4">
                   <p className="font-medium text-foreground">
-                    {event.action} {event.targetRole ? `→ ${event.targetRole}` : ''}
+                    {getAuditActionLabel(event.action)} {event.targetRole ? `← ${getUserRoleLabel(event.targetRole)}` : ''}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">{event.reason || 'ללא סיבה מתועדת'}</p>
                   <p className="mt-2 text-xs text-tertiary">{formatDate(event.createdAt)}</p>
