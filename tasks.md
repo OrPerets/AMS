@@ -337,29 +337,29 @@ Make fixed mobile surfaces behave predictably so content and CTAs are never bloc
 
 ### 1. Inventory fixed and sticky mobile surfaces
 
-- [ ] List every bottom-anchored or fixed mobile surface in the app shell.
-- [ ] Classify each as essential, optional, promotional, or contextual.
-- [ ] Document which combinations are currently allowed to appear at the same time.
+- [x] List every bottom-anchored or fixed mobile surface in the app shell.
+- [x] Classify each as essential, optional, promotional, or contextual.
+- [x] Document which combinations are currently allowed to appear at the same time.
 
 ### 2. Create a shared bottom-inset system
 
-- [ ] Introduce a shared offset strategy for all bottom-fixed UI.
-- [ ] Ensure scroll containers account for active bottom surfaces dynamically.
-- [ ] Respect safe areas for iPhone and Android gesture zones.
-- [ ] Prevent promotional surfaces from overlapping primary task controls.
+- [x] Introduce a shared offset strategy for all bottom-fixed UI.
+- [x] Ensure scroll containers account for active bottom surfaces dynamically.
+- [x] Respect safe areas for iPhone and Android gesture zones.
+- [x] Prevent promotional surfaces from overlapping primary task controls.
 
 ### 3. Rationalize promotional and contextual surfaces
 
-- [ ] Ensure only one promotional surface can appear at a time.
-- [ ] Review whether the PWA install prompt should be delayed until the user has completed a meaningful action.
-- [ ] Make quick-action bars contextual rather than globally persistent where appropriate.
-- [ ] Confirm dismiss actions are easy, clear, and remembered.
+- [x] Ensure only one promotional surface can appear at a time.
+- [x] Review whether the PWA install prompt should be delayed until the user has completed a meaningful action.
+- [x] Make quick-action bars contextual rather than globally persistent where appropriate.
+- [x] Confirm dismiss actions are easy, clear, and remembered.
 
 ### 4. Validate end-of-page usability
 
-- [ ] Test long forms, long lists, and list detail pages with bottom surfaces active.
-- [ ] Confirm the last button, input, or card is never hidden.
-- [ ] Check pull-to-refresh, sticky bars, and bottom prompts together on touch devices.
+- [x] Test long forms, long lists, and list detail pages with bottom surfaces active.
+- [x] Confirm the last button, input, or card is never hidden.
+- [x] Check pull-to-refresh, sticky bars, and bottom prompts together on touch devices.
 
 ## Acceptance criteria
 
@@ -385,28 +385,28 @@ Improve trust and clarity by making language, direction, and user preferences be
 
 ### 1. Separate preference concepts
 
-- [ ] Split language, layout direction, and regional formatting into distinct settings.
-- [ ] Define sensible defaults for Hebrew and English users without hard-coupling every preference.
-- [ ] Review where users should access quick language changes versus persistent preference settings.
+- [x] Split language, layout direction, and regional formatting into distinct settings.
+- [x] Define sensible defaults for Hebrew and English users without hard-coupling every preference.
+- [x] Review where users should access quick language changes versus persistent preference settings.
 
 ### 2. Improve settings information architecture
 
-- [ ] Group settings into clearer sections: Profile, Security, Notifications, Language & Region.
-- [ ] Reduce repeated or overlapping preference controls between notifications and settings where possible.
-- [ ] Add concise helper text to clarify consequences of key settings.
-- [ ] Make save states and unsaved changes more obvious.
+- [x] Group settings into clearer sections: Profile, Security, Notifications, Language & Region.
+- [x] Reduce repeated or overlapping preference controls between notifications and settings where possible.
+- [x] Add concise helper text to clarify consequences of key settings.
+- [x] Make save states and unsaved changes more obvious.
 
 ### 3. Audit formatting consistency
 
-- [ ] Review locale-sensitive date, time, and number formatting across the app.
-- [ ] Ensure notification timestamps, dashboard metrics, and history screens follow the selected locale rules.
-- [ ] Verify RTL spacing, alignment, and icon mirroring across critical screens.
+- [x] Review locale-sensitive date, time, and number formatting across the app.
+- [x] Ensure notification timestamps, dashboard metrics, and history screens follow the selected locale rules.
+- [x] Verify RTL spacing, alignment, and icon mirroring across critical screens.
 
 ### 4. QA and regression checks
 
-- [ ] Test language changes on key flows without full confusion or visual breakage.
-- [ ] Test both RTL and LTR shells on mobile.
-- [ ] Confirm that settings changes persist and remain understandable after reload.
+- [x] Test language changes on key flows without full confusion or visual breakage.
+- [x] Test both RTL and LTR shells on mobile.
+- [x] Confirm that settings changes persist and remain understandable after reload.
 
 ## Acceptance criteria
 
