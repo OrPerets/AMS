@@ -109,29 +109,29 @@ export default function RoleSelectionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(201,156,72,0.16),transparent_28%),linear-gradient(180deg,rgba(250,247,240,0.96),rgba(245,240,230,0.86))] p-4">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(201,156,72,0.14),transparent_30%),linear-gradient(180deg,rgba(250,247,240,0.96),rgba(245,240,230,0.86))] p-3 sm:p-4">
       <div className="mx-auto flex min-h-screen w-full max-w-5xl items-center">
         <div className="w-full">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <div className="mb-4 flex items-center justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-[22px] bg-primary text-primary-foreground shadow-raised">
-              <Building className="h-8 w-8 text-primary-foreground" />
+        <div className="mb-6 sm:mb-8 text-center">
+          <div className="mb-3 sm:mb-4 flex items-center justify-center">
+            <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-xl sm:rounded-[22px] bg-primary text-primary-foreground shadow-raised">
+              <Building className="h-6 w-6 sm:h-8 sm:w-8 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="mb-2 text-3xl font-bold text-foreground">
+          <h1 className="mb-1.5 sm:mb-2 text-xl sm:text-3xl font-bold text-foreground">
             עמית אקסלנס
           </h1>
-          <p className="mb-2 text-xl text-muted-foreground">
+          <p className="mb-1 sm:mb-2 text-base sm:text-xl text-muted-foreground">
             באיזה תפקיד תרצה לצפות?
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             בחר את התפקיד שבו תרצה להשתמש במערכת
           </p>
         </div>
 
         {/* Role Selection Grid */}
-        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mb-6 sm:mb-8 grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 lg:grid-cols-3">
           {Object.entries(roleConfig).map(([role, config]) => {
             const IconComponent = config.icon;
             const chipClass =
@@ -148,25 +148,26 @@ export default function RoleSelectionPage() {
               <Card 
                 key={role} 
                 variant="elevated"
-                className="cursor-pointer border-2 border-subtle-border transition-all duration-200 hover:scale-[1.02] hover:border-primary/35 hover:shadow-raised"
+                className="cursor-pointer border-2 border-subtle-border transition-all duration-200 hover:scale-[1.02] hover:border-primary/35 hover:shadow-raised active:scale-[0.98]"
                 onClick={() => handleRoleSelection(role)}
               >
-                <CardHeader className="text-center pb-4">
-                  <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[22px] shadow-card ${chipClass}`}>
-                    <IconComponent className="h-8 w-8" />
+                <CardHeader className="text-center pb-2 sm:pb-4">
+                  <div className={`mx-auto mb-2 sm:mb-4 flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-[20px] shadow-card ${chipClass}`}>
+                    <IconComponent className="h-5 w-5 sm:h-7 sm:w-7" />
                   </div>
-                  <CardTitle className="text-xl">{config.label}</CardTitle>
-                  <CardDescription className="text-sm">
+                  <CardTitle className="text-sm sm:text-lg">{config.label}</CardTitle>
+                  <CardDescription className="text-[11px] sm:text-sm hidden sm:block">
                     {config.description}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <Button 
                     className="w-full" 
+                    size="sm"
                     disabled={loading === role}
                     loading={loading === role}
                   >
-                    {loading === role ? 'מתחבר...' : 'בחר תפקיד'}
+                    {loading === role ? 'מתחבר...' : 'בחר'}
                   </Button>
                 </CardContent>
               </Card>
