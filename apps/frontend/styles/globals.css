@@ -191,6 +191,10 @@
     /* Font variables */
     --font-sans: 'Heebo', 'Inter', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --pwa-top-inset: env(safe-area-inset-top, 0px);
+    --pwa-right-inset: env(safe-area-inset-right, 0px);
+    --pwa-bottom-inset: env(safe-area-inset-bottom, 0px);
+    --pwa-left-inset: env(safe-area-inset-left, 0px);
   }
 
   .dark {
@@ -219,6 +223,41 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 199 89% 48%;
+  }
+}
+
+@media (display-mode: standalone) {
+  html,
+  body,
+  #__next {
+    min-height: 100%;
+  }
+
+  body {
+    overscroll-behavior-y: none;
+    background:
+      radial-gradient(circle at top, color-mix(in srgb, hsl(var(--accent)) 14%, transparent), transparent 34%),
+      hsl(var(--background));
+  }
+
+  .app-shell {
+    min-height: 100dvh;
+    padding-top: var(--pwa-top-inset);
+    padding-right: var(--pwa-right-inset);
+    padding-bottom: var(--pwa-bottom-inset);
+    padding-left: var(--pwa-left-inset);
+  }
+
+  .app-header {
+    top: var(--pwa-top-inset);
+  }
+
+  .app-main {
+    min-height: calc(100dvh - var(--pwa-top-inset) - var(--pwa-bottom-inset));
+  }
+
+  .app-footer {
+    padding-bottom: max(0.75rem, var(--pwa-bottom-inset));
   }
 }
 

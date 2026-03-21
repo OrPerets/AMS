@@ -1,5 +1,6 @@
 // /Users/orperetz/Documents/AMS/apps/frontend/pages/_app.tsx
 import type { AppProps } from 'next/app';
+import Head from 'next/head';
 import { Fraunces, Heebo, Inter } from 'next/font/google';
 import '../styles/globals.css';
 import '../styles/premium-theme.css';
@@ -9,6 +10,8 @@ import { AppProviders } from '../lib/providers';
 import { cn } from '../lib/utils';
 import { Toaster } from '../components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
+import { PwaBootstrap } from '../components/pwa/PwaBootstrap';
+import { PwaInstallPrompt } from '../components/pwa/PwaInstallPrompt';
 
 // Font configuration
 const inter = Inter({
@@ -32,10 +35,18 @@ const fraunces = Fraunces({
 export default function MyApp({ Component, pageProps }: AppProps) {
   return (
     <div className={cn(inter.variable, heebo.variable, fraunces.variable, "font-sans")}>
+      <Head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+        />
+      </Head>
       <AppProviders>
+        <PwaBootstrap />
         <Layout>
           <Component {...pageProps} />
         </Layout>
+        <PwaInstallPrompt />
         <Toaster />
         <SonnerToaster position="top-center" richColors />
       </AppProviders>

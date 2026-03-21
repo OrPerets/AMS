@@ -4,7 +4,18 @@ import { Html, Head, Main, NextScript } from 'next/document';
 export default function Document() {
   return (
     <Html dir="rtl" lang="he">
-      <Head />
+      <Head>
+        <meta name="application-name" content="AMIT PMS" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="AMIT PMS" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="theme-color" content="#0E4A7B" />
+        <meta name="format-detection" content="telephone=no" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+      </Head>
       <body>
         <script
           dangerouslySetInnerHTML={{
