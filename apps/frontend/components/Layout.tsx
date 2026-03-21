@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import { useDirection, useLocale } from '../lib/providers';
 import Header from './layout/Header';
 import Sidebar from './layout/Sidebar';
+import MobileBottomNav from './layout/MobileBottomNav';
 import { GlobalCommandPalette } from './layout/GlobalCommandPalette';
 import Breadcrumbs from './layout/Breadcrumbs';
 import Footer from './layout/Footer';
@@ -13,7 +14,8 @@ import { ErrorBoundary, CompactErrorFallback } from './ui/error-boundary';
 import { cn } from '../lib/utils';
 import { websocketService } from '../lib/websocket';
 import { toast } from './ui/use-toast';
-import { getAccessToken, isAuthenticated } from '../lib/auth';
+import { authFetch, getAccessToken, getCurrentUserId, isAuthenticated } from '../lib/auth';
+import { useBottomSurface } from '../lib/bottom-surface';
 
 interface Props {
   children: React.ReactNode;
@@ -24,8 +26,10 @@ export default function Layout({ children }: Props) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const { direction } = useDirection();
   const { t } = useLocale();
+  const { totalOffset } = useBottomSurface();
   const router = useRouter();
   const publicRoutes = new Set(['/', '/404', '/_error', '/login', '/privacy', '/terms', '/support']);
   const isPublicRoute = publicRoutes.has(router.pathname);
@@ -98,11 +102,20 @@ export default function Layout({ children }: Props) {
         description: notification?.message,
         duration: 5000,
       });
+      setUnreadNotifications((prev) => prev + 1);
     };
 
     websocketService.on('new_ticket', handleNewTicket);
     websocketService.on('ticket_updated', handleTicketUpdate);
     websocketService.on('new_notification', handleNewNotification);
+
+    const userId = getCurrentUserId();
+    if (userId) {
+      authFetch(`/api/v1/notifications/user/${userId}`)
+        .then((res) => (res.ok ? res.json() : []))
+        .then((data: any[]) => setUnreadNotifications(Array.isArray(data) ? data.filter((n) => !n.read).length : 0))
+        .catch(() => undefined);
+    }
 
     return () => {
       websocketService.off('new_ticket', handleNewTicket);
@@ -175,7 +188,10 @@ export default function Layout({ children }: Props) {
 
         {/* Page Content */}
         <div className="flex-1 overflow-x-hidden overflow-y-auto min-h-0" data-scroll-container="app">
-          <div className="container min-h-full px-3 py-3 sm:px-6 sm:py-6 safe-pb">
+          <div
+            className="container min-h-full px-3 py-3 sm:px-6 sm:py-6 safe-pb"
+            style={totalOffset > 0 ? { paddingBottom: `max(calc(env(safe-area-inset-bottom, 0px) + 1rem), ${totalOffset + 16}px)` } : undefined}
+          >
             <ErrorBoundary fallback={CompactErrorFallback}>
               {children}
             </ErrorBoundary>
@@ -184,7 +200,11 @@ export default function Layout({ children }: Props) {
       </main>
       
       {/* Footer */}
-      <Footer className="app-footer" />
+      <Footer className="app-footer hidden md:block" />
+
+      {/* Mobile Bottom Nav */}
+      <MobileBottomNav unreadNotifications={unreadNotifications} />
+
       <GlobalCommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
       
       {/* Mobile Sidebar Overlay */}

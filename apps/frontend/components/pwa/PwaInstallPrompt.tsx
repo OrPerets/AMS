@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
 import { Download, Smartphone, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import { isTouchDevice } from '../../lib/mobile';
 import { cn } from '../../lib/utils';
+import { useRegisterBottomSurface } from '../../lib/bottom-surface';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -12,6 +14,7 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 const DISMISS_KEY = 'amit-pwa-install-dismissed';
+const INTERACTION_THRESHOLD = 2;
 
 function isStandalone() {
   if (typeof window === 'undefined') {
@@ -25,10 +28,20 @@ function isStandalone() {
 }
 
 export function PwaInstallPrompt() {
+  const router = useRouter();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(true);
   const [isIos, setIsIos] = useState(false);
   const [showIosHint, setShowIosHint] = useState(false);
+  const [interactions, setInteractions] = useState(0);
+
+  const { refCallback, essentialOffset } = useRegisterBottomSurface('pwa-install-prompt', 'promotional');
+
+  useEffect(() => {
+    const handleRoute = () => setInteractions((c) => c + 1);
+    router.events.on('routeChangeComplete', handleRoute);
+    return () => router.events.off('routeChangeComplete', handleRoute);
+  }, [router.events]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -69,8 +82,12 @@ export function PwaInstallPrompt() {
       return false;
     }
 
+    if (interactions < INTERACTION_THRESHOLD) {
+      return false;
+    }
+
     return Boolean(deferredPrompt) || showIosHint;
-  }, [deferredPrompt, dismissed, showIosHint]);
+  }, [deferredPrompt, dismissed, showIosHint, interactions]);
 
   const dismiss = () => {
     if (typeof window !== 'undefined') {
@@ -98,7 +115,11 @@ export function PwaInstallPrompt() {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-3 sm:px-6">
+    <div
+      ref={refCallback}
+      className="pointer-events-none fixed inset-x-0 z-45 px-3 pb-3 sm:px-6 md:hidden"
+      style={{ bottom: `${essentialOffset}px` }}
+    >
       <div
         className={cn(
           "pointer-events-auto mx-auto flex max-w-md items-start gap-3 rounded-3xl border border-white/60",

@@ -1,24 +1,19 @@
-// /Users/orperetz/Documents/AMS/apps/frontend/components/layout/Header.tsx
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Menu, Sun, Moon, Globe, ChevronLeft, ChevronRight, Bell, Command, Search } from 'lucide-react';
+import { useRouter } from 'next/router';
+import { Menu, Sun, Moon, Globe, ChevronLeft, ChevronRight, Bell, Command, Search, ArrowRight, AlertTriangle, Clock, Info } from 'lucide-react';
 import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
 import { useTheme, useDirection, useLocale } from '../../lib/providers';
 import { cn, formatDateTime } from '../../lib/utils';
 import UserMenu from './UserMenu';
 import { authFetch, getCurrentUserId } from '../../lib/auth';
 import { websocketService } from '../../lib/websocket';
 import { emitNotificationsChanged, subscribeToNotificationsChanged } from '../../lib/notification-events';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
+import { deriveNotificationPriority } from '../ui/notification-center';
+import type { NotificationItem, NotificationPriority } from '../ui/notification-center';
 
 interface HeaderProps {
   className?: string;
@@ -27,6 +22,20 @@ interface HeaderProps {
   onToggleCollapse?: () => void;
   onCommandPaletteOpen?: () => void;
 }
+
+const priorityIcon: Record<NotificationPriority, React.FC<{ className?: string }>> = {
+  critical: AlertTriangle,
+  needs_action: Clock,
+  informational: Info,
+  completed: Bell,
+};
+
+const priorityColor: Record<NotificationPriority, string> = {
+  critical: 'text-destructive',
+  needs_action: 'text-warning',
+  informational: 'text-primary',
+  completed: 'text-muted-foreground',
+};
 
 export default function Header({
   className,
@@ -38,26 +47,26 @@ export default function Header({
   const { theme, setTheme } = useTheme();
   const { direction, setDirection } = useDirection();
   const { locale, setLocale, t } = useLocale();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
   const currentUserId = getCurrentUserId();
 
-  // Load notifications for current user
   const loadNotifications = async () => {
     if (!currentUserId) {
       setNotifications([]);
       return;
     }
-
     try {
       setLoading(true);
       const response = await authFetch(`/api/v1/notifications/user/${currentUserId}`);
       if (response.ok) {
         const data = await response.json();
-        setNotifications(data.slice(0, 5)); // Show only latest 5 in header
+        setNotifications(data.slice(0, 5));
       }
     } catch (error) {
       console.error('Failed to load notifications:', error);
@@ -68,10 +77,8 @@ export default function Header({
 
   const markNotificationAsRead = async (notificationId: number) => {
     try {
-      await authFetch(`/api/v1/notifications/${notificationId}/read`, {
-        method: 'POST',
-      });
-      setNotifications(prev => 
+      await authFetch(`/api/v1/notifications/${notificationId}/read`, { method: 'POST' });
+      setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       );
       emitNotificationsChanged();
@@ -92,7 +99,6 @@ export default function Header({
     const unsubscribe = subscribeToNotificationsChanged(loadNotifications);
     websocketService.on('new_notification', handleNewNotification);
 
-    // Refresh notifications every 30 seconds
     const interval = setInterval(loadNotifications, 30000);
     return () => {
       clearInterval(interval);
@@ -100,6 +106,14 @@ export default function Header({
       websocketService.off('new_notification', handleNewNotification);
     };
   }, [currentUserId]);
+
+  useEffect(() => {
+    if (previewOpen) {
+      const close = () => setPreviewOpen(false);
+      document.addEventListener('click', close);
+      return () => document.removeEventListener('click', close);
+    }
+  }, [previewOpen]);
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
@@ -110,26 +124,32 @@ export default function Header({
     setLocale(locale === 'he' ? 'en' : 'he');
   };
 
+  const topPreview = useMemo(() => {
+    return notifications
+      .filter(n => !n.read)
+      .slice(0, 3)
+      .map(n => ({ ...n, _priority: deriveNotificationPriority(n) }));
+  }, [notifications]);
+
+  const navigateToInbox = () => {
+    setPreviewOpen(false);
+    router.push('/notifications');
+  };
+
   return (
     <header className={cn(
       "sticky top-0 z-40 w-full border-b bg-background/85 backdrop-blur-md",
       className
     )}>
-      <div className="container flex h-14 sm:h-16 items-center justify-between gap-1.5 sm:gap-2 px-3 sm:px-6">
-        {/* Left section: Menu & Logo */}
+      <div className="container flex h-12 sm:h-16 items-center justify-between gap-1.5 sm:gap-2 px-3 sm:px-6">
+        {/* Left section */}
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-4">
-          {/* Mobile menu button */}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onMenuClick}
-            className="md:hidden"
-          >
-            <Menu className="h-5 w-5" />
-            <span className="sr-only">{t('header.openMenu')}</span>
-          </Button>
+          <Link href="/" className="flex items-center gap-1.5 sm:gap-2 md:hidden">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs">
+              A
+            </div>
+          </Link>
 
-          {/* Desktop collapse button */}
           <Button
             variant="ghost"
             size="icon"
@@ -144,17 +164,17 @@ export default function Header({
             <span className="sr-only">{t('header.toggleSidebar')}</span>
           </Button>
 
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-1.5 sm:gap-2">
-            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs sm:text-sm">
+          <Link href="/" className="hidden md:flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
               A
             </div>
-            <span className="hidden truncate font-bold md:inline-block">
+            <span className="truncate font-bold">
               {t('app.shortName')}
             </span>
           </Link>
         </div>
 
+        {/* Desktop center: command palette search */}
         <div className="hidden flex-1 justify-center md:flex">
           <Button
             variant="outline"
@@ -172,25 +192,38 @@ export default function Header({
           </Button>
         </div>
 
-        {/* Right section: Controls & User Menu */}
+        {/* Mobile center: page context */}
+        <div className="flex-1 md:hidden" />
+
+        {/* Right section */}
         <div className="flex items-center gap-0.5 sm:gap-1.5">
           <Button
             variant="ghost"
             size="icon-sm"
             onClick={onCommandPaletteOpen}
-            className="shrink-0 sm:h-9 sm:w-9"
+            className="shrink-0 md:hidden"
             aria-label={t('header.openCommandPalette')}
           >
             <Search className="h-4 w-4" />
           </Button>
 
-          {/* Theme toggle - only render after mount */}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onCommandPaletteOpen}
+            className="hidden md:inline-flex sm:h-9 sm:w-9 shrink-0"
+            aria-label={t('header.openCommandPalette')}
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+
+          {/* Theme toggle - desktop only */}
           {mounted && (
             <Button
               variant="ghost"
               size="icon-sm"
               onClick={toggleTheme}
-              className="hidden sm:inline-flex sm:h-9 sm:w-9 shrink-0"
+              className="hidden md:inline-flex sm:h-9 sm:w-9 shrink-0"
             >
               {theme === 'light' ? (
                 <Moon className="h-4 w-4" />
@@ -201,74 +234,97 @@ export default function Header({
             </Button>
           )}
 
-          {/* Notification bell */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="relative shrink-0 sm:h-9 sm:w-9"
-                aria-label={t('header.notifications')}
-              >
-                <Bell className="h-4 w-4" />
-                {unreadCount > 0 && (
-                  <span className="absolute -end-0.5 -top-0.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-                    {unreadCount}
-                  </span>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto sm:w-80 w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)]">
-              <DropdownMenuLabel className="text-sm font-semibold">
-                {t('header.notifications')}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {loading ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  {t('common.loading')}
-                </div>
-              ) : notifications.length === 0 ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  {t('header.noNotifications')}
-                </div>
-              ) : (
-                notifications.map((notification) => (
-                  <DropdownMenuItem 
-                    key={notification.id} 
-                    className={`flex flex-col items-start gap-1 p-3 ${!notification.read ? 'bg-primary/5' : ''}`}
-                    onClick={() => !notification.read && markNotificationAsRead(notification.id)}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <span className="text-sm font-medium">{notification.title}</span>
-                      {!notification.read && (
-                        <div className="w-2 h-2 bg-primary rounded-full"></div>
-                      )}
-                    </div>
-                    <span className="text-xs text-muted-foreground line-clamp-2">
-                      {notification.message}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      {formatDateTime(notification.createdAt, locale)}
-                    </span>
-                  </DropdownMenuItem>
-                ))
+          {/* Notification bell — lightweight preview (desktop) */}
+          <div className="relative hidden md:block" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="relative sm:h-9 sm:w-9 shrink-0"
+              aria-label={t('header.notifications')}
+              onClick={() => setPreviewOpen((o) => !o)}
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -end-0.5 -top-0.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                  {unreadCount}
+                </span>
               )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild className="justify-center text-sm font-medium text-primary">
-                <Link href="/notifications">
-                  {t('header.viewAllNotifications')}
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </Button>
 
-          {/* Direction/Language toggle - only render after mount */}
+            {previewOpen && (
+              <div className="absolute end-0 top-full z-50 mt-2 w-80 rounded-xl border bg-popover p-0 shadow-lg">
+                <div className="flex items-center justify-between border-b px-4 py-3">
+                  <span className="text-sm font-semibold">{t('notifications.previewTitle')}</span>
+                  {unreadCount > 0 && (
+                    <Badge variant="outline" className="text-[10px]">
+                      {unreadCount}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="max-h-72 overflow-y-auto">
+                  {loading ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      {t('common.loading')}
+                    </div>
+                  ) : topPreview.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      {t('notifications.noUrgent')}
+                    </div>
+                  ) : (
+                    topPreview.map((notification) => {
+                      const PIcon = priorityIcon[notification._priority];
+                      return (
+                        <button
+                          key={notification.id}
+                          type="button"
+                          className="flex w-full items-start gap-3 px-4 py-3 text-start hover:bg-muted/50 transition-colors"
+                          onClick={() => {
+                            if (!notification.read && typeof notification.id === 'number') {
+                              markNotificationAsRead(notification.id);
+                            }
+                          }}
+                        >
+                          <PIcon className={cn('mt-0.5 h-4 w-4 shrink-0', priorityColor[notification._priority])} />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="truncate text-sm font-medium">{notification.title}</span>
+                              {!notification.read && (
+                                <div className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+                              )}
+                            </div>
+                            <span className="line-clamp-1 text-xs text-muted-foreground">
+                              {notification.message}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                              {formatDateTime(notification.createdAt as string, locale)}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={navigateToInbox}
+                  className="flex w-full items-center justify-center gap-2 border-t px-4 py-3 text-sm font-medium text-primary hover:bg-muted/50 transition-colors"
+                >
+                  {t('notifications.viewFullInbox')}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Direction/Language toggle - desktop only */}
           {mounted && (
             <Button
               variant="ghost"
               size="icon-sm"
               onClick={toggleDirection}
-              className="hidden shrink-0 sm:inline-flex sm:h-9 sm:w-9"
+              className="hidden shrink-0 md:inline-flex sm:h-9 sm:w-9"
               aria-label={t('header.toggleLocale')}
             >
               <Globe className="h-4 w-4" />

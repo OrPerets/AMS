@@ -4,7 +4,20 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Toaster } from '../components/ui/toaster';
 import { toast } from '../components/ui/use-toast';
-import { type Locale, getLocaleDirection, getStoredLocale, translate } from './i18n';
+import {
+  type Direction,
+  type Locale,
+  type RegionalFormat,
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  formatNumber,
+  formatTime,
+  getLocaleDirection,
+  getStoredLocale,
+  getStoredRegionalFormat,
+  translate,
+} from './i18n';
 
 // Theme Provider
 type Theme = "dark" | "light" | "system";
@@ -100,7 +113,6 @@ export const useTheme = () => {
 };
 
 // Direction Provider
-type Direction = "rtl" | "ltr";
 
 type DirectionProviderProps = {
   children: React.ReactNode;
@@ -182,13 +194,27 @@ type LocaleProviderProps = {
 type LocaleProviderState = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
+  regionalFormat: RegionalFormat;
+  setRegionalFormat: (format: RegionalFormat) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
+  fmtDate: (date: Date | string | number) => string;
+  fmtTime: (date: Date | string | number) => string;
+  fmtDateTime: (date: Date | string | number) => string;
+  fmtNumber: (value: number) => string;
+  fmtCurrency: (value: number, currency?: string) => string;
 };
 
 const LocaleProviderContext = createContext<LocaleProviderState>({
   locale: "he",
   setLocale: () => null,
+  regionalFormat: "he-IL",
+  setRegionalFormat: () => null,
   t: (key: string) => key,
+  fmtDate: () => '',
+  fmtTime: () => '',
+  fmtDateTime: () => '',
+  fmtNumber: () => '',
+  fmtCurrency: () => '',
 });
 
 export function LocaleProvider({
@@ -197,19 +223,29 @@ export function LocaleProvider({
   storageKey = "amit-locale",
 }: LocaleProviderProps) {
   const [locale, setLocale] = useState<Locale>(defaultLocale);
+  const [regionalFormat, setRegionalFormatState] = useState<RegionalFormat>(
+    defaultLocale === 'en' ? 'en-US' : 'he-IL',
+  );
   const [mounted, setMounted] = useState(false);
 
-  // Only run on client side
   useEffect(() => {
     setMounted(true);
     setLocale(getStoredLocale(defaultLocale));
+    setRegionalFormatState(getStoredRegionalFormat());
   }, [storageKey]);
 
   const t = (key: string, params?: Record<string, string | number>): string => {
     return translate(locale, key, params);
   };
 
-  const value = {
+  const setRegionalFormat = (format: RegionalFormat) => {
+    if (mounted) {
+      localStorage.setItem('amit-regional-format', format);
+    }
+    setRegionalFormatState(format);
+  };
+
+  const value: LocaleProviderState = {
     locale,
     setLocale: (newLocale: Locale) => {
       if (mounted) {
@@ -217,7 +253,14 @@ export function LocaleProvider({
       }
       setLocale(newLocale);
     },
+    regionalFormat,
+    setRegionalFormat,
     t,
+    fmtDate: (date) => formatDate(date, regionalFormat),
+    fmtTime: (date) => formatTime(date, regionalFormat),
+    fmtDateTime: (date) => formatDateTime(date, regionalFormat),
+    fmtNumber: (value) => formatNumber(value, regionalFormat),
+    fmtCurrency: (value, currency) => formatCurrency(value, currency, regionalFormat),
   };
 
   return (

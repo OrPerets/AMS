@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useFormatting } from '../hooks/use-formatting';
 import { 
   Ticket, 
   AlertTriangle, 
@@ -73,6 +74,7 @@ export default function MayaDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const { t } = useLocale();
+  const { fmtTime } = useFormatting();
 
   // Real-time polling interval
   const POLL_INTERVAL = 3000; // 3 seconds
@@ -273,7 +275,7 @@ export default function MayaDashboard() {
           <div className="flex items-center gap-2 mt-2">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
             <span className="text-sm text-muted-foreground">
-              עודכן לאחרונה: {lastUpdate.toLocaleTimeString('he-IL')}
+              עודכן לאחרונה: {fmtTime(lastUpdate)}
             </span>
           </div>
         </div>

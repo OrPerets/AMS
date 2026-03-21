@@ -1,10 +1,12 @@
 import { enUS, he } from 'date-fns/locale';
 
 export type Locale = 'he' | 'en';
+export type Direction = 'rtl' | 'ltr';
+export type RegionalFormat = 'he-IL' | 'en-US' | 'en-IL';
 
 type TranslationDictionary = Record<string, string>;
 
-export const localeMeta: Record<Locale, { intl: string; direction: 'rtl' | 'ltr'; label: string }> = {
+export const localeMeta: Record<Locale, { intl: string; direction: Direction; label: string }> = {
   he: {
     intl: 'he-IL',
     direction: 'rtl',
@@ -16,6 +18,70 @@ export const localeMeta: Record<Locale, { intl: string; direction: 'rtl' | 'ltr'
     label: 'English',
   },
 };
+
+export const regionalFormats: Record<RegionalFormat, { label: string; dateStyle: Intl.DateTimeFormatOptions['dateStyle']; timeStyle: Intl.DateTimeFormatOptions['timeStyle'] }> = {
+  'he-IL': { label: 'ישראל (עברית)', dateStyle: 'long', timeStyle: 'short' },
+  'en-US': { label: 'United States', dateStyle: 'long', timeStyle: 'short' },
+  'en-IL': { label: 'Israel (English)', dateStyle: 'long', timeStyle: 'short' },
+};
+
+export function formatDate(date: Date | string | number, regional: RegionalFormat = 'he-IL'): string {
+  const d = date instanceof Date ? date : new Date(date);
+  try {
+    return new Intl.DateTimeFormat(regional, { dateStyle: 'medium' }).format(d);
+  } catch {
+    return d.toLocaleDateString();
+  }
+}
+
+export function formatTime(date: Date | string | number, regional: RegionalFormat = 'he-IL'): string {
+  const d = date instanceof Date ? date : new Date(date);
+  try {
+    return new Intl.DateTimeFormat(regional, { timeStyle: 'short' }).format(d);
+  } catch {
+    return d.toLocaleTimeString();
+  }
+}
+
+export function formatDateTime(date: Date | string | number, regional: RegionalFormat = 'he-IL'): string {
+  const d = date instanceof Date ? date : new Date(date);
+  try {
+    return new Intl.DateTimeFormat(regional, { dateStyle: 'medium', timeStyle: 'short' }).format(d);
+  } catch {
+    return d.toLocaleString();
+  }
+}
+
+export function formatNumber(value: number, regional: RegionalFormat = 'he-IL'): string {
+  try {
+    return new Intl.NumberFormat(regional).format(value);
+  } catch {
+    return value.toLocaleString();
+  }
+}
+
+export function formatCurrency(value: number, currency = 'ILS', regional: RegionalFormat = 'he-IL'): string {
+  try {
+    return new Intl.NumberFormat(regional, { style: 'currency', currency }).format(value);
+  } catch {
+    return `${value.toFixed(2)} ${currency}`;
+  }
+}
+
+export function getStoredDirection(): Direction | null {
+  if (typeof window === 'undefined') return null;
+  const stored = window.localStorage.getItem('amit-direction');
+  if (stored === 'rtl' || stored === 'ltr') return stored;
+  return null;
+}
+
+export function getStoredRegionalFormat(): RegionalFormat {
+  if (typeof window === 'undefined') return 'he-IL';
+  const stored = window.localStorage.getItem('amit-regional-format');
+  if (stored && stored in regionalFormats) return stored as RegionalFormat;
+  const locale = getStoredLocale();
+  return locale === 'en' ? 'en-US' : 'he-IL';
+}
 
 export const translations: Record<Locale, TranslationDictionary> = {
   he: {
@@ -86,6 +152,10 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'shell.theme': 'ערכת נושא',
     'shell.language': 'שפה',
 
+    'bottomNav.label': 'ניווט ראשי',
+    'bottomNav.more': 'עוד',
+    'bottomNav.moreMenu': 'ניווט נוסף',
+
     'header.openMenu': 'פתח תפריט',
     'header.toggleSidebar': 'הסתר או הצג סרגל ניווט',
     'header.searchPlaceholder': 'חפש מסך, קריאה או בניין',
@@ -134,6 +204,9 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'login.error.emailInvalid': 'כתובת האימייל אינה תקינה.',
     'login.error.passwordShort': 'הסיסמה חייבת להכיל לפחות 6 תווים.',
     'login.error.generic': 'ההתחברות לא הצליחה. בדוק את הפרטים ונסה שוב.',
+    'login.recoveryHint': 'אם שכחת את הסיסמה, פנה למנהל המערכת לאיפוס.',
+    'login.showPassword': 'הצג סיסמה',
+    'login.hidePassword': 'הסתר סיסמה',
 
     'settings.heroKicker': 'חשבון והעדפות',
     'settings.heroBadge': 'חשבון',
@@ -259,6 +332,73 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'notifications.action.openBuilding': 'עבור לבניין',
     'notifications.action.openBoard': 'פתח את הלוח',
 
+    'notifications.priority.critical': 'קריטי',
+    'notifications.priority.needsAction': 'דורש פעולה',
+    'notifications.priority.informational': 'מידע',
+    'notifications.priority.completed': 'הושלם',
+    'notifications.triage.criticalSection': 'דורשים טיפול מיידי',
+    'notifications.triage.actionSection': 'ממתינים לפעולה',
+    'notifications.triage.infoSection': 'עדכונים ומידע',
+    'notifications.triage.completedSection': 'הושלמו לאחרונה',
+    'notifications.triage.criticalDescription': 'התראות דחופות שדורשות תשומת לב מיידית',
+    'notifications.triage.actionDescription': 'פריטים שממתינים לפעולה שלך',
+    'notifications.triage.infoDescription': 'עדכונים כלליים והודעות',
+    'notifications.triage.completedDescription': 'פריטים שטופלו לאחרונה',
+    'notifications.filter.all': 'הכל',
+    'notifications.filter.unread': 'לא נקראו',
+    'notifications.filter.urgent': 'דחופים',
+    'notifications.filter.assignedToMe': 'מוקצה אליי',
+    'notifications.filter.archived': 'בארכיון',
+    'notifications.nextAction': 'פעולה מומלצת',
+    'notifications.source': 'מקור',
+    'notifications.slaWarning': 'נושא SLA',
+    'notifications.previewTitle': 'התראות אחרונות',
+    'notifications.viewFullInbox': 'צפה בתיבת ההתראות המלאה',
+    'notifications.noUrgent': 'אין התראות דחופות',
+    'notifications.preference.group.channels': 'ערוצי משלוח',
+    'notifications.preference.group.channelsDesc': 'בחר כיצד תקבל עדכונים — אימייל, SMS או התראות דפדפן.',
+    'notifications.preference.group.topics': 'סוגי עדכונים',
+    'notifications.preference.group.topicsDesc': 'בחר אילו עדכונים יגיעו אליך. כיבוי סוג לא מונע עדכונים קריטיים מגיעים.',
+    'notifications.preference.consequence.email': 'עדכונים יישלחו לתיבת המייל שלך.',
+    'notifications.preference.consequence.sms': 'הודעות קצרות לאירועים דחופים בלבד.',
+    'notifications.preference.consequence.push': 'התראות מיידיות בדפדפן או במכשיר.',
+    'notifications.preference.consequence.ticketUpdates': 'לא תקבל עדכונים על שינויי סטטוס בקריאות.',
+    'notifications.preference.consequence.maintenanceReminders': 'לא תקבל תזכורות על עבודות מתוזמנות.',
+    'notifications.preference.consequence.paymentReminders': 'לא תקבל הודעות על מועדי תשלום.',
+    'notifications.preference.consequence.announcements': 'לא תקבל הודעות כלליות מהבניין.',
+    'notifications.preference.consequence.emergencyAlerts': 'התראות חירום תמיד מגיעות גם כשהערוץ כבוי.',
+    'notifications.preference.consequence.workOrderUpdates': 'לא תקבל עדכונים על הזמנות עבודה.',
+
+    'landing.trustBadge': 'מערכת ניהול מוכחת',
+    'landing.heroTitle': 'עמית אקסלנס אחזקות',
+    'landing.heroSubtitle': 'ניהול תפעולי מקצועי לבניינים, דיירים וצוותי שטח',
+    'landing.proof.clients': 'לקוחות פעילים',
+    'landing.proof.units': 'יחידות מנוהלות',
+    'landing.proof.uptime': 'זמינות מערכת',
+    'landing.proof.support': 'תמיכה טכנית',
+    'landing.trust.reliability': 'אמינות תפעולית',
+    'landing.trust.reliabilityDesc': 'מערכת יציבה עם 99.9% זמינות, גיבוי אוטומטי ותיעוד מלא של כל פעולה.',
+    'landing.trust.security': 'אבטחה ובקרה',
+    'landing.trust.securityDesc': 'הצפנה מתקדמת, הרשאות לפי תפקיד ומעקב ביקורת מלא על כל גישה.',
+    'landing.trust.workflows': 'זרימות עבודה לפי תפקיד',
+    'landing.trust.workflowsDesc': 'כל משתמש רואה את המידע והפעולות הרלוונטיים לתפקידו — בלי עומס מיותר.',
+    'landing.cta.login': 'כניסה למערכת ניהול',
+    'landing.cta.supervision': 'מעבר לדו״ח פיקוח',
+    'landing.cta.gardeners': 'מעבר לניהול גננים',
+    'landing.cta.start': 'התחילו עכשיו',
+    'landing.features.title': 'למה לבחור בנו?',
+    'landing.features.subtitle': 'פתרון מקיף ומתקדם שמשלב טכנולוגיה חדשנית עם ניסיון עשיר בתחום',
+    'landing.ready': 'מוכנים להתחיל?',
+    'landing.readySubtitle': 'הצטרפו לאלפי לקוחות מרוצים שכבר חווים את העתיד של ניהול אחזקות',
+
+    'login.enterprise.ssoPlaceholder': 'כניסה ארגונית (SSO) — בקרוב',
+    'login.enterprise.secureAccess': 'גישה מאובטחת',
+    'login.enterprise.secureAccessDesc': 'הצפנה מקצה לקצה, הרשאות לפי תפקיד ותיעוד מלא של כל כניסה.',
+    'login.enterprise.operationalControl': 'בקרה תפעולית',
+    'login.enterprise.operationalControlDesc': 'ניהול מרכזי של בניינים, קריאות שירות, תשלומים וצוותי שטח.',
+    'login.enterprise.auditTrail': 'מעקב ביקורת',
+    'login.enterprise.auditTrailDesc': 'היסטוריית פעולות מלאה לשקיפות, ציות ותמיכה מהירה.',
+
     'support.title': 'מרכז תמיכה',
     'support.description': 'שליחת פנייה ישירות לצוות התמיכה בנושאי גישה, תשלומים, תקלות ותפעול שוטף.',
     'support.name': 'שם מלא',
@@ -317,6 +457,27 @@ export const translations: Record<Locale, TranslationDictionary> = {
       'מנהלי מערכת רשאים להשעות משתמש, להגביל הרשאות או לבצע התחזות תפעולית לצורכי תמיכה ואבחון.',
     'legal.terms.5':
       'לפני פעולה כספית או תפעולית בלתי הפיכה מומלץ לוודא את הנתונים מול הרשומות המעודכנות במערכת.',
+
+    'settings.section.languageTitle': 'שפה ואזור',
+    'settings.section.languageSubtitle': 'בחירת שפת הממשק, כיוון הטקסט ופורמט אזורי לתאריכים ומספרים.',
+    'settings.field.language': 'שפת ממשק',
+    'settings.field.languageHint': 'שפת התפריטים, הכפתורים וההודעות באפליקציה.',
+    'settings.field.direction': 'כיוון טקסט',
+    'settings.field.directionHint': 'כיוון הפריסה הכללי של הממשק. עברית = ימין לשמאל, אנגלית = שמאל לימין.',
+    'settings.field.regionalFormat': 'פורמט אזורי',
+    'settings.field.regionalFormatHint': 'קובע את פורמט התאריכים, השעות והמספרים בכל הממשק.',
+    'settings.direction.rtl': 'ימין לשמאל (RTL)',
+    'settings.direction.ltr': 'שמאל לימין (LTR)',
+    'settings.language.he': 'עברית',
+    'settings.language.en': 'English',
+    'settings.action.saveLanguage': 'שמור העדפות שפה',
+    'settings.languageSavedToast': 'הגדרות השפה נשמרו',
+    'settings.unsavedChanges': 'יש שינויים שלא נשמרו',
+    'settings.formatPreview': 'תצוגה מקדימה',
+    'settings.formatPreviewDate': 'תאריך: {{value}}',
+    'settings.formatPreviewTime': 'שעה: {{value}}',
+    'settings.formatPreviewNumber': 'מספר: {{value}}',
+    'settings.formatPreviewCurrency': 'מטבע: {{value}}',
 
     'payments.loading': 'טוען את מרכז התשלומים...',
     'payments.title': 'תשלומים',
@@ -396,6 +557,10 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'shell.theme': 'Theme',
     'shell.language': 'Language',
 
+    'bottomNav.label': 'Main navigation',
+    'bottomNav.more': 'More',
+    'bottomNav.moreMenu': 'More navigation',
+
     'header.openMenu': 'Open menu',
     'header.toggleSidebar': 'Show or hide navigation',
     'header.searchPlaceholder': 'Search for a screen, ticket, or building',
@@ -444,6 +609,9 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'login.error.emailInvalid': 'Enter a valid email address.',
     'login.error.passwordShort': 'Password must contain at least 6 characters.',
     'login.error.generic': 'Sign-in failed. Check your details and try again.',
+    'login.recoveryHint': 'If you forgot your password, contact your system administrator to reset it.',
+    'login.showPassword': 'Show password',
+    'login.hidePassword': 'Hide password',
 
     'settings.heroKicker': 'Account and preferences',
     'settings.heroBadge': 'Account',
@@ -569,6 +737,73 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'notifications.action.openBuilding': 'Open building',
     'notifications.action.openBoard': 'Open board',
 
+    'notifications.priority.critical': 'Critical',
+    'notifications.priority.needsAction': 'Needs action',
+    'notifications.priority.informational': 'Informational',
+    'notifications.priority.completed': 'Completed',
+    'notifications.triage.criticalSection': 'Requires immediate attention',
+    'notifications.triage.actionSection': 'Waiting for your action',
+    'notifications.triage.infoSection': 'Updates and information',
+    'notifications.triage.completedSection': 'Recently completed',
+    'notifications.triage.criticalDescription': 'Urgent notifications that require immediate attention',
+    'notifications.triage.actionDescription': 'Items waiting for your action',
+    'notifications.triage.infoDescription': 'General updates and announcements',
+    'notifications.triage.completedDescription': 'Recently handled items',
+    'notifications.filter.all': 'All',
+    'notifications.filter.unread': 'Unread',
+    'notifications.filter.urgent': 'Urgent',
+    'notifications.filter.assignedToMe': 'Assigned to me',
+    'notifications.filter.archived': 'Archived',
+    'notifications.nextAction': 'Recommended action',
+    'notifications.source': 'Source',
+    'notifications.slaWarning': 'SLA concern',
+    'notifications.previewTitle': 'Recent notifications',
+    'notifications.viewFullInbox': 'View full notification inbox',
+    'notifications.noUrgent': 'No urgent notifications',
+    'notifications.preference.group.channels': 'Delivery channels',
+    'notifications.preference.group.channelsDesc': 'Choose how you receive updates — email, SMS, or browser notifications.',
+    'notifications.preference.group.topics': 'Update types',
+    'notifications.preference.group.topicsDesc': 'Choose which updates you receive. Turning off a type does not prevent critical alerts from arriving.',
+    'notifications.preference.consequence.email': 'Updates will be sent to your email inbox.',
+    'notifications.preference.consequence.sms': 'Short messages for urgent events only.',
+    'notifications.preference.consequence.push': 'Instant alerts in your browser or device.',
+    'notifications.preference.consequence.ticketUpdates': 'You will not receive ticket status change alerts.',
+    'notifications.preference.consequence.maintenanceReminders': 'You will not receive scheduled work reminders.',
+    'notifications.preference.consequence.paymentReminders': 'You will not receive payment due date alerts.',
+    'notifications.preference.consequence.announcements': 'You will not receive general building announcements.',
+    'notifications.preference.consequence.emergencyAlerts': 'Emergency alerts are always delivered even when this channel is off.',
+    'notifications.preference.consequence.workOrderUpdates': 'You will not receive work order progress updates.',
+
+    'landing.trustBadge': 'Proven operations platform',
+    'landing.heroTitle': 'Amit Excellence Maintenance',
+    'landing.heroSubtitle': 'Professional operational management for buildings, residents, and field teams',
+    'landing.proof.clients': 'Active clients',
+    'landing.proof.units': 'Managed units',
+    'landing.proof.uptime': 'System uptime',
+    'landing.proof.support': 'Technical support',
+    'landing.trust.reliability': 'Operational reliability',
+    'landing.trust.reliabilityDesc': 'Stable system with 99.9% uptime, automatic backups, and full audit trail of every action.',
+    'landing.trust.security': 'Security and control',
+    'landing.trust.securityDesc': 'Advanced encryption, role-based permissions, and complete audit logging on all access.',
+    'landing.trust.workflows': 'Role-based workflows',
+    'landing.trust.workflowsDesc': 'Every user sees only the information and actions relevant to their role — no unnecessary overhead.',
+    'landing.cta.login': 'Sign in to management',
+    'landing.cta.supervision': 'Go to supervision report',
+    'landing.cta.gardeners': 'Go to gardeners management',
+    'landing.cta.start': 'Get started now',
+    'landing.features.title': 'Why choose us?',
+    'landing.features.subtitle': 'A comprehensive solution combining innovative technology with deep domain expertise',
+    'landing.ready': 'Ready to start?',
+    'landing.readySubtitle': 'Join thousands of satisfied customers already experiencing the future of maintenance management',
+
+    'login.enterprise.ssoPlaceholder': 'Enterprise login (SSO) — coming soon',
+    'login.enterprise.secureAccess': 'Secure access',
+    'login.enterprise.secureAccessDesc': 'End-to-end encryption, role-based permissions, and full login audit trail.',
+    'login.enterprise.operationalControl': 'Operational control',
+    'login.enterprise.operationalControlDesc': 'Centralized management of buildings, tickets, payments, and field teams.',
+    'login.enterprise.auditTrail': 'Audit trail',
+    'login.enterprise.auditTrailDesc': 'Complete action history for transparency, compliance, and faster support.',
+
     'support.title': 'Support center',
     'support.description': 'Send a request directly to support for access, payments, bugs, and day-to-day operations.',
     'support.name': 'Full name',
@@ -622,6 +857,27 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'legal.terms.3': 'Do not share access details, payment links, sensitive documents, or resident data with unauthorized parties.',
     'legal.terms.4': 'System administrators may suspend users, restrict permissions, or impersonate operational roles for support and diagnosis.',
     'legal.terms.5': 'Before taking an irreversible financial or operational action, verify the data against the latest records in the system.',
+
+    'settings.section.languageTitle': 'Language and region',
+    'settings.section.languageSubtitle': 'Choose your interface language, text direction, and regional formatting for dates and numbers.',
+    'settings.field.language': 'Interface language',
+    'settings.field.languageHint': 'The language used for menus, buttons, and messages in the app.',
+    'settings.field.direction': 'Text direction',
+    'settings.field.directionHint': 'Overall layout direction. Hebrew = right-to-left, English = left-to-right.',
+    'settings.field.regionalFormat': 'Regional format',
+    'settings.field.regionalFormatHint': 'Sets how dates, times, and numbers are displayed throughout the interface.',
+    'settings.direction.rtl': 'Right to left (RTL)',
+    'settings.direction.ltr': 'Left to right (LTR)',
+    'settings.language.he': 'עברית',
+    'settings.language.en': 'English',
+    'settings.action.saveLanguage': 'Save language preferences',
+    'settings.languageSavedToast': 'Language settings saved',
+    'settings.unsavedChanges': 'You have unsaved changes',
+    'settings.formatPreview': 'Preview',
+    'settings.formatPreviewDate': 'Date: {{value}}',
+    'settings.formatPreviewTime': 'Time: {{value}}',
+    'settings.formatPreviewNumber': 'Number: {{value}}',
+    'settings.formatPreviewCurrency': 'Currency: {{value}}',
 
     'payments.loading': 'Loading the payments center...',
     'payments.title': 'Payments',

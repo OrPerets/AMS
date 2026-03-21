@@ -11,6 +11,7 @@ import { cn } from '../lib/utils';
 import { Toaster as SonnerToaster } from 'sonner';
 import { PwaBootstrap } from '../components/pwa/PwaBootstrap';
 import { PwaInstallPrompt } from '../components/pwa/PwaInstallPrompt';
+import { BottomSurfaceProvider } from '../lib/bottom-surface';
 
 // Font configuration
 const inter = Inter({
@@ -41,12 +42,14 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         />
       </Head>
       <AppProviders>
-        <PwaBootstrap />
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
-        <PwaInstallPrompt />
-        <SonnerToaster position="top-center" richColors />
+        <BottomSurfaceProvider>
+          <PwaBootstrap />
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
+          <PwaInstallPrompt />
+          <SonnerToaster position="top-center" richColors />
+        </BottomSurfaceProvider>
       </AppProviders>
     </div>
   );

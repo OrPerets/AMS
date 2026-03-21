@@ -195,6 +195,9 @@
     --pwa-right-inset: env(safe-area-inset-right, 0px);
     --pwa-bottom-inset: env(safe-area-inset-bottom, 0px);
     --pwa-left-inset: env(safe-area-inset-left, 0px);
+
+    --bottom-surface-offset: 0px;
+    --bottom-essential-offset: 0px;
   }
 
   .dark {
@@ -286,6 +289,11 @@
 
   html[dir="ltr"] {
     direction: ltr;
+  }
+
+  /* Directional icon mirroring for navigation arrows */
+  html[dir="rtl"] .icon-directional {
+    transform: scaleX(-1);
   }
 
   /* Base typography */
@@ -431,14 +439,17 @@
     .app-shell {
       grid-template-areas:
         "header"
-        "main"
-        "footer";
+        "main";
       grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
       min-height: 100dvh;
     }
 
     .app-main {
-      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-bottom: max(
+        calc(60px + env(safe-area-inset-bottom, 0px)),
+        var(--bottom-surface-offset, 0px)
+      );
     }
   }
 
@@ -572,6 +583,10 @@
     bottom: 0;
     z-index: 40;
     pointer-events: none;
+  }
+
+  .z-45 {
+    z-index: 45;
   }
 
   .thumb-zone {
