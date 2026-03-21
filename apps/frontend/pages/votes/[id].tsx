@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { useFormatting } from '../../hooks/use-formatting';
 import { authFetch } from '../../lib/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -36,6 +37,7 @@ interface Vote {
 export default function VoteDetailsPage() {
   const router = useRouter();
   const { id } = router.query;
+  const { fmtDate } = useFormatting();
   const [vote, setVote] = useState<Vote | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -227,7 +229,7 @@ export default function VoteDetailsPage() {
           )}
 
           <div className="text-sm text-gray-500">
-            <p>תאריך סיום: {new Date(vote.endDate).toLocaleDateString('he-IL')}</p>
+            <p>תאריך סיום: {fmtDate(vote.endDate)}</p>
             <p>{vote.responseCount} משתתפים הצביעו</p>
           </div>
         </CardContent>

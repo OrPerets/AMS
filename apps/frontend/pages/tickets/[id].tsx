@@ -11,6 +11,7 @@ import { getStatusLabel } from '../../lib/utils';
 import { toast } from '../../components/ui/use-toast';
 import { MessageSquare, Send, Edit, Trash2 } from 'lucide-react';
 import { triggerHaptic } from '../../lib/mobile';
+import { useFormatting } from '../../hooks/use-formatting';
 
 interface TicketComment {
   id: number;
@@ -46,6 +47,7 @@ interface Ticket {
 export default function TicketDetails() {
   const router = useRouter();
   const { id } = router.query;
+  const { fmtDateTime } = useFormatting();
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [newComment, setNewComment] = useState('');
   const [editingComment, setEditingComment] = useState<number | null>(null);
@@ -236,7 +238,7 @@ export default function TicketDetails() {
                       ({comment.author.role})
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(comment.createdAt).toLocaleString('he-IL')}
+                      {fmtDateTime(comment.createdAt)}
                     </span>
                   </div>
                   <div className="flex gap-1">

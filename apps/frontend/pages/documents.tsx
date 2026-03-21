@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useFormatting } from '../hooks/use-formatting';
 import { Download, FileStack, FolderOpen, Lock, Search, Share2, ShieldCheck, Upload } from 'lucide-react';
 import { authFetch, getCurrentUserId } from '../lib/auth';
 import { Button } from '../components/ui/button';
@@ -64,6 +65,7 @@ const emptyUpload = {
 };
 
 export default function DocumentsPage() {
+  const { fmtDateTime } = useFormatting();
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<DocumentItem | null>(null);
@@ -406,7 +408,7 @@ export default function DocumentsPage() {
                   <span>גרסה {document.version}</span>
                   <span>{formatFileSize(document.fileSize)}</span>
                   <span>{document.mimeType || 'סוג לא ידוע'}</span>
-                  <span>{new Date(document.uploadedAt).toLocaleString('he-IL')}</span>
+                  <span>{fmtDateTime(document.uploadedAt)}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <a href={document.url} target="_blank" rel="noreferrer">
@@ -483,7 +485,7 @@ export default function DocumentsPage() {
                         <div className="font-medium">{share.user?.email || `משתמש #${share.userId}`}</div>
                         <div className="text-muted-foreground">
                           {share.permission}
-                          {share.expiresAt ? ` • עד ${new Date(share.expiresAt).toLocaleString('he-IL')}` : ''}
+                          {share.expiresAt ? ` • עד ${fmtDateTime(share.expiresAt)}` : ''}
                         </div>
                       </div>
                     ))}
@@ -502,7 +504,7 @@ export default function DocumentsPage() {
                           <div className="font-medium">
                             גרסה {version.version} {version.isLatest ? '(נוכחית)' : ''}
                           </div>
-                          <div className="text-muted-foreground">{new Date(version.uploadedAt).toLocaleString('he-IL')}</div>
+                          <div className="text-muted-foreground">{fmtDateTime(version.uploadedAt)}</div>
                           <a href={version.url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-primary underline-offset-4 hover:underline">
                             פתח קובץ גרסה
                           </a>

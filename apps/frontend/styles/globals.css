@@ -291,6 +291,11 @@
     direction: ltr;
   }
 
+  /* Directional icon mirroring for navigation arrows */
+  html[dir="rtl"] .icon-directional {
+    transform: scaleX(-1);
+  }
+
   /* Base typography */
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
