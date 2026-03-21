@@ -37,13 +37,13 @@ interface EmptyStateProps
 
 // Predefined icon components for common states
 const EmptyStateIcons = {
-  empty: <Inbox className="h-12 w-12 text-muted-foreground/40" />,
-  search: <Search className="h-12 w-12 text-muted-foreground/40" />,
-  error: <AlertCircle className="h-12 w-12 text-muted-foreground/40" />,
-  create: <Plus className="h-12 w-12 text-muted-foreground/40" />,
-  action: <ClipboardList className="h-12 w-12 text-muted-foreground/40" />,
-  restricted: <Lock className="h-12 w-12 text-muted-foreground/40" />,
-  default: <FileX className="h-12 w-12 text-muted-foreground/40" />,
+  empty: <Inbox className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />,
+  search: <Search className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />,
+  error: <AlertCircle className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />,
+  create: <Plus className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />,
+  action: <ClipboardList className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />,
+  restricted: <Lock className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />,
+  default: <FileX className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />,
 }
 
 const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
@@ -56,16 +56,16 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
         className={cn(emptyStateVariants({ size }), className)}
         {...props}
       >
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted/30">
+        <div className="flex h-14 w-14 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-muted/30">
           {selectedIcon}
         </div>
         
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-foreground">
+        <div className="space-y-1.5 sm:space-y-2">
+          <h3 className="text-base sm:text-lg font-semibold text-foreground">
             {title}
           </h3>
           {description && (
-            <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
               {description}
             </p>
           )}
@@ -75,7 +75,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
           <Button
             variant={action.variant || "default"}
             onClick={action.onClick}
-            className="mt-4"
+            className="mt-3 sm:mt-4"
           >
             {action.label}
           </Button>

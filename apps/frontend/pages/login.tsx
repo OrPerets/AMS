@@ -65,23 +65,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(201,156,72,0.14),_transparent_28%),linear-gradient(180deg,_rgba(250,247,240,0.96),_rgba(245,240,230,0.82))] px-4 py-8">
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(201,156,72,0.12),_transparent_30%),linear-gradient(180deg,_rgba(250,247,240,0.96),_rgba(245,240,230,0.82))] px-3 py-6 sm:px-4 sm:py-8">
+      <div className="mx-auto grid min-h-[calc(100vh-3rem)] sm:min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-6 sm:gap-8 lg:grid-cols-[1.1fr_0.9fr]">
 
-        <Card variant="featured" className="mx-auto w-full max-w-xl rounded-[32px] border-primary/20">
-          <CardHeader className="space-y-4 pb-6 text-center">
-            <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary/12 text-primary">
-              <ShieldCheck className="h-7 w-7" />
+        <Card variant="featured" className="mx-auto w-full max-w-xl rounded-2xl sm:rounded-[28px] border-primary/20">
+          <CardHeader className="space-y-3 sm:space-y-4 pb-4 sm:pb-6 text-center">
+            <div className="mx-auto inline-flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-primary/12 text-primary">
+              <ShieldCheck className="h-5 w-5 sm:h-7 sm:w-7" />
             </div>
-            <div className="space-y-2">
-              <CardTitle className="text-3xl">{t('login.formTitle')}</CardTitle>
-              <CardDescription>{t('login.formDescription')}</CardDescription>
+            <div className="space-y-1.5 sm:space-y-2">
+              <CardTitle className="text-xl sm:text-2xl">{t('login.formTitle')}</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">{t('login.formDescription')}</CardDescription>
             </div>
           </CardHeader>
           <CardContent>
-            <form onSubmit={onSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email">{t('login.emailLabel')}</Label>
+            <form onSubmit={onSubmit} className="space-y-4 sm:space-y-5">
+              <div className="space-y-1.5 sm:space-y-2">
+                <Label htmlFor="email" className="text-xs sm:text-sm">{t('login.emailLabel')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -94,8 +94,8 @@ export default function LoginPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">{t('login.passwordLabel')}</Label>
+              <div className="space-y-1.5 sm:space-y-2">
+                <Label htmlFor="password" className="text-xs sm:text-sm">{t('login.passwordLabel')}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -108,18 +108,18 @@ export default function LoginPage() {
               </div>
 
               {error ? (
-                <div className="flex items-start gap-3 rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                <div className="flex items-start gap-2.5 sm:gap-3 rounded-xl sm:rounded-2xl border border-destructive/20 bg-destructive/10 p-3 sm:p-4 text-xs sm:text-sm text-destructive">
                   <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                   <span>{error}</span>
                 </div>
               ) : null}
 
-              <Button type="submit" loading={loading} className="w-full" size="lg">
+              <Button type="submit" loading={loading} className="w-full">
                 <LogIn className="me-2 h-4 w-4" />
                 {loading ? t('login.submitting') : t('login.submit')}
               </Button>
 
-              <div className="rounded-[24px] border border-subtle-border bg-muted/50 p-4 text-center text-sm text-muted-foreground">
+              <div className="rounded-xl sm:rounded-[22px] border border-subtle-border bg-muted/50 p-3 sm:p-4 text-center text-xs sm:text-sm text-muted-foreground">
                 {t('login.supportNote')}
               </div>
             </form>
@@ -127,7 +127,7 @@ export default function LoginPage() {
         </Card>
       </div>
 
-      <div className="mt-6 text-center text-xs text-muted-foreground">
+      <div className="mt-4 sm:mt-6 text-center text-[11px] sm:text-xs text-muted-foreground">
         © {year} {t('app.shortName')}. {t('login.footer')}
       </div>
     </div>

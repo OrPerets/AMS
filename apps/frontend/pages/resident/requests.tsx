@@ -177,7 +177,7 @@ export default function ResidentRequestsPage() {
   const filtersApplied = historyFilter.status !== 'ALL' || historyFilter.requestType !== 'ALL';
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label="משוך כדי לרענן בקשות דייר" />
 
       <PageHero
@@ -204,13 +204,13 @@ export default function ResidentRequestsPage() {
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+      <div className="grid gap-4 sm:gap-6 xl:grid-cols-[0.8fr_1.2fr]">
         <Card variant="elevated">
           <CardHeader>
             <CardTitle>בחר סוג בקשה</CardTitle>
             <CardDescription>לקריאת תחזוקה השתמשו במסלול הייעודי כדי לצרף תמונות ולקבל טיפול מהיר.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2 sm:space-y-3">
             {requestTypes.map((type) => {
               const Icon = type.icon;
               const isActive = form.requestType === type.value;
@@ -219,18 +219,18 @@ export default function ResidentRequestsPage() {
                 <button
                   key={type.value}
                   type="button"
-                  className={`w-full rounded-[22px] border p-4 text-start transition ${
+                  className={`w-full rounded-xl sm:rounded-[20px] border p-3 sm:p-4 text-start transition active:scale-[0.98] ${
                     isActive ? 'border-primary bg-primary/10 shadow-sm' : 'border-subtle-border bg-background hover:border-primary/40 hover:bg-muted/40'
                   }`}
                   onClick={() => setForm((current) => ({ ...current, requestType: type.value }))}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`rounded-2xl p-2 ${isActive ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                  <div className="flex items-center gap-2.5 sm:gap-3">
+                    <div className={`rounded-xl sm:rounded-2xl p-2 ${isActive ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}>
                       <Icon className="h-4 w-4" />
                     </div>
-                    <div className="space-y-1">
-                      <div className="font-semibold text-foreground">{type.label}</div>
-                      <div className="text-sm leading-6 text-muted-foreground">{type.description}</div>
+                    <div className="space-y-0.5 sm:space-y-1">
+                      <div className="text-sm sm:text-base font-semibold text-foreground">{type.label}</div>
+                      <div className="text-xs sm:text-sm leading-5 sm:leading-6 text-muted-foreground">{type.description}</div>
                     </div>
                   </div>
                 </button>
@@ -388,19 +388,20 @@ export default function ResidentRequestsPage() {
               required
             >
               <Textarea
-                rows={7}
+                rows={5}
                 placeholder="לדוגמה: אבקש לתאם את המעלית לשעתיים ביום המעבר, כולל חסימת לובי והודעה לדיירים."
                 value={form.message}
                 onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))}
+                className="sm:min-h-[10rem]"
               />
             </FormField>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-subtle-border bg-muted/30 px-4 py-4">
-              <div className="space-y-1">
-                <div className="text-sm font-semibold text-foreground">הפנייה תישלח כבקשת {activeType.label}</div>
-                <div className="text-sm text-muted-foreground">לאחר השליחה אפשר לעקוב כאן אחרי סטטוס, הערות טיפול ועדכון אחרון.</div>
+            <div className="flex flex-col gap-3 rounded-xl sm:rounded-[20px] border border-subtle-border bg-muted/30 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4 sm:py-4">
+              <div className="space-y-0.5 sm:space-y-1">
+                <div className="text-xs sm:text-sm font-semibold text-foreground">בקשת {activeType.label}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">עקוב אחרי סטטוס וטיפול לאחר השליחה.</div>
               </div>
-              <Button onClick={submitRequest} disabled={submitting || Boolean(formErrors.subject || formErrors.message)}>
+              <Button onClick={submitRequest} disabled={submitting || Boolean(formErrors.subject || formErrors.message)} className="w-full sm:w-auto">
                 {submitting ? 'שולח...' : 'שלח בקשה'}
               </Button>
             </div>
@@ -521,41 +522,41 @@ export default function ResidentRequestsPage() {
 
 function RequestHistoryList({ items, locale }: { items: RequestHistoryItem[]; locale: string }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5 sm:space-y-3">
       {items.map((item) => (
-        <div key={item.requestKey} className="rounded-[22px] border border-subtle-border bg-background p-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
+        <div key={item.requestKey} className="rounded-xl sm:rounded-[20px] border border-subtle-border bg-background p-3 sm:p-4">
+          <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <StatusBadge label={getResidentRequestStatusLabel(item.status)} tone={getResidentRequestStatusTone(item.status)} />
                 <StatusBadge label={getRequestTypeLabel(item.requestType)} tone="neutral" />
                 {item.requestedDate ? (
                   <StatusBadge
                     label={`יעד: ${formatDate(item.requestedDate, locale)}`}
                     tone="warning"
-                    className="gap-2"
+                    className="gap-1.5"
                   />
                 ) : null}
               </div>
 
-              <div className="space-y-1">
-                <div className="font-semibold text-foreground">{item.subject.replace(/^[A-Z_]+:\s*/, '')}</div>
-                <div className="text-sm leading-6 text-muted-foreground">{item.message}</div>
+              <div className="space-y-0.5 sm:space-y-1">
+                <div className="text-sm sm:text-base font-semibold text-foreground">{item.subject.replace(/^[A-Z_]+:\s*/, '')}</div>
+                <div className="text-xs sm:text-sm leading-5 sm:leading-6 text-muted-foreground line-clamp-2 sm:line-clamp-none">{item.message}</div>
               </div>
 
               {item.statusNotes ? (
-                <div className="rounded-2xl border border-subtle-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                <div className="rounded-xl sm:rounded-2xl border border-subtle-border bg-muted/40 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-muted-foreground">
                   <span className="font-medium text-foreground">הערת טיפול:</span> {item.statusNotes}
                 </div>
               ) : null}
             </div>
 
-            <div className="shrink-0 rounded-2xl border border-subtle-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-primary" />
-                עודכן לאחרונה
+            <div className="shrink-0 rounded-xl sm:rounded-2xl border border-subtle-border bg-muted/40 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                עודכן
               </div>
-              <div className="mt-2 font-medium text-foreground">{formatDate(new Date(item.updatedAt || item.createdAt), locale)}</div>
+              <div className="mt-1 sm:mt-2 font-medium text-foreground">{formatDate(new Date(item.updatedAt || item.createdAt), locale)}</div>
             </div>
           </div>
         </div>
