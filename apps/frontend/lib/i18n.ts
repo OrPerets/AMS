@@ -86,6 +86,10 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'shell.theme': 'ערכת נושא',
     'shell.language': 'שפה',
 
+    'bottomNav.label': 'ניווט ראשי',
+    'bottomNav.more': 'עוד',
+    'bottomNav.moreMenu': 'ניווט נוסף',
+
     'header.openMenu': 'פתח תפריט',
     'header.toggleSidebar': 'הסתר או הצג סרגל ניווט',
     'header.searchPlaceholder': 'חפש מסך, קריאה או בניין',
@@ -134,6 +138,9 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'login.error.emailInvalid': 'כתובת האימייל אינה תקינה.',
     'login.error.passwordShort': 'הסיסמה חייבת להכיל לפחות 6 תווים.',
     'login.error.generic': 'ההתחברות לא הצליחה. בדוק את הפרטים ונסה שוב.',
+    'login.recoveryHint': 'אם שכחת את הסיסמה, פנה למנהל המערכת לאיפוס.',
+    'login.showPassword': 'הצג סיסמה',
+    'login.hidePassword': 'הסתר סיסמה',
 
     'settings.heroKicker': 'חשבון והעדפות',
     'settings.heroBadge': 'חשבון',
@@ -396,6 +403,10 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'shell.theme': 'Theme',
     'shell.language': 'Language',
 
+    'bottomNav.label': 'Main navigation',
+    'bottomNav.more': 'More',
+    'bottomNav.moreMenu': 'More navigation',
+
     'header.openMenu': 'Open menu',
     'header.toggleSidebar': 'Show or hide navigation',
     'header.searchPlaceholder': 'Search for a screen, ticket, or building',
@@ -444,6 +455,9 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'login.error.emailInvalid': 'Enter a valid email address.',
     'login.error.passwordShort': 'Password must contain at least 6 characters.',
     'login.error.generic': 'Sign-in failed. Check your details and try again.',
+    'login.recoveryHint': 'If you forgot your password, contact your system administrator to reset it.',
+    'login.showPassword': 'Show password',
+    'login.hidePassword': 'Hide password',
 
     'settings.heroKicker': 'Account and preferences',
     'settings.heroBadge': 'Account',

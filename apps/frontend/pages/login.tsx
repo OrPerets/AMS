@@ -1,11 +1,12 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
-import { AlertCircle, ArrowLeft, Building2, Globe, LogIn, ShieldCheck } from 'lucide-react';
+import { AlertCircle, ArrowLeft, LogIn, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { StatusBadge } from '../components/ui/status-badge';
+import { PasswordInput } from '../components/ui/password-input';
+import { useFormValidation } from '../hooks/use-form-validation';
 import { getDefaultRoute, getTokenPayload, login } from '../lib/auth';
 import { useDirection, useLocale } from '../lib/providers';
 
@@ -13,36 +14,41 @@ export default function LoginPage() {
   const router = useRouter();
   const { direction, setDirection } = useDirection();
   const { locale, setLocale, t } = useLocale();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const year = useMemo(() => new Date().getFullYear(), []);
+  const emailRef = useRef<HTMLInputElement>(null);
 
-  async function onSubmit(e: FormEvent) {
+  const validators = useMemo(() => ({
+    email: (value: string) => {
+      const v = value.trim();
+      if (!v) return t('login.error.emailRequired');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return t('login.error.emailInvalid');
+      return '';
+    },
+    password: (value: string) => {
+      if (value.length < 6) return t('login.error.passwordShort');
+      return '';
+    },
+  }), [t]);
+
+  const form = useFormValidation({
+    initialValues: { email: '', password: '' },
+    validators,
+    validateOn: 'blur',
+  });
+
+  const onSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
-    const normalizedEmail = email.trim().toLowerCase();
+    setServerError(null);
 
-    if (normalizedEmail.length === 0) {
-      setError(t('login.error.emailRequired'));
-      return;
-    }
+    if (!form.validate()) return;
 
-    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) === false) {
-      setError(t('login.error.emailInvalid'));
-      return;
-    }
-
-    if (password.length < 6) {
-      setError(t('login.error.passwordShort'));
-      return;
-    }
-
+    const normalizedEmail = form.values.email.trim().toLowerCase();
     setLoading(true);
-    setError(null);
 
     try {
-      await login(normalizedEmail, password);
+      await login(normalizedEmail, form.values.password);
       const payload = getTokenPayload();
       if (payload && payload.role === 'MASTER') {
         const next = typeof router.query.next === 'string' ? router.query.next : undefined;
@@ -53,11 +59,13 @@ export default function LoginPage() {
       const next = typeof router.query.next === 'string' ? router.query.next : getDefaultRoute();
       router.replace(next);
     } catch (err: any) {
-      setError(err?.message || t('login.error.generic'));
+      const msg = err?.message || t('login.error.generic');
+      setServerError(msg);
+      emailRef.current?.focus();
     } finally {
       setLoading(false);
     }
-  }
+  }, [form, router, t]);
 
   const toggleLocale = () => {
     setDirection(direction === 'rtl' ? 'ltr' : 'rtl');
@@ -79,38 +87,56 @@ export default function LoginPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <form onSubmit={onSubmit} className="space-y-4 sm:space-y-5">
+            <form onSubmit={onSubmit} className="space-y-4 sm:space-y-5" noValidate>
               <div className="space-y-1.5 sm:space-y-2">
                 <Label htmlFor="email" className="text-xs sm:text-sm">{t('login.emailLabel')}</Label>
                 <Input
+                  ref={emailRef}
                   id="email"
+                  name="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  inputMode="email"
+                  value={form.values.email}
+                  onChange={(e) => form.setFieldValue('email', e.target.value)}
+                  onBlur={() => form.handleBlur('email')}
                   placeholder="name@company.com"
                   autoComplete="email"
-                  error={typeof error === 'string'}
+                  error={!!form.getFieldError('email')}
                   startIcon={<ArrowLeft className="h-4 w-4" />}
+                  aria-invalid={!!form.getFieldError('email') || undefined}
                 />
+                {form.getFieldError('email') ? (
+                  <p className="text-xs text-destructive" role="alert">{form.getFieldError('email')}</p>
+                ) : null}
               </div>
 
               <div className="space-y-1.5 sm:space-y-2">
                 <Label htmlFor="password" className="text-xs sm:text-sm">{t('login.passwordLabel')}</Label>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  name="password"
+                  value={form.values.password}
+                  onChange={(e) => form.setFieldValue('password', e.target.value)}
+                  onBlur={() => form.handleBlur('password')}
                   placeholder={t('login.passwordPlaceholder')}
                   autoComplete="current-password"
-                  error={typeof error === 'string'}
+                  error={!!form.getFieldError('password')}
+                  showLabel={t('login.showPassword')}
+                  hideLabel={t('login.hidePassword')}
+                  aria-invalid={!!form.getFieldError('password') || undefined}
                 />
+                {form.getFieldError('password') ? (
+                  <p className="text-xs text-destructive" role="alert">{form.getFieldError('password')}</p>
+                ) : null}
               </div>
 
-              {error ? (
-                <div className="flex items-start gap-2.5 sm:gap-3 rounded-xl sm:rounded-2xl border border-destructive/20 bg-destructive/10 p-3 sm:p-4 text-xs sm:text-sm text-destructive">
+              {serverError ? (
+                <div className="flex items-start gap-2.5 sm:gap-3 rounded-xl sm:rounded-2xl border border-destructive/20 bg-destructive/10 p-3 sm:p-4 text-xs sm:text-sm text-destructive" role="alert">
                   <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                  <span>{error}</span>
+                  <div className="space-y-1">
+                    <span>{serverError}</span>
+                    <p className="text-destructive/75">{t('login.recoveryHint')}</p>
+                  </div>
                 </div>
               ) : null}
 

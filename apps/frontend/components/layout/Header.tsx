@@ -115,19 +115,15 @@ export default function Header({
       "sticky top-0 z-40 w-full border-b bg-background/85 backdrop-blur-md",
       className
     )}>
-      <div className="container flex h-14 sm:h-16 items-center justify-between gap-1.5 sm:gap-2 px-3 sm:px-6">
-        {/* Left section: Menu & Logo */}
+      <div className="container flex h-12 sm:h-16 items-center justify-between gap-1.5 sm:gap-2 px-3 sm:px-6">
+        {/* Left section */}
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-4">
-          {/* Mobile menu button */}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onMenuClick}
-            className="md:hidden"
-          >
-            <Menu className="h-5 w-5" />
-            <span className="sr-only">{t('header.openMenu')}</span>
-          </Button>
+          {/* Mobile: back/logo only */}
+          <Link href="/" className="flex items-center gap-1.5 sm:gap-2 md:hidden">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs">
+              A
+            </div>
+          </Link>
 
           {/* Desktop collapse button */}
           <Button
@@ -144,17 +140,18 @@ export default function Header({
             <span className="sr-only">{t('header.toggleSidebar')}</span>
           </Button>
 
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-1.5 sm:gap-2">
-            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs sm:text-sm">
+          {/* Desktop Logo */}
+          <Link href="/" className="hidden md:flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
               A
             </div>
-            <span className="hidden truncate font-bold md:inline-block">
+            <span className="truncate font-bold">
               {t('app.shortName')}
             </span>
           </Link>
         </div>
 
+        {/* Desktop center: command palette search */}
         <div className="hidden flex-1 justify-center md:flex">
           <Button
             variant="outline"
@@ -172,25 +169,40 @@ export default function Header({
           </Button>
         </div>
 
-        {/* Right section: Controls & User Menu */}
+        {/* Mobile center: page context (kept empty to allow flex spacing) */}
+        <div className="flex-1 md:hidden" />
+
+        {/* Right section */}
         <div className="flex items-center gap-0.5 sm:gap-1.5">
+          {/* Mobile: single search button */}
           <Button
             variant="ghost"
             size="icon-sm"
             onClick={onCommandPaletteOpen}
-            className="shrink-0 sm:h-9 sm:w-9"
+            className="shrink-0 md:hidden"
             aria-label={t('header.openCommandPalette')}
           >
             <Search className="h-4 w-4" />
           </Button>
 
-          {/* Theme toggle - only render after mount */}
+          {/* Desktop: search button (separate from center bar) */}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onCommandPaletteOpen}
+            className="hidden md:inline-flex sm:h-9 sm:w-9 shrink-0"
+            aria-label={t('header.openCommandPalette')}
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+
+          {/* Theme toggle - desktop only */}
           {mounted && (
             <Button
               variant="ghost"
               size="icon-sm"
               onClick={toggleTheme}
-              className="hidden sm:inline-flex sm:h-9 sm:w-9 shrink-0"
+              className="hidden md:inline-flex sm:h-9 sm:w-9 shrink-0"
             >
               {theme === 'light' ? (
                 <Moon className="h-4 w-4" />
@@ -201,13 +213,13 @@ export default function Header({
             </Button>
           )}
 
-          {/* Notification bell */}
+          {/* Notification bell - desktop only (mobile uses bottom nav) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="relative shrink-0 sm:h-9 sm:w-9"
+                className="relative hidden md:inline-flex sm:h-9 sm:w-9 shrink-0"
                 aria-label={t('header.notifications')}
               >
                 <Bell className="h-4 w-4" />
@@ -218,7 +230,7 @@ export default function Header({
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto sm:w-80 w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)]">
+            <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
               <DropdownMenuLabel className="text-sm font-semibold">
                 {t('header.notifications')}
               </DropdownMenuLabel>
@@ -262,13 +274,13 @@ export default function Header({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Direction/Language toggle - only render after mount */}
+          {/* Direction/Language toggle - desktop only */}
           {mounted && (
             <Button
               variant="ghost"
               size="icon-sm"
               onClick={toggleDirection}
-              className="hidden shrink-0 sm:inline-flex sm:h-9 sm:w-9"
+              className="hidden shrink-0 md:inline-flex sm:h-9 sm:w-9"
               aria-label={t('header.toggleLocale')}
             >
               <Globe className="h-4 w-4" />

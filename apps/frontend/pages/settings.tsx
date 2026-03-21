@@ -5,10 +5,11 @@ import { isValidEmail } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { EmptyState } from '../components/ui/empty-state';
-import { FormField } from '../components/ui/form-field';
+import { FormField, FormErrorSummary } from '../components/ui/form-field';
 import { InlineErrorPanel } from '../components/ui/inline-feedback';
 import { Input } from '../components/ui/input';
 import { PageHero } from '../components/ui/page-hero';
+import { PasswordInput } from '../components/ui/password-input';
 import { SectionHeader } from '../components/ui/section-header';
 import { StatusBadge } from '../components/ui/status-badge';
 import { Switch } from '../components/ui/switch';
@@ -49,6 +50,10 @@ export default function SettingsPage() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [savingPreferences, setSavingPreferences] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [profileTouched, setProfileTouched] = useState<Record<string, boolean>>({});
+  const [passwordTouched, setPasswordTouched] = useState<Record<string, boolean>>({});
+  const [profileSubmitted, setProfileSubmitted] = useState(false);
+  const [passwordSubmitted, setPasswordSubmitted] = useState(false);
 
   useEffect(() => {
     void loadSettings();
@@ -85,8 +90,10 @@ export default function SettingsPage() {
   }
 
   async function saveProfile() {
+    setProfileSubmitted(true);
     if (profileErrors.email || profileErrors.phone) {
       toast({ title: t('settings.profileSaveValidation'), variant: 'destructive' });
+      scrollToFirstError();
       return;
     }
 
@@ -114,8 +121,10 @@ export default function SettingsPage() {
   }
 
   async function savePassword() {
+    setPasswordSubmitted(true);
     if (passwordErrors.currentPassword || passwordErrors.newPassword) {
       toast({ title: t('settings.passwordValidation'), variant: 'destructive' });
+      scrollToFirstError();
       return;
     }
 
@@ -130,6 +139,8 @@ export default function SettingsPage() {
         throw new Error(await response.text());
       }
       setPasswords({ currentPassword: '', newPassword: '' });
+      setPasswordTouched({});
+      setPasswordSubmitted(false);
       setSaveMessage(t('settings.passwordSavedMessage'));
       toast({ title: t('settings.passwordSavedToast') });
     } catch {
@@ -166,6 +177,19 @@ export default function SettingsPage() {
       setSavingPreferences(false);
     }
   }
+
+  function scrollToFirstError() {
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>('[aria-invalid="true"]');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus({ preventScroll: true });
+      }
+    });
+  }
+
+  const shouldShowProfileError = (field: string) => profileSubmitted || profileTouched[field];
+  const shouldShowPasswordError = (field: string) => passwordSubmitted || passwordTouched[field];
 
   const profileErrors = useMemo(() => {
     return {
@@ -204,18 +228,10 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8">
       <PageHero
+        compact
         kicker={t('settings.heroKicker')}
         eyebrow={<StatusBadge label={t('settings.heroBadge')} tone="finance" />}
         title={t('settings.heroTitle')}
-        description={t('settings.heroDescription')}
-        aside={
-          <div className="space-y-3 text-white">
-            <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-white/55">{t('settings.saveState')}</div>
-              <div className="mt-2 text-base font-semibold">{saveMessage ?? t('settings.noRecentSave')}</div>
-            </div>
-          </div>
-        }
       />
 
       {loadError ? <InlineErrorPanel title={t('settings.loadErrorTitle')} description={loadError} onRetry={loadSettings} /> : null}
@@ -239,21 +255,29 @@ export default function SettingsPage() {
               actions={<UserRound className="h-5 w-5 text-primary" />}
             />
 
-            <FormField label={t('settings.field.email')} error={profileErrors.email || undefined} required>
+            <FormField label={t('settings.field.email')} error={shouldShowProfileError('email') ? profileErrors.email || undefined : undefined} required>
               <Input
                 id="email"
+                name="email"
+                type="email"
+                inputMode="email"
                 value={profile.email}
                 disabled={savingProfile}
                 onChange={(event) => setProfile((current) => ({ ...current, email: event.target.value }))}
+                onBlur={() => setProfileTouched((prev) => ({ ...prev, email: true }))}
               />
             </FormField>
 
-            <FormField label={t('settings.field.phone')} description={t('settings.field.phoneHint')} error={profileErrors.phone || undefined}>
+            <FormField label={t('settings.field.phone')} description={t('settings.field.phoneHint')} error={shouldShowProfileError('phone') ? profileErrors.phone || undefined : undefined}>
               <Input
                 id="phone"
+                name="phone"
+                type="tel"
+                inputMode="tel"
                 value={profile.phone}
                 disabled={savingProfile}
                 onChange={(event) => setProfile((current) => ({ ...current, phone: event.target.value }))}
+                onBlur={() => setProfileTouched((prev) => ({ ...prev, phone: true }))}
               />
             </FormField>
 
@@ -284,30 +308,34 @@ export default function SettingsPage() {
               actions={<KeyRound className="h-5 w-5 text-primary" />}
             />
 
-            <FormField label={t('settings.field.currentPassword')} error={passwordErrors.currentPassword || undefined} required>
-              <Input
+            <FormField label={t('settings.field.currentPassword')} error={shouldShowPasswordError('currentPassword') ? passwordErrors.currentPassword || undefined : undefined} required>
+              <PasswordInput
                 id="currentPassword"
-                type="password"
+                name="currentPassword"
                 value={passwords.currentPassword}
                 onChange={(event) =>
                   setPasswords((current) => ({ ...current, currentPassword: event.target.value }))
                 }
+                onBlur={() => setPasswordTouched((prev) => ({ ...prev, currentPassword: true }))}
+                autoComplete="current-password"
               />
             </FormField>
 
             <FormField
               label={t('settings.field.newPassword')}
               description={t('settings.validation.newPassword')}
-              error={passwordErrors.newPassword || undefined}
+              error={shouldShowPasswordError('newPassword') ? passwordErrors.newPassword || undefined : undefined}
               required
             >
-              <Input
+              <PasswordInput
                 id="newPassword"
-                type="password"
+                name="newPassword"
                 value={passwords.newPassword}
                 onChange={(event) =>
                   setPasswords((current) => ({ ...current, newPassword: event.target.value }))
                 }
+                onBlur={() => setPasswordTouched((prev) => ({ ...prev, newPassword: true }))}
+                autoComplete="new-password"
               />
             </FormField>
 
