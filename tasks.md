@@ -51,40 +51,40 @@ Create a navigation model that lets each role reach its most important tasks in 
 
 ### 1. Define the mobile information architecture
 
-- [ ] Audit all current routes and map them by role: Resident, PM, Admin, Tech, Accountant.
-- [ ] Identify the top 3-5 most frequent destinations per role.
-- [ ] Define which routes are top-level navigation destinations versus secondary destinations.
-- [ ] Create a route ownership table showing which screen belongs to which mobile nav bucket.
-- [ ] Document edge cases for shared screens that appear in more than one role.
+- [x] Audit all current routes and map them by role: Resident, PM, Admin, Tech, Accountant.
+- [x] Identify the top 3-5 most frequent destinations per role.
+- [x] Define which routes are top-level navigation destinations versus secondary destinations.
+- [x] Create a route ownership table showing which screen belongs to which mobile nav bucket.
+- [x] Document edge cases for shared screens that appear in more than one role.
 
 ### 2. Design the mobile primary nav pattern
 
-- [ ] Introduce a persistent bottom navigation for mobile only.
-- [ ] Limit bottom navigation to a maximum of 5 items per role.
-- [ ] Ensure each nav item has both icon and text label.
-- [ ] Add active-state treatment that is visually obvious in both light and dark themes.
-- [ ] Add support for badges for unread notifications, open tasks, or urgent work.
+- [x] Introduce a persistent bottom navigation for mobile only.
+- [x] Limit bottom navigation to a maximum of 5 items per role.
+- [x] Ensure each nav item has both icon and text label.
+- [x] Add active-state treatment that is visually obvious in both light and dark themes.
+- [x] Add support for badges for unread notifications, open tasks, or urgent work.
 
 ### 3. Separate primary from secondary actions
 
-- [ ] Move secondary/admin destinations into a mobile “More” sheet or drawer.
-- [ ] Keep rarely used configuration and admin routes out of the primary bottom nav.
-- [ ] Ensure destructive or account-level actions are visually separated from standard navigation actions.
-- [ ] Add clear grouping in the secondary menu to avoid long undifferentiated lists.
+- [x] Move secondary/admin destinations into a mobile “More” sheet or drawer.
+- [x] Keep rarely used configuration and admin routes out of the primary bottom nav.
+- [x] Ensure destructive or account-level actions are visually separated from standard navigation actions.
+- [x] Add clear grouping in the secondary menu to avoid long undifferentiated lists.
 
 ### 4. Preserve navigation context
 
-- [ ] Ensure deep links still highlight the correct top-level mobile destination.
-- [ ] Preserve scroll position and filter state when navigating back from detail pages.
-- [ ] Confirm nested routes do not cause bottom-nav state confusion.
-- [ ] Add a predictable back behavior model for detail pages and subflows.
+- [x] Ensure deep links still highlight the correct top-level mobile destination.
+- [x] Preserve scroll position and filter state when navigating back from detail pages.
+- [x] Confirm nested routes do not cause bottom-nav state confusion.
+- [x] Add a predictable back behavior model for detail pages and subflows.
 
 ### 5. Implementation and QA
 
-- [ ] Implement mobile nav without regressing desktop sidebar behavior.
-- [ ] Verify navigation on common breakpoints: small phone, large phone, tablet.
-- [ ] Test each role’s nav map end-to-end.
-- [ ] Validate no destination becomes unreachable during the transition.
+- [x] Implement mobile nav without regressing desktop sidebar behavior.
+- [x] Verify navigation on common breakpoints: small phone, large phone, tablet.
+- [x] Test each role’s nav map end-to-end.
+- [x] Validate no destination becomes unreachable during the transition.
 
 ## Acceptance criteria
 
@@ -110,35 +110,35 @@ Reduce header clutter and get users to the main task faster on small screens.
 
 ### 1. Simplify the mobile header
 
-- [ ] Split header behavior into mobile and desktop variants.
-- [ ] Keep only the essential mobile header actions: back/menu, page title, one contextual utility.
-- [ ] Remove redundant always-visible actions from the mobile header.
-- [ ] Route non-essential tools such as global search into dedicated mobile-friendly entry points.
-- [ ] Replace dense header dropdown behavior with route-based or full-height sheet behavior where appropriate.
+- [x] Split header behavior into mobile and desktop variants.
+- [x] Keep only the essential mobile header actions: back/menu, page title, one contextual utility.
+- [x] Remove redundant always-visible actions from the mobile header.
+- [x] Route non-essential tools such as global search into dedicated mobile-friendly entry points.
+- [x] Replace dense header dropdown behavior with route-based or full-height sheet behavior where appropriate.
 
 ### 2. Introduce compact mobile hero rules
 
-- [ ] Create a compact mobile variant of the page hero component.
-- [ ] Reduce title size, vertical padding, and supporting copy on mobile.
-- [ ] Show only one primary CTA on mobile hero sections by default.
-- [ ] Move secondary KPIs and supporting content below the fold when they are not immediately actionable.
-- [ ] Remove or collapse side panels/aside content inside hero sections on small screens.
+- [x] Create a compact mobile variant of the page hero component.
+- [x] Reduce title size, vertical padding, and supporting copy on mobile.
+- [x] Show only one primary CTA on mobile hero sections by default.
+- [x] Move secondary KPIs and supporting content below the fold when they are not immediately actionable.
+- [x] Remove or collapse side panels/aside content inside hero sections on small screens.
 
 ### 3. Prioritize immediate actions on key pages
 
-- [ ] Update Home so the first visible action supports the role’s main daily job.
-- [ ] Update Resident Requests so the request form or request-type selector is reachable faster.
-- [ ] Update Settings so the first viewport focuses on the user’s most common task, not page chrome.
-- [ ] Update Notifications so filters and critical messages are visible before lower-priority content.
+- [x] Update Home so the first visible action supports the role’s main daily job.
+- [x] Update Resident Requests so the request form or request-type selector is reachable faster.
+- [x] Update Settings so the first viewport focuses on the user’s most common task, not page chrome.
+- [x] Update Notifications so filters and critical messages are visible before lower-priority content.
 
 ### 4. Validate scannability
 
-- [ ] Review all top mobile pages for first-screen scan order.
-- [ ] Ensure users can answer these questions within seconds:
+- [x] Review all top mobile pages for first-screen scan order.
+- [x] Ensure users can answer these questions within seconds:
   - where am I?
   - what matters most?
   - what should I do next?
-- [ ] Remove visual noise that competes with primary actions.
+- [x] Remove visual noise that competes with primary actions.
 
 ## Acceptance criteria
 
@@ -164,40 +164,40 @@ Make all high-value forms feel safe, clear, and enterprise-grade on mobile.
 
 ### 1. Standardize validation behavior
 
-- [ ] Introduce a consistent touched/dirty strategy across forms.
-- [ ] Prevent untouched fields from rendering as invalid on first load.
-- [ ] Validate on blur or submit rather than aggressively on each keystroke.
-- [ ] Ensure every invalid field has a specific, actionable error message.
-- [ ] Add consistent success messaging after save/submit events.
+- [x] Introduce a consistent touched/dirty strategy across forms.
+- [x] Prevent untouched fields from rendering as invalid on first load.
+- [x] Validate on blur or submit rather than aggressively on each keystroke.
+- [x] Ensure every invalid field has a specific, actionable error message.
+- [x] Add consistent success messaging after save/submit events.
 
 ### 2. Improve form accessibility and recovery
 
-- [ ] Auto-focus and scroll to the first invalid field on submit failure.
-- [ ] Add a reusable top-of-form error summary for multi-error forms.
-- [ ] Ensure error messages are announced accessibly.
-- [ ] Verify labels, helper text, and required states are consistent across all forms.
-- [ ] Distinguish clearly between disabled, read-only, and editable states.
+- [x] Auto-focus and scroll to the first invalid field on submit failure.
+- [x] Add a reusable top-of-form error summary for multi-error forms.
+- [x] Ensure error messages are announced accessibly.
+- [x] Verify labels, helper text, and required states are consistent across all forms.
+- [x] Distinguish clearly between disabled, read-only, and editable states.
 
 ### 3. Improve mobile input ergonomics
 
-- [ ] Add password show/hide support to the shared input pattern.
-- [ ] Verify semantic input types are used for email, phone, and numeric fields.
-- [ ] Confirm input heights and spacing remain touch-friendly across breakpoints.
-- [ ] Ensure suffix/prefix icons never obscure user-entered text.
-- [ ] Review keyboard behavior and autofill support on login and account forms.
+- [x] Add password show/hide support to the shared input pattern.
+- [x] Verify semantic input types are used for email, phone, and numeric fields.
+- [x] Confirm input heights and spacing remain touch-friendly across breakpoints.
+- [x] Ensure suffix/prefix icons never obscure user-entered text.
+- [x] Review keyboard behavior and autofill support on login and account forms.
 
 ### 4. Upgrade the highest-impact flows first
 
-- [ ] Login: add recovery path, clearer auth errors, and password visibility.
-- [ ] Settings: stop showing validation errors before user interaction.
-- [ ] Resident Requests: add clearer inline guidance and more forgiving recovery after failed submit.
-- [ ] Any password update flow: add stronger confirmation feedback.
+- [x] Login: add recovery path, clearer auth errors, and password visibility.
+- [x] Settings: stop showing validation errors before user interaction.
+- [x] Resident Requests: add clearer inline guidance and more forgiving recovery after failed submit.
+- [x] Any password update flow: add stronger confirmation feedback.
 
 ### 5. QA and consistency pass
 
-- [ ] Test forms with slow network and failed submissions.
-- [ ] Test forms in RTL, small mobile widths, and large text settings.
-- [ ] Ensure all success, warning, and destructive states are visually distinct.
+- [x] Test forms with slow network and failed submissions.
+- [x] Test forms in RTL, small mobile widths, and large text settings.
+- [x] Ensure all success, warning, and destructive states are visually distinct.
 
 ## Acceptance criteria
 
