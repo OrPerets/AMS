@@ -18,34 +18,34 @@ const attentionToneIcons = {
 
 export function AttentionGrid({ data }: { data: DashboardResponse }) {
   return (
-    <section className="space-y-4">
+    <section className="space-y-3 sm:space-y-4">
       <div>
-        <h2 className="text-2xl font-black tracking-tight text-foreground">דורש תשומת לב עכשיו</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          הכרטיסים מציגים מוקדי פעולה מיידיים. הם לא ציון בריאות כללי, אלא תור החלטות שנועד לקצר חיפוש והקלקות.
+        <h2 className="text-lg sm:text-xl font-black tracking-tight text-foreground">דורש תשומת לב</h2>
+        <p className="mt-0.5 hidden sm:block text-sm text-muted-foreground">
+          מוקדי פעולה מיידיים שנועדו לקצר חיפוש והקלקות.
         </p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
         {data.attentionItems.map((item) => {
           const ToneIcon = attentionToneIcons[item.tone];
           return (
             <Card
               key={item.id}
-              className={`group rounded-[24px] border ${attentionToneClasses[item.tone]} transition-transform hover:-translate-y-0.5 ${item.tone === 'danger' ? 'ring-1 ring-rose-300/50' : ''}`}
+              className={`group rounded-xl sm:rounded-[22px] border ${attentionToneClasses[item.tone]} transition-transform hover:-translate-y-0.5 ${item.tone === 'danger' ? 'ring-1 ring-rose-300/50' : ''}`}
             >
-              <CardHeader className="space-y-3 pb-2">
+              <CardHeader className="space-y-1.5 sm:space-y-3 pb-1.5 sm:pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{item.title}</CardTitle>
-                  <ToneIcon className={`h-5 w-5 ${item.tone === 'danger' ? 'text-rose-600' : item.tone === 'warning' ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                  <CardTitle className="text-sm sm:text-base">{item.title}</CardTitle>
+                  <ToneIcon className={`h-4 w-4 sm:h-5 sm:w-5 shrink-0 ${item.tone === 'danger' ? 'text-rose-600' : item.tone === 'warning' ? 'text-amber-600' : 'text-muted-foreground'}`} />
                 </div>
-                <div className="text-3xl font-black">{item.value}</div>
-                <CardDescription className="text-current/70">{item.description}</CardDescription>
+                <div className="text-xl sm:text-2xl font-black">{item.value}</div>
+                <CardDescription className="text-current/70 hidden sm:block">{item.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button asChild size="sm" variant="outline" className="w-full border-current/20 bg-background/70 transition-colors hover:bg-background">
+                <Button asChild size="sm" variant="outline" className="w-full border-current/20 bg-background/70 text-xs sm:text-sm transition-colors hover:bg-background">
                   <Link href={item.ctaHref}>
                     {item.ctaLabel}
-                    <ArrowUpRight className="ms-2 h-4 w-4" />
+                    <ArrowUpRight className="ms-1.5 h-3.5 w-3.5" />
                   </Link>
                 </Button>
               </CardContent>
