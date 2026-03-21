@@ -138,6 +138,9 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'login.error.emailInvalid': 'כתובת האימייל אינה תקינה.',
     'login.error.passwordShort': 'הסיסמה חייבת להכיל לפחות 6 תווים.',
     'login.error.generic': 'ההתחברות לא הצליחה. בדוק את הפרטים ונסה שוב.',
+    'login.recoveryHint': 'אם שכחת את הסיסמה, פנה למנהל המערכת לאיפוס.',
+    'login.showPassword': 'הצג סיסמה',
+    'login.hidePassword': 'הסתר סיסמה',
 
     'settings.heroKicker': 'חשבון והעדפות',
     'settings.heroBadge': 'חשבון',
@@ -452,6 +455,9 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'login.error.emailInvalid': 'Enter a valid email address.',
     'login.error.passwordShort': 'Password must contain at least 6 characters.',
     'login.error.generic': 'Sign-in failed. Check your details and try again.',
+    'login.recoveryHint': 'If you forgot your password, contact your system administrator to reset it.',
+    'login.showPassword': 'Show password',
+    'login.hidePassword': 'Hide password',
 
     'settings.heroKicker': 'Account and preferences',
     'settings.heroBadge': 'Account',

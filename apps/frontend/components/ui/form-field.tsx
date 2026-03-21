@@ -152,11 +152,73 @@ const FormLabel = React.forwardRef<
 ))
 FormLabel.displayName = "FormLabel"
 
+interface FormErrorSummaryProps {
+  errors: Array<{ field: string; message: string }>;
+  fieldLabels?: Record<string, string>;
+  title?: string;
+  className?: string;
+}
+
+const FormErrorSummary = React.forwardRef<HTMLDivElement, FormErrorSummaryProps>(
+  ({ errors, fieldLabels, title, className }, ref) => {
+    if (errors.length === 0) return null;
+
+    const scrollToField = (fieldName: string) => {
+      const el =
+        document.getElementById(fieldName) ??
+        document.querySelector<HTMLElement>(`[name="${fieldName}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus({ preventScroll: true });
+      }
+    };
+
+    return (
+      <div
+        ref={ref}
+        role="alert"
+        aria-live="assertive"
+        className={cn(
+          "rounded-xl border border-destructive/20 bg-destructive/5 p-3 sm:p-4",
+          className,
+        )}
+        data-field-error="true"
+      >
+        <div className="flex items-start gap-2.5">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+          <div className="space-y-1.5">
+            <p className="text-sm font-semibold text-destructive">
+              {title ?? `${errors.length > 1 ? `${errors.length} שגיאות` : 'שגיאה'} דורשות תיקון`}
+            </p>
+            <ul className="space-y-1">
+              {errors.map((err) => (
+                <li key={err.field}>
+                  <button
+                    type="button"
+                    className="text-start text-sm text-destructive/85 underline-offset-2 hover:underline"
+                    onClick={() => scrollToField(err.field)}
+                  >
+                    {fieldLabels?.[err.field]
+                      ? `${fieldLabels[err.field]}: ${err.message}`
+                      : err.message}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    );
+  },
+);
+FormErrorSummary.displayName = "FormErrorSummary";
+
 export { 
   FormField, 
   FormDescription, 
   FormError, 
   FormLabel,
+  FormErrorSummary,
   fieldVariants,
   type FormFieldProps 
 }

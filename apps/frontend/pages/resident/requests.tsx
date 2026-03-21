@@ -6,7 +6,7 @@ import { authFetch } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { EmptyState } from '../../components/ui/empty-state';
-import { FormField } from '../../components/ui/form-field';
+import { FormField, FormErrorSummary } from '../../components/ui/form-field';
 import { Input } from '../../components/ui/input';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { MobileCardSkeleton } from '../../components/ui/page-states';
@@ -72,6 +72,9 @@ export default function ResidentRequestsPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [formTouched, setFormTouched] = useState<Record<string, boolean>>({});
+  const [formSubmitted, setFormSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const activeType = requestTypes.find((item) => item.value === form.requestType)!;
   const { pullDistance, isRefreshing } = usePullToRefresh({
@@ -140,9 +143,27 @@ export default function ResidentRequestsPage() {
     };
   }, [form.message, form.requestType, form.requestedDate, form.subject]);
 
+  const shouldShowError = (field: string) => formSubmitted || formTouched[field];
+
+  const visibleFormErrors = useMemo(() => {
+    return (Object.keys(formErrors) as Array<keyof typeof formErrors>)
+      .filter((key) => formErrors[key] && shouldShowError(key))
+      .map((key) => ({ field: key, message: formErrors[key] }));
+  }, [formErrors, formSubmitted, formTouched]);
+
   async function submitRequest() {
+    setFormSubmitted(true);
+    setSubmitError(null);
+
     if (formErrors.subject || formErrors.message) {
       toast({ title: 'יש להשלים את שדות החובה לפני השליחה', variant: 'destructive' });
+      requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>('[aria-invalid="true"]');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.focus({ preventScroll: true });
+        }
+      });
       return;
     }
 
@@ -160,13 +181,17 @@ export default function ResidentRequestsPage() {
         }),
       });
       if (!response.ok) throw new Error(await response.text());
-      toast({ title: 'הבקשה נשלחה לצוות הניהול' });
+      toast({ title: 'הבקשה נשלחה לצוות הניהול', variant: 'success' });
       triggerHaptic('success');
       setForm(emptyForm);
+      setFormTouched({});
+      setFormSubmitted(false);
+      setSubmitError(null);
       await loadHistory();
     } catch (error) {
       console.error(error);
-      toast({ title: 'שליחת הבקשה נכשלה', variant: 'destructive' });
+      setSubmitError('שליחת הבקשה נכשלה. אפשר לנסות שוב או לפנות לצוות הניהול.');
+      toast({ title: 'שליחת הבקשה נכשלה', description: 'נסה שנית בעוד מספר שניות.', variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
@@ -239,29 +264,49 @@ export default function ResidentRequestsPage() {
               meta="טופס ממוקד"
             />
 
+            {visibleFormErrors.length > 0 ? (
+              <FormErrorSummary
+                errors={visibleFormErrors}
+                fieldLabels={{ subject: 'נושא', message: 'פירוט הבקשה', requestedDate: 'תאריך מבוקש' }}
+                title={`${visibleFormErrors.length > 1 ? `${visibleFormErrors.length} שדות` : 'שדה'} דורשים תיקון`}
+              />
+            ) : null}
+
+            {submitError ? (
+              <div className="flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
+                {submitError}
+              </div>
+            ) : null}
+
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 label="נושא"
                 description="שורה אחת שמתארת את מה שנדרש מהצוות."
-                error={form.subject.trim() ? undefined : formErrors.subject}
+                error={shouldShowError('subject') ? formErrors.subject || undefined : undefined}
                 required
               >
                 <Input
+                  id="subject"
+                  name="subject"
                   placeholder="לדוגמה: תיאום מעבר דירה ב-15/04"
                   value={form.subject}
                   onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))}
+                  onBlur={() => setFormTouched((prev) => ({ ...prev, subject: true }))}
                 />
               </FormField>
 
               <FormField
                 label="תאריך מבוקש"
                 description="אופציונלי ברוב הבקשות, מומלץ במיוחד במעבר או בבקשת מסמך דחופה."
-                error={formErrors.requestedDate || undefined}
+                error={shouldShowError('requestedDate') ? formErrors.requestedDate || undefined : undefined}
               >
                 <Input
+                  id="requestedDate"
+                  name="requestedDate"
                   type="date"
                   value={form.requestedDate}
                   onChange={(event) => setForm((current) => ({ ...current, requestedDate: event.target.value }))}
+                  onBlur={() => setFormTouched((prev) => ({ ...prev, requestedDate: true }))}
                 />
               </FormField>
             </div>
@@ -347,6 +392,8 @@ export default function ResidentRequestsPage() {
               <div className="grid gap-4 md:grid-cols-3">
                 <FormField label="טלפון חדש">
                   <Input
+                    type="tel"
+                    inputMode="tel"
                     placeholder="05X-XXXXXXX"
                     value={form.nextPhone}
                     onChange={(event) => setForm((current) => ({ ...current, nextPhone: event.target.value }))}
@@ -354,6 +401,8 @@ export default function ResidentRequestsPage() {
                 </FormField>
                 <FormField label="אימייל חדש">
                   <Input
+                    type="email"
+                    inputMode="email"
                     placeholder="name@example.com"
                     value={form.nextEmail}
                     onChange={(event) => setForm((current) => ({ ...current, nextEmail: event.target.value }))}
@@ -372,14 +421,17 @@ export default function ResidentRequestsPage() {
             <FormField
               label="פירוט הבקשה"
               description="הסבר חופשי: מה קרה, מה נדרש, ועד מתי חשוב לטפל."
-              error={form.message.trim().length >= 10 ? undefined : formErrors.message}
+              error={shouldShowError('message') ? formErrors.message || undefined : undefined}
               required
             >
               <Textarea
+                id="message"
+                name="message"
                 rows={5}
                 placeholder="לדוגמה: אבקש לתאם את המעלית לשעתיים ביום המעבר, כולל חסימת לובי והודעה לדיירים."
                 value={form.message}
                 onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))}
+                onBlur={() => setFormTouched((prev) => ({ ...prev, message: true }))}
                 className="sm:min-h-[10rem]"
               />
             </FormField>
