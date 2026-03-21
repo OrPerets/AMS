@@ -75,21 +75,21 @@ export default function Breadcrumbs() {
 
   return (
     <nav
-      className="flex items-center space-x-1 text-sm text-muted-foreground"
+      className="flex items-center space-x-1 text-xs sm:text-sm text-muted-foreground overflow-x-auto scrollbar-hide"
       aria-label="breadcrumb"
     >
-      <ol className="flex items-center space-x-1">
+      <ol className="flex items-center space-x-1 whitespace-nowrap">
         {breadcrumbs.map((item, index) => {
           const isLast = index === breadcrumbs.length - 1;
 
           return (
             <li key={item.href} className="flex items-center">
               {index > 0 && (
-                <ChevronIcon className="mx-2 h-4 w-4 shrink-0" />
+                <ChevronIcon className="mx-1 sm:mx-2 h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
               )}
               
               {index === 0 && (
-                <Home className="me-1 h-4 w-4" />
+                <Home className="me-1 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               )}
               
               {!isLast ? (

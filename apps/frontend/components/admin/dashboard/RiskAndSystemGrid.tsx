@@ -17,8 +17,8 @@ export function RiskAndSystemGrid({
   formatDate: (value: string | Date) => string;
 }) {
   return (
-    <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-      <Card className="rounded-[28px] border-subtle-border">
+    <section className="grid gap-4 sm:gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <Card className="rounded-xl sm:rounded-[24px] border-subtle-border">
         <CardHeader>
           <CardTitle>דירוג בריאות בניינים</CardTitle>
           <CardDescription>
@@ -38,7 +38,7 @@ export function RiskAndSystemGrid({
                     ? 'bg-amber-300 text-amber-900'
                     : 'bg-muted text-muted-foreground';
             return (
-              <div key={building.buildingId} className="rounded-[24px] border border-subtle-border bg-muted/25 p-4 transition-colors hover:bg-muted/40">
+              <div key={building.buildingId} className="rounded-xl sm:rounded-[22px] border border-subtle-border bg-muted/25 p-3 sm:p-4 transition-colors hover:bg-muted/40">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
@@ -79,8 +79,8 @@ export function RiskAndSystemGrid({
         </CardContent>
       </Card>
 
-      <div className="space-y-6">
-        <Card className="rounded-[28px] border-subtle-border">
+      <div className="space-y-4 sm:space-y-6">
+        <Card className="rounded-xl sm:rounded-[24px] border-subtle-border">
           <CardHeader>
             <CardTitle>מצב גבייה</CardTitle>
             <CardDescription>תמונת מצב מרוכזת של חובות ודיירים עם יתרות גבוהות.</CardDescription>
@@ -117,8 +117,8 @@ export function RiskAndSystemGrid({
           </CardContent>
         </Card>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="rounded-[28px] border-subtle-border">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+          <Card className="rounded-xl sm:rounded-[24px] border-subtle-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-success" />
@@ -141,7 +141,7 @@ export function RiskAndSystemGrid({
             </CardContent>
           </Card>
 
-          <Card className="rounded-[28px] border-subtle-border">
+          <Card className="rounded-xl sm:rounded-[24px] border-subtle-border">
             <CardHeader>
               <CardTitle>הרשאות והפצה</CardTitle>
               <CardDescription>פילוח תפקידים וכניסה מהירה למרכז ההגדרות.</CardDescription>
@@ -178,9 +178,9 @@ export function RiskAndSystemGrid({
           </Card>
         </div>
 
-        <Card className="rounded-[28px] border-subtle-border">
+        <Card className="rounded-xl sm:rounded-[24px] border-subtle-border">
           <CardHeader>
-            <CardTitle>משתמשים אחרונים והתחזות</CardTitle>
+            <CardTitle>משתמשים אחרונים</CardTitle>
             <CardDescription>הקשר מהיר על גידול משתמשים ופעולות רגישות.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6 lg:grid-cols-2">
