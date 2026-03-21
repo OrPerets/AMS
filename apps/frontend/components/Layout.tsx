@@ -15,6 +15,7 @@ import { cn } from '../lib/utils';
 import { websocketService } from '../lib/websocket';
 import { toast } from './ui/use-toast';
 import { authFetch, getAccessToken, getCurrentUserId, isAuthenticated } from '../lib/auth';
+import { useBottomSurface } from '../lib/bottom-surface';
 
 interface Props {
   children: React.ReactNode;
@@ -28,6 +29,7 @@ export default function Layout({ children }: Props) {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const { direction } = useDirection();
   const { t } = useLocale();
+  const { totalOffset } = useBottomSurface();
   const router = useRouter();
   const publicRoutes = new Set(['/', '/404', '/_error', '/login', '/privacy', '/terms', '/support']);
   const isPublicRoute = publicRoutes.has(router.pathname);
@@ -186,7 +188,10 @@ export default function Layout({ children }: Props) {
 
         {/* Page Content */}
         <div className="flex-1 overflow-x-hidden overflow-y-auto min-h-0" data-scroll-container="app">
-          <div className="container min-h-full px-3 py-3 sm:px-6 sm:py-6 safe-pb">
+          <div
+            className="container min-h-full px-3 py-3 sm:px-6 sm:py-6 safe-pb"
+            style={totalOffset > 0 ? { paddingBottom: `max(calc(env(safe-area-inset-bottom, 0px) + 1rem), ${totalOffset + 16}px)` } : undefined}
+          >
             <ErrorBoundary fallback={CompactErrorFallback}>
               {children}
             </ErrorBoundary>

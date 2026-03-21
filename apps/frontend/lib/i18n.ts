@@ -1,10 +1,12 @@
 import { enUS, he } from 'date-fns/locale';
 
 export type Locale = 'he' | 'en';
+export type Direction = 'rtl' | 'ltr';
+export type RegionalFormat = 'he-IL' | 'en-US' | 'en-IL';
 
 type TranslationDictionary = Record<string, string>;
 
-export const localeMeta: Record<Locale, { intl: string; direction: 'rtl' | 'ltr'; label: string }> = {
+export const localeMeta: Record<Locale, { intl: string; direction: Direction; label: string }> = {
   he: {
     intl: 'he-IL',
     direction: 'rtl',
@@ -16,6 +18,70 @@ export const localeMeta: Record<Locale, { intl: string; direction: 'rtl' | 'ltr'
     label: 'English',
   },
 };
+
+export const regionalFormats: Record<RegionalFormat, { label: string; dateStyle: Intl.DateTimeFormatOptions['dateStyle']; timeStyle: Intl.DateTimeFormatOptions['timeStyle'] }> = {
+  'he-IL': { label: 'ישראל (עברית)', dateStyle: 'long', timeStyle: 'short' },
+  'en-US': { label: 'United States', dateStyle: 'long', timeStyle: 'short' },
+  'en-IL': { label: 'Israel (English)', dateStyle: 'long', timeStyle: 'short' },
+};
+
+export function formatDate(date: Date | string | number, regional: RegionalFormat = 'he-IL'): string {
+  const d = date instanceof Date ? date : new Date(date);
+  try {
+    return new Intl.DateTimeFormat(regional, { dateStyle: 'medium' }).format(d);
+  } catch {
+    return d.toLocaleDateString();
+  }
+}
+
+export function formatTime(date: Date | string | number, regional: RegionalFormat = 'he-IL'): string {
+  const d = date instanceof Date ? date : new Date(date);
+  try {
+    return new Intl.DateTimeFormat(regional, { timeStyle: 'short' }).format(d);
+  } catch {
+    return d.toLocaleTimeString();
+  }
+}
+
+export function formatDateTime(date: Date | string | number, regional: RegionalFormat = 'he-IL'): string {
+  const d = date instanceof Date ? date : new Date(date);
+  try {
+    return new Intl.DateTimeFormat(regional, { dateStyle: 'medium', timeStyle: 'short' }).format(d);
+  } catch {
+    return d.toLocaleString();
+  }
+}
+
+export function formatNumber(value: number, regional: RegionalFormat = 'he-IL'): string {
+  try {
+    return new Intl.NumberFormat(regional).format(value);
+  } catch {
+    return value.toLocaleString();
+  }
+}
+
+export function formatCurrency(value: number, currency = 'ILS', regional: RegionalFormat = 'he-IL'): string {
+  try {
+    return new Intl.NumberFormat(regional, { style: 'currency', currency }).format(value);
+  } catch {
+    return `${value.toFixed(2)} ${currency}`;
+  }
+}
+
+export function getStoredDirection(): Direction | null {
+  if (typeof window === 'undefined') return null;
+  const stored = window.localStorage.getItem('amit-direction');
+  if (stored === 'rtl' || stored === 'ltr') return stored;
+  return null;
+}
+
+export function getStoredRegionalFormat(): RegionalFormat {
+  if (typeof window === 'undefined') return 'he-IL';
+  const stored = window.localStorage.getItem('amit-regional-format');
+  if (stored && stored in regionalFormats) return stored as RegionalFormat;
+  const locale = getStoredLocale();
+  return locale === 'en' ? 'en-US' : 'he-IL';
+}
 
 export const translations: Record<Locale, TranslationDictionary> = {
   he: {
@@ -391,6 +457,27 @@ export const translations: Record<Locale, TranslationDictionary> = {
       'מנהלי מערכת רשאים להשעות משתמש, להגביל הרשאות או לבצע התחזות תפעולית לצורכי תמיכה ואבחון.',
     'legal.terms.5':
       'לפני פעולה כספית או תפעולית בלתי הפיכה מומלץ לוודא את הנתונים מול הרשומות המעודכנות במערכת.',
+
+    'settings.section.languageTitle': 'שפה ואזור',
+    'settings.section.languageSubtitle': 'בחירת שפת הממשק, כיוון הטקסט ופורמט אזורי לתאריכים ומספרים.',
+    'settings.field.language': 'שפת ממשק',
+    'settings.field.languageHint': 'שפת התפריטים, הכפתורים וההודעות באפליקציה.',
+    'settings.field.direction': 'כיוון טקסט',
+    'settings.field.directionHint': 'כיוון הפריסה הכללי של הממשק. עברית = ימין לשמאל, אנגלית = שמאל לימין.',
+    'settings.field.regionalFormat': 'פורמט אזורי',
+    'settings.field.regionalFormatHint': 'קובע את פורמט התאריכים, השעות והמספרים בכל הממשק.',
+    'settings.direction.rtl': 'ימין לשמאל (RTL)',
+    'settings.direction.ltr': 'שמאל לימין (LTR)',
+    'settings.language.he': 'עברית',
+    'settings.language.en': 'English',
+    'settings.action.saveLanguage': 'שמור העדפות שפה',
+    'settings.languageSavedToast': 'הגדרות השפה נשמרו',
+    'settings.unsavedChanges': 'יש שינויים שלא נשמרו',
+    'settings.formatPreview': 'תצוגה מקדימה',
+    'settings.formatPreviewDate': 'תאריך: {{value}}',
+    'settings.formatPreviewTime': 'שעה: {{value}}',
+    'settings.formatPreviewNumber': 'מספר: {{value}}',
+    'settings.formatPreviewCurrency': 'מטבע: {{value}}',
 
     'payments.loading': 'טוען את מרכז התשלומים...',
     'payments.title': 'תשלומים',
@@ -770,6 +857,27 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'legal.terms.3': 'Do not share access details, payment links, sensitive documents, or resident data with unauthorized parties.',
     'legal.terms.4': 'System administrators may suspend users, restrict permissions, or impersonate operational roles for support and diagnosis.',
     'legal.terms.5': 'Before taking an irreversible financial or operational action, verify the data against the latest records in the system.',
+
+    'settings.section.languageTitle': 'Language and region',
+    'settings.section.languageSubtitle': 'Choose your interface language, text direction, and regional formatting for dates and numbers.',
+    'settings.field.language': 'Interface language',
+    'settings.field.languageHint': 'The language used for menus, buttons, and messages in the app.',
+    'settings.field.direction': 'Text direction',
+    'settings.field.directionHint': 'Overall layout direction. Hebrew = right-to-left, English = left-to-right.',
+    'settings.field.regionalFormat': 'Regional format',
+    'settings.field.regionalFormatHint': 'Sets how dates, times, and numbers are displayed throughout the interface.',
+    'settings.direction.rtl': 'Right to left (RTL)',
+    'settings.direction.ltr': 'Left to right (LTR)',
+    'settings.language.he': 'עברית',
+    'settings.language.en': 'English',
+    'settings.action.saveLanguage': 'Save language preferences',
+    'settings.languageSavedToast': 'Language settings saved',
+    'settings.unsavedChanges': 'You have unsaved changes',
+    'settings.formatPreview': 'Preview',
+    'settings.formatPreviewDate': 'Date: {{value}}',
+    'settings.formatPreviewTime': 'Time: {{value}}',
+    'settings.formatPreviewNumber': 'Number: {{value}}',
+    'settings.formatPreviewCurrency': 'Currency: {{value}}',
 
     'payments.loading': 'Loading the payments center...',
     'payments.title': 'Payments',
