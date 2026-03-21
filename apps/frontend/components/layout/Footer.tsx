@@ -11,7 +11,7 @@ interface FooterProps {
 }
 
 export default function Footer({ className }: FooterProps) {
-  const { locale } = useLocale();
+  const { t } = useLocale();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -23,10 +23,10 @@ export default function Footer({ className }: FooterProps) {
         {/* Left side: Company info */}
         <div className="flex flex-col items-center gap-2 sm:items-start">
           <p className="text-sm text-muted-foreground">
-            © {currentYear} עמית אקסלנס אחזקות בע"מ
+            © {currentYear} {t('app.company')}
           </p>
           <p className="text-xs text-muted-foreground">
-            מערכת ניהול אחזקות מתקדמת
+            {t('footer.productLabel')}
           </p>
         </div>
 
@@ -36,19 +36,19 @@ export default function Footer({ className }: FooterProps) {
             href="/privacy" 
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            מדיניות פרטיות
+            {t('footer.privacy')}
           </Link>
           <Link 
             href="/terms" 
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            תנאי שימוש
+            {t('footer.terms')}
           </Link>
           <Link 
             href="/support" 
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            תמיכה
+            {t('footer.support')}
           </Link>
         </div>
       </div>

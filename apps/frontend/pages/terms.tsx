@@ -1,24 +1,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-
-const terms = [
-  'השימוש במערכת מותר למשתמשים מורשים בלבד ובהתאם לתפקיד שהוקצה להם.',
-  'כל פעולה במערכת עשויה להישמר לצורכי בקרה, תמיכה, אבטחה ותיעוד רגולטורי.',
-  'אין לשתף פרטי גישה, קישורי תשלום, מסמכים רגישים או נתוני דיירים עם גורמים לא מורשים.',
-  'מנהלי מערכת רשאים להשעות משתמש, להגביל הרשאות או לבצע התחזות תפעולית לצורכי תמיכה ואבחון.',
-  'המערכת מסופקת כפי שהיא, ומומלץ לוודא נתונים כספיים ותפעוליים קריטיים לפני פעולה בלתי הפיכה.',
-];
+import { useLocale } from '../lib/providers';
 
 export default function TermsPage() {
+  const { t } = useLocale();
+  const terms = [t('legal.terms.1'), t('legal.terms.2'), t('legal.terms.3'), t('legal.terms.4'), t('legal.terms.5')];
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">תנאי שימוש</h1>
-        <p className="text-muted-foreground">המסמך מסדיר שימוש במערכת ניהול הנכסים, לרבות גישה למידע ותפעול תפקידים.</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t('legal.termsTitle')}</h1>
+        <p className="text-muted-foreground">{t('legal.termsDescription')}</p>
       </div>
       {terms.map((term, index) => (
         <Card key={index}>
           <CardHeader>
-            <CardTitle>סעיף {index + 1}</CardTitle>
+            <CardTitle>{t('legal.terms.section', { index: index + 1 })}</CardTitle>
           </CardHeader>
           <CardContent className="text-sm leading-7 text-muted-foreground">{term}</CardContent>
         </Card>

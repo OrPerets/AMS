@@ -10,8 +10,12 @@ import { Switch } from '../components/ui/switch';
 import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { NotificationCenter, NotificationItem } from '../components/ui/notification-center';
+import { PullToRefreshIndicator } from '../components/ui/pull-to-refresh-indicator';
 import { toast } from '../components/ui/use-toast';
+import { usePullToRefresh } from '../hooks/use-pull-to-refresh';
+import { triggerHaptic } from '../lib/mobile';
 import { emitNotificationsChanged } from '../lib/notification-events';
+import { useLocale } from '../lib/providers';
 
 interface NotificationPreferences {
   email: boolean;
@@ -40,6 +44,7 @@ const defaultPreferences: NotificationPreferences = {
 };
 
 export default function NotificationsPage() {
+  const { t } = useLocale();
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +54,7 @@ export default function NotificationsPage() {
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
   const [preferencesLoading, setPreferencesLoading] = useState(false);
   const [liveConnected, setLiveConnected] = useState(false);
+  const [dismissedIds, setDismissedIds] = useState<Array<number | string>>([]);
 
   useEffect(() => {
     setCurrentUserId(getCurrentUserId());
@@ -79,8 +85,8 @@ export default function NotificationsPage() {
       setNotifications(normalizeNotifications(await response.json()));
     } catch {
       toast({
-        title: 'שגיאה בטעינת התראות',
-        description: 'לא ניתן לטעון את רשימת ההתראות.',
+        title: t('notifications.loadFailedTitle'),
+        description: t('notifications.loadFailedDescription'),
         variant: 'destructive',
       });
     } finally {
@@ -98,8 +104,8 @@ export default function NotificationsPage() {
       setPreferences({ ...defaultPreferences, ...data });
     } catch {
       toast({
-        title: 'טעינת העדפות נכשלה',
-        description: 'לא ניתן לטעון את העדפות ההתראה כרגע.',
+        title: t('notifications.preferencesLoadFailedTitle'),
+        description: t('notifications.preferencesLoadFailedDescription'),
         variant: 'destructive',
       });
     } finally {
@@ -127,7 +133,7 @@ export default function NotificationsPage() {
       });
       emitNotificationsChanged();
       toast({
-        title: 'התקבלה התראה חדשה',
+        title: t('notifications.newToastTitle'),
         description: notification.title,
       });
     };
@@ -156,13 +162,14 @@ export default function NotificationsPage() {
       if (!response.ok) throw new Error(await response.text());
       setPreferences(nextPreferences);
       toast({
-        title: 'ההעדפות נשמרו',
-        description: 'ערוצי ההתראה והסיווגים עודכנו.',
+        title: t('notifications.preferencesSavedTitle'),
+        description: t('notifications.preferencesSavedDescription'),
       });
+      triggerHaptic('success');
     } catch {
       toast({
-        title: 'שמירת העדפות נכשלה',
-        description: 'לא ניתן לעדכן כעת את ההעדפות.',
+        title: t('notifications.preferencesSaveFailedTitle'),
+        description: t('notifications.preferencesSaveFailedDescription'),
         variant: 'destructive',
       });
     } finally {
@@ -176,10 +183,11 @@ export default function NotificationsPage() {
       if (!response.ok) throw new Error(await response.text());
       setNotifications((current) => current.map((item) => (item.id === id ? { ...item, read: true } : item)));
       emitNotificationsChanged();
+      triggerHaptic('success');
     } catch {
       toast({
-        title: 'לא ניתן לסמן כנקרא',
-        description: 'השרת לא אישר את עדכון ההתראה.',
+        title: t('notifications.readFailedTitle'),
+        description: t('notifications.readFailedDescription'),
         variant: 'destructive',
       });
     }
@@ -191,18 +199,30 @@ export default function NotificationsPage() {
       await Promise.all(unreadIds.map((id) => authFetch(`/api/v1/notifications/${id}/read`, { method: 'POST' })));
       setNotifications((current) => current.map((item) => ({ ...item, read: true })));
       emitNotificationsChanged();
-      toast({ title: 'כל ההתראות סומנו כנקראו' });
+      toast({ title: t('notifications.markAllDone') });
+      triggerHaptic('success');
     } catch {
       toast({
-        title: 'עדכון קבוצתי נכשל',
-        description: 'לא ניתן לסמן את כל ההתראות כנקראו.',
+        title: t('notifications.markAllFailedTitle'),
+        description: t('notifications.markAllFailedDescription'),
         variant: 'destructive',
       });
     }
   };
 
+  const { pullDistance, isRefreshing } = usePullToRefresh({
+    enabled: Boolean(currentUserId),
+    onRefresh: async () => {
+      await loadNotifications();
+      await loadPreferences();
+    },
+  });
+
   const filteredNotifications = useMemo(() => {
     return notifications.filter((notification) => {
+      if (dismissedIds.includes(notification.id)) {
+        return false;
+      }
       const matchesSearch =
         !searchTerm ||
         notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -214,7 +234,7 @@ export default function NotificationsPage() {
         (statusFilter === 'unread' && !notification.read);
       return matchesSearch && matchesType && matchesStatus;
     });
-  }, [notifications, searchTerm, statusFilter, typeFilter]);
+  }, [dismissedIds, notifications, searchTerm, statusFilter, typeFilter]);
 
   const notificationTypes = useMemo(() => {
     return Array.from(new Set(notifications.map((notification) => notification.type).filter(Boolean))) as string[];
@@ -222,18 +242,20 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6">
+      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label={t('notifications.pullToRefresh')} />
+
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">התראות</h1>
-          <p className="text-muted-foreground">רשימת התראות אישיות, חיבור חי בזמן אמת והעדפות משלוח.</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('notifications.title')}</h1>
+          <p className="text-muted-foreground">{t('notifications.description')}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => loadNotifications()}>
             <RefreshCw className="me-2 h-4 w-4" />
-            רענון
+            {t('notifications.refresh')}
           </Button>
           {notifications.some((notification) => !notification.read) && (
-            <Button onClick={markAllAsRead}>סמן הכל כנקרא</Button>
+            <Button onClick={markAllAsRead}>{t('common.markAllAsRead')}</Button>
           )}
         </div>
       </div>
@@ -241,27 +263,27 @@ export default function NotificationsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>סה"כ התראות</CardDescription>
+            <CardDescription>{t('notifications.total')}</CardDescription>
             <CardTitle>{notifications.length}</CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">התראות שנשמרו למשתמש המחובר</CardContent>
+          <CardContent className="text-sm text-muted-foreground">{t('notifications.totalHelp')}</CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>לא נקראו</CardDescription>
+            <CardDescription>{t('notifications.unread')}</CardDescription>
             <CardTitle>{notifications.filter((notification) => !notification.read).length}</CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">זמינות לסימון כנקראו ממסך זה</CardContent>
+          <CardContent className="text-sm text-muted-foreground">{t('notifications.unreadHelp')}</CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>חיבור חי</CardDescription>
+            <CardDescription>{t('notifications.live')}</CardDescription>
             <CardTitle className="flex items-center gap-2">
               <Radio className={`h-4 w-4 ${liveConnected ? 'text-emerald-500' : 'text-amber-500'}`} />
-              {liveConnected ? 'מחובר' : 'לא מחובר'}
+              {liveConnected ? t('notifications.liveConnected') : t('notifications.liveDisconnected')}
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">קבלת `new_notification` דרך WebSocket</CardContent>
+          <CardContent className="text-sm text-muted-foreground">{t('notifications.liveHelp')}</CardContent>
         </Card>
       </div>
 
@@ -269,27 +291,27 @@ export default function NotificationsPage() {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
-            התראות
+            {t('notifications.tabList')}
           </TabsTrigger>
           <TabsTrigger value="preferences" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            העדפות
+            {t('notifications.tabPreferences')}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="notifications" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>חיפוש וסינון</CardTitle>
+              <CardTitle>{t('notifications.searchAndFilter')}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 lg:grid-cols-3">
-              <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="חיפוש בהתראות" />
+              <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder={t('notifications.searchPlaceholder')} />
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="כל הסוגים" />
+                  <SelectValue placeholder={t('notifications.allTypes')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">כל הסוגים</SelectItem>
+                  <SelectItem value="all">{t('notifications.allTypes')}</SelectItem>
                   {notificationTypes.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type}
@@ -299,33 +321,38 @@ export default function NotificationsPage() {
               </Select>
               <Select value={statusFilter} onValueChange={(value: 'all' | 'unread' | 'read') => setStatusFilter(value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="כל הסטטוסים" />
+                  <SelectValue placeholder={t('common.all')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">כל ההתראות</SelectItem>
-                  <SelectItem value="unread">לא נקראו</SelectItem>
-                  <SelectItem value="read">נקראו</SelectItem>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
+                  <SelectItem value="unread">{t('common.unread')}</SelectItem>
+                  <SelectItem value="read">{t('common.read')}</SelectItem>
                 </SelectContent>
               </Select>
             </CardContent>
           </Card>
 
-          <NotificationCenter notifications={filteredNotifications} onMarkAsRead={markAsRead} className={loading ? 'opacity-60' : ''} />
+          <NotificationCenter
+            notifications={filteredNotifications}
+            onMarkAsRead={markAsRead}
+            onDismiss={(id) => setDismissedIds((current) => (current.includes(id) ? current : [...current, id]))}
+            className={loading ? 'opacity-60' : ''}
+          />
         </TabsContent>
 
         <TabsContent value="preferences">
           <Card>
             <CardHeader>
-              <CardTitle>העדפות מסירה</CardTitle>
-              <CardDescription>ערוצי שליחה והפעלה או השבתה של סוגי התראה.</CardDescription>
+              <CardTitle>{t('notifications.preferenceCardTitle')}</CardTitle>
+              <CardDescription>{t('notifications.preferenceCardDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-8 lg:grid-cols-2">
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold">ערוצים</h3>
+                <h3 className="text-sm font-semibold">{t('notifications.preferenceCardTitle')}</h3>
                 {[
-                  ['email', 'אימייל'],
-                  ['sms', 'SMS'],
-                  ['push', 'התראות דחיפה'],
+                  ['email', t('notifications.channel.email')],
+                  ['sms', t('notifications.channel.sms')],
+                  ['push', t('notifications.channel.push')],
                 ].map(([key, label]) => (
                   <div key={key} className="flex items-center justify-between">
                     <Label htmlFor={key}>{label}</Label>
@@ -340,15 +367,16 @@ export default function NotificationsPage() {
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold">סוגי התראות</h3>
+                <h3 className="text-sm font-semibold">{t('notifications.tabPreferences')}</h3>
+                <p className="text-sm text-muted-foreground">{t('notifications.preferencePermissionHint')}</p>
                 {[
-                  ['ticketUpdates', 'עדכוני קריאות'],
-                  ['maintenanceReminders', 'תזכורות תחזוקה'],
-                  ['paymentReminders', 'תזכורות תשלום'],
-                  ['announcements', 'הכרזות'],
-                  ['emergencyAlerts', 'התראות חירום'],
-                  ['workOrderUpdates', 'עדכוני הזמנות עבודה'],
-                  ['general', 'התראות כלליות'],
+                  ['ticketUpdates', t('notifications.topic.ticketUpdates')],
+                  ['maintenanceReminders', t('notifications.topic.maintenanceReminders')],
+                  ['paymentReminders', t('notifications.topic.paymentReminders')],
+                  ['announcements', t('notifications.topic.announcements')],
+                  ['emergencyAlerts', t('notifications.topic.emergencyAlerts')],
+                  ['workOrderUpdates', t('notifications.topic.workOrderUpdates')],
+                  ['general', t('notifications.topic.general')],
                 ].map(([key, label]) => (
                   <div key={key} className="flex items-center justify-between">
                     <Label htmlFor={key}>{label}</Label>

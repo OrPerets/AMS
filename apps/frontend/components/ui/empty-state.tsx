@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { FileX, Search, AlertCircle, Inbox, Plus } from "lucide-react"
+import { FileX, Search, AlertCircle, Inbox, Plus, Lock, ClipboardList } from "lucide-react"
 
 import { cn } from "../../lib/utils"
 import { Button } from "./button"
@@ -32,7 +32,7 @@ interface EmptyStateProps
     onClick: () => void
     variant?: "default" | "outline"
   }
-  type?: "empty" | "search" | "error" | "create"
+  type?: "empty" | "search" | "error" | "create" | "action" | "restricted"
 }
 
 // Predefined icon components for common states
@@ -41,6 +41,8 @@ const EmptyStateIcons = {
   search: <Search className="h-12 w-12 text-muted-foreground/40" />,
   error: <AlertCircle className="h-12 w-12 text-muted-foreground/40" />,
   create: <Plus className="h-12 w-12 text-muted-foreground/40" />,
+  action: <ClipboardList className="h-12 w-12 text-muted-foreground/40" />,
+  restricted: <Lock className="h-12 w-12 text-muted-foreground/40" />,
   default: <FileX className="h-12 w-12 text-muted-foreground/40" />,
 }
 
@@ -112,11 +114,31 @@ const EmptyBuildings = (props: Omit<EmptyStateProps, 'title' | 'type'>) => (
   />
 )
 
+const EmptyActionRequired = (props: Omit<EmptyStateProps, 'title' | 'type'>) => (
+  <EmptyState
+    title="נדרשת פעולה לפני שאפשר להמשיך"
+    description="בדוק את ההגדרות או את נתוני החובה במסך זה, ואז נסה שוב."
+    type="action"
+    {...props}
+  />
+)
+
+const EmptyRestricted = (props: Omit<EmptyStateProps, 'title' | 'type'>) => (
+  <EmptyState
+    title="אין לך הרשאה לצפות בתוכן הזה"
+    description="אם צריך גישה למסך הזה, פנה למנהל המערכת או לצוות התמיכה."
+    type="restricted"
+    {...props}
+  />
+)
+
 export { 
   EmptyState, 
   EmptyTickets, 
   EmptySearchResults, 
   EmptyBuildings,
+  EmptyActionRequired,
+  EmptyRestricted,
   emptyStateVariants,
   type EmptyStateProps 
 }

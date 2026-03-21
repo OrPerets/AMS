@@ -115,7 +115,7 @@ const statusLabel: Record<InvoiceStatus, string> = {
 
 export default function PaymentsPage() {
   const router = useRouter();
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -145,7 +145,7 @@ export default function PaymentsPage() {
       setInvoices(await res.json());
     } catch (error) {
       console.error(error);
-      toast({ title: 'טעינת התשלומים נכשלה', variant: 'destructive' });
+      toast({ title: t('payments.loadFailed'), variant: 'destructive' });
       setInvoices([]);
     } finally {
       setLoading(false);
@@ -159,7 +159,7 @@ export default function PaymentsPage() {
       setRecurringInvoices(await res.json());
     } catch (error) {
       console.error(error);
-      toast({ title: 'טעינת החיובים המחזוריים נכשלה', variant: 'destructive' });
+      toast({ title: t('payments.recurringLoadFailed'), variant: 'destructive' });
       setRecurringInvoices([]);
     }
   }
@@ -171,7 +171,7 @@ export default function PaymentsPage() {
       setResidents(await res.json());
     } catch (error) {
       console.error(error);
-      toast({ title: 'טעינת הדיירים נכשלה', variant: 'destructive' });
+      toast({ title: t('payments.residentsLoadFailed'), variant: 'destructive' });
       setResidents([]);
     }
   }
@@ -437,15 +437,15 @@ export default function PaymentsPage() {
   }
 
   if (role === null || role === 'RESIDENT' || !['ADMIN', 'PM', 'ACCOUNTANT'].includes(role)) {
-    return <div className="p-6 text-sm text-muted-foreground">טוען תשלומים...</div>;
+    return <div className="p-6 text-sm text-muted-foreground">{t('payments.loading')}</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="page-header">
         <div>
-          <h1 className="text-2xl font-semibold sm:text-3xl">תשלומים</h1>
-          <p className="text-sm text-muted-foreground">חשבוניות, סליקה, קבלות והיסטוריית תשלומים במקום אחד.</p>
+          <h1 className="text-2xl font-semibold sm:text-3xl">{t('payments.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('payments.description')}</p>
         </div>
         <div className="page-header-actions">
           <Button variant="outline" className="w-full sm:w-auto" onClick={() => downloadAuthenticatedFile('/api/v1/invoices?format=csv', 'invoices.csv')}>
@@ -462,6 +462,13 @@ export default function PaymentsPage() {
           </Button>
         </div>
       </div>
+
+      <Card className="border-primary/10 bg-primary/5">
+        <CardHeader>
+          <CardTitle>{t('payments.trustTitle')}</CardTitle>
+          <CardDescription>{t('payments.trustDescription')}</CardDescription>
+        </CardHeader>
+      </Card>
 
       <div className="page-kpi-grid">
         <Card><CardHeader><CardTitle>חשבוניות</CardTitle></CardHeader><CardContent>{stats.total}</CardContent></Card>

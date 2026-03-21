@@ -54,7 +54,11 @@ const Toast = React.forwardRef<
   return (
     <ToastPrimitives.Root
       ref={ref}
-      className={cn(toastVariants({ variant }), className)}
+      className={cn(
+        toastVariants({ variant }),
+        variant === 'success' && 'overflow-visible before:absolute before:-end-6 before:-top-6 before:h-20 before:w-20 before:animate-ping before:rounded-full before:bg-white/15 before:content-[""] after:absolute after:-end-2 after:top-2 after:h-10 after:w-10 after:rounded-full after:bg-white/12 after:content-[""]',
+        className,
+      )}
       {...props}
     />
   );

@@ -1,5 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { ActivitySeverity, InvoiceStatus, Prisma, Role as PrismaRole, TicketSeverity, TicketStatus } from '@prisma/client';
+import {
+  ActivitySeverity,
+  ApprovalTaskStatus,
+  InvoiceStatus,
+  Prisma,
+  Role as PrismaRole,
+  TicketSeverity,
+  TicketStatus,
+  WorkOrderStatus,
+} from '@prisma/client';
 import { PrismaService } from '../prisma.service';
 import { ActivityService } from '../activity/activity.service';
 
@@ -14,6 +23,7 @@ type TicketSnapshot = {
   severity: TicketSeverity;
   slaDue: Date | null;
   createdAt: Date;
+  assignedToId: number | null;
   unit: {
     buildingId: number;
     building: {
@@ -41,6 +51,8 @@ type InvoiceSnapshot = {
     }>;
   };
 };
+
+type RangeKey = '7d' | '30d' | '90d';
 
 @Injectable()
 export class DashboardService {
@@ -75,9 +87,13 @@ export class DashboardService {
 
   async overview(filter: DashboardFilter) {
     const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const selectedBuildingId = filter.buildingId;
-    const range = filter.range ?? '30d';
+    const range = this.normalizeRange(filter.range);
     const rangeStart = this.getRangeStart(range, now);
+    const rangeLabel = this.getRangeLabel(range);
+    const rangeDays = this.getRangeDays(range);
+    const rangeEnd = new Date(now.getTime() + rangeDays * 24 * 60 * 60 * 1000);
 
     const buildingListPromise = this.prisma.building.findMany({
       select: {
@@ -120,6 +136,7 @@ export class DashboardService {
         severity: true,
         slaDue: true,
         createdAt: true,
+        assignedToId: true,
         unit: {
           select: {
             buildingId: true,
@@ -220,7 +237,10 @@ export class DashboardService {
     });
 
     const notificationsPromise = this.prisma.notification.findMany({
-      where: selectedBuildingId ? { buildingId: selectedBuildingId } : undefined,
+      where: {
+        ...(selectedBuildingId ? { buildingId: selectedBuildingId } : {}),
+        createdAt: { gte: rangeStart },
+      },
       select: {
         id: true,
         title: true,
@@ -239,6 +259,87 @@ export class DashboardService {
       },
       take: 8,
     });
+
+    const directResolutionEventsPromise = this.prisma.activityLog.findMany({
+      where: {
+        ...(selectedBuildingId ? { buildingId: selectedBuildingId } : {}),
+        action: 'TICKET_STATUS_CHANGED',
+        createdAt: { gte: rangeStart },
+      },
+      select: {
+        entityId: true,
+        createdAt: true,
+        metadata: true,
+      },
+    });
+
+    const completedWorkOrdersPromise = this.prisma.workOrder.findMany({
+      where: {
+        status: WorkOrderStatus.COMPLETED,
+        completedAt: { gte: rangeStart },
+        ...(selectedBuildingId ? { ticket: { unit: { buildingId: selectedBuildingId } } } : {}),
+      },
+      select: {
+        ticketId: true,
+        completedAt: true,
+      },
+    });
+
+    const [techOpenGroups, techUrgentGroups, techBreachGroups, techUsers, activityUsersInRange, activityEventsInRange, pendingApprovals] =
+      await Promise.all([
+        this.prisma.ticket.groupBy({
+          by: ['assignedToId'],
+          where: {
+            status: { not: TicketStatus.RESOLVED },
+            ...(selectedBuildingId ? { unit: { buildingId: selectedBuildingId } } : {}),
+          },
+          _count: { _all: true },
+        }),
+        this.prisma.ticket.groupBy({
+          by: ['assignedToId'],
+          where: {
+            status: { not: TicketStatus.RESOLVED },
+            severity: TicketSeverity.URGENT,
+            ...(selectedBuildingId ? { unit: { buildingId: selectedBuildingId } } : {}),
+          },
+          _count: { _all: true },
+        }),
+        this.prisma.ticket.groupBy({
+          by: ['assignedToId'],
+          where: {
+            status: { not: TicketStatus.RESOLVED },
+            slaDue: { lt: now },
+            ...(selectedBuildingId ? { unit: { buildingId: selectedBuildingId } } : {}),
+          },
+          _count: { _all: true },
+        }),
+        this.prisma.user.findMany({
+          where: { role: PrismaRole.TECH },
+          select: { id: true, email: true },
+          orderBy: { email: 'asc' },
+        }),
+        this.prisma.activityLog.groupBy({
+          by: ['userId'],
+          where: {
+            createdAt: { gte: rangeStart },
+            userId: { not: null },
+            ...(selectedBuildingId ? { buildingId: selectedBuildingId } : {}),
+          },
+          _count: { _all: true },
+        }),
+        this.prisma.activityLog.count({
+          where: {
+            createdAt: { gte: rangeStart },
+            ...(selectedBuildingId ? { buildingId: selectedBuildingId } : {}),
+          },
+        }),
+        this.prisma.approvalTask.count({
+          where: {
+            status: ApprovalTaskStatus.PENDING,
+            ...(selectedBuildingId ? { buildingId: selectedBuildingId } : {}),
+          },
+        }),
+      ]);
 
     const [buildingList, buildings, tickets, invoices, maintenanceSchedules, contracts, notifications, recentUsers, recentImpersonationEvents, userRoleCounts] =
       await Promise.all([
@@ -274,6 +375,11 @@ export class DashboardService {
           _count: { _all: true },
         }),
       ]);
+
+    const [directResolutionEvents, completedWorkOrders] = await Promise.all([
+      directResolutionEventsPromise,
+      completedWorkOrdersPromise,
+    ]);
 
     const roleCounts = Object.values(PrismaRole).reduce(
       (acc, roleName) => ({ ...acc, [roleName]: 0 }),
@@ -416,11 +522,30 @@ export class DashboardService {
     const vacantUnits = buildings.reduce((sum, building) => sum + building.units.filter((unit) => unit.residents.length === 0).length, 0);
     const urgentTickets = unresolvedTickets.filter((ticket) => ticket.severity === TicketSeverity.URGENT);
     const slaBreaches = unresolvedTickets.filter((ticket) => ticket.slaDue && ticket.slaDue < now);
-    const resolvedToday = tickets.filter(
-      (ticket) =>
-        ticket.status === TicketStatus.RESOLVED &&
-        ticket.createdAt >= new Date(now.getFullYear(), now.getMonth(), now.getDate()),
-    ).length;
+    const createdInRange = tickets.filter((ticket) => ticket.createdAt >= rangeStart).length;
+    const resolvedInRangeIds = new Set<number>();
+    const resolvedTodayIds = new Set<number>();
+
+    for (const event of directResolutionEvents) {
+      const status = this.readMetadataValue(event.metadata, 'status');
+      if (status !== TicketStatus.RESOLVED || !event.entityId) {
+        continue;
+      }
+      resolvedInRangeIds.add(event.entityId);
+      if (event.createdAt >= todayStart) {
+        resolvedTodayIds.add(event.entityId);
+      }
+    }
+
+    for (const order of completedWorkOrders) {
+      resolvedInRangeIds.add(order.ticketId);
+      if (order.completedAt && order.completedAt >= todayStart) {
+        resolvedTodayIds.add(order.ticketId);
+      }
+    }
+
+    const resolvedToday = resolvedTodayIds.size;
+    const resolvedInRange = resolvedInRangeIds.size;
 
     const openTicketsByStatus = tickets.reduce(
       (acc, ticket) => {
@@ -448,7 +573,12 @@ export class DashboardService {
       .slice(0, 6);
 
     const upcomingMaintenance = maintenanceSchedules
-      .filter((schedule) => schedule.nextOccurrence && schedule.nextOccurrence >= now)
+      .filter(
+        (schedule) =>
+          schedule.nextOccurrence &&
+          schedule.nextOccurrence >= now &&
+          schedule.nextOccurrence <= rangeEnd,
+      )
       .slice(0, 6)
       .map((schedule) => ({
         id: schedule.id,
@@ -468,11 +598,11 @@ export class DashboardService {
         schedule.nextOccurrence >= new Date(now.getFullYear(), now.getMonth(), now.getDate()) &&
         schedule.nextOccurrence < new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1),
     );
-    const maintenanceDueThisWeek = maintenanceSchedules.filter(
+    const maintenanceDueInRange = maintenanceSchedules.filter(
       (schedule) =>
         schedule.nextOccurrence &&
         schedule.nextOccurrence >= now &&
-        schedule.nextOccurrence < new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+        schedule.nextOccurrence <= rangeEnd,
     );
 
     const expiringContracts = contracts
@@ -485,6 +615,102 @@ export class DashboardService {
         supplierName: contract.supplier?.name ?? null,
         endDate: contract.endDate?.toISOString() ?? null,
       }));
+
+    const techLoadMap = new Map<
+      number | null,
+      {
+        assignedOpenTickets: number;
+        urgentOpenTickets: number;
+        slaBreaches: number;
+      }
+    >();
+
+    for (const row of techOpenGroups) {
+      techLoadMap.set(row.assignedToId, {
+        assignedOpenTickets: row._count._all,
+        urgentOpenTickets: 0,
+        slaBreaches: 0,
+      });
+    }
+
+    for (const row of techUrgentGroups) {
+      const current = techLoadMap.get(row.assignedToId) ?? {
+        assignedOpenTickets: 0,
+        urgentOpenTickets: 0,
+        slaBreaches: 0,
+      };
+      current.urgentOpenTickets = row._count._all;
+      techLoadMap.set(row.assignedToId, current);
+    }
+
+    for (const row of techBreachGroups) {
+      const current = techLoadMap.get(row.assignedToId) ?? {
+        assignedOpenTickets: 0,
+        urgentOpenTickets: 0,
+        slaBreaches: 0,
+      };
+      current.slaBreaches = row._count._all;
+      techLoadMap.set(row.assignedToId, current);
+    }
+
+    const techWorkload = techUsers
+      .map((user) => {
+        const metrics = techLoadMap.get(user.id) ?? {
+          assignedOpenTickets: 0,
+          urgentOpenTickets: 0,
+          slaBreaches: 0,
+        };
+        const loadScore = metrics.assignedOpenTickets + metrics.urgentOpenTickets * 2 + metrics.slaBreaches * 2;
+        return {
+          techId: user.id,
+          email: user.email,
+          assignedOpenTickets: metrics.assignedOpenTickets,
+          urgentOpenTickets: metrics.urgentOpenTickets,
+          slaBreaches: metrics.slaBreaches,
+          loadBand: loadScore >= 8 ? 'critical' : loadScore >= 4 ? 'busy' : 'balanced',
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.assignedOpenTickets - a.assignedOpenTickets ||
+          b.urgentOpenTickets - a.urgentOpenTickets ||
+          a.email.localeCompare(b.email),
+      );
+
+    const bottlenecks = [
+      {
+        id: 'sla',
+        title: 'חריגות SLA',
+        count: slaBreaches.length,
+        tone: slaBreaches.length > 0 ? 'danger' : 'calm',
+        description: slaBreaches.length > 0 ? 'קריאות שחרגו מחלון הטיפול ודורשות הסלמה.' : 'אין כרגע חריגות SLA פתוחות.',
+        href: '/tickets',
+      },
+      {
+        id: 'unassigned',
+        title: 'קריאות ללא שיוך',
+        count: unresolvedTickets.filter((ticket) => !ticket.assignedToId).length,
+        tone: unresolvedTickets.some((ticket) => !ticket.assignedToId) ? 'warning' : 'calm',
+        description: 'קריאות שעדיין לא שויכו לטכנאי או לספק ומאטות את הטיפול.',
+        href: '/tickets',
+      },
+      {
+        id: 'approvals',
+        title: 'אישורים ממתינים',
+        count: pendingApprovals,
+        tone: pendingApprovals > 0 ? 'warning' : 'calm',
+        description: 'עבודות והחלטות רגישות שמחכות לאישור מנהלי.',
+        href: '/admin/approvals',
+      },
+      {
+        id: 'collections',
+        title: 'חשבוניות בפיגור',
+        count: overdueInvoices.length,
+        tone: overdueInvoices.length > 0 ? 'danger' : 'calm',
+        description: 'חובות שדורשים טיפול גבייה כדי לא לפגוע בתזרים.',
+        href: '/payments',
+      },
+    ];
 
     const attentionItems = [
       {
@@ -541,6 +767,7 @@ export class DashboardService {
       filters: {
         selectedBuildingId: selectedBuildingId ?? null,
         range,
+        rangeLabel,
         buildings: buildingList,
       },
       portfolioKpis: {
@@ -552,6 +779,8 @@ export class DashboardService {
         occupiedUnits,
         vacantUnits,
         resolvedToday,
+        resolvedInRange,
+        createdInRange,
       },
       attentionItems,
       ticketTrends: {
@@ -568,7 +797,7 @@ export class DashboardService {
       maintenanceSummary: {
         overdue: overdueMaintenance.length,
         dueToday: maintenanceDueToday.length,
-        dueThisWeek: maintenanceDueThisWeek.length,
+        dueInRange: maintenanceDueInRange.length,
         upcoming: upcomingMaintenance,
       },
       recentNotifications: notifications.map((notification) => ({
@@ -588,15 +817,42 @@ export class DashboardService {
           openTickets: unresolvedTickets.length,
           unpaidInvoices: unpaidInvoices.length,
           activeTechs: await this.prisma.user.count({ where: { role: PrismaRole.TECH } }),
+          activeUsersInRange: activityUsersInRange.length,
+          activityEventsInRange,
+          pendingApprovals,
         },
         health: {
-          database: 'connected',
-          auth: 'healthy',
-          notifications: 'healthy',
+          uptime: {
+            status: 'healthy',
+            label: 'Uptime',
+            value: this.formatDuration(Math.floor(process.uptime())),
+            description: 'משך הזמן שה-API רץ ברצף ללא אתחול.',
+          },
+          api: {
+            status: 'healthy',
+            label: 'API',
+            value: 'Operational',
+            description: 'שאילתות הדשבורד והמסד חזרו בהצלחה בטעינה הנוכחית.',
+          },
+          queue: {
+            status: pendingApprovals > 0 ? 'warning' : 'healthy',
+            label: 'Queue',
+            value: pendingApprovals > 0 ? `${pendingApprovals} pending` : 'Clear',
+            description:
+              pendingApprovals > 0 ? 'יש משימות שמחכות לאישור ומעכבות ביצוע.' : 'אין כרגע צווארי בקבוק בתור האישורים.',
+          },
+          usage: {
+            status: activityUsersInRange.length > 0 ? 'healthy' : 'warning',
+            label: 'Active usage',
+            value: `${activityUsersInRange.length} users / ${activityEventsInRange} events`,
+            description: `פעילות שנרשמה ב-${rangeLabel.toLowerCase()}.`,
+          },
         },
         roleCounts,
         users: recentUsers,
         recentImpersonationEvents,
+        techWorkload,
+        bottlenecks,
       },
     };
   }
@@ -663,15 +919,34 @@ export class DashboardService {
     return lines.join('\n');
   }
 
-  private getRangeStart(range: string, now: Date) {
-    const normalized = range.toLowerCase();
-    if (normalized === '7d') {
+  private normalizeRange(range?: string): RangeKey {
+    const normalized = range?.toLowerCase();
+    if (normalized === '7d' || normalized === '30d' || normalized === '90d') {
+      return normalized;
+    }
+    return '30d';
+  }
+
+  private getRangeStart(range: RangeKey, now: Date) {
+    if (range === '7d') {
       return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     }
-    if (normalized === '90d') {
+    if (range === '90d') {
       return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
     }
     return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  }
+
+  private getRangeDays(range: RangeKey) {
+    if (range === '7d') return 7;
+    if (range === '90d') return 90;
+    return 30;
+  }
+
+  private getRangeLabel(range: RangeKey) {
+    if (range === '7d') return '7 הימים האחרונים';
+    if (range === '90d') return '90 הימים האחרונים';
+    return '30 הימים האחרונים';
   }
 
   private getInvoiceDueDate(createdAt: Date) {
@@ -684,6 +959,31 @@ export class DashboardService {
       currency: 'ILS',
       maximumFractionDigits: 0,
     }).format(amount);
+  }
+
+  private formatDuration(totalSeconds: number) {
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+    if (days > 0) {
+      return `${days}d ${hours}h`;
+    }
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+
+    return `${minutes}m`;
+  }
+
+  private readMetadataValue(metadata: Prisma.JsonValue | null, key: string) {
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      return null;
+    }
+
+    const value = (metadata as Record<string, unknown>)[key];
+    return typeof value === 'string' ? value : null;
   }
 
   private buildTopDebtors(invoices: InvoiceSnapshot[], now: Date) {

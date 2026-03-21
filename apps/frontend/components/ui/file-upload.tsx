@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Upload, File, X, Loader2 } from "lucide-react";
 import { Button } from "./button";
 import { cn } from "../../lib/utils";
+import { isTouchDevice } from "../../lib/mobile";
 
 interface FileUploadProps {
   label?: string;
@@ -31,6 +32,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setDragging] = useState(false);
   const [isUploading, setUploading] = useState(false);
+  const [touchDevice, setTouchDevice] = useState(false);
+
+  useEffect(() => {
+    setTouchDevice(isTouchDevice());
+  }, []);
 
   const reset = useCallback(() => {
     setFile(null);
@@ -104,7 +110,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         )}
         onDragOver={(event) => {
           event.preventDefault();
-          if (!disabled) {
+          if (!disabled && !touchDevice) {
             setDragging(true);
           }
         }}
@@ -123,8 +129,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onChange={(event) => handleFile(event.target.files?.[0] ?? null)}
         />
         <Upload className="mb-3 h-10 w-10 text-muted-foreground" />
-        <p className="text-sm font-medium text-foreground">גרור ושחרר קובץ כאן</p>
-        <p className="text-xs text-muted-foreground">או לחץ לבחירה מהמחשב</p>
+        <p className="text-sm font-medium text-foreground">{touchDevice ? "הקשו כדי לבחור קובץ" : "גרור ושחרר קובץ כאן"}</p>
+        <p className="text-xs text-muted-foreground">
+          {touchDevice ? "אפשר לבחור קובץ או לצלם ישירות מהמכשיר" : "או לחץ לבחירה מהמחשב"}
+        </p>
         <Button
           type="button"
           variant="secondary"
@@ -133,7 +141,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onClick={onBrowse}
           disabled={disabled}
         >
-          בחר קובץ
+          {touchDevice && accept.includes('image') ? 'צלם או בחר' : 'בחר קובץ'}
         </Button>
         {hint && <p className="mt-2 text-xs text-muted-foreground">{hint}</p>}
         <p className="mt-1 text-[11px] text-muted-foreground">מקסימום {maxSizeMb}MB</p>

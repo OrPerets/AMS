@@ -4,6 +4,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Toaster } from '../components/ui/toaster';
 import { toast } from '../components/ui/use-toast';
+import { type Locale, getLocaleDirection, getStoredLocale, translate } from './i18n';
 
 // Theme Provider
 type Theme = "dark" | "light" | "system";
@@ -172,8 +173,6 @@ export const useDirection = () => {
 };
 
 // Locale Provider
-type Locale = "he" | "en";
-
 type LocaleProviderProps = {
   children: React.ReactNode;
   defaultLocale?: Locale;
@@ -183,7 +182,7 @@ type LocaleProviderProps = {
 type LocaleProviderState = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: string, params?: Record<string, string>) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 };
 
 const LocaleProviderContext = createContext<LocaleProviderState>({
@@ -191,148 +190,6 @@ const LocaleProviderContext = createContext<LocaleProviderState>({
   setLocale: () => null,
   t: (key: string) => key,
 });
-
-// Basic translations - in a real app, you'd use next-intl or similar
-const translations: Record<Locale, Record<string, string>> = {
-  he: {
-    // Navigation
-    'nav.home': 'דף הבית',
-    'nav.dashboard': 'דשבורד',
-    'nav.tickets': 'קריאות שירות',
-    'nav.buildings': 'בניינים',
-    'nav.payments': 'תשלומים',
-    'nav.tech-jobs': 'משימות טכנאי',
-    'nav.admin': 'ניהול',
-    'nav.notifications': 'הודעות',
-    
-    // Common
-    'common.loading': 'טוען...',
-    'common.error': 'שגיאה',
-    'common.success': 'הצלחה',
-    'common.save': 'שמור',
-    'common.cancel': 'בטל',
-    'common.delete': 'מחק',
-    'common.edit': 'ערוך',
-    'common.view': 'צפה',
-    'common.search': 'חיפוש',
-    'common.filter': 'סינון',
-    'common.export': 'יצוא',
-    'common.print': 'הדפס',
-    'common.refresh': 'רענן',
-    'common.back': 'חזור',
-    'common.next': 'הבא',
-    'common.previous': 'הקודם',
-    'common.close': 'סגור',
-    'common.open': 'פתח',
-    
-    // Status
-    'status.open': 'פתוח',
-    'status.closed': 'סגור',
-    'status.in-progress': 'בתהליך',
-    'status.completed': 'הושלם',
-    'status.pending': 'ממתין',
-    'status.cancelled': 'בוטל',
-    
-    // Priority
-    'priority.low': 'נמוך',
-    'priority.medium': 'בינוני',
-    'priority.high': 'גבוה',
-    'priority.urgent': 'דחוף',
-    
-    // Time
-    'time.today': 'היום',
-    'time.yesterday': 'אתמול',
-    'time.this-week': 'השבוע',
-    'time.this-month': 'החודש',
-    
-    // Errors
-    'error.generic': 'אירעה שגיאה לא צפויה',
-    'error.network': 'שגיאת רשת',
-    'error.unauthorized': 'אין הרשאה',
-    'error.not-found': 'לא נמצא',
-    'error.validation': 'שגיאת אימות',
-    // Notifications
-    'notification.title': 'שליחת הודעות',
-    'notification.user': 'למשתמש',
-    'notification.building': 'לבניין',
-    'notification.all': 'לכל הדיירים',
-    'notification.id': 'מזהה',
-    'notification.titleField': 'כותרת',
-    'notification.messageField': 'הודעה',
-    'notification.send': 'שלח',
-    'notification.sent': 'הודעה נשלחה',
-    'notification.error': 'שגיאה בשליחה',
-  },
-  en: {
-    // Navigation
-    'nav.home': 'Home',
-    'nav.dashboard': 'Dashboard',
-    'nav.tickets': 'Tickets',
-    'nav.buildings': 'Buildings',
-    'nav.payments': 'Payments',
-    'nav.tech-jobs': 'Tech Jobs',
-    'nav.admin': 'Admin',
-    'nav.notifications': 'Notifications',
-    
-    // Common
-    'common.loading': 'Loading...',
-    'common.error': 'Error',
-    'common.success': 'Success',
-    'common.save': 'Save',
-    'common.cancel': 'Cancel',
-    'common.delete': 'Delete',
-    'common.edit': 'Edit',
-    'common.view': 'View',
-    'common.search': 'Search',
-    'common.filter': 'Filter',
-    'common.export': 'Export',
-    'common.print': 'Print',
-    'common.refresh': 'Refresh',
-    'common.back': 'Back',
-    'common.next': 'Next',
-    'common.previous': 'Previous',
-    'common.close': 'Close',
-    'common.open': 'Open',
-    
-    // Status
-    'status.open': 'Open',
-    'status.closed': 'Closed',
-    'status.in-progress': 'In Progress',
-    'status.completed': 'Completed',
-    'status.pending': 'Pending',
-    'status.cancelled': 'Cancelled',
-    
-    // Priority
-    'priority.low': 'Low',
-    'priority.medium': 'Medium',
-    'priority.high': 'High',
-    'priority.urgent': 'Urgent',
-    
-    // Time
-    'time.today': 'Today',
-    'time.yesterday': 'Yesterday',
-    'time.this-week': 'This Week',
-    'time.this-month': 'This Month',
-    
-    // Errors
-    'error.generic': 'An unexpected error occurred',
-    'error.network': 'Network error',
-    'error.unauthorized': 'Unauthorized',
-    'error.not-found': 'Not found',
-    'error.validation': 'Validation error',
-    // Notifications
-    'notification.title': 'Send Notifications',
-    'notification.user': 'To user',
-    'notification.building': 'To building',
-    'notification.all': 'All tenants',
-    'notification.id': 'Identifier',
-    'notification.titleField': 'Title',
-    'notification.messageField': 'Message',
-    'notification.send': 'Send',
-    'notification.sent': 'Notification sent',
-    'notification.error': 'Failed to send',
-  },
-};
 
 export function LocaleProvider({
   children,
@@ -345,22 +202,11 @@ export function LocaleProvider({
   // Only run on client side
   useEffect(() => {
     setMounted(true);
-    const storedLocale = localStorage.getItem(storageKey) as Locale;
-    if (storedLocale) {
-      setLocale(storedLocale);
-    }
+    setLocale(getStoredLocale(defaultLocale));
   }, [storageKey]);
 
-  const t = (key: string, params?: Record<string, string>): string => {
-    let translation = translations[locale][key] || key;
-    
-    if (params) {
-      Object.entries(params).forEach(([paramKey, paramValue]) => {
-        translation = translation.replace(`{{${paramKey}}}`, paramValue);
-      });
-    }
-    
-    return translation;
+  const t = (key: string, params?: Record<string, string | number>): string => {
+    return translate(locale, key, params);
   };
 
   const value = {
@@ -402,7 +248,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   }, []);
   return (
     <ThemeProvider defaultTheme="light" storageKey="amit-theme">
-      <DirectionProvider defaultDirection="rtl" storageKey="amit-direction">
+      <DirectionProvider defaultDirection={getLocaleDirection('he')} storageKey="amit-direction">
         <LocaleProvider defaultLocale="he" storageKey="amit-locale">
           {children}
           <Toaster />

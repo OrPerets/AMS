@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { 
   Phone, 
@@ -7,8 +7,7 @@ import {
   AlertTriangle,
   Camera,
   Send,
-  ArrowLeft,
-  CheckCircle
+  ArrowLeft
 } from 'lucide-react';
 import { authFetch } from '../lib/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -16,9 +15,9 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
-import { useLocale } from '../lib/providers';
 import { toast } from '../components/ui/use-toast';
 import { getTokenPayload } from '../lib/auth';
+import { triggerHaptic } from '../lib/mobile';
 
 interface Building {
   id: number;
@@ -46,8 +45,8 @@ export default function CreateCall() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
-  const { t } = useLocale();
-
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     loadUserInfo();
     loadBuildings();
@@ -135,6 +134,14 @@ export default function CreateCall() {
     setPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
+  const openCameraPicker = () => {
+    cameraInputRef.current?.click();
+  };
+
+  const openGalleryPicker = () => {
+    galleryInputRef.current?.click();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -182,6 +189,7 @@ export default function CreateCall() {
           description: `קריאה מספר ${newTicket.id} נפתחה והועברה לטיפול`,
           variant: "default",
         });
+        triggerHaptic('success');
 
         // Reset form
         setDescription('');
@@ -242,7 +250,7 @@ export default function CreateCall() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6 pb-24 md:pb-0">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button 
@@ -405,18 +413,42 @@ export default function CreateCall() {
               צירוף תמונות (אופציונלי)
             </CardTitle>
             <CardDescription>
-              צרף תמונות שיכולות לעזור להבין את הבעיה
+              בטלפון, צילום חדש הוא הדרך המהירה ביותר להסביר את התקלה. אפשר גם לבחור מהגלריה.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <Input
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                multiple
+                onChange={handlePhotoUpload}
+                className="hidden"
+              />
+              <input
+                ref={galleryInputRef}
                 type="file"
                 accept="image/*"
                 multiple
                 onChange={handlePhotoUpload}
-                className="cursor-pointer"
+                className="hidden"
               />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Button type="button" onClick={openCameraPicker} className="min-h-14 w-full text-base">
+                  <Camera className="mr-2 h-4 w-4" />
+                  צלם תקלה עכשיו
+                </Button>
+                <Button type="button" variant="outline" onClick={openGalleryPicker} className="min-h-14 w-full">
+                  בחר מהגלריה
+                </Button>
+              </div>
+
+              <div className="rounded-lg border border-dashed border-primary/25 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+                אם התקלה נראית לעין, צילום אחד או שניים בדרך כלל מקצרים את זמן הטיפול.
+              </div>
               
               {photos.length > 0 && (
                 <div className="grid grid-cols-2 gap-4">

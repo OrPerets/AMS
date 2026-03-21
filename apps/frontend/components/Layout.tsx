@@ -3,9 +3,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useDirection } from '../lib/providers';
+import { useDirection, useLocale } from '../lib/providers';
 import Header from './layout/Header';
 import Sidebar from './layout/Sidebar';
+import { GlobalCommandPalette } from './layout/GlobalCommandPalette';
 import Breadcrumbs from './layout/Breadcrumbs';
 import Footer from './layout/Footer';
 import { ErrorBoundary, CompactErrorFallback } from './ui/error-boundary';
@@ -21,8 +22,10 @@ interface Props {
 export default function Layout({ children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { direction } = useDirection();
+  const { t } = useLocale();
   const router = useRouter();
   const publicRoutes = new Set(['/', '/404', '/_error', '/login', '/privacy', '/terms', '/support']);
   const isPublicRoute = publicRoutes.has(router.pathname);
@@ -39,6 +42,10 @@ export default function Layout({ children }: Props) {
     const next = encodeURIComponent(router.asPath);
     router.replace(`/login?next=${next}`);
   }, [isPublicRoute, mounted, router]);
+
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [router.asPath]);
 
   // WebSocket connection and notification handling
   useEffect(() => {
@@ -108,7 +115,10 @@ export default function Layout({ children }: Props) {
   if (isPublicRoute) {
     return (
       <div className={cn("min-h-screen bg-background text-foreground")}>
-        {children}
+        <a href="#main-content" className="skip-link">{t('shell.skipToContent')}</a>
+        <main id="main-content" tabIndex={-1}>
+          {children}
+        </main>
       </div>
     );
   }
@@ -118,7 +128,7 @@ export default function Layout({ children }: Props) {
       <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
         <div className="text-center">
           <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
-          <p className="mt-2 text-sm text-muted-foreground">טוען...</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t('shell.loadingApp')}</p>
         </div>
       </div>
     );
@@ -132,12 +142,14 @@ export default function Layout({ children }: Props) {
       )}
       suppressHydrationWarning
     >
+      <a href="#main-content" className="skip-link">{t('shell.skipToContent')}</a>
       {/* Header */}
       <Header 
         className="app-header"
         onMenuClick={() => setSidebarOpen(true)}
         sidebarCollapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onCommandPaletteOpen={() => setCommandPaletteOpen(true)}
       />
       
       {/* Sidebar */}
@@ -153,7 +165,7 @@ export default function Layout({ children }: Props) {
         "app-main flex min-w-0 flex-col overflow-hidden",
         sidebarCollapsed ? "md:ms-16" : "md:ms-64",
         "transition-all duration-300"
-      )}>
+      )} id="main-content" tabIndex={-1}>
         {/* Breadcrumbs */}
         <div className="border-b bg-background/85 backdrop-blur-sm">
           <div className="container px-3 py-3 sm:px-6">
@@ -162,8 +174,8 @@ export default function Layout({ children }: Props) {
         </div>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-x-hidden overflow-y-auto">
-          <div className="container px-3 py-4 sm:px-6 sm:py-6 safe-pb">
+        <div className="flex-1 overflow-x-hidden overflow-y-auto min-h-0" data-scroll-container="app">
+          <div className="container min-h-full px-3 py-4 sm:px-6 sm:py-6 safe-pb">
             <ErrorBoundary fallback={CompactErrorFallback}>
               {children}
             </ErrorBoundary>
@@ -173,11 +185,13 @@ export default function Layout({ children }: Props) {
       
       {/* Footer */}
       <Footer className="app-footer" />
+      <GlobalCommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
       
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 z-20 bg-black/50 md:hidden"
+          aria-hidden="true"
           onClick={() => setSidebarOpen(false)}
         />
       )}

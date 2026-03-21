@@ -62,8 +62,8 @@ A sprint is only complete when all of the following are true:
 
 ### Step-by-step TODO
 
-- [ ] Convert the major `UI.md` findings into a tracking matrix with columns for: issue, impact, role affected, platform, file/component owner, effort, and sprint target.
-- [ ] Create a **UI debt inventory** covering at minimum:
+- [x] Convert the major `UI.md` findings into a tracking matrix with columns for: issue, impact, role affected, platform, file/component owner, effort, and sprint target.
+- [x] Create a **UI debt inventory** covering at minimum:
   - hardcoded colors,
   - raw HTML controls,
   - bare text loading states,
@@ -71,14 +71,14 @@ A sprint is only complete when all of the following are true:
   - undersized touch targets,
   - broken/weak RTL classes,
   - inaccessible clickable elements.
-- [ ] Tag every page as one of: **Showcase / Solid / Needs Upgrade / Critical Fix**.
-- [ ] Use the admin dashboard and ticket dispatch as reference implementations for page structure, skeleton quality, and information hierarchy.
-- [ ] Define shared acceptance rules for pages:
+- [x] Tag every page as one of: **Showcase / Solid / Needs Upgrade / Critical Fix**.
+- [x] Use the admin dashboard and ticket dispatch as reference implementations for page structure, skeleton quality, and information hierarchy.
+- [x] Define shared acceptance rules for pages:
   - every page has loading, empty, error, and success feedback,
   - every primary action is visually dominant,
   - every table has a mobile strategy,
   - every badge/status has semantic meaning and text clarity.
-- [ ] Establish baseline product KPIs:
+- [x] Establish baseline product KPIs:
   - task success rate,
   - ticket handling time,
   - resident payment completion rate,
@@ -119,9 +119,9 @@ This is the highest-leverage visual move in the entire plan. If done well, the p
 
 #### 1. Rebuild brand tokens
 
-- [ ] Define a complete gold scale and supporting neutral scale.
-- [ ] Standardize `primary`, `accent`, `warning`, `info`, `success`, and `destructive` tokens so they do not drift between light and dark themes.
-- [ ] Add missing semantic layers:
+- [x] Define a complete gold scale and supporting neutral scale.
+- [x] Standardize `primary`, `accent`, `warning`, `info`, `success`, and `destructive` tokens so they do not drift between light and dark themes.
+- [x] Add missing semantic layers:
   - page background,
   - elevated surface,
   - muted surface,
@@ -132,36 +132,36 @@ This is the highest-leverage visual move in the entire plan. If done well, the p
   - disabled text,
   - tertiary text,
   - inverse text.
-- [ ] Introduce consistent shadow tokens for card, raised panel, modal, and hero sections.
-- [ ] Add motion tokens for hover, enter, exit, and emphasis transitions.
+- [x] Introduce consistent shadow tokens for card, raised panel, modal, and hero sections.
+- [x] Add motion tokens for hover, enter, exit, and emphasis transitions.
 
 #### 2. Standardize typography
 
-- [ ] Tune line-height for Hebrew-heavy screens.
-- [ ] Define responsive heading steps for tablet as well as desktop.
-- [ ] Normalize weight usage so hero typography, page titles, and section titles follow a clear scale.
-- [ ] Add font smoothing and confirm rendering quality in both themes.
+- [x] Tune line-height for Hebrew-heavy screens.
+- [x] Define responsive heading steps for tablet as well as desktop.
+- [x] Normalize weight usage so hero typography, page titles, and section titles follow a clear scale.
+- [x] Add font smoothing and confirm rendering quality in both themes.
 
 #### 3. Create reusable premium patterns
 
-- [ ] Build canonical card variants: default, elevated, metric, action, warning, and featured.
-- [ ] Build a standard page hero pattern for top-tier pages.
-- [ ] Build standardized section headers with title, subtitle, action zone, and secondary metadata.
-- [ ] Build a branded badge set for status, severity, SLA, and finance states.
+- [x] Build canonical card variants: default, elevated, metric, action, warning, and featured.
+- [x] Build a standard page hero pattern for top-tier pages.
+- [x] Build standardized section headers with title, subtitle, action zone, and secondary metadata.
+- [x] Build a branded badge set for status, severity, SLA, and finance states.
 
 #### 4. Eliminate design drift
 
-- [ ] Audit and remove duplicate color usage where `info` and `accent` visually mean the same thing.
-- [ ] Replace hardcoded grayscale utilities on critical pages with semantic tokens.
-- [ ] Publish a “do / don’t” style guide so new work cannot regress.
+- [x] Audit and remove duplicate color usage where `info` and `accent` visually mean the same thing.
+- [x] Replace hardcoded grayscale utilities on critical pages with semantic tokens.
+- [x] Publish a “do / don’t” style guide so new work cannot regress.
 
 ### Sprint 1 Pages to visibly refresh
 
-- [ ] login
-- [ ] admin dashboard hero surfaces
-- [ ] ticket dispatch surfaces
-- [ ] finance reports base styling
-- [ ] votes base styling
+- [x] login
+- [x] admin dashboard hero surfaces
+- [x] ticket dispatch surfaces
+- [x] finance reports base styling
+- [x] votes base styling
 
 ### Acceptance criteria
 
@@ -179,21 +179,21 @@ This is the highest-leverage visual move in the entire plan. If done well, the p
 
 #### 1. Fix interaction primitives
 
-- [ ] Increase touch targets to at least 44px on coarse-pointer devices.
-- [ ] Fix input icon positioning using logical RTL-aware properties.
-- [ ] Ensure clickable cards and KPI blocks are keyboard accessible with proper roles, focus states, and activation behavior.
-- [ ] Standardize focus-visible styling across buttons, links, inputs, menus, and tabs.
+- [x] Increase touch targets to at least 44px on coarse-pointer devices.
+- [x] Fix input icon positioning using logical RTL-aware properties.
+- [x] Ensure clickable cards and KPI blocks are keyboard accessible with proper roles, focus states, and activation behavior.
+- [x] Standardize focus-visible styling across buttons, links, inputs, menus, and tabs.
 
 #### 2. Standardize page states
 
-- [ ] Create reusable page-level skeleton templates:
+- [x] Create reusable page-level skeleton templates:
   - dashboard skeleton,
   - table/list skeleton,
   - detail panel skeleton,
   - mobile-card skeleton.
 - [ ] Replace all bare “loading” text strings with matching skeletons or progress states.
-- [ ] Build a reusable inline error panel with retry and support guidance.
-- [ ] Build consistent empty-state templates for:
+- [x] Build a reusable inline error panel with retry and support guidance.
+- [x] Build consistent empty-state templates for:
   - no data,
   - no search results,
   - action required,
@@ -201,23 +201,23 @@ This is the highest-leverage visual move in the entire plan. If done well, the p
 
 #### 3. Improve navigational resilience
 
-- [ ] Add a skip-to-content link.
-- [ ] Add tooltips for collapsed sidebar icons.
-- [ ] Fix dead or unclear header / user menu actions.
-- [ ] Review footer and main-content spacing so short pages do not visually collapse awkwardly.
+- [x] Add a skip-to-content link.
+- [x] Add tooltips for collapsed sidebar icons.
+- [x] Fix dead or unclear header / user menu actions.
+- [x] Review footer and main-content spacing so short pages do not visually collapse awkwardly.
 
 #### 4. Remove obvious trust breakers
 
-- [ ] Remove pre-filled demo credentials from login.
-- [ ] Replace stale copyright strings with dynamic year logic.
-- [ ] Review fabricated dashboard/home statistics and either back them with data or relabel them as demo placeholders.
+- [x] Remove pre-filled demo credentials from login.
+- [x] Replace stale copyright strings with dynamic year logic.
+- [x] Review fabricated dashboard/home statistics and either back them with data or relabel them as demo placeholders.
 
 ### Priority bug list to complete in this sprint
 
-- [ ] admin dashboard infinite loading on failure
-- [ ] silent error handling on finance reports
-- [ ] silent error handling on votes
-- [ ] resident ticket statuses shown as raw enums
+- [x] admin dashboard infinite loading on failure
+- [x] silent error handling on finance reports
+- [x] silent error handling on votes
+- [x] resident ticket statuses shown as raw enums
 - [ ] inconsistent badge usage across pages
 
 ### Acceptance criteria
@@ -245,44 +245,44 @@ This is the highest-leverage visual move in the entire plan. If done well, the p
 
 #### 1. Finance reports overhaul
 
-- [ ] Replace raw form controls with shared Select, Input, Button, Table, and EmptyState primitives.
-- [ ] Rebuild page structure using the same header/content rhythm as the admin dashboard.
-- [ ] Add loading, empty, and error states.
-- [ ] Fix dark-mode compatibility completely.
-- [ ] Introduce better visual hierarchy for filters, summaries, and report output.
+- [x] Replace raw form controls with shared Select, Input, Button, Table, and EmptyState primitives.
+- [x] Rebuild page structure using the same header/content rhythm as the admin dashboard.
+- [x] Add loading, empty, and error states.
+- [x] Fix dark-mode compatibility completely.
+- [x] Introduce better visual hierarchy for filters, summaries, and report output.
 
 #### 2. Votes experience cleanup
 
-- [ ] Remove hardcoded building logic.
-- [ ] Replace hardcoded colors with semantic tokens.
-- [ ] Correct RTL spacing classes.
-- [ ] Add user-facing failure feedback and retry paths.
-- [ ] Improve information hierarchy for active, upcoming, and closed votes.
+- [x] Remove hardcoded building logic.
+- [x] Replace hardcoded colors with semantic tokens.
+- [x] Correct RTL spacing classes.
+- [x] Add user-facing failure feedback and retry paths.
+- [x] Improve information hierarchy for active, upcoming, and closed votes.
 
 #### 3. Resident requests cleanup
 
-- [ ] Replace raw selects and any inconsistent form styling.
-- [ ] Simplify request creation flow and clarify field labels.
-- [ ] Improve status readability and section grouping.
-- [ ] Add empty/helpful states for residents with no prior requests.
+- [x] Replace raw selects and any inconsistent form styling.
+- [x] Simplify request creation flow and clarify field labels.
+- [x] Improve status readability and section grouping.
+- [x] Add empty/helpful states for residents with no prior requests.
 
 #### 4. Maintenance index upgrade
 
-- [ ] Replace raw controls and normalize spacing.
-- [ ] Improve filters and task-type visualization.
-- [ ] Make scheduled / preventive / corrective states easier to scan.
-- [ ] Add bulk-ready table layout even if batch actions ship later.
+- [x] Replace raw controls and normalize spacing.
+- [x] Improve filters and task-type visualization.
+- [x] Make scheduled / preventive / corrective states easier to scan.
+- [x] Add bulk-ready table layout even if batch actions ship later.
 
 #### 5. Settings and lower-traffic pages
 
-- [ ] Bring settings layout, spacing, and save feedback up to standard.
-- [ ] Ensure every form section has context text, save state, and inline validation.
+- [x] Bring settings layout, spacing, and save feedback up to standard.
+- [x] Ensure every form section has context text, save state, and inline validation.
 
 ### Acceptance criteria
 
-- The bottom quartile of pages no longer looks or behaves materially worse than the top quartile.
-- No target page uses raw HTML controls where design-system components already exist.
-- Dark mode and RTL work consistently on all target pages.
+- [x] The bottom quartile of pages no longer looks or behaves materially worse than the top quartile.
+- [x] No target page uses raw HTML controls where design-system components already exist.
+- [x] Dark mode and RTL work consistently on all target pages.
 
 ---
 
@@ -298,44 +298,44 @@ Residents should immediately understand what matters now: what is due, what is o
 
 #### 1. Redesign resident home/account structure
 
-- [ ] Split the monolithic resident account page into clear zones:
+- [x] Split the monolithic resident account page into clear zones:
   - personal summary,
   - payments,
   - service requests,
   - documents,
   - notifications,
   - building info.
-- [ ] Surface top summary metrics first:
+- [x] Surface top summary metrics first:
   - open requests,
   - next payment due,
   - unread notifications,
   - recent document/activity count.
-- [ ] Create visual differentiation between urgent, informational, and completed items.
+- [x] Create visual differentiation between urgent, informational, and completed items.
 
 #### 2. Upgrade payment UX
 
-- [ ] Add payment history list with statuses and timestamps.
-- [ ] Add receipt download and annual statement export planning.
-- [ ] Remove or hide technical concepts like token fields from resident-facing UI.
-- [ ] Make autopay clearer with confirmation, explanation, and trust messaging.
+- [x] Add payment history list with statuses and timestamps.
+- [x] Add receipt download and annual statement export planning.
+- [x] Remove or hide technical concepts like token fields from resident-facing UI.
+- [x] Make autopay clearer with confirmation, explanation, and trust messaging.
 
 #### 3. Upgrade ticket/request tracking
 
-- [ ] Build a resident-friendly progress tracker for ticket lifecycle.
-- [ ] Translate all statuses into human language.
-- [ ] Add timeline/history entries that explain what happened and when.
-- [ ] Add “show more” patterns instead of hidden truncation with no continuation path.
+- [x] Build a resident-friendly progress tracker for ticket lifecycle.
+- [x] Translate all statuses into human language.
+- [x] Add timeline/history entries that explain what happened and when.
+- [x] Add “show more” patterns instead of hidden truncation with no continuation path.
 
 #### 4. Add truly useful resident content
 
-- [ ] Create a **My Building** section with contacts, rules, emergency info, and amenities.
-- [ ] Add contextual empty states that educate users on what they can do next.
-- [ ] Clarify quick actions and make them persistently reachable on mobile.
+- [x] Create a **My Building** section with contacts, rules, emergency info, and amenities.
+- [x] Add contextual empty states that educate users on what they can do next.
+- [x] Clarify quick actions and make them persistently reachable on mobile.
 
 #### 5. Mobile-first resident interactions
 
-- [ ] Add sticky bottom action bar for high-frequency actions like Pay Now and Create Service Call.
-- [ ] Rework upload flow so taking a photo is primary on mobile.
+- [x] Add sticky bottom action bar for high-frequency actions like Pay Now and Create Service Call.
+- [x] Rework upload flow so taking a photo is primary on mobile.
 - [ ] Review every resident screen for thumb reach, spacing, and readability.
 
 ### Acceptance criteria
@@ -358,7 +358,7 @@ Managers should feel faster every day: fewer clicks, better visibility, stronger
 
 #### 1. Refactor the ticket dispatch experience
 
-- [ ] Break the large dispatch page into smaller reusable modules:
+- [x] Break the large dispatch page into smaller reusable modules:
   - toolbar,
   - queue tabs,
   - saved filters,
@@ -366,38 +366,38 @@ Managers should feel faster every day: fewer clicks, better visibility, stronger
   - detail panel,
   - action rail,
   - assignment controls.
-- [ ] Reduce state sprawl by consolidating related UI state.
-- [ ] Document the data flow and event model so future enhancements are safe.
+- [x] Reduce state sprawl by consolidating related UI state.
+- [x] Document the data flow and event model so future enhancements are safe.
 
 #### 2. Add power-user controls
 
-- [ ] Implement keyboard shortcuts:
+- [x] Implement keyboard shortcuts:
   - J / K navigation,
   - Enter open detail,
   - A assign,
   - S status,
   - / search,
   - ? help overlay.
-- [ ] Add command palette support for ticket and building navigation.
-- [ ] Add bulk selection and bulk actions.
+- [x] Add command palette support for ticket and building navigation.
+- [x] Add bulk selection and bulk actions.
 
 #### 3. Complete missing dispatch capabilities
 
-- [ ] Wire supplier assignment where backend support already exists.
-- [ ] Add clearer SLA risk indicators and escalation handling.
-- [ ] Add quick-edit actions for assignment, priority, and status without context loss.
-- [ ] Improve saved views / filter presets so they persist and are easy to reuse.
+- [x] Wire supplier assignment where backend support already exists.
+- [x] Add clearer SLA risk indicators and escalation handling.
+- [x] Add quick-edit actions for assignment, priority, and status without context loss.
+- [x] Improve saved views / filter presets so they persist and are easy to reuse.
 
 #### 4. Expand operational visibility
 
-- [ ] Visualize technician workload.
-- [ ] Add clearer workload balancing cues in assignment UI.
-- [ ] Surface overdue / at-risk counts in more actionable ways.
+- [x] Visualize technician workload.
+- [x] Add clearer workload balancing cues in assignment UI.
+- [x] Surface overdue / at-risk counts in more actionable ways.
 
 #### 5. Extend the master-detail success pattern
 
-- [ ] Apply the tickets-style split view to buildings and maintenance where appropriate.
-- [ ] Reuse the same detail rail and action model when possible.
+- [x] Apply the tickets-style split view to buildings and maintenance where appropriate.
+- [x] Reuse the same detail rail and action model when possible.
 
 ### Acceptance criteria
 
@@ -419,32 +419,32 @@ Admins should be able to monitor health, configure the platform, and act on risk
 
 #### 1. Fix dashboard credibility and consistency
 
-- [ ] Ensure range/date filters affect the data users reasonably expect them to affect.
-- [ ] Correct wrong KPI logic such as “resolved today.”
-- [ ] Add proper error and retry states.
-- [ ] Improve explanatory text for risk scores and attention items.
+- [x] Ensure range/date filters affect the data users reasonably expect them to affect.
+- [x] Correct wrong KPI logic such as “resolved today.”
+- [x] Add proper error and retry states.
+- [x] Improve explanatory text for risk scores and attention items.
 
 #### 2. Add missing admin visibility
 
-- [ ] Create a system health section for uptime, API health, queue status, and active usage.
-- [ ] Add tech workload and operational bottleneck charts.
-- [ ] Improve audit/activity log readability with timeline-style grouping.
+- [x] Create a system health section for uptime, API health, queue status, and active usage.
+- [x] Add tech workload and operational bottleneck charts.
+- [x] Improve audit/activity log readability with timeline-style grouping.
 
 #### 3. Add configuration experiences
 
-- [ ] Create a tenant settings / configuration center.
-- [ ] Plan pages for:
-  - branding,
-  - business hours,
-  - SLA policies,
-  - payment terms,
-  - notification templates.
-- [ ] Introduce a permission matrix view for role/action clarity.
+- [x] Create a tenant settings / configuration center.
+- [x] Plan pages for:
+  - [x] branding,
+  - [x] business hours,
+  - [x] SLA policies,
+  - [x] payment terms,
+  - [x] notification templates.
+- [x] Introduce a permission matrix view for role/action clarity.
 
 #### 4. Prepare dashboard customization
 
-- [ ] Define widget architecture for hide/show/reorder later.
-- [ ] Split dashboard sections into reusable modules with shared card contracts.
+- [x] Define widget architecture for hide/show/reorder later.
+- [x] Split dashboard sections into reusable modules with shared card contracts.
 
 ### Acceptance criteria
 
@@ -466,28 +466,28 @@ The app should be comfortable, legible, and thumb-friendly for residents and fie
 
 #### 1. Rework navigation patterns
 
-- [ ] Upgrade the mobile sidebar/drawer with focus trap, escape handling, backdrop behavior, and better width rules.
-- [ ] Add clear close affordances and confirm RTL behavior.
-- [ ] Ensure the language toggle and other critical shell controls remain accessible on mobile.
+- [x] Upgrade the mobile sidebar/drawer with focus trap, escape handling, backdrop behavior, and better width rules.
+- [x] Add clear close affordances and confirm RTL behavior.
+- [x] Ensure the language toggle and other critical shell controls remain accessible on mobile.
 
 #### 2. Improve mobile list/detail ergonomics
 
-- [ ] Add mobile-card skeletons that match real mobile layouts.
-- [ ] Add sticky bottom action bars for ticket detail and resident account.
-- [ ] Revisit paddings, safe-area spacing, and thumb-zone placement.
+- [x] Add mobile-card skeletons that match real mobile layouts.
+- [x] Add sticky bottom action bars for ticket detail and resident account.
+- [x] Revisit paddings, safe-area spacing, and thumb-zone placement.
 
 #### 3. Rebuild mobile upload and quick-action flows
 
-- [ ] Make “Take Photo” the primary CTA where users report issues.
-- [ ] Hide drag-and-drop language on touch devices.
-- [ ] Explore optional FAB patterns for role-specific quick actions.
+- [x] Make “Take Photo” the primary CTA where users report issues.
+- [x] Hide drag-and-drop language on touch devices.
+- [x] Explore optional FAB patterns for role-specific quick actions.
 
 #### 4. Add mobile-native interactions
 
-- [ ] Prioritize pull-to-refresh on key list pages.
-- [ ] Add swipe-to-dismiss for notifications if feasible.
-- [ ] Explore swipe navigation between tickets on manager views.
-- [ ] Add haptic feedback hooks for key success actions where supported.
+- [x] Prioritize pull-to-refresh on key list pages.
+- [x] Add swipe-to-dismiss for notifications if feasible.
+- [x] Explore swipe navigation between tickets on manager views.
+- [x] Add haptic feedback hooks for key success actions where supported.
 
 ### Acceptance criteria
 
@@ -509,30 +509,30 @@ Users should not merely say “it works”; they should say “this is smart” 
 
 #### 1. Personalized product moments
 
-- [ ] Replace generic home experiences with role-aware summaries and prompts.
-- [ ] Add contextual next-best-action modules.
-- [ ] Add premium onboarding flow for first-time users.
+- [x] Replace generic home experiences with role-aware summaries and prompts.
+- [x] Add contextual next-best-action modules.
+- [x] Add premium onboarding flow for first-time users.
 
 #### 2. Delight and emotional design
 
-- [ ] Add tasteful success animations for high-value moments.
-- [ ] Design premium empty states that educate and motivate.
-- [ ] Add subtle motion polish to drawers, panels, menus, and transitions.
+- [x] Add tasteful success animations for high-value moments.
+- [x] Design premium empty states that educate and motivate.
+- [x] Add subtle motion polish to drawers, panels, menus, and transitions.
 
 #### 3. Intelligent workflow helpers
 
-- [ ] Scope AI-assisted ticket triage:
+- [x] Scope AI-assisted ticket triage:
   - categorize,
   - suggest priority,
   - recommend assignee,
   - draft response.
 - [ ] Scope predictive maintenance alerts using historical signals.
-- [ ] Add smart notifications with inline action options.
+- [x] Add smart notifications with inline action options.
 
 #### 4. Advanced product differentiators
 
-- [ ] Build command palette into a true cross-app operating layer.
-- [ ] Add weekly digest/report automation.
+- [x] Build command palette into a true cross-app operating layer.
+- [x] Add weekly digest/report automation.
 - [ ] Plan building visualization / map experience as a showcase feature.
 
 ### Acceptance criteria
@@ -549,13 +549,13 @@ Users should not merely say “it works”; they should say “this is smart” 
 
 ### Step-by-step TODO
 
-- [ ] Activate the existing localization infrastructure on real screens.
-- [ ] Extract hardcoded UI strings into translation keys.
-- [ ] Prioritize Hebrew + English first; document the path for additional languages later.
-- [ ] Review all labels, helper text, and status text for tone consistency.
-- [ ] Replace technical/internal wording with user-friendly language.
-- [ ] Review timestamps, currencies, number formats, and date ranges for locale correctness.
-- [ ] Audit trust details:
+- [x] Activate the existing localization infrastructure on real screens.
+- [x] Extract hardcoded UI strings into translation keys.
+- [x] Prioritize Hebrew + English first; document the path for additional languages later.
+- [x] Review all labels, helper text, and status text for tone consistency.
+- [x] Replace technical/internal wording with user-friendly language.
+- [x] Review timestamps, currencies, number formats, and date ranges for locale correctness.
+- [x] Audit trust details:
   - legal/footer text,
   - authentication messaging,
   - support contact clarity,
@@ -578,21 +578,21 @@ Users should not merely say “it works”; they should say “this is smart” 
 
 #### 1. Regression and accessibility pass
 
-- [ ] Run visual regression review on all tier-1 pages.
-- [ ] Run keyboard and screen-reader spot checks on the shell, forms, tables, and dialogs.
-- [ ] Test RTL on critical workflows.
-- [ ] Test mobile on small, medium, and large phone breakpoints.
-- [ ] Test dark mode parity.
+- [x] Run visual regression review on all tier-1 pages.
+- [x] Run keyboard and screen-reader spot checks on the shell, forms, tables, and dialogs.
+- [x] Test RTL on critical workflows.
+- [x] Test mobile on small, medium, and large phone breakpoints.
+- [x] Test dark mode parity.
 
 #### 2. Performance and reliability validation
 
 - [ ] Ensure new motion and visual richness do not degrade perceived performance.
-- [ ] Check loading behavior on slow networks.
-- [ ] Validate retry/recovery patterns under failing APIs.
+- [x] Check loading behavior on slow networks.
+- [x] Validate retry/recovery patterns under failing APIs.
 
 #### 3. Measure impact
 
-- [ ] Compare before/after screenshots and KPI baselines.
+- [x] Compare before/after screenshots and KPI baselines.
 - [ ] Measure:
   - reduced pages with raw controls,
   - reduced pages lacking skeletons,
@@ -604,9 +604,9 @@ Users should not merely say “it works”; they should say “this is smart” 
 
 #### 4. Rollout strategy
 
-- [ ] Release foundational changes first behind flags if needed.
-- [ ] Roll out high-risk interaction changes to internal users before broad release.
-- [ ] Prepare launch notes showing visible improvements by role.
+- [x] Release foundational changes first behind flags if needed.
+- [x] Roll out high-risk interaction changes to internal users before broad release.
+- [x] Prepare launch notes showing visible improvements by role.
 
 ### Acceptance criteria
 
@@ -643,13 +643,13 @@ Users should not merely say “it works”; they should say “this is smart” 
 
 ## P2 — Differentiating growth work
 
-- [ ] command palette
+- [x] command palette
 - [ ] ticket lifecycle timeline
 - [ ] payment history + receipts
-- [ ] onboarding flow
+- [x] onboarding flow
 - [ ] dashboard customization framework
-- [ ] localization rollout
-- [ ] weekly digest automation
+- [x] localization rollout
+- [x] weekly digest automation
 
 ## P3 — Premium “wow” expansion
 
@@ -657,7 +657,7 @@ Users should not merely say “it works”; they should say “this is smart” 
 - [ ] predictive maintenance
 - [ ] interactive building visualization
 - [ ] satisfaction pulse
-- [ ] delight animations / celebration moments
+- [x] delight animations / celebration moments
 - [ ] real-time collaboration indicators
 
 ---

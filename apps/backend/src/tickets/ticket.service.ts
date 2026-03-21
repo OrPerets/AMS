@@ -119,6 +119,43 @@ type DispatchTicketItem = {
   }>;
 };
 
+type DispatchWorkloadItem = {
+  technicianId: number;
+  technicianEmail: string;
+  activeCount: number;
+  riskCount: number;
+  breachedCount: number;
+  urgentCount: number;
+  lastActivityAt: string | null;
+};
+
+type TriagePreviewInput = {
+  description?: string;
+  ticketId?: number;
+  buildingId?: number;
+  currentAssigneeId?: number;
+  currentCategory?: string;
+};
+
+type TechnicianSnapshot = {
+  id: number;
+  email: string;
+  supplier: {
+    id: number;
+    name: string;
+    skills: string[];
+    rating: number | null;
+  } | null;
+  assignedTickets: Array<{
+    id: number;
+    severity: TicketSeverity;
+    status: TicketStatus;
+    unit: {
+      buildingId: number;
+    };
+  }>;
+};
+
 @Injectable()
 export class TicketService {
   constructor(
@@ -302,6 +339,39 @@ export class TicketService {
     return ticket;
   }
 
+  async updateSeverity(id: number, severity: TicketSeverity) {
+    const ticket = await this.prisma.ticket.update({
+      where: { id },
+      data: { severity },
+      include: {
+        unit: {
+          include: {
+            building: true,
+          },
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    await this.activity.log({
+      userId: ticket.assignedTo?.id ?? undefined,
+      buildingId: ticket.unit.building.id,
+      entityType: 'TICKET',
+      entityId: ticket.id,
+      action: 'TICKET_PRIORITY_CHANGED',
+      summary: `עדיפות הקריאה #${ticket.id} עודכנה ל-${ticket.severity}.`,
+      metadata: { severity: ticket.severity, status: ticket.status },
+    });
+
+    return ticket;
+  }
+
   findOne(id: number) {
     return this.prisma.ticket.findUnique({
       where: { id },
@@ -364,6 +434,86 @@ export class TicketService {
     return this.prisma.ticketComment.delete({
       where: { id: commentId },
     });
+  }
+
+  async previewTriage(input: TriagePreviewInput) {
+    const seededTicket = input.ticketId
+      ? await this.prisma.ticket.findUnique({
+          where: { id: input.ticketId },
+          include: ticketInclude,
+        })
+      : null;
+
+    const seededDescription = input.description?.trim() || this.extractStructuredFields(seededTicket?.comments[0]?.content ?? '').body;
+    const description = seededDescription?.trim();
+    if (!description) {
+      throw new Error('Description is required for triage preview');
+    }
+
+    const buildingId = input.buildingId ?? seededTicket?.unit?.building?.id;
+    const categoryResult = this.inferCategory(description, input.currentCategory ?? undefined);
+    const severityResult = this.inferSeverity(description, categoryResult.category);
+    const technicians = (await this.prisma.user.findMany({
+      where: { role: 'TECH' },
+      select: {
+        id: true,
+        email: true,
+        supplier: {
+          select: {
+            id: true,
+            name: true,
+            skills: true,
+            rating: true,
+          },
+        },
+        assignedTickets: {
+          where: {
+            status: {
+              not: TicketStatus.RESOLVED,
+            },
+          },
+          select: {
+            id: true,
+            severity: true,
+            status: true,
+            unit: {
+              select: {
+                buildingId: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        email: 'asc',
+      },
+    })) as TechnicianSnapshot[];
+
+    const assignee = this.pickTechnician({
+      description,
+      buildingId,
+      category: categoryResult.category,
+      severity: severityResult.severity,
+      currentAssigneeId: input.currentAssigneeId,
+      technicians,
+    });
+
+    return {
+      summary: this.buildTriageSummary(categoryResult.category, severityResult.severity),
+      category: categoryResult.category,
+      severity: severityResult.severity,
+      reasons: Array.from(new Set([...categoryResult.reasons, ...severityResult.reasons, ...assignee.reasons])),
+      draftResponse: this.buildDraftResponse({
+        category: categoryResult.category,
+        severity: severityResult.severity,
+        technicianEmail: assignee.recommended?.email ?? null,
+      }),
+      suggestedAssignee: assignee.recommended,
+      confidence: Math.min(
+        0.96,
+        0.42 + categoryResult.reasons.length * 0.08 + severityResult.reasons.length * 0.07 + (assignee.recommended ? 0.12 : 0),
+      ),
+    };
   }
 
   private buildWhere(filter: TicketListFilter): Prisma.TicketWhereInput {
@@ -462,6 +612,15 @@ export class TicketService {
       a.localeCompare(b, 'he'),
     );
 
+    const workloads = this.buildWorkloads(dispatchItems);
+    const riskSummary = {
+      triage: dispatchItems.filter((ticket) => ticket.status === 'OPEN').length,
+      unassigned: dispatchItems.filter((ticket) => !ticket.assignedTo && ticket.status !== 'RESOLVED').length,
+      atRisk: dispatchItems.filter((ticket) => ticket.slaState === 'AT_RISK').length,
+      dueToday: dispatchItems.filter((ticket) => ticket.slaState === 'DUE_TODAY').length,
+      breached: dispatchItems.filter((ticket) => ticket.slaState === 'BREACHED').length,
+    };
+
     return {
       items: limitedItems,
       queueCounts,
@@ -482,6 +641,8 @@ export class TicketService {
         assignees,
         categories,
       },
+      workload: workloads,
+      riskSummary,
       meta: {
         total: queueFiltered.length,
       },
@@ -576,6 +737,148 @@ export class TicketService {
     return 'כללי';
   }
 
+  private inferCategory(description: string, currentCategory?: string) {
+    const normalized = description.toLowerCase();
+    const categorySignals = [
+      { category: 'אינסטלציה', keywords: ['דליפ', 'נזילה', 'מים', 'הצפה', 'ביוב', 'ברז', 'אסלה', 'צינור'] },
+      { category: 'חשמל', keywords: ['חשמל', 'קצר', 'שקע', 'מפסק', 'תאורה', 'נורה', 'לוח חשמל'] },
+      { category: 'מעליות', keywords: ['מעלית', 'מעליות', 'נתקע', 'חילוץ', 'קומה'] },
+      { category: 'גישה וביטחון', keywords: ['שער', 'דלת', 'אינטרקום', 'קודן', 'מנעול', 'אבטחה', 'מצלמה'] },
+      { category: 'ניקיון', keywords: ['ניקיון', 'אשפה', 'לכלוך', 'ריח', 'פח'] },
+      { category: 'מיזוג ואוורור', keywords: ['מזגן', 'מיזוג', 'אוורור', 'vent', 'hvac'] },
+    ];
+
+    let best = { category: currentCategory || this.guessCategory(description), score: currentCategory ? 1 : 0, reasons: [] as string[] };
+    for (const signal of categorySignals) {
+      const matches = signal.keywords.filter((keyword) => normalized.includes(keyword));
+      if (matches.length > best.score) {
+        best = {
+          category: signal.category,
+          score: matches.length,
+          reasons: [`זוהו מונחים שמרמזים על ${signal.category}: ${matches.slice(0, 3).join(', ')}`],
+        };
+      }
+    }
+
+    if (!best.reasons.length) {
+      best.reasons.push(`לא נמצאו מילות מפתח חד-משמעיות, לכן נשמרה קטגוריית ${best.category}.`);
+    }
+
+    return best;
+  }
+
+  private inferSeverity(description: string, category: string) {
+    const normalized = description.toLowerCase();
+    const urgentSignals = ['הצפה', 'עשן', 'שריפה', 'גז', 'התחשמלות', 'תקוע', 'אין חשמל', 'סכנה', 'חירום'];
+    const highSignals = ['דליפ', 'נזילה', 'אין מים', 'לא עובד', 'תקלה', 'חשוך', 'ריח', 'דחוף'];
+    const urgentMatches = urgentSignals.filter((keyword) => normalized.includes(keyword));
+    const highMatches = highSignals.filter((keyword) => normalized.includes(keyword));
+
+    if (urgentMatches.length || normalized.includes('!!!')) {
+      return {
+        severity: TicketSeverity.URGENT,
+        reasons: [`רמת הדחיפות הועלתה לבהולה בגלל: ${urgentMatches.slice(0, 3).join(', ') || 'סימני חירום בתיאור'}`],
+      };
+    }
+
+    if (highMatches.length || category === 'מעליות') {
+      return {
+        severity: TicketSeverity.HIGH,
+        reasons: [
+          highMatches.length
+            ? `התקלה מסומנת כדחופה בגלל: ${highMatches.slice(0, 3).join(', ')}`
+            : `תקלות בקטגוריית ${category} מקבלות עדיפות מוגברת כברירת מחדל.`,
+        ],
+      };
+    }
+
+    return {
+      severity: TicketSeverity.NORMAL,
+      reasons: ['לא זוהו סימני חירום או פגיעה מיידית ולכן נשמרה עדיפות רגילה.'],
+    };
+  }
+
+  private pickTechnician(input: {
+    description: string;
+    buildingId?: number;
+    category: string;
+    severity: TicketSeverity;
+    currentAssigneeId?: number;
+    technicians: TechnicianSnapshot[];
+  }) {
+    const normalized = input.description.toLowerCase();
+    const scored = input.technicians.map((technician) => {
+      const skills = technician.supplier?.skills ?? [];
+      const skillMatches = skills.filter((skill) => normalized.includes(skill.toLowerCase()) || skill.toLowerCase().includes(input.category.toLowerCase())).length;
+      const activeCount = technician.assignedTickets.length;
+      const urgentCount = technician.assignedTickets.filter((ticket) => ticket.severity === TicketSeverity.URGENT).length;
+      const sameBuildingCount = input.buildingId
+        ? technician.assignedTickets.filter((ticket) => ticket.unit.buildingId === input.buildingId).length
+        : 0;
+      const score =
+        skillMatches * 4 +
+        sameBuildingCount * 1.6 +
+        (technician.supplier?.rating ?? 3) * 0.4 -
+        activeCount * 0.8 -
+        urgentCount * 1.2 -
+        (input.currentAssigneeId && technician.id === input.currentAssigneeId ? 0.5 : 0);
+
+      return {
+        technician,
+        score,
+        activeCount,
+        urgentCount,
+        skillMatches,
+        sameBuildingCount,
+      };
+    });
+
+    const recommended = [...scored].sort((left, right) => right.score - left.score)[0];
+    if (!recommended) {
+      return {
+        recommended: null,
+        reasons: ['לא נמצאו טכנאים זמינים להצעה אוטומטית.'],
+      };
+    }
+
+    const reasons = [
+      recommended.skillMatches
+        ? `הטכנאי ${recommended.technician.email} תואם למיומנויות הנדרשות.`
+        : `נבחר הטכנאי הפנוי ביותר ביחס לעומס הנוכחי.`,
+      recommended.sameBuildingCount ? 'יש לו היכרות פעילה עם הבניין הזה.' : 'אין כרגע היסטוריית עומס חריגה על אותו בניין.',
+      `עומס פתוח נוכחי: ${recommended.activeCount} קריאות, מהן ${recommended.urgentCount} בהולות.`,
+    ];
+
+    return {
+      recommended: {
+        id: recommended.technician.id,
+        email: recommended.technician.email,
+        score: Number(recommended.score.toFixed(2)),
+        reason: reasons[0],
+      },
+      reasons,
+    };
+  }
+
+  private buildDraftResponse(input: { category: string; severity: TicketSeverity; technicianEmail: string | null }) {
+    const responseLead =
+      input.severity === TicketSeverity.URGENT
+        ? 'קיבלנו את הפנייה והיא סומנה כבהולה. הצוות מתחיל טיפול מיידי.'
+        : input.severity === TicketSeverity.HIGH
+          ? 'קיבלנו את הפנייה והיא הועברה לטיפול בעדיפות גבוהה.'
+          : 'קיבלנו את הפנייה והיא נפתחה לטיפול מסודר מול צוות התחזוקה.';
+
+    const assigneeLine = input.technicianEmail ? `רכזנו את הטיפול הראשוני מול ${input.technicianEmail}.` : 'נעדכן שיוך מטפל מיד לאחר המיון הראשוני.';
+
+    return `${responseLead}\nהמערכת זיהתה את הקריאה כ-${input.category}.\n${assigneeLine}\nאם יש החמרה או שינוי בגישה לבניין, אפשר להשיב להודעה הזו ונעדכן את התיאום.`;
+  }
+
+  private buildTriageSummary(category: string, severity: TicketSeverity) {
+    const severityLabel =
+      severity === TicketSeverity.URGENT ? 'בהולה' : severity === TicketSeverity.HIGH ? 'דחופה' : 'רגילה';
+    return `המערכת ממליצה למיין את הקריאה כ-${category} ולהצמיד לה עדיפות ${severityLabel}.`;
+  }
+
   private getSlaState(slaDue: Date | null, status: TicketStatus, now: Date) {
     if (!slaDue || status === TicketStatus.RESOLVED) {
       return 'NONE';
@@ -641,6 +944,52 @@ export class TicketService {
       ACTIVE: tickets.filter((ticket) => this.matchesQueue(ticket, 'ACTIVE', now)).length,
       RESOLVED_RECENT: tickets.filter((ticket) => this.matchesQueue(ticket, 'RESOLVED_RECENT', now)).length,
     };
+  }
+
+  private buildWorkloads(tickets: DispatchTicketItem[]): DispatchWorkloadItem[] {
+    const workloadMap = new Map<number, DispatchWorkloadItem>();
+
+    for (const ticket of tickets) {
+      if (!ticket.assignedTo || ticket.status === 'RESOLVED') {
+        continue;
+      }
+
+      const current = workloadMap.get(ticket.assignedTo.id) ?? {
+        technicianId: ticket.assignedTo.id,
+        technicianEmail: ticket.assignedTo.email,
+        activeCount: 0,
+        riskCount: 0,
+        breachedCount: 0,
+        urgentCount: 0,
+        lastActivityAt: null,
+      };
+
+      current.activeCount += 1;
+      if (ticket.slaState === 'AT_RISK' || ticket.slaState === 'DUE_TODAY' || ticket.slaState === 'BREACHED') {
+        current.riskCount += 1;
+      }
+      if (ticket.slaState === 'BREACHED') {
+        current.breachedCount += 1;
+      }
+      if (ticket.severity === 'URGENT') {
+        current.urgentCount += 1;
+      }
+      current.lastActivityAt =
+        !current.lastActivityAt || new Date(ticket.latestActivityAt) > new Date(current.lastActivityAt)
+          ? ticket.latestActivityAt
+          : current.lastActivityAt;
+
+      workloadMap.set(ticket.assignedTo.id, current);
+    }
+
+    return Array.from(workloadMap.values()).sort((a, b) => {
+      return (
+        a.breachedCount - b.breachedCount ||
+        a.riskCount - b.riskCount ||
+        a.activeCount - b.activeCount ||
+        a.technicianEmail.localeCompare(b.technicianEmail)
+      );
+    });
   }
 
   private compareDispatchTickets(
