@@ -222,11 +222,23 @@
     box-shadow: var(--surface-shadow-hero);
   }
 
+  .resident-landing-hero {
+    background:
+      radial-gradient(circle at top right, hsl(var(--gold-300) / 0.2), transparent 26%),
+      linear-gradient(145deg, hsl(27 16% 16%), hsl(30 18% 20%) 52%, hsl(35 52% 31%) 100%);
+  }
+
   @media (max-width: 640px) {
     .surface-hero {
       background:
         radial-gradient(circle at top right, hsl(var(--gold-300) / 0.18), transparent 26%),
         linear-gradient(160deg, hsl(24 18% 10%), hsl(28 18% 13%) 54%, hsl(var(--gold-800)) 100%);
+    }
+
+    .resident-landing-hero {
+      background:
+        radial-gradient(circle at top right, hsl(var(--gold-300) / 0.18), transparent 28%),
+        linear-gradient(160deg, hsl(28 15% 18%), hsl(30 16% 22%) 55%, hsl(35 45% 34%) 100%);
     }
   }
 

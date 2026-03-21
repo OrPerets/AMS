@@ -529,9 +529,7 @@
     inset-inline: 0;
     bottom: 0;
     z-index: 40;
-    border-top: 1px solid hsl(var(--subtle-border));
-    background: color-mix(in srgb, hsl(var(--background)) 92%, transparent);
-    backdrop-filter: blur(18px);
+    pointer-events: none;
   }
 
   .thumb-zone {

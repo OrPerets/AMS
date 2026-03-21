@@ -587,6 +587,7 @@ export default function ResidentAccountPage() {
   return (
     <div className="space-y-8 pb-28 lg:pb-0">
       <PageHero
+        className="resident-landing-hero"
         kicker="שירות עצמי לדייר"
         eyebrow={<StatusBadge label="האזור האישי" tone="finance" />}
         title="האזור האישי של הדייר"
@@ -1112,7 +1113,7 @@ export default function ResidentAccountPage() {
 
       <section className="space-y-4">
         <SectionHeader
-          title="My Building"
+          title="הבניין שלי"
           subtitle="אנשי קשר, הנחיות חירום, שירותי הבניין ומה שחשוב לדעת כשצריך לפעול מהר."
           meta={primaryBuilding?.name || 'פרטי בניין'}
         />
@@ -1209,14 +1210,14 @@ export default function ResidentAccountPage() {
 
       <MobileActionBar
         title={nextPaymentDue ? `לתשלום כעת ${formatCurrency(nextPaymentDue.amount)}` : 'כל החשבוניות מעודכנות'}
-        description="סרגל פעולות תחתון למובייל כדי שהפעולות החשובות יישארו באזור האגודל."
+        description="פתיחה מהירה של התשלום, קריאת שירות ובקשות דייר בלי לחפש בתוך המסך."
         aside={
           <Button variant="ghost" size="sm" asChild>
             <Link href="/resident/requests">בקשות דייר</Link>
           </Button>
         }
       >
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-2.5 sm:grid-cols-2">
           <Button onClick={() => (nextPaymentDue ? void initiatePayment(nextPaymentDue.id) : scrollToSection('payments-section'))} disabled={Boolean(nextPaymentDue && processingInvoiceId === nextPaymentDue.id)}>
             {nextPaymentDue ? 'שלם עכשיו' : 'צפה בתשלומים'}
           </Button>
@@ -1231,10 +1232,10 @@ export default function ResidentAccountPage() {
 
 function SummaryCard({ label, value, description }: { label: string; value: string | number; description: string }) {
   return (
-    <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
-      <div className="text-xs uppercase tracking-[0.18em] text-white/55">{label}</div>
+    <div className="rounded-[22px] border border-white/14 bg-white/8 p-4">
+      <div className="text-xs tracking-[0.14em] text-white/68">{label}</div>
       <div className="mt-2 text-2xl font-black text-white">{value}</div>
-      <div className="mt-1 text-sm text-white/70">{description}</div>
+      <div className="mt-1 text-sm text-white/82">{description}</div>
     </div>
   );
 }
