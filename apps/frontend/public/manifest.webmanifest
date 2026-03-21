@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "AMIT PMS",
   "short_name": "AMIT",
   "description": "A mobile-friendly property management workspace for AMIT teams.",
@@ -7,9 +8,12 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#F8FBFF",
   "theme_color": "#0E4A7B",
   "orientation": "portrait-primary",
+  "categories": ["business", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-192.png",
