@@ -3,6 +3,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { Fraunces, Heebo, Inter } from 'next/font/google';
 import '../styles/globals.css';
+import '../styles/gardens.css';
 import '../styles/premium-theme.css';
 import 'react-day-picker/dist/style.css';
 import Layout from '../components/Layout';

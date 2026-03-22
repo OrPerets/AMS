@@ -5,19 +5,9 @@ import { useInView } from 'react-intersection-observer';
 import Particles, { initParticlesEngine } from '@tsparticles/react';
 import { loadSlim } from '@tsparticles/slim';
 import { Button } from '../components/ui/button';
-import {
-  Building2,
-  Shield,
-  Users,
-  Zap,
-  ArrowRight,
-  CheckCircle2,
-  Lock,
-  BarChart3,
-  Download,
-} from 'lucide-react';
+import { Building2, Shield, Users, Zap, ArrowRight, CheckCircle2, Lock, BarChart3, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { getDefaultRoute, isAuthenticated } from '../lib/auth';
+import { getDefaultRoute, isAuthenticated, shouldRouteToWorkerHub } from '../lib/auth';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -102,20 +92,20 @@ export default function LandingPage() {
   const [trustRef, trustInView] = useInView({ threshold: 0.2, triggerOnce: true });
   const [featuresRef, featuresInView] = useInView({ threshold: 0.2, triggerOnce: true });
 
-  const handleLoginClick = () => {
+  const handleResidentLoginClick = () => {
     if (isAuthenticated()) {
       router.push(getDefaultRoute());
     } else {
-      router.push('/login');
+      router.push('/login?portal=resident');
     }
   };
 
-  const handleSupervisionReportClick = () => {
-    window.open('https://amit-ex.vercel.app/', '_blank');
-  };
-
-  const handleGardenersManagementClick = () => {
-    window.open('https://amit-gardens.vercel.app/', '_blank');
+  const handleWorkerLoginClick = () => {
+    if (isAuthenticated()) {
+      router.push(shouldRouteToWorkerHub() ? '/worker-hub' : getDefaultRoute());
+    } else {
+      router.push('/login?portal=worker');
+    }
   };
 
   const handleInstallClick = async () => {
@@ -364,29 +354,20 @@ export default function LandingPage() {
             <motion.div variants={fadeInUp} className="flex items-center justify-center pt-4">
               <div className="flex flex-col gap-4 sm:flex-row">
                 <Button
-                  onClick={handleLoginClick}
+                  onClick={handleResidentLoginClick}
                   size="lg"
                   className={`${goldButtonClass} group`}
                 >
-                  כניסה למערכת ניהול
+                  כניסה לדיירים
                   <ArrowRight className="mr-2 h-5 w-5 transition-transform group-hover:-translate-x-1" />
                 </Button>
 
                 <Button
-                  onClick={handleSupervisionReportClick}
+                  onClick={handleWorkerLoginClick}
                   size="lg"
                   className={`${darkButtonClass} group`}
                 >
-                  מעבר לדו״ח פיקוח
-                  <ArrowRight className="mr-2 h-5 w-5 transition-transform group-hover:-translate-x-1" />
-                </Button>
-
-                <Button
-                  onClick={handleGardenersManagementClick}
-                  size="lg"
-                  className={`${darkButtonClass} group`}
-                >
-                  מעבר לניהול גננים
+                  כניסה לעובדים
                   <ArrowRight className="mr-2 h-5 w-5 transition-transform group-hover:-translate-x-1" />
                 </Button>
 
@@ -524,11 +505,11 @@ export default function LandingPage() {
               הצטרפו לאלפי לקוחות מרוצים שכבר חווים את העתיד של ניהול אחזקות
             </p>
             <Button
-              onClick={handleLoginClick}
+              onClick={handleWorkerLoginClick}
               size="lg"
               className="h-14 border-0 bg-[linear-gradient(135deg,#b8920a_0%,#f5d442_45%,#d4a808_100%)] px-10 text-lg text-black shadow-[0_16px_40px_rgba(212,168,8,0.32)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(212,168,8,0.38)] sm:h-16 sm:px-12 sm:text-xl"
             >
-              התחילו עכשיו
+              כניסה לעובדים
             </Button>
           </motion.div>
         </div>

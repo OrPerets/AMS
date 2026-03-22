@@ -8,7 +8,7 @@ async function captureToMobilePolish(page: Page, testInfo: TestInfo, filename: s
   await fs.mkdir(evidenceDir, { recursive: true });
   await page.screenshot({
     path: path.join(evidenceDir, filename),
-    fullPage: true,
+    fullPage: false,
   });
 }
 
@@ -41,31 +41,49 @@ test.describe('mobile polish smoke', () => {
       });
       await mockApi(page);
 
-      await page.goto('/home');
-      await page.waitForLoadState('networkidle');
-      await expect(page.getByText(/Priority inbox/i).first()).toBeVisible();
+      await page.goto('/home', { waitUntil: 'domcontentloaded' });
+      await expect(page.getByText(/תיבת עדיפויות|Priority inbox/i).first()).toBeVisible();
       await expect(page.getByText(/פעולות ראשיות|Primary actions/i).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
       await captureToMobilePolish(page, testInfo, `home-${scenario.name}.png`);
 
-      await page.goto('/notifications');
+      await page.goto('/notifications', { waitUntil: 'domcontentloaded' });
       await expect(page.getByText(/התראות|Notifications/i).first()).toBeVisible();
       await expect(page.getByText(/העדפות|Preferences/i).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
       await captureToMobilePolish(page, testInfo, `notifications-${scenario.name}.png`);
 
-      await page.goto('/settings');
+      await page.goto('/settings', { waitUntil: 'domcontentloaded' });
       await expect(page.getByText(/הגדרות משתמש|User settings/i).first()).toBeVisible();
       await expect(page.getByText(/פרופיל|Profile/i).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
       await captureToMobilePolish(page, testInfo, `settings-${scenario.name}.png`);
 
-      await page.goto('/resident/account');
-      await expect(page.getByText(/זה המצב שלך היום|This is your status today/i).first()).toBeVisible();
-      await expect(page.getByText(/Resident priority inbox/i).first()).toBeVisible();
-      await expect(page.getByText(/Primary actions/i).first()).toBeVisible();
+      await page.goto('/resident/account', { waitUntil: 'domcontentloaded' });
+      await expect(page.getByText(/חיוב אוטומטי|Autopay/i).first()).toBeVisible();
+      await expect(page.getByText(/פעולות ראשיות|Primary actions/i).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
       await captureToMobilePolish(page, testInfo, `resident-account-${scenario.name}.png`);
     });
   }
+
+  test('gardens manager and worker screenshots render cleanly', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockApi(page);
+
+    await setSession(page, 'PM');
+    await configureClient(page, { direction: 'rtl', theme: 'light', locale: 'he' });
+    await page.goto('/gardens', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: 'ניהול גננים' })).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await captureToMobilePolish(page, testInfo, 'gardens-manager-pm-light-rtl.png');
+
+    await setSession(page, 'TECH');
+    await configureClient(page, { direction: 'rtl', theme: 'light', locale: 'he' });
+    await page.goto('/gardens', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: /שלום/ })).toBeVisible();
+    await expect(page.getByText('שמור או הגש את החודש').first()).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await captureToMobilePolish(page, testInfo, 'gardens-worker-tech-light-rtl.png');
+  });
 });

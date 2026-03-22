@@ -2,9 +2,11 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
+const WEEKLY_FORM_URL = process.env.NEXT_PUBLIC_WEEKLY_FORM_URL || 'https://amit-ex.vercel.app/';
 
 const nextConfig = {
   reactStrictMode: true,
+  allowedDevOrigins: ['localhost', '127.0.0.1'],
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../..'),
   eslint: {
@@ -18,6 +20,7 @@ const nextConfig = {
   },
   env: {
     NEXT_PUBLIC_API_BASE: API_BASE,
+    NEXT_PUBLIC_WEEKLY_FORM_URL: WEEKLY_FORM_URL,
   },
   async rewrites() {
     return [

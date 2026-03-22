@@ -22,6 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { EmptyState } from '../components/ui/empty-state';
 import { MobileContextBar } from '../components/ui/mobile-context-bar';
+import { MobileActionHub } from '../components/ui/mobile-action-hub';
 import { MobilePriorityInbox, MobilePriorityInboxItem } from '../components/ui/mobile-priority-inbox';
 import { MobileCardSkeleton } from '../components/ui/page-states';
 import { PageHero } from '../components/ui/page-hero';
@@ -232,11 +233,11 @@ export default function HomePage() {
 
       <motion.div variants={heroVariants} initial="initial" animate="animate">
         <PageHero
-          className="mobile-only-glow"
+          variant="operational"
           eyebrow={
             <>
               <StatusBadge label={snapshot.eyebrowLabel} tone="finance" />
-              <Badge variant="outline" className="border-white/15 bg-white/8 text-white/80 text-[11px] sm:text-xs">
+              <Badge variant="outline" className="text-[11px] sm:text-xs">
                 {snapshot.roleTitle}
               </Badge>
             </>
@@ -247,14 +248,14 @@ export default function HomePage() {
           actions={
             <>
               {snapshot.nextActions[0] ? (
-                <Button asChild variant="hero" size="sm" className="sm:h-11 sm:px-5 sm:text-sm">
+                <Button asChild size="sm" className="sm:h-11 sm:px-5 sm:text-sm">
                   <Link href={snapshot.nextActions[0].href}>{snapshot.nextActions[0].title}</Link>
                 </Button>
               ) : null}
               <Button
                 variant="outline"
                 size="sm"
-                className="border-white/15 bg-white/8 text-white hover:bg-white/12 sm:h-11 sm:px-5 sm:text-sm"
+                className="sm:h-11 sm:px-5 sm:text-sm"
                 onClick={() => setOnboardingOpen(true)}
               >
                 <Sparkles className="me-1.5 h-3.5 w-3.5" />
@@ -262,57 +263,37 @@ export default function HomePage() {
               </Button>
             </>
           }
-          aside={
-            <div className="space-y-3">
-              <div className="text-[11px] tracking-[0.16em] text-white/65 sm:text-xs sm:tracking-[0.18em]">תמונת מצב לרגע זה</div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-1 sm:gap-3">
-                {snapshot.metrics.slice(0, 3).map((metric) => (
-                  <div key={metric.label} className="rounded-xl border border-white/10 bg-white/6 p-2.5 sm:rounded-[20px] sm:p-3.5">
-                    <div className="text-[10px] uppercase tracking-[0.16em] text-white/50 sm:text-xs">{metric.label}</div>
-                    <div className="mt-1 text-lg font-black sm:mt-2 sm:text-2xl">{metric.value}</div>
-                    <div className="mt-0.5 hidden text-sm leading-6 text-white/65 sm:block">{metric.hint}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          }
         />
       </motion.div>
 
+      <MobileActionHub
+        title="פעולות ראשיות"
+        subtitle="הדברים שכדאי לפתוח קודם, בלי לחפש בין תפריטים."
+        items={quickLinks.map((item, index) => ({
+          id: `${item.href}-${index}`,
+          label: item.title,
+          description: item.description,
+          href: item.href,
+          icon: item.icon,
+          badge: item.badge,
+          accent: index === 0 ? 'primary' : index === 1 ? 'info' : 'neutral',
+        }))}
+      />
+
       <MobilePriorityInbox
         title="תיבת עדיפויות"
-        subtitle="מה השתנה, מה דורש פעולה עכשיו, ומה עלול להפוך לחסם אם נשאיר אותו פתוח."
+        subtitle="מה דורש פעולה עכשיו ומה עלול להפוך לחסם אם נשאיר אותו פתוח."
         items={priorityItems}
       />
 
       <section className="space-y-3">
         <SectionHeader
-          title="פעולות ראשיות"
-          subtitle="גישה מהירה לפעולות המרכזיות של התפקיד שלך, בלי לחפש בין מסכים."
-          meta="פעולות מהירות"
-        />
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 xl:grid-cols-4">
-          {quickLinks.map((item, index) => (
-            <motion.div
-              key={item.href}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.04 + index * 0.04, duration: 0.28 }}
-            >
-              <QuickActionCard item={item} />
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <SectionHeader
           title="מדדים מרכזיים"
-          subtitle="מספרים קצרים שמבהירים עומס, סיכון ומצב נוכחי בלי לצלול לעומק בכל פעם."
+          subtitle="שלושה מספרים מספיקים כדי להבין את העומס והסיכון ברגע זה."
           meta="מדדי ליבה"
         />
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {snapshot.metrics.map((metric, index) => (
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-4">
+          {snapshot.metrics.slice(0, 3).map((metric, index) => (
             <motion.div
               key={metric.label}
               initial={{ opacity: 0, y: 16 }}
@@ -329,7 +310,7 @@ export default function HomePage() {
         <Card variant="elevated" className="overflow-hidden">
           <CardHeader>
             <SectionHeader
-              title="הפעולה הבאה המומלצת"
+              title="הפעולה הבאה"
               subtitle="רשימה מדורגת של הצעדים שכדאי לבצע עכשיו לפי עומס, סיכון והקשר תפעולי."
               meta="הבא בתור"
             />
@@ -356,11 +337,11 @@ export default function HomePage() {
           </CardContent>
         </Card>
 
-        <Card variant="featured" className="overflow-hidden">
+        <Card variant="muted" className="overflow-hidden">
           <CardHeader>
             <SectionHeader
-              title="פעילות אחרונה ואותות"
-              subtitle="הערות תפעוליות בשפה פשוטה במקום כרטיסי תובנה דקורטיביים."
+              title="פעילות אחרונה"
+              subtitle="אותות קצרים בשפה פשוטה במקום כרטיסי תובנה דקורטיביים."
               meta="מה השתנה"
             />
           </CardHeader>
@@ -388,26 +369,7 @@ export default function HomePage() {
         </Card>
       </section>
 
-      <section className="grid gap-4 sm:gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <Card variant="muted" className="overflow-hidden">
-          <CardHeader>
-            <SectionHeader
-              title="תקציר מהיר"
-              subtitle="ריכוז קצר למי שצריך להבין את מצב העניינים תוך כמה שניות."
-              meta="במבט אחד"
-            />
-          </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-3">
-            {snapshot.metrics.slice(0, 3).map((metric) => (
-              <div key={`summary-${metric.label}`} className="rounded-[22px] border border-subtle-border/80 bg-background/80 p-4">
-                <div className="text-[11px] uppercase tracking-[0.18em] text-tertiary">{metric.label}</div>
-                <div className="mt-2 text-xl font-black text-foreground">{metric.value}</div>
-                <div className="mt-1 text-sm leading-6 text-muted-foreground">{metric.hint}</div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
+      <section className="grid gap-4 sm:gap-6">
         <Card variant="elevated" className="overflow-hidden">
           <CardHeader>
             <SectionHeader
@@ -799,32 +761,32 @@ function getRoleQuickLinks(role: RoleKey, metrics: HomeMetric[], nextActions: Ho
 
   const byRole: Record<RoleKey, HomeShortcut[]> = {
     RESIDENT: [
-      { title: 'בקשות דייר', description: 'מסלולים מוכנים לפניות, מסמכים וחניה.', href: '/resident/requests', icon: ClipboardList, badge: String(metricByLabel('התראות לא נקראו') ?? '') },
-      { title: 'האזור האישי', description: 'תשלומים, מסמכים וסטטוס השירות במקום אחד.', href: '/resident/account', icon: CreditCard },
+      { title: 'בקשות', description: 'פניות, מסמכים וחניה.', href: '/resident/requests', icon: ClipboardList, badge: String(metricByLabel('התראות לא נקראו') ?? '') },
+      { title: 'אזור אישי', description: 'תשלומים וסטטוס שירות.', href: '/resident/account', icon: CreditCard },
     ],
     TECH: [
-      { title: 'עבודות שטח', description: 'רשימת המשימות שלך עם סדר עדיפויות ברור.', href: '/tech/jobs', icon: Wrench },
-      { title: 'לוח קריאות', description: 'עדכון סטטוס מהיר מתוך הטלפון.', href: '/tickets', icon: Ticket },
+      { title: 'עבודות שטח', description: 'המשימות שלך להיום.', href: '/tech/jobs', icon: Wrench },
+      { title: 'גינון', description: 'תוכנית חודשית ואישור.', href: '/gardens', icon: CalendarClock },
     ],
     PM: [
-      { title: 'בניינים', description: 'מעקב מהיר אחר הבניינים והיחידות הפעילות.', href: '/buildings', icon: Building2 },
-      { title: 'יומן תפעול', description: 'אירועים קרובים, תחזוקה וחוזים.', href: '/operations/calendar', icon: CalendarClock },
+      { title: 'בניינים', description: 'נכסים ויחידות פעילות.', href: '/buildings', icon: Building2 },
+      { title: 'יומן', description: 'אירועים קרובים וחוזים.', href: '/operations/calendar', icon: CalendarClock },
     ],
     ADMIN: [
-      { title: 'דשבורד ניהולי', description: 'תצוגה רוחבית של המערכת והסיכונים.', href: '/admin/dashboard', icon: Building2 },
-      { title: 'יומן תפעול', description: 'לוח זמנים ותיאומים קרובים.', href: '/operations/calendar', icon: CalendarClock },
+      { title: 'דשבורד', description: 'סיכונים ובקרה רוחבית.', href: '/admin/dashboard', icon: Building2 },
+      { title: 'יומן', description: 'לוח זמנים ותיאומים.', href: '/operations/calendar', icon: CalendarClock },
     ],
     ACCOUNTANT: [
-      { title: 'תשלומים', description: 'גבייה, פירעונות וניסיונות חיוב.', href: '/payments', icon: CreditCard },
-      { title: 'תקציבים', description: 'מעקב שוטף אחרי הוצאות וחריגות.', href: '/finance/budgets', icon: FileText },
+      { title: 'תשלומים', description: 'גבייה ופירעונות.', href: '/payments', icon: CreditCard },
+      { title: 'תקציבים', description: 'הוצאות וחריגות.', href: '/finance/budgets', icon: FileText },
     ],
     MASTER: [
-      { title: 'דשבורד ניהולי', description: 'תמונה רחבה של סיכונים והזדמנויות.', href: '/admin/dashboard', icon: Building2 },
-      { title: 'לוח קריאות', description: 'מעבר מהיר למוקדי העומס במערכת.', href: '/tickets', icon: Ticket },
+      { title: 'דשבורד', description: 'סיכונים והזדמנויות.', href: '/admin/dashboard', icon: Building2 },
+      { title: 'קריאות', description: 'מוקדי עומס במערכת.', href: '/tickets', icon: Ticket },
     ],
   };
 
-  return [...byRole[role], ...common].slice(0, 4);
+  return [...byRole[role], ...common].slice(0, 6);
 }
 
 function MetricCard({ metric }: { metric: HomeMetric }) {
@@ -864,29 +826,6 @@ function ActionCard({ action }: { action: HomeAction }) {
         </div>
         <div className="text-xs leading-5 text-muted-foreground sm:text-sm sm:leading-7">{action.description}</div>
       </div>
-    </Link>
-  );
-}
-
-function QuickActionCard({ item }: { item: HomeShortcut }) {
-  const Icon = item.icon;
-
-  return (
-    <Link href={item.href} className="group block">
-      <Card variant="action" className="h-full p-0">
-        <CardContent className="flex h-full flex-col gap-3 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-primary/12 bg-primary/10 text-primary shadow-sm">
-              <Icon className="h-5 w-5" />
-            </div>
-            {item.badge ? <Badge variant="finance">{item.badge}</Badge> : null}
-          </div>
-          <div className="space-y-1.5">
-            <div className="text-sm font-semibold text-foreground sm:text-[15px]">{item.title}</div>
-            <div className="text-xs leading-5 text-muted-foreground sm:text-sm sm:leading-6">{item.description}</div>
-          </div>
-        </CardContent>
-      </Card>
     </Link>
   );
 }

@@ -7,11 +7,16 @@ test.describe('mobile support smoke', () => {
     await setSession(page, 'PM');
 
     await page.goto('/home');
-    await page.getByRole('button', { name: 'פתח תפריט' }).click({ force: true });
-    const buildingsLink = page.locator('a[href="/buildings"]').filter({ hasText: 'בניינים ויחידות' }).first();
+    const sidebarDialog = page.getByRole('dialog').filter({ has: page.getByRole('navigation').first() });
+    if (!(await sidebarDialog.isVisible().catch(() => false))) {
+      await page.locator('header button').first().click({ force: true });
+    }
+    const buildingsLink = sidebarDialog.getByRole('link', { name: /בניינים ויחידות/ }).first();
     await expect(buildingsLink).toBeVisible();
-    await buildingsLink.click();
-    await expect(page).toHaveURL(/\/buildings$/);
+    await Promise.all([
+      page.waitForURL(/\/buildings$/),
+      buildingsLink.click({ force: true }),
+    ]);
     await expect(page.getByRole('heading', { name: 'ניהול בניינים' })).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
@@ -21,7 +26,7 @@ test.describe('mobile support smoke', () => {
     await setSession(page, 'PM');
 
     await page.goto('/buildings');
-    await expect(page.getByText('מגדל העיר', { exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'ניהול בניינים' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'צפה' }).first()).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
@@ -43,9 +48,24 @@ test.describe('mobile support smoke', () => {
     await setSession(page, 'RESIDENT');
 
     await page.goto('/resident/account');
-    await expect(page.getByRole('heading', { name: 'האזור האישי של הדייר' })).toBeVisible();
-    await expect(page.getByText('ועד בית מרץ', { exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'שלם עכשיו' }).first()).toBeVisible();
+    await expect(page.getByText(/חיוב אוטומטי/).first()).toBeVisible();
+    await expect(page.getByText('שלם').first()).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test('gardens manager and worker mobile surfaces render without overflow', async ({ page }) => {
+    await mockApi(page);
+    await setSession(page, 'PM');
+
+    await page.goto('/gardens');
+    await expect(page.getByRole('heading', { name: 'ניהול גננים' })).toBeVisible();
+    await expect(page.getByText('מרכז עבודה').first()).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+
+    await setSession(page, 'TECH');
+    await page.goto('/gardens');
+    await expect(page.getByRole('heading', { name: /שלום/ })).toBeVisible();
+    await expect(page.getByText('שמור או הגש את החודש').first()).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 });

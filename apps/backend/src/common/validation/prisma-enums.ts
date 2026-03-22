@@ -2,6 +2,7 @@ import type {
   BudgetStatus,
   CodeType,
   ExpenseCategory,
+  GardensPlanStatus,
   MaintenanceCategory,
   MaintenancePriority,
   MaintenanceType,
@@ -18,6 +19,7 @@ import type {
 export const BUDGET_STATUSES = ['PLANNED', 'ACTIVE', 'CLOSED'] as const satisfies readonly BudgetStatus[];
 export const CODE_TYPES = ['ENTRANCE', 'SERVICE', 'ELEVATOR', 'GATE', 'PARKING', 'WIFI', 'ALARM', 'OTHER'] as const satisfies readonly CodeType[];
 export const EXPENSE_CATEGORIES = ['MAINTENANCE', 'UTILITIES', 'STAFF', 'ADMINISTRATION', 'OTHER'] as const satisfies readonly ExpenseCategory[];
+export const GARDENS_PLAN_STATUSES = ['DRAFT', 'SUBMITTED', 'APPROVED', 'NEEDS_CHANGES'] as const satisfies readonly GardensPlanStatus[];
 export const MAINTENANCE_CATEGORIES = ['GENERAL', 'HVAC', 'ELECTRICAL', 'PLUMBING', 'SAFETY', 'LANDSCAPING', 'ELEVATORS'] as const satisfies readonly MaintenanceCategory[];
 export const MAINTENANCE_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const satisfies readonly MaintenancePriority[];
 export const MAINTENANCE_TYPES = ['PREVENTIVE', 'INSPECTION', 'CORRECTIVE', 'EMERGENCY'] as const satisfies readonly MaintenanceType[];

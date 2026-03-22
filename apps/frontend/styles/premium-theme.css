@@ -300,6 +300,14 @@
     box-shadow: var(--surface-shadow-hero);
   }
 
+  .surface-hero-operational {
+    background:
+      radial-gradient(circle at top right, hsl(var(--gold-300) / 0.12), transparent 28%),
+      linear-gradient(180deg, hsl(var(--surface-emphasis) / 0.36), transparent 100%),
+      hsl(var(--card));
+    box-shadow: var(--surface-shadow-card);
+  }
+
   .resident-landing-hero {
     background:
       radial-gradient(circle at top right, hsl(var(--gold-300) / 0.18), transparent 28%),
@@ -316,6 +324,14 @@
 
   .dark-surface :where(.text-tertiary) {
     color: rgb(255 255 255 / 0.68);
+  }
+
+  .dark-surface :where(.text-foreground) {
+    color: rgb(255 255 255 / 0.96);
+  }
+
+  .dark-surface :where(.bg-background, .bg-card, .bg-muted) {
+    color: rgb(22 16 10 / 0.98);
   }
 
   .shell-frost {
@@ -337,6 +353,13 @@
       background:
         radial-gradient(circle at top right, hsl(var(--gold-300) / 0.16), transparent 30%),
         linear-gradient(160deg, hsl(25 14% 16%), hsl(28 16% 18%) 54%, hsl(var(--gold-700) / 0.85) 100%);
+    }
+
+    .surface-hero-operational {
+      background:
+        radial-gradient(circle at top right, hsl(var(--gold-300) / 0.09), transparent 28%),
+        linear-gradient(180deg, hsl(var(--surface-emphasis) / 0.28), transparent 100%),
+        hsl(var(--card));
     }
 
     .resident-landing-hero {

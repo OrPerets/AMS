@@ -10,6 +10,7 @@ import { FormField, FormErrorSummary } from '../../components/ui/form-field';
 import { Input } from '../../components/ui/input';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { MobileContextBar } from '../../components/ui/mobile-context-bar';
+import { MobileActionHub } from '../../components/ui/mobile-action-hub';
 import { MobilePriorityInbox } from '../../components/ui/mobile-priority-inbox';
 import { MobileCardSkeleton } from '../../components/ui/page-states';
 import { PageHero } from '../../components/ui/page-hero';
@@ -17,6 +18,7 @@ import { PullToRefreshIndicator } from '../../components/ui/pull-to-refresh-indi
 import { SectionHeader } from '../../components/ui/section-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { StatusBadge } from '../../components/ui/status-badge';
+import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Textarea } from '../../components/ui/textarea';
 import { toast } from '../../components/ui/use-toast';
 import { usePullToRefresh } from '../../hooks/use-pull-to-refresh';
@@ -80,6 +82,7 @@ export default function ResidentRequestsPage() {
   const [formStep, setFormStep] = useState<1 | 2>(1);
   const [submittedRequestKey, setSubmittedRequestKey] = useState<string | null>(null);
   const [submittedRequestType, setSubmittedRequestType] = useState<string | null>(null);
+  const [view, setView] = useState<'new' | 'history'>('new');
 
   const activeType = requestTypes.find((item) => item.value === form.requestType)!;
   const { pullDistance, isRefreshing } = usePullToRefresh({
@@ -247,14 +250,20 @@ export default function ResidentRequestsPage() {
 
       <PageHero
         compact
+        variant="operational"
         kicker="שירות עצמי לדייר"
         eyebrow={<StatusBadge label="שירות דיירים" tone="finance" />}
         title="בקשות דייר"
-        description="בחר את סוג הבקשה, אשר מה צפוי לקרות אחריה, ושלח רק את הפרטים שהצוות באמת צריך כדי לטפל."
+        description="בחר את סוג הבקשה, מלא רק את מה שנדרש, ועקוב אחרי ההתקדמות מאותו מסך."
         actions={
-          <Button asChild variant="hero" size="sm">
-            <Link href="/create-call">פתח קריאת תחזוקה</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => setView('new')}>
+              בקשה חדשה
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/create-call">קריאת תחזוקה</Link>
+            </Button>
+          </div>
         }
       />
 
@@ -264,7 +273,14 @@ export default function ResidentRequestsPage() {
         items={priorityItems}
       />
 
-      {submittedRequestKey ? (
+      <Tabs value={view} onValueChange={(value) => setView(value as 'new' | 'history')}>
+        <TabsList className="rounded-[20px] border border-subtle-border bg-background/92 p-1">
+          <TabsTrigger value="new" className="rounded-[16px]">בקשה חדשה</TabsTrigger>
+          <TabsTrigger value="history" className="rounded-[16px]">מעקב בקשות</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {view === 'new' && submittedRequestKey ? (
         <Card variant="featured">
           <CardContent className="space-y-3 p-4 sm:p-5">
             <SectionHeader
@@ -290,45 +306,26 @@ export default function ResidentRequestsPage() {
         </Card>
       ) : null}
 
-      <div className="grid gap-4 sm:gap-6 xl:grid-cols-[0.8fr_1.2fr]">
-        <Card variant="elevated">
-          <CardHeader>
-            <CardTitle>שלב 1: בחר סוג בקשה</CardTitle>
-            <CardDescription>לקריאת תחזוקה השתמשו במסלול הייעודי כדי לצרף תמונות ולקבל טיפול מהיר.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 sm:space-y-3">
-            {requestTypes.map((type) => {
-              const Icon = type.icon;
-              const isActive = form.requestType === type.value;
+      {view === 'new' ? (
+      <>
+      <MobileActionHub
+        title="בחר סוג בקשה"
+        subtitle="מסלולים קצרים וברורים לפי מה שצריך עכשיו."
+        items={requestTypes.map((type) => ({
+          id: type.value,
+          label: type.label,
+          description: type.description,
+          icon: type.icon,
+          accent: form.requestType === type.value ? 'primary' : 'neutral',
+          onClick: () => {
+            setForm((current) => ({ ...current, requestType: type.value }));
+            setFormStep(2);
+            setSubmittedRequestKey(null);
+          },
+        }))}
+      />
 
-              return (
-                <button
-                  key={type.value}
-                  type="button"
-                  className={`w-full rounded-xl sm:rounded-[20px] border p-3 sm:p-4 text-start transition active:scale-[0.98] ${
-                    isActive ? 'border-primary bg-primary/10 shadow-sm' : 'border-subtle-border bg-background hover:border-primary/40 hover:bg-muted/40'
-                  }`}
-                  onClick={() => {
-                    setForm((current) => ({ ...current, requestType: type.value }));
-                    setFormStep(2);
-                    setSubmittedRequestKey(null);
-                  }}
-                >
-                  <div className="flex items-center gap-2.5 sm:gap-3">
-                    <div className={`rounded-xl sm:rounded-2xl p-2 ${isActive ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <div className="space-y-0.5 sm:space-y-1">
-                      <div className="text-sm sm:text-base font-semibold text-foreground">{type.label}</div>
-                      <div className="text-xs sm:text-sm leading-5 sm:leading-6 text-muted-foreground">{type.description}</div>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </CardContent>
-        </Card>
-
+      <div className="grid gap-4 sm:gap-6">
         <Card variant="elevated">
           <CardHeader>
             <CardTitle>{formStep === 1 ? 'שלב 2: מלא רק את הפרטים הנדרשים' : activeType.label}</CardTitle>
@@ -560,7 +557,10 @@ export default function ResidentRequestsPage() {
           </CardContent>
         </Card>
       </div>
+      </>
+      ) : null}
 
+      {view === 'history' ? (
       <Card variant="elevated">
         <CardContent className="space-y-6 p-6">
           <SectionHeader
@@ -668,6 +668,7 @@ export default function ResidentRequestsPage() {
           )}
         </CardContent>
       </Card>
+      ) : null}
     </div>
   );
 }

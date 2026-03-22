@@ -25,6 +25,7 @@ import {
   ClipboardList,
   ShieldCheck,
   Globe,
+  Leaf,
   Moon,
   Sun,
 } from 'lucide-react';
@@ -138,6 +139,12 @@ const getNavigationGroups = (role: string, t: (key: string) => string): Navigati
           title: t('nav.schedules'),
           href: '/schedules',
           icon: ClipboardList,
+          roles: ['ADMIN', 'PM', 'TECH'],
+        },
+        {
+          title: 'ניהול גננים',
+          href: '/gardens',
+          icon: Leaf,
           roles: ['ADMIN', 'PM', 'TECH'],
         },
       ]

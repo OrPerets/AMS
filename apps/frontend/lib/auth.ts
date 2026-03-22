@@ -292,6 +292,14 @@ export function routeForRole(role?: string | null): string {
   }
 }
 
+export function shouldRouteToWorkerHub(role?: string | null): boolean {
+  const effectiveRole = role || getEffectiveRole();
+  return Boolean(
+    effectiveRole &&
+      effectiveRole !== 'RESIDENT'
+  );
+}
+
 export function getDefaultRoute(role?: string | null): string {
   const effectiveRole = role || getEffectiveRole();
   return routeForRole(effectiveRole);

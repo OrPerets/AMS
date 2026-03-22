@@ -10,6 +10,7 @@ import {
   CreditCard,
   FileText,
   Home,
+  Leaf,
   Search,
   Sparkles,
   Ticket,
@@ -95,6 +96,15 @@ const staticCommands: CommandItem[] = [
     icon: FileText,
     roles: ['ADMIN', 'PM', 'ACCOUNTANT', 'MASTER'],
     keywords: ['reports', 'finance', 'analytics', 'דוחות'],
+  },
+  {
+    id: 'gardens',
+    label: 'ניהול גננים',
+    description: 'תכנון חודשי, הגשות עובדים, אישורים ודוחות מתוך AMS.',
+    href: '/gardens',
+    icon: Leaf,
+    roles: ['ADMIN', 'PM', 'TECH', 'MASTER'],
+    keywords: ['gardens', 'gardeners', 'landscaping', 'גננים', 'גינון'],
   },
   {
     id: 'notifications',

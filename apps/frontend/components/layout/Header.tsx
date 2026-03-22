@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Sun, Moon, Globe, ChevronLeft, ChevronRight, Bell, Command, Search, ArrowRight, AlertTriangle, Clock, Info, Home, Building2, Settings as SettingsIcon, Wrench, CreditCard, ClipboardList } from 'lucide-react';
+import { Sun, Moon, Globe, ChevronLeft, ChevronRight, Bell, Command, Search, ArrowRight, AlertTriangle, Clock, Info, Home, Building2, Settings as SettingsIcon, Wrench, CreditCard, ClipboardList, Menu } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { useTheme, useDirection, useLocale } from '../../lib/providers';
@@ -58,6 +58,7 @@ function getMobileRouteContext(pathname: string) {
 
 export default function Header({
   className,
+  onMenuClick,
   sidebarCollapsed,
   onToggleCollapse,
   onCommandPaletteOpen,
@@ -163,6 +164,16 @@ export default function Header({
     )}>
       <div className="container px-3 sm:px-6">
         <div className="flex items-center gap-1.5 py-2 md:hidden" style={{ maxWidth: '100vw' }}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onMenuClick}
+            className="mobile-touch-strip h-10 w-10 shrink-0 border-0 px-0 shadow-none shell-frost touch-manipulation"
+            aria-label="פתח תפריט"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+
           <Link href="/home" className="mobile-shell-panel flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] border touch-manipulation">
             <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-card">
               A

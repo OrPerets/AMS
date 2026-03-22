@@ -25,6 +25,7 @@ import {
   MessageCircle,
   Wallet,
   X,
+  Leaf,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
@@ -34,6 +35,7 @@ import { lockAppScroll } from '../../lib/scroll-lock';
 
 type NavItem = {
   label: string;
+  hint?: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: number;
@@ -48,38 +50,38 @@ function getRoleBottomNav(role: string, t: (key: string) => string): NavItem[] {
   switch (role) {
     case 'ADMIN':
       return [
-        { label: t('nav.homeOverview'), href: '/home', icon: Home },
-        { label: t('nav.dashboard'), href: '/admin/dashboard', icon: BarChart3 },
-        { label: t('nav.tickets'), href: '/tickets', icon: Ticket },
+        { label: t('nav.homeOverview'), hint: 'סקירה', href: '/home', icon: Home },
+        { label: t('nav.dashboard'), hint: 'בקרה', href: '/admin/dashboard', icon: BarChart3 },
+        { label: t('nav.tickets'), hint: 'מוקד', href: '/tickets', icon: Ticket },
       ];
     case 'PM':
       return [
-        { label: t('nav.homeOverview'), href: '/home', icon: Home },
-        { label: t('nav.tickets'), href: '/tickets', icon: Ticket },
-        { label: t('nav.buildings'), href: '/buildings', icon: Building },
+        { label: t('nav.homeOverview'), hint: 'סקירה', href: '/home', icon: Home },
+        { label: t('nav.tickets'), hint: 'משימות', href: '/tickets', icon: Ticket },
+        { label: t('nav.buildings'), hint: 'נכסים', href: '/buildings', icon: Building },
       ];
     case 'TECH':
       return [
-        { label: t('nav.homeOverview'), href: '/home', icon: Home },
-        { label: t('nav.techJobs'), href: '/tech/jobs', icon: Wrench },
-        { label: t('nav.tickets'), href: '/tickets', icon: Ticket },
+        { label: t('nav.homeOverview'), hint: 'סקירה', href: '/home', icon: Home },
+        { label: 'גינון', hint: 'חודש', href: '/gardens', icon: Leaf },
+        { label: t('nav.techJobs'), hint: 'שטח', href: '/tech/jobs', icon: Wrench },
       ];
     case 'RESIDENT':
       return [
-        { label: t('nav.homeOverview'), href: '/home', icon: Home },
-        { label: t('nav.residentRequests'), href: '/resident/requests', icon: ClipboardList },
-        { label: t('nav.tickets'), href: '/tickets', icon: Ticket },
+        { label: t('nav.homeOverview'), hint: 'היום', href: '/home', icon: Home },
+        { label: t('nav.residentRequests'), hint: 'בקשות', href: '/resident/requests', icon: ClipboardList },
+        { label: t('nav.tickets'), hint: 'שירות', href: '/tickets', icon: Ticket },
       ];
     case 'ACCOUNTANT':
       return [
-        { label: t('nav.homeOverview'), href: '/home', icon: Home },
-        { label: t('nav.payments'), href: '/payments', icon: CreditCard },
-        { label: t('nav.budgets'), href: '/finance/budgets', icon: Wallet },
+        { label: t('nav.homeOverview'), hint: 'סקירה', href: '/home', icon: Home },
+        { label: t('nav.payments'), hint: 'גבייה', href: '/payments', icon: CreditCard },
+        { label: t('nav.budgets'), hint: 'תקציב', href: '/finance/budgets', icon: Wallet },
       ];
     default:
       return [
-        { label: t('nav.homeOverview'), href: '/home', icon: Home },
-        { label: t('nav.tickets'), href: '/tickets', icon: Ticket },
+        { label: t('nav.homeOverview'), hint: 'סקירה', href: '/home', icon: Home },
+        { label: t('nav.tickets'), hint: 'מוקד', href: '/tickets', icon: Ticket },
       ];
   }
 }
@@ -92,8 +94,8 @@ function getRoleSecondaryGroups(role: string, t: (key: string) => string): Secon
   const finance: NavItem[] = [];
   const admin: NavItem[] = [];
   const system: NavItem[] = [
-    { label: t('nav.notifications'), href: '/notifications', icon: Bell },
-    { label: t('shell.settings'), href: '/settings', icon: Settings },
+    { label: t('nav.notifications'), hint: 'עדכונים', href: '/notifications', icon: Bell },
+    { label: t('shell.settings'), hint: 'העדפות', href: '/settings', icon: Settings },
   ];
 
   if (['ADMIN', 'PM', 'TECH'].includes(role)) {
@@ -107,6 +109,9 @@ function getRoleSecondaryGroups(role: string, t: (key: string) => string): Secon
   }
   if (['ADMIN', 'PM', 'TECH'].includes(role)) {
     operations.push({ label: t('nav.schedules'), href: '/schedules', icon: ClipboardList });
+  }
+  if (['ADMIN', 'PM', 'TECH'].includes(role)) {
+    operations.push({ label: 'ניהול גננים', href: '/gardens', icon: Leaf });
   }
   if (role === 'RESIDENT') {
     operations.push({ label: t('nav.newTicket'), href: '/create-call', icon: Ticket });
@@ -149,7 +154,7 @@ function getRoleSecondaryGroups(role: string, t: (key: string) => string): Secon
   if (finance.length) groups.push({ title: t('nav.group.finance'), items: finance });
   if (admin.length) groups.push({ title: t('nav.group.admin'), items: admin });
 
-  groups.unshift({
+  groups.push({
     title: t('bottomNav.moreMenu'),
     items: system,
   });
@@ -249,7 +254,10 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                 <span className="relative z-10 flex h-7 w-7 items-center justify-center">
                   <Icon className={cn('h-[18px] w-[18px] transition-transform duration-200', active && 'scale-110')} />
                 </span>
-                <span className="relative z-10 w-full truncate text-center text-[9px] leading-tight">{item.label}</span>
+                <span className="relative z-10 w-full text-center leading-tight">
+                  <span className="block truncate text-[9px] font-semibold">{item.label}</span>
+                  <span className="mt-0.5 block truncate text-[8px] text-muted-foreground">{item.hint || ''}</span>
+                </span>
               </Link>
             );
           })}
@@ -275,7 +283,10 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                 </span>
               ) : null}
             </span>
-            <span className="relative z-10 text-[9px] leading-tight">{t('bottomNav.more')}</span>
+            <span className="relative z-10 text-center leading-tight">
+              <span className="block text-[9px] font-semibold">{t('bottomNav.more')}</span>
+              <span className="mt-0.5 block text-[8px] text-muted-foreground">עוד</span>
+            </span>
           </button>
         </div>
       </nav>
@@ -308,7 +319,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-semibold">{t('bottomNav.moreMenu')}</h2>
-              <p className="text-xs text-muted-foreground">שאר המודולים והמסכים המשלימים מרוכזים כאן.</p>
+              <p className="text-xs text-muted-foreground">פעולות משלימות לפי משימה, לא לפי מבנה ארגוני.</p>
             </div>
           <button
             type="button"
@@ -349,7 +360,10 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                       )}>
                         <Icon className="h-[18px] w-[18px]" />
                       </span>
-                      <span className="flex-1">{item.label}</span>
+                      <span className="flex-1">
+                        <span className="block">{item.label}</span>
+                        {item.hint ? <span className="mt-0.5 block text-[11px] font-normal text-muted-foreground">{item.hint}</span> : null}
+                      </span>
                       {item.href === '/notifications' && unreadNotifications > 0 ? (
                         <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
                           {unreadNotifications}

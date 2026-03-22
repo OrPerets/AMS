@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const futureExp = Math.floor(Date.now() / 1000) + 60 * 60;
 
-export type SessionRole = 'PM' | 'RESIDENT';
+export type SessionRole = 'PM' | 'RESIDENT' | 'TECH' | 'ADMIN';
 
 export type MockScenario = {
   dashboardFailures?: number;
@@ -19,9 +19,17 @@ function createToken(payload: Record<string, unknown>) {
 }
 
 export async function setSession(page: Page, role: SessionRole) {
+  const identity =
+    role === 'RESIDENT'
+      ? { sub: 8, email: 'client@demo.com' }
+      : role === 'TECH'
+        ? { sub: 9, email: 'tech@demo.com' }
+        : role === 'ADMIN'
+          ? { sub: 5, email: 'admin@demo.com' }
+          : { sub: 7, email: 'maya@demo.com' };
   const token = createToken({
-    sub: role === 'RESIDENT' ? 8 : 7,
-    email: role === 'RESIDENT' ? 'client@demo.com' : 'maya@demo.com',
+    sub: identity.sub,
+    email: identity.email,
     role,
     tenantId: 1,
   });
@@ -32,6 +40,9 @@ export async function setSession(page: Page, role: SessionRole) {
     window.localStorage.setItem('amit-direction', 'rtl');
     window.localStorage.setItem('amit-theme', 'light');
     window.localStorage.setItem('amit-locale', 'he');
+    const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    const onboardingKey = `amit-onboarding:v8:${payload.sub}:${payload.role}`;
+    window.localStorage.setItem(onboardingKey, new Date().toISOString());
   }, [token, token]);
 }
 
@@ -58,6 +69,121 @@ export async function mockApi(page: Page, scenario: MockScenario = {}) {
     const url = new URL(route.request().url());
     const { pathname, searchParams } = url;
     const method = route.request().method();
+
+    if (pathname === '/api/v1/gardens/months' && method === 'GET') {
+      return route.fulfill({
+        json: [
+          {
+            id: 1,
+            plan: '2026-04',
+            year: 2026,
+            month: 4,
+            submissionDeadline: '2026-03-28T09:00:00.000Z',
+            isLocked: false,
+            createdAt: '2026-03-01T09:00:00.000Z',
+            stats: { workers: 6, submitted: 3, approved: 1, needsChanges: 1, assignments: 18, coverageDays: 12 },
+          },
+          {
+            id: 2,
+            plan: '2026-03',
+            year: 2026,
+            month: 3,
+            submissionDeadline: '2026-02-26T09:00:00.000Z',
+            isLocked: true,
+            createdAt: '2026-02-01T09:00:00.000Z',
+            stats: { workers: 6, submitted: 6, approved: 5, needsChanges: 1, assignments: 26, coverageDays: 20 },
+          },
+        ],
+      });
+    }
+
+    if (pathname === '/api/v1/gardens/months' && method === 'POST') {
+      return route.fulfill({ status: 200, json: { ok: true } });
+    }
+
+    if (pathname === '/api/v1/gardens/me/dashboard') {
+      return route.fulfill({
+        json: {
+          worker: {
+            workerProfileId: 12,
+            userId: 9,
+            displayName: 'אורן לוי',
+            teamName: 'צוות מרכז',
+            email: 'tech@demo.com',
+          },
+          month: {
+            id: 1,
+            plan: '2026-04',
+            submissionDeadline: '2026-03-28T09:00:00.000Z',
+            isLocked: false,
+            status: 'NEEDS_CHANGES',
+            submittedAt: '2026-03-21T08:30:00.000Z',
+            reviewNote: 'נדרש להוסיף כתובת ליום חמישי.',
+          },
+          assignments: [
+            { id: 1, date: '2026-04-01', location: 'שדרות האורן 8', notes: '' },
+            { id: 2, date: '2026-04-03', location: 'הרצל 10', notes: 'להתחיל בחזית' },
+          ],
+          summary: { assignmentCount: 2, filledDays: 2 },
+          months: [
+            { id: 1, plan: '2026-04', isLocked: false, status: 'NEEDS_CHANGES', assignmentCount: 2, submittedAt: '2026-03-21T08:30:00.000Z' },
+            { id: 2, plan: '2026-03', isLocked: true, status: 'APPROVED', assignmentCount: 8, submittedAt: '2026-02-21T08:30:00.000Z' },
+          ],
+        },
+      });
+    }
+
+    if (pathname.match(/\/api\/v1\/gardens\/me\/months\/\d{4}-\d{2}$/) && method === 'GET') {
+      return route.fulfill({
+        json: {
+          worker: {
+            workerProfileId: 12,
+            userId: 9,
+            displayName: 'אורן לוי',
+            teamName: 'צוות מרכז',
+            email: 'tech@demo.com',
+          },
+          month: {
+            id: 1,
+            plan: pathname.split('/').pop(),
+            submissionDeadline: '2026-03-28T09:00:00.000Z',
+            isLocked: false,
+            status: 'DRAFT',
+          },
+          assignments: [{ id: 1, date: '2026-04-01', location: 'שדרות האורן 8', notes: '' }],
+          summary: { assignmentCount: 1, filledDays: 1 },
+        },
+      });
+    }
+
+    if (pathname.match(/\/api\/v1\/gardens\/me\/months\/\d{4}-\d{2}$/) && method === 'PUT') {
+      return route.fulfill({ status: 200, json: { ok: true, assignmentCount: 2 } });
+    }
+
+    if (pathname.match(/\/api\/v1\/gardens\/me\/months\/\d{4}-\d{2}\/submit$/) && method === 'POST') {
+      return route.fulfill({ status: 200, json: { ok: true, status: 'SUBMITTED', submittedAt: '2026-03-22T08:30:00.000Z' } });
+    }
+
+    if (pathname.match(/\/api\/v1\/gardens\/months\/\d{4}-\d{2}\/dashboard$/)) {
+      return route.fulfill({
+        json: {
+          month: { id: 1, plan: '2026-04', submissionDeadline: '2026-03-28T09:00:00.000Z', isLocked: false, createdAt: '2026-03-01T09:00:00.000Z' },
+          stats: { workers: 6, submitted: 3, approved: 1, needsChanges: 1, assignments: 18, coverageDays: 12 },
+          workers: [
+            { workerProfileId: 12, userId: 9, displayName: 'אורן לוי', teamName: 'צוות מרכז', email: 'tech@demo.com', status: 'NEEDS_CHANGES', assignmentCount: 2, submittedAt: '2026-03-21T08:30:00.000Z', reviewNote: 'להוסיף כתובת ליום חמישי.' },
+            { workerProfileId: 13, userId: 10, displayName: 'דניאל כהן', teamName: 'צוות צפון', email: 'north@demo.com', status: 'SUBMITTED', assignmentCount: 4, submittedAt: '2026-03-21T10:30:00.000Z' },
+          ],
+          assignments: [
+            { id: 1, date: '2026-04-01', location: 'שדרות האורן 8', notes: '', workerProfileId: 12, workerName: 'אורן לוי' },
+            { id: 2, date: '2026-04-02', location: 'הרצל 10', notes: '', workerProfileId: 13, workerName: 'דניאל כהן' },
+          ],
+        },
+      });
+    }
+
+    if (pathname.match(/\/api\/v1\/gardens\/months\/\d{4}-\d{2}\/reminders$/) && method === 'POST') {
+      return route.fulfill({ status: 200, json: { ok: true, sent: 2 } });
+    }
 
     if (pathname.includes('/notifications/user/')) {
       return route.fulfill({

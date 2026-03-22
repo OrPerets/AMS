@@ -76,6 +76,19 @@ export default function Document() {
                 }
 
                 window.addEventListener('load', function() {
+                  var isDevHost =
+                    window.location.hostname === 'localhost' ||
+                    window.location.hostname === '127.0.0.1';
+
+                  if (isDevHost) {
+                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                      registrations.forEach(function(registration) {
+                        registration.unregister();
+                      });
+                    });
+                    return;
+                  }
+
                   navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {
                     // PWA support is progressive enhancement.
                   });

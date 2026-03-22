@@ -24,6 +24,7 @@ import { ActivityModule } from './activity/activity.module';
 import { ApprovalModule } from './approval/approval.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { OperationsModule } from './operations/operations.module';
+import { GardensModule } from './gardens/gardens.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { OperationsModule } from './operations/operations.module';
     ApprovalModule,
     VendorsModule,
     OperationsModule,
+    GardensModule,
   ],
   controllers: [HealthController],
 })

@@ -23,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { EmptyState } from '../../components/ui/empty-state';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { MobileActionBar } from '../../components/ui/mobile-action-bar';
+import { MobileActionHub } from '../../components/ui/mobile-action-hub';
 import { MobileContextBar } from '../../components/ui/mobile-context-bar';
 import { MobilePriorityInbox } from '../../components/ui/mobile-priority-inbox';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
@@ -629,6 +630,7 @@ export default function ResidentAccountPage() {
       hint: autopayEnabled ? t('residentAccount.metric.autopayHint') : t('residentAccount.metric.manualHint'),
     },
   ];
+  const todayStatusItems = accountStatusItems.slice(0, 3);
 
   return (
     <div className="space-y-5 sm:space-y-8 pb-28 lg:pb-0">
@@ -655,27 +657,18 @@ export default function ResidentAccountPage() {
           </>
         }
         title={`שלום ${accountDisplayName}, זה המצב שלך היום`}
-        description={t('residentAccount.heroDescription')}
+        description="שלושה סימנים מהירים כדי להבין מה דורש טיפול עכשיו ומה כבר בשליטה."
         actions={
           <>
-            <Button variant="hero" asChild>
+            <Button asChild>
               <Link href="/create-call">פתח קריאת שירות</Link>
             </Button>
             <Button variant="outline" className="border-white/15 bg-white/5 text-white hover:bg-white/10" asChild>
               <Link href="/resident/requests">בקשות דייר</Link>
             </Button>
-            {context.residentId ? (
-              <Button
-                variant="outline"
-                className="border-white/15 bg-white/5 text-white hover:bg-white/10"
-                onClick={() => downloadAuthenticatedFile(`/api/v1/invoices/ledger?residentId=${context.residentId}&format=csv`, 'resident-ledger.csv')}
-              >
-                ייצוא דוח יתרה
-              </Button>
-            ) : null}
           </>
         }
-        aside={<div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">{accountStatusItems.slice(0, 4).map((item) => <SummaryCard key={item.label} label={item.label} value={item.value} description={item.hint} />)}</div>}
+        aside={<div className="grid gap-2.5 sm:grid-cols-3 sm:gap-3">{todayStatusItems.map((item) => <SummaryCard key={item.label} label={item.label} value={item.value} description={item.hint} />)}</div>}
       />
 
       <MobilePriorityInbox
@@ -684,29 +677,44 @@ export default function ResidentAccountPage() {
         items={priorityInboxItems}
       />
 
-      <Card variant="featured">
-        <CardContent className="space-y-4 p-4 sm:p-5">
-          <SectionHeader
-            title={t('residentAccount.primaryActionsTitle')}
-            subtitle={t('residentAccount.primaryActionsSubtitle')}
-            meta={t('residentAccount.quickAccess')}
-          />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Button className="justify-between" onClick={() => scrollToSection('payments-section')}>
-              שלם עכשיו
-            </Button>
-            <Button variant="outline" className="justify-between" asChild>
-              <Link href="/resident/requests">פתח בקשה</Link>
-            </Button>
-            <Button variant="outline" className="justify-between" onClick={() => scrollToSection('tickets-section')}>
-              עקוב אחרי טיפול
-            </Button>
-            <Button variant="outline" className="justify-between" asChild>
-              <Link href="/documents">צפה במסמכים</Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <MobileActionHub
+        title={t('residentAccount.primaryActionsTitle')}
+        subtitle="פעולות מהירות לתשלום, בקשות, שירות ומסמכים."
+        items={[
+          {
+            id: 'pay',
+            label: 'שלם',
+            description: nextPaymentDue ? `לתשלום ${formatCurrency(nextPaymentDue.amount)}` : 'אין יתרה מיידית',
+            icon: CreditCard,
+            accent: nextPaymentDue ? 'warning' : 'success',
+            onClick: () => scrollToSection('payments-section'),
+          },
+          {
+            id: 'requests',
+            label: 'בקשות',
+            description: 'מעקב אחרי פניות ועדכונים',
+            href: '/resident/requests',
+            icon: MessageSquare,
+            accent: 'primary',
+          },
+          {
+            id: 'service',
+            label: 'שירות',
+            description: openTickets[0] ? `קריאה #${openTickets[0].id}` : 'אין קריאות פתוחות',
+            onClick: () => scrollToSection('tickets-section'),
+            icon: Wrench,
+            accent: openTickets.length ? 'info' : 'neutral',
+          },
+          {
+            id: 'documents',
+            label: 'מסמכים',
+            description: `${context.documents.length} זמינים`,
+            href: '/documents',
+            icon: FileText,
+            accent: 'neutral',
+          },
+        ]}
+      />
 
       <Card variant="muted">
         <CardContent className="grid gap-3 p-4 sm:grid-cols-[1.1fr_0.9fr]">
@@ -726,7 +734,7 @@ export default function ResidentAccountPage() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            {accountStatusItems.map((item) => (
+            {todayStatusItems.map((item) => (
               <div key={item.label} className="rounded-[20px] border border-subtle-border bg-background/84 p-3 sm:rounded-[22px] sm:p-4">
                 <div className="text-[10px] uppercase tracking-[0.2em] text-tertiary sm:text-[11px]">{item.label}</div>
                 <div className="mt-1.5 text-base font-semibold text-foreground sm:mt-2 sm:text-lg">{item.value}</div>

@@ -131,6 +131,13 @@ enum Priority {
   URGENT
 }
 
+enum GardensPlanStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  NEEDS_CHANGES
+}
+
 model User {
   id            Int      @id @default(autoincrement())
   email         String   @unique
@@ -168,6 +175,9 @@ model User {
   ownedContracts    Contract[]      @relation("ContractOwner")
   requestedApprovalTasks ApprovalTask[] @relation("ApprovalRequester")
   decidedApprovalTasks   ApprovalTask[] @relation("ApprovalDecider")
+  gardensWorkerProfile GardensWorkerProfile?
+  createdGardensMonths GardensMonth[] @relation("GardensMonthCreator")
+  reviewedGardensPlans GardensWorkerPlan[] @relation("GardensPlanReviewer")
 }
 
 model Building {
@@ -943,4 +953,76 @@ model ScheduledTask {
   @@index([assignedTo])
   @@index([status])
   @@index([taskType])
+}
+
+model GardensWorkerProfile {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName String
+  teamName    String?
+  isActive    Boolean  @default(true)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  plans       GardensWorkerPlan[]
+
+  @@index([isActive])
+  @@index([displayName])
+}
+
+model GardensMonth {
+  id                 Int      @id @default(autoincrement())
+  tenantId           Int
+  year               Int
+  month              Int
+  title              String?
+  submissionDeadline DateTime?
+  isLocked           Boolean  @default(false)
+  createdById        Int?
+  createdBy          User?    @relation("GardensMonthCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  workerPlans        GardensWorkerPlan[]
+
+  @@unique([tenantId, year, month])
+  @@index([tenantId, year, month])
+  @@index([isLocked])
+}
+
+model GardensWorkerPlan {
+  id              Int               @id @default(autoincrement())
+  monthId         Int
+  month           GardensMonth      @relation(fields: [monthId], references: [id], onDelete: Cascade)
+  workerProfileId Int
+  workerProfile   GardensWorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  status          GardensPlanStatus @default(DRAFT)
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewedById    Int?
+  reviewedBy      User?             @relation("GardensPlanReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewNote      String?
+  lastReminderAt  DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  assignments     GardensAssignment[]
+
+  @@unique([monthId, workerProfileId])
+  @@index([status])
+  @@index([reviewedById])
+}
+
+model GardensAssignment {
+  id           Int               @id @default(autoincrement())
+  workerPlanId Int
+  workerPlan   GardensWorkerPlan @relation(fields: [workerPlanId], references: [id], onDelete: Cascade)
+  workDate     DateTime
+  location     String
+  notes        String?
+  sortOrder    Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([workDate])
+  @@unique([workerPlanId, workDate])
 }

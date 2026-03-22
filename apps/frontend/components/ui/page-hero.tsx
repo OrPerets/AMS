@@ -9,6 +9,7 @@ type PageHeroProps = {
   actions?: React.ReactNode;
   aside?: React.ReactNode;
   compact?: boolean;
+  variant?: 'brand' | 'operational';
   className?: string;
 };
 
@@ -20,27 +21,42 @@ export function PageHero({
   actions,
   aside,
   compact,
+  variant = 'brand',
   className,
 }: PageHeroProps) {
+  const isOperational = variant === 'operational';
+
   if (compact) {
     return (
       <section
         className={cn(
-          'dark-surface surface-hero relative overflow-hidden rounded-[24px] border border-white/10 text-white shadow-hero',
+          isOperational
+            ? 'surface-hero-operational relative overflow-hidden rounded-[24px] border border-subtle-border bg-card text-foreground shadow-card'
+            : 'dark-surface surface-hero relative overflow-hidden rounded-[24px] border border-white/10 text-white shadow-hero',
           className,
         )}
       >
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute start-[-10%] top-[-24%] h-36 w-36 rounded-full bg-white/8 blur-3xl" />
-          <div className="absolute end-[-6%] bottom-[-30%] h-32 w-32 rounded-full bg-primary/20 blur-3xl" />
+          <div className={cn('absolute start-[-10%] top-[-24%] h-36 w-36 rounded-full blur-3xl', isOperational ? 'bg-primary/10' : 'bg-white/8')} />
+          <div className={cn('absolute end-[-6%] bottom-[-30%] h-32 w-32 rounded-full blur-3xl', isOperational ? 'bg-primary/12' : 'bg-primary/20')} />
         </div>
         <div className="relative flex flex-col gap-3 p-3.5 sm:flex-row sm:items-end sm:justify-between sm:gap-6 sm:p-5 lg:p-6">
           <div className="min-w-0 space-y-1.5">
             {eyebrow ? <div className="flex flex-wrap items-center gap-2">{eyebrow}</div> : null}
-            {kicker ? <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/62 sm:text-xs">{kicker}</div> : null}
+            {kicker ? (
+              <div className={cn('text-[11px] font-medium uppercase tracking-[0.18em] sm:text-xs', isOperational ? 'text-tertiary' : 'text-white/62')}>
+                {kicker}
+              </div>
+            ) : null}
             <div className="space-y-1">
-              <h1 className="max-w-[18ch] text-[1.1rem] font-bold leading-[1.05] text-white sm:text-[1.45rem] lg:text-[1.7rem]">{title}</h1>
-              {description ? <p className="max-w-2xl text-[13px] leading-5 text-white/76 sm:text-sm sm:leading-6">{description}</p> : null}
+              <h1 className={cn('max-w-[18ch] text-[1.1rem] font-bold leading-[1.05] sm:text-[1.45rem] lg:text-[1.7rem]', isOperational ? 'text-foreground' : 'text-white')}>
+                {title}
+              </h1>
+              {description ? (
+                <p className={cn('max-w-2xl text-[13px] leading-5 sm:text-sm sm:leading-6', isOperational ? 'text-muted-foreground' : 'text-white/76')}>
+                  {description}
+                </p>
+              ) : null}
             </div>
           </div>
           {actions ? <div className="relative flex shrink-0 flex-wrap gap-2 sm:justify-end">{actions}</div> : null}
@@ -52,14 +68,16 @@ export function PageHero({
   return (
     <section
       className={cn(
-        'dark-surface surface-hero relative overflow-hidden rounded-[28px] border border-white/10 text-white shadow-hero',
+        isOperational
+          ? 'surface-hero-operational relative overflow-hidden rounded-[28px] border border-subtle-border bg-card text-foreground shadow-card'
+          : 'dark-surface surface-hero relative overflow-hidden rounded-[28px] border border-white/10 text-white shadow-hero',
         className,
       )}
     >
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute start-[-12%] top-[-16%] h-36 w-36 rounded-full bg-white/8 blur-3xl sm:h-48 sm:w-48" />
-        <div className="absolute end-[-5%] top-[18%] h-32 w-32 rounded-full bg-primary/18 blur-3xl sm:h-44 sm:w-44" />
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-black/16 to-transparent sm:h-24" />
+        <div className={cn('absolute start-[-12%] top-[-16%] h-36 w-36 rounded-full blur-3xl sm:h-48 sm:w-48', isOperational ? 'bg-primary/10' : 'bg-white/8')} />
+        <div className={cn('absolute end-[-5%] top-[18%] h-32 w-32 rounded-full blur-3xl sm:h-44 sm:w-44', isOperational ? 'bg-primary/10' : 'bg-primary/18')} />
+        <div className={cn('absolute inset-x-0 bottom-0 h-20 bg-linear-to-t sm:h-24', isOperational ? 'from-primary/6 to-transparent' : 'from-black/16 to-transparent')} />
       </div>
 
       <div className="relative grid gap-3 p-3.5 sm:gap-5 sm:p-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(16rem,0.95fr)] lg:gap-8 lg:p-7">
@@ -67,9 +85,19 @@ export function PageHero({
           <div className="space-y-2 sm:space-y-3">
             {eyebrow ? <div className="flex flex-wrap items-center gap-2">{eyebrow}</div> : null}
             <div className="space-y-1.5 sm:space-y-2">
-              {kicker ? <div className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/64 sm:text-xs">{kicker}</div> : null}
-              <h1 className="max-w-[15ch] text-[1.4rem] font-bold leading-[0.98] tracking-[-0.03em] text-white sm:text-[2.35rem] lg:text-[3rem]">{title}</h1>
-              {description ? <div className="max-w-2xl text-[13px] leading-5 text-white/76 sm:text-[0.95rem] sm:leading-7">{description}</div> : null}
+              {kicker ? (
+                <div className={cn('text-[11px] font-medium uppercase tracking-[0.22em] sm:text-xs', isOperational ? 'text-tertiary' : 'text-white/64')}>
+                  {kicker}
+                </div>
+              ) : null}
+              <h1 className={cn('max-w-[15ch] text-[1.4rem] font-bold leading-[0.98] tracking-[-0.03em] sm:text-[2.35rem] lg:text-[3rem]', isOperational ? 'text-foreground' : 'text-white')}>
+                {title}
+              </h1>
+              {description ? (
+                <div className={cn('max-w-2xl text-[13px] leading-5 sm:text-[0.95rem] sm:leading-7', isOperational ? 'text-muted-foreground' : 'text-white/76')}>
+                  {description}
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -77,7 +105,14 @@ export function PageHero({
         </div>
 
         {aside ? (
-          <div className="hidden rounded-[24px] border border-white/10 bg-white/8 p-3.5 backdrop-blur-xl md:block sm:p-4">
+          <div
+            className={cn(
+              'hidden rounded-[24px] p-3.5 md:block sm:p-4',
+              isOperational
+                ? 'border border-subtle-border bg-background/86 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]'
+                : 'border border-white/10 bg-white/8 backdrop-blur-xl',
+            )}
+          >
             {aside}
           </div>
         ) : null}

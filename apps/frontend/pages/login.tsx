@@ -7,7 +7,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { PasswordInput } from '../components/ui/password-input';
 import { useFormValidation } from '../hooks/use-form-validation';
-import { getDefaultRoute, getTokenPayload, login } from '../lib/auth';
+import { getDefaultRoute, getTokenPayload, login, shouldRouteToWorkerHub } from '../lib/auth';
 import { useDirection, useLocale } from '../lib/providers';
 
 export default function LoginPage() {
@@ -50,14 +50,12 @@ export default function LoginPage() {
     try {
       await login(normalizedEmail, form.values.password);
       const payload = getTokenPayload();
-      if (payload && payload.role === 'MASTER') {
-        const next = typeof router.query.next === 'string' ? router.query.next : undefined;
-        router.replace(`/role-selection${next ? `?next=${encodeURIComponent(next)}` : ''}`);
-        return;
-      }
+      const next = typeof router.query.next === 'string' ? router.query.next : undefined;
+      const role = payload?.actAsRole || payload?.role;
+      const defaultRoute = shouldRouteToWorkerHub(role) ? '/worker-hub' : getDefaultRoute(role);
+      const destination = next || defaultRoute;
 
-      const next = typeof router.query.next === 'string' ? router.query.next : getDefaultRoute();
-      router.replace(next);
+      router.replace(destination);
     } catch (err: any) {
       const msg = err?.message || t('login.error.generic');
       setServerError(msg);
