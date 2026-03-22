@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
-import { getTokenPayload } from '../../lib/auth';
+import { getTokenPayload, normalizeRole } from '../../lib/auth';
 import { useRegisterBottomSurface } from '../../lib/bottom-surface';
 import { lockAppScroll } from '../../lib/scroll-lock';
 
@@ -200,12 +200,12 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   useEffect(() => {
     setMounted(true);
     const payload = getTokenPayload();
-    setUserRole(payload?.actAsRole || payload?.role || 'RESIDENT');
+    setUserRole(normalizeRole(payload?.actAsRole || payload?.role) || 'RESIDENT');
   }, []);
 
   useEffect(() => {
     const payload = getTokenPayload();
-    setUserRole(payload?.actAsRole || payload?.role || 'RESIDENT');
+    setUserRole(normalizeRole(payload?.actAsRole || payload?.role) || 'RESIDENT');
   }, [router.pathname]);
 
   useEffect(() => {

@@ -76,6 +76,38 @@ export function getCurrentUserId(): number | null {
   return null;
 }
 
+export function normalizeRole(role?: string | null): string | null {
+  if (!role) return null;
+
+  const normalized = role.trim().toUpperCase();
+
+  switch (normalized) {
+    case 'ADMIN':
+    case 'ADMINISTRATOR':
+    case 'SYSTEM_ADMIN':
+      return 'ADMIN';
+    case 'PM':
+    case 'MANAGER':
+    case 'PROPERTY_MANAGER':
+      return 'PM';
+    case 'TECH':
+    case 'TECHNICIAN':
+    case 'WORKER':
+      return 'TECH';
+    case 'RESIDENT':
+    case 'TENANT':
+      return 'RESIDENT';
+    case 'ACCOUNTANT':
+    case 'ACCOUNTING':
+      return 'ACCOUNTANT';
+    case 'MASTER':
+    case 'SUPER_ADMIN':
+      return 'MASTER';
+    default:
+      return normalized;
+  }
+}
+
 export function hasRoleAccess(allowedRoles: string[], role = getEffectiveRole()): boolean {
   return !!role && allowedRoles.includes(role);
 }
@@ -267,7 +299,7 @@ export function logout() {
 export function getEffectiveRole(): string | null {
   const payload = getTokenPayload();
   if (!payload) return null;
-  return payload.actAsRole || payload.role || null;
+  return normalizeRole(payload.actAsRole || payload.role || null);
 }
 
 export function isAuthenticated(): boolean {
@@ -275,7 +307,7 @@ export function isAuthenticated(): boolean {
 }
 
 export function routeForRole(role?: string | null): string {
-  switch (role) {
+  switch (normalizeRole(role)) {
     case 'ADMIN':
     case 'MASTER':
       return '/admin/dashboard';
@@ -293,7 +325,7 @@ export function routeForRole(role?: string | null): string {
 }
 
 export function shouldRouteToWorkerHub(role?: string | null): boolean {
-  const effectiveRole = role || getEffectiveRole();
+  const effectiveRole = normalizeRole(role) || getEffectiveRole();
   return Boolean(
     effectiveRole &&
       effectiveRole !== 'RESIDENT'
@@ -301,7 +333,7 @@ export function shouldRouteToWorkerHub(role?: string | null): boolean {
 }
 
 export function getDefaultRoute(role?: string | null): string {
-  const effectiveRole = role || getEffectiveRole();
+  const effectiveRole = normalizeRole(role) || getEffectiveRole();
   return routeForRole(effectiveRole);
 }
 
@@ -309,7 +341,7 @@ export function getPortalEntryRoute(
   portal: 'resident' | 'worker',
   role?: string | null,
 ): string {
-  const effectiveRole = role || getEffectiveRole();
+  const effectiveRole = normalizeRole(role) || getEffectiveRole();
 
   if (portal === 'resident') {
     if (effectiveRole === 'RESIDENT' || isMasterPendingRoleSelection()) {
