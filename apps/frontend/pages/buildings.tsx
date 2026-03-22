@@ -42,6 +42,7 @@ import {
 import { cn, formatNumber } from '../lib/utils';
 import { toast } from '../components/ui/use-toast';
 import { useRouter } from 'next/router';
+import { useLocale } from '../lib/providers';
 
 interface Building {
   id: number;
@@ -84,6 +85,7 @@ const statusConfig = {
 };
 
 export default function Buildings() {
+  const { t } = useLocale();
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [selectedBuildingId, setSelectedBuildingId] = useState<number | null>(null);
   const [selectedOverview, setSelectedOverview] = useState<BuildingOverview | null>(null);
@@ -108,7 +110,7 @@ export default function Buildings() {
         setSelectedBuildingId((current) => current ?? list[0]?.id ?? null);
       } else {
         // Mock data for demo
-        const fallback = [
+        const fallback: Building[] = [
           {
             id: 1,
             name: 'אפרים קישון 5, הרצליה',
@@ -427,32 +429,32 @@ export default function Buildings() {
   const priorityItems = rankedBuildings.map((building) => {
     const occupancyRate = building.totalUnits && building.occupiedUnits ? Math.round((building.occupiedUnits / building.totalUnits) * 100) : 0;
     const reasons = [
-      building.status === 'MAINTENANCE' ? 'maintenance status' : null,
-      building.status === 'INACTIVE' ? 'inactive building' : null,
-      occupancyRate < 85 ? `${100 - occupancyRate}% vacancy` : null,
-      !building.lastInspection ? 'missing recent inspection' : null,
+      building.status === 'MAINTENANCE' ? t('buildings.priority.maintenanceStatus') : null,
+      building.status === 'INACTIVE' ? t('buildings.priority.inactiveBuilding') : null,
+      occupancyRate < 85 ? t('buildings.priority.vacancy', { value: 100 - occupancyRate }) : null,
+      !building.lastInspection ? t('buildings.priority.missingInspection') : null,
     ].filter(Boolean);
 
     return {
       id: `building-${building.id}`,
-      status: building.status === 'ACTIVE' ? 'In progress' : 'At risk',
+      status: building.status === 'ACTIVE' ? t('buildings.priority.inProgress') : t('buildings.priority.atRisk'),
       tone: building.status === 'ACTIVE' ? 'active' as const : 'warning' as const,
       title: building.name,
-      reason: reasons.length ? `Priority because of ${reasons.join(', ')}.` : 'Healthy occupancy with no obvious immediate blocker.',
-      meta: `${building.occupiedUnits || 0}/${building.totalUnits || 0} occupied`,
+      reason: reasons.length ? t('buildings.priority.reasonPrefix', { value: reasons.join(', ') }) : t('buildings.priority.healthyReason'),
+      meta: t('buildings.priority.occupiedMeta', { occupied: building.occupiedUnits || 0, total: building.totalUnits || 0 }),
       href: `/buildings/${building.id}`,
-      ctaLabel: 'Open building',
+      ctaLabel: t('buildings.priority.openBuilding'),
     };
   });
 
   return (
     <div className="space-y-6">
       <MobileContextBar
-        roleLabel="Manager workspace"
-        contextLabel={selectedBuilding ? selectedBuilding.name : 'Portfolio overview'}
-        syncLabel="Portfolio data synced"
+        roleLabel={t('buildings.mobile.roleLabel')}
+        contextLabel={selectedBuilding ? selectedBuilding.name : t('buildings.mobile.portfolioOverview')}
+        syncLabel={t('buildings.mobile.syncedLabel')}
         lastUpdated={new Date().toLocaleDateString('he-IL')}
-        chips={[`Buildings: ${kpis.totalBuildings}`, `Occupancy: ${kpis.occupancyRate}%`]}
+        chips={[t('buildings.mobile.totalBuildings', { count: kpis.totalBuildings }), t('buildings.mobile.occupancy', { value: kpis.occupancyRate })]}
       />
 
       {/* Header */}
@@ -490,8 +492,8 @@ export default function Buildings() {
       </div>
 
       <MobilePriorityInbox
-        title="Portfolio priorities"
-        subtitle="The buildings that deserve attention first and the reason they are ranked there."
+        title={t('buildings.mobile.priorityTitle')}
+        subtitle={t('buildings.mobile.prioritySubtitle')}
         items={priorityItems}
       />
 
@@ -567,27 +569,27 @@ export default function Buildings() {
       <Card variant="featured">
         <CardContent className="space-y-4 p-4 sm:p-5">
           <SectionHeader
-            title="Manager action console"
-            subtitle="Urgent buildings, unresolved items, today’s tasks, and quick drilldowns for mobile decision-making."
-            meta={selectedBuilding ? `Focused on ${selectedBuilding.name}` : 'Select a building'}
+            title={t('buildings.mobile.actionConsoleTitle')}
+            subtitle={t('buildings.mobile.actionConsoleSubtitle')}
+            meta={selectedBuilding ? t('buildings.mobile.focusedOn', { name: selectedBuilding.name }) : t('buildings.mobile.selectBuilding')}
           />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Button className="justify-between" onClick={() => router.push(selectedBuilding ? `/buildings/${selectedBuilding.id}` : '/buildings')}>
-              Open issues
+              {t('buildings.mobile.openIssues')}
             </Button>
             <Button variant="outline" className="justify-between" onClick={() => router.push('/payments')}>
-              Collection risk
+              {t('buildings.mobile.collectionRisk')}
             </Button>
             <Button variant="outline" className="justify-between" onClick={() => router.push('/maintenance')}>
-              Upcoming maintenance
+              {t('buildings.mobile.upcomingMaintenance')}
             </Button>
             <Button variant="outline" className="justify-between" onClick={() => router.push('/tickets')}>
-              Urgent tickets
+              {t('buildings.mobile.urgentTickets')}
             </Button>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
-              <div className="text-xs uppercase tracking-[0.16em] text-tertiary">Building switcher</div>
+              <div className="text-xs tracking-[0.16em] text-tertiary">{t('buildings.mobile.switcherTitle')}</div>
               <div className="mt-2 flex flex-wrap gap-2">
                 {filteredBuildings.slice(0, 6).map((building) => (
                   <Button

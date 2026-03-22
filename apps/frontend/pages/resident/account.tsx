@@ -280,7 +280,7 @@ function getBuildingGuidance(notes?: string | null) {
 
 export default function ResidentAccountPage() {
   const router = useRouter();
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const [context, setContext] = useState<AccountContext | null>(null);
   const [finance, setFinance] = useState<ResidentFinance | null>(null);
   const [loading, setLoading] = useState(true);
@@ -594,50 +594,54 @@ export default function ResidentAccountPage() {
     id: item.key,
     status:
       item.tone === 'danger'
-        ? 'Needs action'
+        ? t('status.needsAction')
         : item.tone === 'warning'
-          ? 'Waiting'
+          ? t('status.waiting')
           : item.tone === 'active'
-            ? 'In progress'
+            ? t('status.inProgress')
             : item.tone === 'success'
-              ? 'Completed'
-              : 'Updated',
+              ? t('status.completed')
+              : t('status.updated'),
     tone: item.tone,
     title: item.title,
     reason: item.description,
-    meta: primaryBuilding?.name || 'Resident account',
+    meta: primaryBuilding?.name || t('residentAccount.mobile.roleLabel'),
   }));
   const accountStatusItems = [
     {
-      label: 'Balance',
-      value: summary ? formatCurrency(summary.currentBalance) : 'Not available',
-      hint: nextPaymentDue ? `Due ${formatDate(nextPaymentDue.dueDate, locale)}` : 'No unpaid invoice',
+      label: t('residentAccount.metric.balance'),
+      value: summary ? formatCurrency(summary.currentBalance) : t('residentAccount.metric.notAvailable'),
+      hint: nextPaymentDue ? t('residentAccount.metric.dueDate', { value: formatDate(nextPaymentDue.dueDate, locale) }) : t('residentAccount.metric.noUnpaidInvoice'),
     },
     {
-      label: 'Open issues',
+      label: t('residentAccount.metric.openIssues'),
       value: String(openTickets.length),
-      hint: openTickets[0] ? `Opened ${formatDate(openTickets[0].createdAt, locale)}` : 'No open service issue',
+      hint: openTickets[0] ? t('residentAccount.metric.openedAt', { value: formatDate(openTickets[0].createdAt, locale) }) : t('residentAccount.metric.noOpenIssue'),
     },
     {
-      label: 'Unread updates',
+      label: t('residentAccount.metric.unreadUpdates'),
       value: String(unreadNotifications.length),
-      hint: unreadNotifications[0]?.title || 'Everything already reviewed',
+      hint: unreadNotifications[0]?.title || t('residentAccount.metric.allReviewed'),
     },
     {
-      label: 'Payment mode',
-      value: autopayEnabled ? 'AutoPay on' : 'Manual',
-      hint: autopayEnabled ? 'Primary card will be charged automatically' : 'Charges will stay manual until enabled',
+      label: t('residentAccount.metric.paymentMode'),
+      value: autopayEnabled ? t('residentAccount.metric.autopayOn') : t('residentAccount.metric.manual'),
+      hint: autopayEnabled ? t('residentAccount.metric.autopayHint') : t('residentAccount.metric.manualHint'),
     },
   ];
 
   return (
     <div className="space-y-5 sm:space-y-8 pb-28 lg:pb-0">
       <MobileContextBar
-        roleLabel="Resident account"
-        contextLabel={primaryBuilding?.name ? `${primaryBuilding.name} / Unit ${primaryUnit?.number}` : 'Resident profile'}
-        syncLabel="Account data synced"
+        roleLabel={t('residentAccount.mobile.roleLabel')}
+        contextLabel={
+          primaryBuilding?.name
+            ? t('residentAccount.mobile.unitLabel', { building: primaryBuilding.name, unit: primaryUnit?.number ?? '—' })
+            : t('residentAccount.mobile.profileLabel')
+        }
+        syncLabel={t('residentAccount.mobile.syncedLabel')}
         lastUpdated={formatDate(new Date(), locale)}
-        chips={[context.user.email, autopayEnabled ? 'Autopay active' : 'Manual payment']}
+        chips={[context.user.email, autopayEnabled ? t('residentAccount.mobile.autopayActive') : t('residentAccount.mobile.manualPayment')]}
       />
 
       <PageHero
@@ -651,7 +655,7 @@ export default function ResidentAccountPage() {
           </>
         }
         title={`שלום ${accountDisplayName}, זה המצב שלך היום`}
-        description="Everything important on one mobile screen: account status, service progress, documents, and building updates."
+        description={t('residentAccount.heroDescription')}
         actions={
           <>
             <Button variant="hero" asChild>
@@ -675,17 +679,17 @@ export default function ResidentAccountPage() {
       />
 
       <MobilePriorityInbox
-        title="Resident priority inbox"
-        subtitle="Payments, service tickets, and new building updates are ranked here in plain language."
+        title={t('residentAccount.priorityTitle')}
+        subtitle={t('residentAccount.prioritySubtitle')}
         items={priorityInboxItems}
       />
 
       <Card variant="featured">
         <CardContent className="space-y-4 p-4 sm:p-5">
           <SectionHeader
-            title="Primary actions"
-            subtitle="The four actions residents need most should always be reachable without scrolling through administrative detail."
-            meta="Quick access"
+            title={t('residentAccount.primaryActionsTitle')}
+            subtitle={t('residentAccount.primaryActionsSubtitle')}
+            meta={t('residentAccount.quickAccess')}
           />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Button className="justify-between" onClick={() => scrollToSection('payments-section')}>
@@ -709,7 +713,7 @@ export default function ResidentAccountPage() {
           <div className="rounded-[24px] border border-subtle-border bg-background/84 p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-[11px] uppercase tracking-[0.2em] text-tertiary">Account status</div>
+                <div className="text-[11px] tracking-[0.2em] text-tertiary">{t('residentAccount.accountStatusTitle')}</div>
                 <div className="mt-2 text-lg font-semibold text-foreground">{accountDisplayName}</div>
                 <div className="mt-1 text-sm text-muted-foreground">{context.user.email}</div>
               </div>
@@ -738,9 +742,9 @@ export default function ResidentAccountPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-primary" />
-              Status timeline
+              {t('residentAccount.timelineTitle')}
             </CardTitle>
-            <CardDescription>Plain-language updates that tell the resident what changed, what is blocked, and what already moved forward.</CardDescription>
+            <CardDescription>{t('residentAccount.timelineSubtitle')}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2.5 sm:gap-3">
             {attentionCards.map((item) => (

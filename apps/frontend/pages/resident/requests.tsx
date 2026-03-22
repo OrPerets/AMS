@@ -67,7 +67,7 @@ const emptyForm = {
 
 export default function ResidentRequestsPage() {
   const router = useRouter();
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const [form, setForm] = useState(emptyForm);
   const [history, setHistory] = useState<RequestHistoryItem[]>([]);
   const [historyFilter, setHistoryFilter] = useState({ status: 'ALL', requestType: 'ALL' });
@@ -213,18 +213,18 @@ export default function ResidentRequestsPage() {
     openRequests[0]
       ? {
           id: 'open-request',
-          status: openRequests[0].status === 'SUBMITTED' ? 'Waiting' : 'In progress',
+          status: openRequests[0].status === 'SUBMITTED' ? t('status.waiting') : t('status.inProgress'),
           tone: openRequests[0].status === 'SUBMITTED' ? 'warning' as const : 'active' as const,
           title: openRequests[0].subject.replace(/^[A-Z_]+:\s*/, ''),
-          reason: openRequests[0].statusNotes || 'The team has your request and the next update will appear here.',
-          meta: `Updated ${formatDate(new Date(openRequests[0].updatedAt || openRequests[0].createdAt), locale)}`,
+          reason: openRequests[0].statusNotes || t('residentRequests.priority.waitingReason'),
+          meta: t('common.updatedAt', { value: formatDate(new Date(openRequests[0].updatedAt || openRequests[0].createdAt), locale) }),
         }
       : {
           id: 'no-open-request',
-          status: 'Completed',
+          status: t('status.completed'),
           tone: 'success' as const,
-          title: 'No resident request is waiting on you',
-          reason: 'Use the request flow only when you need documents, parking changes, move coordination, or profile updates.',
+          title: t('residentRequests.priority.noneTitle'),
+          reason: t('residentRequests.priority.noneReason'),
         },
   ];
   const selectedTypeDescription = getRequestExpectations(form.requestType);
@@ -235,11 +235,14 @@ export default function ResidentRequestsPage() {
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label="משוך כדי לרענן בקשות דייר" />
 
       <MobileContextBar
-        roleLabel="Resident service"
-        contextLabel="Self-service request desk"
-        syncLabel="Service updates synced"
+        roleLabel={t('residentRequests.mobile.roleLabel')}
+        contextLabel={t('residentRequests.mobile.contextLabel')}
+        syncLabel={t('residentRequests.mobile.syncedLabel')}
         lastUpdated={formatDate(new Date(), locale)}
-        chips={[`Open requests: ${openRequests.length}`, `Closed: ${closedRequests.length}`]}
+        chips={[
+          t('residentRequests.mobile.openRequests', { count: openRequests.length }),
+          t('residentRequests.mobile.closedRequests', { count: closedRequests.length }),
+        ]}
       />
 
       <PageHero
@@ -256,8 +259,8 @@ export default function ResidentRequestsPage() {
       />
 
       <MobilePriorityInbox
-        title="Service queue"
-        subtitle="What is currently waiting, what is already being handled, and when you should expect movement."
+        title={t('residentRequests.queueTitle')}
+        subtitle={t('residentRequests.queueSubtitle')}
         items={priorityItems}
       />
 

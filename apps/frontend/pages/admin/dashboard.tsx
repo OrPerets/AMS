@@ -16,8 +16,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { SectionHeader } from '../../components/ui/section-header';
 import { Button } from '../../components/ui/button';
 import Link from 'next/link';
+import { useLocale } from '../../lib/providers';
 
 export default function AdminDashboardPage() {
+  const { t } = useLocale();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +70,7 @@ export default function AdminDashboardPage() {
     if (!data) return [];
     return data.attentionItems.slice(0, 4).map((item) => ({
       id: item.id,
-      status: item.tone === 'danger' ? 'Needs action' : item.tone === 'warning' ? 'At risk' : 'Updated',
+      status: item.tone === 'danger' ? t('status.needsAction') : item.tone === 'warning' ? t('status.atRisk') : t('status.updated'),
       tone: item.tone === 'danger' ? 'danger' as const : item.tone === 'warning' ? 'warning' as const : 'active' as const,
       title: item.title,
       reason: item.description,
@@ -76,7 +78,7 @@ export default function AdminDashboardPage() {
       href: item.ctaHref,
       ctaLabel: item.ctaLabel,
     }));
-  }, [data]);
+  }, [data, t]);
 
   if (loading || !data) {
     if (!loading && error) {
@@ -89,11 +91,15 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-5 sm:space-y-8">
       <MobileContextBar
-        roleLabel="Admin control"
-        contextLabel={buildingId === 'all' ? 'All buildings' : `Building ${buildingId}`}
-        syncLabel={`Window ${range}`}
+        roleLabel={t('adminDashboard.mobile.roleLabel')}
+        contextLabel={buildingId === 'all' ? t('adminDashboard.mobile.allBuildings') : t('adminDashboard.mobile.buildingLabel', { id: buildingId })}
+        syncLabel={t('adminDashboard.mobile.windowLabel', { value: range })}
         lastUpdated={formatDate(new Date())}
-        chips={[`${data.filters.rangeLabel}`, `${data.portfolioKpis.openTickets} open tickets`, `${data.systemAdmin.stats.pendingApprovals} approvals waiting`]}
+        chips={[
+          `${data.filters.rangeLabel}`,
+          t('adminDashboard.mobile.openTickets', { count: data.portfolioKpis.openTickets }),
+          t('adminDashboard.mobile.approvalsWaiting', { count: data.systemAdmin.stats.pendingApprovals }),
+        ]}
       />
 
       {error ? (
@@ -117,8 +123,8 @@ export default function AdminDashboardPage() {
 
       <div className="md:hidden">
         <MobilePriorityInbox
-          title="Admin triage"
-          subtitle="One ranked list for urgent operational risks, financial exposure, and sensitive admin alerts."
+          title={t('adminDashboard.mobile.triageTitle')}
+          subtitle={t('adminDashboard.mobile.triageSubtitle')}
           items={mobilePriorityItems}
         />
 
@@ -126,42 +132,42 @@ export default function AdminDashboardPage() {
           <Card variant="elevated">
             <CardHeader>
               <SectionHeader
-                title="Portfolio health"
-                subtitle="The few signals that explain current load and executive risk on mobile."
-                meta="Overview"
+                title={t('adminDashboard.mobile.portfolioHealthTitle')}
+                subtitle={t('adminDashboard.mobile.portfolioHealthSubtitle')}
+                meta={t('adminDashboard.mobile.overview')}
               />
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-3">
-              <CompactMetric label="Open tickets" value={data.portfolioKpis.openTickets} />
-              <CompactMetric label="SLA breaches" value={data.portfolioKpis.slaBreaches} />
-              <CompactMetric label="Unpaid balance" value={formatCurrency(data.portfolioKpis.unpaidBalance)} />
-              <CompactMetric label="Occupancy" value={`${occupancyRate}%`} />
+              <CompactMetric label={t('adminDashboard.mobile.openTicketsMetric')} value={data.portfolioKpis.openTickets} />
+              <CompactMetric label={t('adminDashboard.mobile.slaBreachesMetric')} value={data.portfolioKpis.slaBreaches} />
+              <CompactMetric label={t('adminDashboard.mobile.unpaidBalanceMetric')} value={formatCurrency(data.portfolioKpis.unpaidBalance)} />
+              <CompactMetric label={t('adminDashboard.mobile.occupancyMetric')} value={`${occupancyRate}%`} />
             </CardContent>
           </Card>
 
           <Card variant="elevated">
             <CardHeader>
               <SectionHeader
-                title="Decision shortcuts"
-                subtitle="Explicit actions for the top risk instead of passive dashboard cards."
-                meta="Act now"
+                title={t('adminDashboard.mobile.decisionShortcutsTitle')}
+                subtitle={t('adminDashboard.mobile.decisionShortcutsSubtitle')}
+                meta={t('adminDashboard.mobile.actNow')}
               />
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-3">
-              <Button asChild><Link href="/tickets">Assign</Link></Button>
-              <Button asChild variant="outline"><Link href="/admin/activity">Escalate</Link></Button>
-              <Button asChild variant="outline"><a href={exportHref} target="_blank" rel="noreferrer">Export</a></Button>
-              <Button asChild variant="outline"><Link href="/admin/notifications">Notify</Link></Button>
+              <Button asChild><Link href="/tickets">{t('adminDashboard.mobile.assign')}</Link></Button>
+              <Button asChild variant="outline"><Link href="/admin/activity">{t('adminDashboard.mobile.escalate')}</Link></Button>
+              <Button asChild variant="outline"><a href={exportHref} target="_blank" rel="noreferrer">{t('adminDashboard.mobile.export')}</a></Button>
+              <Button asChild variant="outline"><Link href="/admin/notifications">{t('adminDashboard.mobile.notify')}</Link></Button>
             </CardContent>
           </Card>
 
           <Card variant="elevated">
             <CardHeader>
-              <CardTitle>System and admin alerts</CardTitle>
+              <CardTitle>{t('adminDashboard.mobile.systemAlertsTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <details className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
-                <summary className="cursor-pointer text-sm font-semibold text-foreground">System health</summary>
+                <summary className="cursor-pointer text-sm font-semibold text-foreground">{t('adminDashboard.mobile.systemHealthTitle')}</summary>
                 <div className="mt-3 space-y-2">
                   {Object.values(data.systemAdmin.health).map((item) => (
                     <div key={item.label} className="rounded-2xl border border-subtle-border bg-muted/20 px-3 py-2.5">
@@ -172,13 +178,13 @@ export default function AdminDashboardPage() {
                 </div>
               </details>
               <details className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
-                <summary className="cursor-pointer text-sm font-semibold text-foreground">Sensitive admin activity</summary>
+                <summary className="cursor-pointer text-sm font-semibold text-foreground">{t('adminDashboard.mobile.sensitiveActivityTitle')}</summary>
                 <div className="mt-3 space-y-2">
                   <div className="rounded-2xl border border-subtle-border bg-muted/20 px-3 py-2.5 text-sm text-foreground">
-                    {data.systemAdmin.recentImpersonationEvents.length} impersonation events logged recently.
+                    {t('adminDashboard.mobile.impersonationEvents', { count: data.systemAdmin.recentImpersonationEvents.length })}
                   </div>
                   <div className="rounded-2xl border border-subtle-border bg-muted/20 px-3 py-2.5 text-sm text-foreground">
-                    {data.systemAdmin.stats.pendingApprovals} approvals are currently waiting.
+                    {t('adminDashboard.mobile.approvalsCurrentlyWaiting', { count: data.systemAdmin.stats.pendingApprovals })}
                   </div>
                 </div>
               </details>

@@ -4,6 +4,7 @@ import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { DashboardResponse } from './types';
+import { useLocale } from '../../../lib/providers';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -30,6 +31,8 @@ export function DashboardHero({
   exportHref: string;
   occupancyRate: number;
 }) {
+  const { t } = useLocale();
+
   return (
     <section className="dark-surface surface-hero overflow-hidden rounded-2xl sm:rounded-[28px] border border-white/10 text-white">
       <div className="grid gap-4 p-3.5 sm:gap-5 sm:p-5 lg:grid-cols-[1.15fr_0.85fr] lg:gap-8 lg:p-8">
@@ -75,7 +78,7 @@ export function DashboardHero({
 
         <div className="sticky top-16 space-y-3 self-start rounded-xl sm:rounded-[24px] border border-white/10 bg-black/15 p-3 backdrop-blur sm:static sm:p-4">
           <div className="rounded-2xl border border-white/10 bg-white/6 px-3 py-2 text-[11px] text-white/75">
-            {buildingId === 'all' ? 'All buildings' : `Building ${buildingId}`} · {data.filters.rangeLabel}
+            {buildingId === 'all' ? t('adminDashboard.mobile.allBuildings') : t('adminDashboard.mobile.buildingLabel', { id: buildingId })} · {data.filters.rangeLabel}
           </div>
           <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
             <div className="space-y-1.5">

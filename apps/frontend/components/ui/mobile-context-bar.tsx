@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Clock3, RefreshCw, ShieldCheck } from 'lucide-react';
 import { Badge } from './badge';
 import { cn } from '../../lib/utils';
+import { useLocale } from '../../lib/providers';
 
 type MobileContextBarProps = {
   roleLabel: string;
@@ -15,18 +16,21 @@ type MobileContextBarProps = {
 export function MobileContextBar({
   roleLabel,
   contextLabel,
-  syncLabel = 'Sync live',
+  syncLabel,
   lastUpdated,
   chips = [],
   className,
 }: MobileContextBarProps) {
+  const { t } = useLocale();
+  const resolvedSyncLabel = syncLabel ?? t('mobileContext.syncLive');
+
   return (
     <section
       className={cn(
         'mobile-context-bar rounded-[22px] border border-subtle-border bg-background/92 p-3 shadow-elevation-1 backdrop-blur-sm',
         className,
       )}
-      aria-label="Mobile context"
+      aria-label={t('mobileContext.ariaLabel')}
     >
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="finance" className="gap-1.5">
@@ -36,7 +40,7 @@ export function MobileContextBar({
         {contextLabel ? <Badge variant="outline">{contextLabel}</Badge> : null}
         <Badge variant="outline" className="gap-1.5 text-muted-foreground">
           <RefreshCw className="h-3.5 w-3.5" />
-          {syncLabel}
+          {resolvedSyncLabel}
         </Badge>
       </div>
 
@@ -53,7 +57,7 @@ export function MobileContextBar({
       {lastUpdated ? (
         <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <Clock3 className="h-3.5 w-3.5" />
-          <span>Updated {lastUpdated}</span>
+          <span>{t('common.updatedAt', { value: lastUpdated })}</span>
         </div>
       ) : null}
     </section>

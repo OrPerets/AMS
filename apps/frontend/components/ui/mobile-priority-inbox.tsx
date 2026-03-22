@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './card';
 import { StatusBadge } from './status-badge';
 import { Button } from './button';
 import { cn } from '../../lib/utils';
+import { useLocale } from '../../lib/providers';
 
 type InboxTone = 'neutral' | 'active' | 'success' | 'warning' | 'danger';
 
@@ -20,11 +21,11 @@ export type MobilePriorityInboxItem = {
 };
 
 export function MobilePriorityInbox({
-  title = 'Priority inbox',
+  title,
   subtitle,
   items,
-  emptyTitle = 'Nothing needs attention right now',
-  emptyDescription = 'Critical items, approvals, failed payments, and unread operational updates will appear here.',
+  emptyTitle,
+  emptyDescription,
   className,
 }: {
   title?: string;
@@ -34,6 +35,11 @@ export function MobilePriorityInbox({
   emptyDescription?: string;
   className?: string;
 }) {
+  const { t } = useLocale();
+  const resolvedTitle = title ?? t('mobilePriority.title');
+  const resolvedEmptyTitle = emptyTitle ?? t('mobilePriority.emptyTitle');
+  const resolvedEmptyDescription = emptyDescription ?? t('mobilePriority.emptyDescription');
+
   return (
     <Card variant="elevated" className={cn('overflow-hidden', className)}>
       <CardHeader className="pb-3">
@@ -41,12 +47,12 @@ export function MobilePriorityInbox({
           <div>
             <CardTitle className="flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-primary" />
-              {title}
+              {resolvedTitle}
             </CardTitle>
             {subtitle ? <p className="mt-1 text-[13px] leading-5 text-muted-foreground">{subtitle}</p> : null}
           </div>
           <div className="rounded-full border border-subtle-border bg-muted/35 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
-            {items.length} items
+            {t('common.itemsCount', { count: items.length })}
           </div>
         </div>
       </CardHeader>
@@ -84,8 +90,8 @@ export function MobilePriorityInbox({
           ))
         ) : (
           <div className="rounded-[20px] border border-dashed border-subtle-border bg-muted/18 p-4">
-            <div className="text-sm font-semibold text-foreground">{emptyTitle}</div>
-            <div className="mt-1 text-[13px] leading-5 text-muted-foreground">{emptyDescription}</div>
+            <div className="text-sm font-semibold text-foreground">{resolvedEmptyTitle}</div>
+            <div className="mt-1 text-[13px] leading-5 text-muted-foreground">{resolvedEmptyDescription}</div>
           </div>
         )}
       </CardContent>

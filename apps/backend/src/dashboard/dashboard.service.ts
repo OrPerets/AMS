@@ -824,27 +824,27 @@ export class DashboardService {
         health: {
           uptime: {
             status: 'healthy',
-            label: 'Uptime',
+            label: 'זמן פעילות',
             value: this.formatDuration(Math.floor(process.uptime())),
             description: 'משך הזמן שה-API רץ ברצף ללא אתחול.',
           },
           api: {
             status: 'healthy',
-            label: 'API',
-            value: 'Operational',
+            label: 'ממשק API',
+            value: 'פעיל',
             description: 'שאילתות הדשבורד והמסד חזרו בהצלחה בטעינה הנוכחית.',
           },
           queue: {
             status: pendingApprovals > 0 ? 'warning' : 'healthy',
-            label: 'Queue',
-            value: pendingApprovals > 0 ? `${pendingApprovals} pending` : 'Clear',
+            label: 'תור אישורים',
+            value: pendingApprovals > 0 ? `${pendingApprovals} ממתינים` : 'נקי',
             description:
               pendingApprovals > 0 ? 'יש משימות שמחכות לאישור ומעכבות ביצוע.' : 'אין כרגע צווארי בקבוק בתור האישורים.',
           },
           usage: {
             status: activityUsersInRange.length > 0 ? 'healthy' : 'warning',
-            label: 'Active usage',
-            value: `${activityUsersInRange.length} users / ${activityEventsInRange} events`,
+            label: 'שימוש פעיל',
+            value: `${activityUsersInRange.length} משתמשים / ${activityEventsInRange} אירועים`,
             description: `פעילות שנרשמה ב-${rangeLabel.toLowerCase()}.`,
           },
         },
