@@ -13,8 +13,17 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 };
 
+declare global {
+  interface Window {
+    __amitDeferredInstallPrompt?: BeforeInstallPromptEvent | null;
+  }
+}
+
 const DISMISS_KEY = 'amit-pwa-install-dismissed';
-const INTERACTION_THRESHOLD = 2;
+const INTERACTION_THRESHOLD = 1;
+const PROMPT_DELAY_MS = 15000;
+const PENDING_PROMPT_EVENT = 'amit:beforeinstallprompt';
+const INSTALLED_EVENT = 'amit:appinstalled';
 
 function isStandalone() {
   if (typeof window === 'undefined') {
@@ -34,11 +43,12 @@ export function PwaInstallPrompt() {
   const [isIos, setIsIos] = useState(false);
   const [showIosHint, setShowIosHint] = useState(false);
   const [interactions, setInteractions] = useState(0);
+  const [delayElapsed, setDelayElapsed] = useState(false);
 
   const { refCallback, essentialOffset } = useRegisterBottomSurface('pwa-install-prompt', 'promotional');
 
   useEffect(() => {
-    const handleRoute = () => setInteractions((c) => c + 1);
+    const handleRoute = () => setInteractions((count) => count + 1);
     router.events.on('routeChangeComplete', handleRoute);
     return () => router.events.off('routeChangeComplete', handleRoute);
   }, [router.events]);
@@ -51,15 +61,16 @@ export function PwaInstallPrompt() {
     const ua = window.navigator.userAgent.toLowerCase();
     const ios = /iphone|ipad|ipod/.test(ua);
     const shouldDismiss = window.localStorage.getItem(DISMISS_KEY) === 'true';
+    const shouldHidePrompt = shouldDismiss || isStandalone() || !isTouchDevice();
 
     setIsIos(ios);
-    setDismissed(shouldDismiss || isStandalone() || !isTouchDevice());
+    setDismissed(shouldHidePrompt);
     setShowIosHint(ios && !isStandalone());
+    setDeferredPrompt(window.__amitDeferredInstallPrompt ?? null);
 
-    const handleBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setDeferredPrompt(event as BeforeInstallPromptEvent);
-      setDismissed(shouldDismiss || isStandalone() || !isTouchDevice());
+    const handlePendingPrompt = () => {
+      setDeferredPrompt(window.__amitDeferredInstallPrompt ?? null);
+      setDismissed(shouldHidePrompt);
     };
 
     const handleInstalled = () => {
@@ -68,26 +79,36 @@ export function PwaInstallPrompt() {
       window.localStorage.setItem(DISMISS_KEY, 'true');
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleInstalled);
+    const markInteraction = () => {
+      setInteractions((count) => (count >= INTERACTION_THRESHOLD ? count : count + 1));
+    };
+    const delayTimer = window.setTimeout(() => setDelayElapsed(true), PROMPT_DELAY_MS);
+
+    window.addEventListener(PENDING_PROMPT_EVENT, handlePendingPrompt);
+    window.addEventListener(INSTALLED_EVENT, handleInstalled);
+    window.addEventListener('pointerdown', markInteraction, { passive: true });
+    window.addEventListener('scroll', markInteraction, { passive: true });
+    window.addEventListener('keydown', markInteraction);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleInstalled);
+      window.clearTimeout(delayTimer);
+      window.removeEventListener(PENDING_PROMPT_EVENT, handlePendingPrompt);
+      window.removeEventListener(INSTALLED_EVENT, handleInstalled);
+      window.removeEventListener('pointerdown', markInteraction);
+      window.removeEventListener('scroll', markInteraction);
+      window.removeEventListener('keydown', markInteraction);
     };
   }, []);
 
-  const canShow = useMemo(() => {
-    if (dismissed || isStandalone()) {
-      return false;
-    }
+  const hasEngagement = interactions >= INTERACTION_THRESHOLD || delayElapsed;
 
-    if (interactions < INTERACTION_THRESHOLD) {
+  const canShow = useMemo(() => {
+    if (dismissed || isStandalone() || !hasEngagement) {
       return false;
     }
 
     return Boolean(deferredPrompt) || showIosHint;
-  }, [deferredPrompt, dismissed, showIosHint, interactions]);
+  }, [deferredPrompt, dismissed, hasEngagement, showIosHint]);
 
   const dismiss = () => {
     if (typeof window !== 'undefined') {
@@ -107,6 +128,9 @@ export function PwaInstallPrompt() {
     if (choice.outcome === 'accepted') {
       setDeferredPrompt(null);
       setDismissed(true);
+      if (typeof window !== 'undefined') {
+        window.__amitDeferredInstallPrompt = null;
+      }
     }
   };
 
@@ -122,8 +146,8 @@ export function PwaInstallPrompt() {
     >
       <div
         className={cn(
-          "pointer-events-auto mx-auto flex max-w-md items-start gap-3 rounded-3xl border border-white/60",
-          "bg-background/95 p-4 shadow-[0_18px_48px_rgba(14,74,123,0.18)] backdrop-blur-xl"
+          'pointer-events-auto mx-auto flex max-w-md items-start gap-3 rounded-3xl border border-white/60',
+          'bg-background/95 p-4 shadow-[0_18px_48px_rgba(14,74,123,0.18)] backdrop-blur-xl'
         )}
       >
         <div className="mt-0.5 rounded-2xl bg-primary/10 p-2 text-primary">
@@ -134,9 +158,7 @@ export function PwaInstallPrompt() {
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
             {deferredPrompt
               ? 'התקינו את AMIT כדי לקבל חוויית מובייל מלאה, פתיחה מהירה ומסך מלא.'
-              : isIos
-                ? 'ב-iPhone אפשר לפתוח את תפריט השיתוף ב-Safari ולבחור "Add to Home Screen".'
-                : 'אפשר להתקין את AMIT למסך הבית לחוויית שימוש מהירה ונקייה יותר.'}
+              : 'ב-iPhone אפשר לפתוח את תפריט השיתוף ב-Safari ולבחור "Add to Home Screen".'}
           </p>
           <div className="mt-3 flex items-center gap-2">
             {deferredPrompt ? (
