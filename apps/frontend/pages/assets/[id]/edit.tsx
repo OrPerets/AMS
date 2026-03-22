@@ -255,7 +255,7 @@ export default function EditAssetPage() {
         </div>
         <Button asChild variant="outline">
           <Link href={`/assets/${id}`} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4 icon-directional" />
             חזרה לפרטי הנכס
           </Link>
         </Button>

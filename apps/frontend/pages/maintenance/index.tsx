@@ -273,7 +273,7 @@ export default function MaintenanceDashboardPage() {
           <>
             <Button asChild variant="hero">
               <Link href="/maintenance/reports">
-                <ArrowLeft className="me-2 h-4 w-4" />
+                <ArrowLeft className="me-2 h-4 w-4 icon-directional" />
                 דוחות תחזוקה
               </Link>
             </Button>

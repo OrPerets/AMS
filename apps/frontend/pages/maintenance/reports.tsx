@@ -145,7 +145,7 @@ export default function MaintenanceReportsPage() {
         </div>
         <Button asChild variant="outline">
           <Link href="/maintenance" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4 icon-directional" />
             חזרה לתחזוקה
           </Link>
         </Button>

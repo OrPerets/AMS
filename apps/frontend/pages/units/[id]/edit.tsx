@@ -130,7 +130,7 @@ export default function EditUnitPage() {
         </div>
         <Button asChild variant="outline">
           <Link href={`/units/${id}`}>
-            <ArrowLeft className="me-2 h-4 w-4" />
+            <ArrowLeft className="me-2 h-4 w-4 icon-directional" />
             חזרה ליחידה
           </Link>
         </Button>

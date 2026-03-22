@@ -238,7 +238,7 @@ export default function WorkOrderDetailPage() {
           )}
           <Button asChild variant="outline">
             <Link href="/maintenance" className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" /> חזרה לתחזוקה
+              <ArrowLeft className="h-4 w-4 icon-directional" /> חזרה לתחזוקה
             </Link>
           </Button>
         </div>
