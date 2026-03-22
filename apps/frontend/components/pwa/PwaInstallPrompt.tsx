@@ -60,6 +60,7 @@ export function PwaInstallPrompt() {
 
     const ua = window.navigator.userAgent.toLowerCase();
     const ios = /iphone|ipad|ipod/.test(ua);
+    const android = /android/.test(ua);
     const shouldDismiss = window.localStorage.getItem(DISMISS_KEY) === 'true';
     const shouldHidePrompt = shouldDismiss || isStandalone() || !isTouchDevice();
 
