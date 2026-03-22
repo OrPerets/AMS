@@ -61,7 +61,7 @@ echo ""
 print_status "Building backend image for AMD64..."
 docker build \
   --platform linux/amd64 \
-  -f apps/backend/Dockerfile.railway-runtime-amd64 \
+  -f apps/backend/Dockerfile.railway \
   -t "$BACKEND_IMAGE" \
   .
 print_success "Backend image built: $BACKEND_IMAGE"

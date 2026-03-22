@@ -70,7 +70,7 @@ docker-build: ## Build Docker images for Railway (AMD64)
 	@echo ""
 	docker build \
 		--platform $(PLATFORM) \
-		-f apps/backend/Dockerfile.railway-runtime-amd64 \
+		-f apps/backend/Dockerfile.railway \
 		-t $(BACKEND_IMAGE) \
 		.
 	docker build \
@@ -84,7 +84,7 @@ docker-build-backend: ## Build only backend Docker image
 	@echo "$(GREEN)Building backend image...$(NC)"
 	docker build \
 		--platform $(PLATFORM) \
-		-f apps/backend/Dockerfile.railway-runtime-amd64 \
+		-f apps/backend/Dockerfile.railway \
 		-t $(BACKEND_IMAGE) \
 		.
 	@echo "$(GREEN)✓ Backend image built!$(NC)"
@@ -208,4 +208,3 @@ ps: ## Show running processes
 	@echo ""
 	@echo "$(CYAN)Node Processes:$(NC)"
 	@ps aux | grep -E "node|npm" | grep -v grep || echo "No Node processes running"
-

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "PORT=3001 next dev",
     "build": "next build",
-    "start": "mkdir -p .next/standalone/apps/frontend/.next && rm -rf .next/standalone/apps/frontend/.next/static && cp -R .next/static .next/standalone/apps/frontend/.next/static && HOSTNAME=0.0.0.0 PORT=${PORT:-3001} node .next/standalone/apps/frontend/server.js",
+    "start": "mkdir -p .next/standalone/apps/frontend/.next && rm -rf .next/standalone/apps/frontend/.next/static .next/standalone/apps/frontend/public && cp -R .next/static .next/standalone/apps/frontend/.next/static && cp -R public .next/standalone/apps/frontend/public && HOSTNAME=0.0.0.0 PORT=${PORT:-3001} node .next/standalone/apps/frontend/server.js",
     "start:prod": "npm run start",
     "test:e2e": "playwright test",
     "test:e2e:qa": "playwright test --workers=1 e2e/qa-*.spec.ts"
