@@ -1,18 +1,130 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" rx="136" fill="url(#bg)" />
-  <rect x="48" y="48" width="416" height="416" rx="112" fill="url(#panel)" fill-opacity="0.95" />
-  <path d="M256 122L364 197.5V316C364 334.778 348.778 350 330 350H182C163.222 350 148 334.778 148 316V197.5L256 122Z" fill="#0E4A7B"/>
-  <path d="M188 282C188 244.445 218.445 214 256 214C293.555 214 324 244.445 324 282V350H288V284C288 266.327 273.673 252 256 252C238.327 252 224 266.327 224 284V350H188V282Z" fill="#38BDF8"/>
-  <path d="M136 212.5L256 128L376 212.5" stroke="#F8FBFF" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="220" y="146" width="72" height="32" rx="16" fill="#F8FBFF" fill-opacity="0.92"/>
   <defs>
-    <linearGradient id="bg" x1="66" y1="52" x2="454" y2="470" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0E4A7B"/>
-      <stop offset="1" stop-color="#08263F"/>
+    <radialGradient id="bgGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(256 220) rotate(90) scale(292)">
+      <stop offset="0" stop-color="#2D1603"/>
+      <stop offset="0.55" stop-color="#130A02"/>
+      <stop offset="1" stop-color="#050302"/>
+    </radialGradient>
+    <radialGradient id="aGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(256 180) rotate(90) scale(170 130)">
+      <stop offset="0" stop-color="#FFF6B2"/>
+      <stop offset="0.48" stop-color="#F4D35C"/>
+      <stop offset="1" stop-color="#B8840A"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="130" y1="86" x2="383" y2="421" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF0A0"/>
+      <stop offset="0.36" stop-color="#E8C54D"/>
+      <stop offset="0.7" stop-color="#C29218"/>
+      <stop offset="1" stop-color="#86600A"/>
     </linearGradient>
-    <linearGradient id="panel" x1="86" y1="78" x2="426" y2="438" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#F8FBFF"/>
-      <stop offset="1" stop-color="#DCEEFE"/>
+    <linearGradient id="goldSoft" x1="150" y1="272" x2="360" y2="390" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE487" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#A9770E" stop-opacity="0.95"/>
     </linearGradient>
+    <filter id="softGlow" x="97" y="42" width="317" height="255" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0.23 0 1 0 0 0.16 0 0 1 0 0.01 0 0 0 0.8 0"/>
+    </filter>
+    <filter id="textGlow" x="52" y="245" width="409" height="135" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0.29 0 1 0 0 0.2 0 0 1 0 0.02 0 0 0 0.65 0"/>
+    </filter>
+    <clipPath id="circleClip">
+      <circle cx="256" cy="256" r="249"/>
+    </clipPath>
   </defs>
+
+  <circle cx="256" cy="256" r="249" fill="url(#bgGlow)" stroke="url(#gold)" stroke-width="2"/>
+
+  <g clip-path="url(#circleClip)">
+    <circle cx="256" cy="256" r="249" fill="url(#bgGlow)"/>
+
+    <g opacity="0.95">
+      <circle cx="75" cy="92" r="2.2" fill="#C99A21"/>
+      <circle cx="103" cy="78" r="1.8" fill="#E9CA63"/>
+      <circle cx="131" cy="110" r="1.5" fill="#A87915"/>
+      <circle cx="156" cy="88" r="2" fill="#D8B444"/>
+      <circle cx="182" cy="72" r="1.4" fill="#F4DD84"/>
+      <circle cx="207" cy="116" r="1.6" fill="#C9971A"/>
+      <circle cx="245" cy="63" r="1.5" fill="#F2D56A"/>
+      <circle cx="274" cy="82" r="1.7" fill="#B27D12"/>
+      <circle cx="305" cy="67" r="2" fill="#E7C55B"/>
+      <circle cx="334" cy="86" r="1.5" fill="#C08C18"/>
+      <circle cx="360" cy="72" r="1.7" fill="#E9D06D"/>
+      <circle cx="390" cy="95" r="1.8" fill="#B98510"/>
+      <circle cx="425" cy="119" r="1.6" fill="#F0D878"/>
+      <circle cx="437" cy="151" r="1.5" fill="#A97814"/>
+      <circle cx="86" cy="149" r="1.6" fill="#F0D878"/>
+      <circle cx="118" cy="170" r="1.5" fill="#C99519"/>
+      <circle cx="143" cy="146" r="1.9" fill="#E8C85A"/>
+      <circle cx="171" cy="186" r="1.5" fill="#A97814"/>
+      <circle cx="204" cy="165" r="1.8" fill="#EFD572"/>
+      <circle cx="359" cy="165" r="1.7" fill="#D0A433"/>
+      <circle cx="387" cy="181" r="1.4" fill="#F3DC86"/>
+      <circle cx="413" cy="168" r="1.9" fill="#BC8814"/>
+      <circle cx="88" cy="338" r="1.5" fill="#F5E08B"/>
+      <circle cx="117" cy="364" r="1.8" fill="#C79318"/>
+      <circle cx="156" cy="344" r="1.4" fill="#E9CB63"/>
+      <circle cx="196" cy="383" r="1.9" fill="#A87510"/>
+      <circle cx="233" cy="352" r="1.6" fill="#E8C65C"/>
+      <circle cx="276" cy="395" r="1.5" fill="#C28E17"/>
+      <circle cx="325" cy="368" r="1.7" fill="#F0D878"/>
+      <circle cx="372" cy="344" r="1.8" fill="#BA8613"/>
+      <circle cx="411" cy="362" r="1.5" fill="#F6E39A"/>
+      <circle cx="437" cy="331" r="1.7" fill="#D1A62F"/>
+      <circle cx="94" cy="427" r="1.4" fill="#F0D97E"/>
+      <circle cx="138" cy="447" r="1.8" fill="#B27C0E"/>
+      <circle cx="181" cy="422" r="1.5" fill="#E9CA60"/>
+      <circle cx="229" cy="452" r="1.7" fill="#C69418"/>
+      <circle cx="293" cy="431" r="1.5" fill="#F2DD8C"/>
+      <circle cx="339" cy="456" r="1.8" fill="#B88311"/>
+      <circle cx="397" cy="429" r="1.6" fill="#E0B945"/>
+    </g>
+
+    <g opacity="0.8" stroke="#F4DF8D" stroke-linecap="round">
+      <path d="M92 178H100M96 174V182" stroke-width="1.1"/>
+      <path d="M160 120H168M164 116V124" stroke-width="1"/>
+      <path d="M368 120H376M372 116V124" stroke-width="1"/>
+      <path d="M394 344H406M400 338V350" stroke-width="1.1"/>
+      <path d="M124 382H136M130 376V388" stroke-width="1.1"/>
+    </g>
+
+    <g filter="url(#softGlow)" opacity="0.9">
+      <path d="M256 78L329 258H289L272 212H241L224 258H183L256 78Z" fill="#B47E0D"/>
+    </g>
+
+    <path d="M256 62L344 268H299L282 223H229L212 268H168L256 62Z" fill="url(#aGlow)"/>
+    <path d="M255 117L294 208H271L256 171L240 208H218L255 117Z" fill="#3D2206" opacity="0.58"/>
+
+    <path d="M214 262C226 244 286 243 300 262C297 274 289 281 276 284H235C223 281 216 274 214 262Z" fill="#271705" opacity="0.92"/>
+    <path d="M205 286H308L330 299H182L205 286Z" fill="#9B6D0F" opacity="0.55"/>
+
+    <g fill="url(#goldSoft)">
+      <rect x="221" y="238" width="7" height="24" rx="1.5"/>
+      <rect x="231" y="231" width="6" height="31" rx="1.5"/>
+      <rect x="241" y="224" width="8" height="38" rx="1.5"/>
+      <rect x="252" y="217" width="8" height="45" rx="1.5"/>
+      <rect x="263" y="224" width="8" height="38" rx="1.5"/>
+      <rect x="274" y="208" width="10" height="54" rx="1.5"/>
+      <rect x="287" y="229" width="7" height="33" rx="1.5"/>
+      <rect x="297" y="221" width="8" height="41" rx="1.5"/>
+    </g>
+
+    <path d="M197 261C210 247 231 238 251 238" stroke="#D9B147" stroke-width="2" stroke-linecap="round" opacity="0.95"/>
+    <path d="M261 238C283 238 305 248 317 263" stroke="#D9B147" stroke-width="2" stroke-linecap="round" opacity="0.95"/>
+    <path d="M206 251L216 251" stroke="#F7E18F" stroke-width="1.4" stroke-linecap="round" opacity="0.9"/>
+    <path d="M303 251L313 251" stroke="#F7E18F" stroke-width="1.4" stroke-linecap="round" opacity="0.9"/>
+
+    <g filter="url(#textGlow)" opacity="0.6">
+      <ellipse cx="256" cy="324" rx="146" ry="12" fill="#BA8212"/>
+    </g>
+
+    <text x="256" y="336" text-anchor="middle" fill="url(#gold)" font-size="56" font-weight="800" font-family="Heebo, Arial Hebrew, Arial, sans-serif">
+      עמית אקסלנס
+    </text>
+    <text x="256" y="387" text-anchor="middle" fill="url(#goldSoft)" font-size="27" font-weight="500" letter-spacing="3" font-family="Heebo, Arial Hebrew, Arial, sans-serif">
+      אחזקות בע״מ
+    </text>
+    <path d="M112 374H180" stroke="url(#goldSoft)" stroke-width="2.4" stroke-linecap="round" opacity="0.9"/>
+    <path d="M332 374H400" stroke="url(#goldSoft)" stroke-width="2.4" stroke-linecap="round" opacity="0.9"/>
+  </g>
 </svg>

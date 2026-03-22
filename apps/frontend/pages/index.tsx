@@ -302,17 +302,19 @@ export default function LandingPage() {
 
             {/* Logo */}
             <motion.div variants={scaleIn} className="mx-auto mb-8">
-              <div className="relative mx-auto flex h-28 w-28 items-center justify-center">
+              <div className="relative mx-auto flex h-32 w-32 items-center justify-center sm:h-36 sm:w-36">
                 {!prefersReducedMotion && (
                   <motion.div
-                    className="absolute inset-0 rounded-[2rem] bg-[linear-gradient(135deg,rgba(245,212,66,0.24),rgba(212,168,8,0.06),rgba(255,217,102,0.24))] blur-2xl"
+                    className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(245,212,66,0.32)_0%,rgba(212,168,8,0.14)_45%,transparent_74%)] blur-2xl"
                     animate={{ scale: [1, 1.08, 1], opacity: [0.5, 0.85, 0.5] }}
                     transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                   />
                 )}
-                <div className="relative flex h-24 w-24 items-center justify-center rounded-[1.75rem] border border-[#ffe599]/40 bg-[linear-gradient(135deg,#111111_0%,#1a1a1a_100%)] shadow-[0_20px_48px_rgba(0,0,0,0.45)]">
-                  <Building2 className="relative z-10 h-12 w-12 text-[#f5d442]" />
-                </div>
+                <img
+                  src="/icons/icon.svg"
+                  alt="עמית אקסלנס"
+                  className="relative z-10 h-28 w-28 rounded-full object-cover shadow-[0_22px_56px_rgba(0,0,0,0.5)] sm:h-32 sm:w-32"
+                />
               </div>
             </motion.div>
 
