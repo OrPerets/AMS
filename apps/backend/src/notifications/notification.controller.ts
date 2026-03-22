@@ -35,7 +35,7 @@ export class NotificationController {
   }
 
   @Get('user/:id')
-  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT)
+  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT, Role.MASTER)
   getUserNotifications(@Param('id') id: string) {
     return this.notifications.getUserNotifications(+id);
   }
@@ -47,25 +47,25 @@ export class NotificationController {
   }
 
   @Post(':id/read')
-  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT)
+  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT, Role.MASTER)
   markAsRead(@Param('id') id: string) {
     return this.notifications.markAsRead(+id);
   }
 
   @Get('user/:id/preferences')
-  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT)
+  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT, Role.MASTER)
   getNotificationPreferences(@Param('id') id: string) {
     return this.notifications.getUserNotificationPreferences(+id);
   }
 
   @Post('user/:id/preferences')
-  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT)
+  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT, Role.MASTER)
   updateNotificationPreferences(@Param('id') id: string, @Body() preferences: any) {
     return this.notifications.updateNotificationPreferences(+id, preferences);
   }
 
   @Post('user/:id/subscribe')
-  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT)
+  @Roles(Role.ADMIN, Role.PM, Role.TECH, Role.RESIDENT, Role.ACCOUNTANT, Role.MASTER)
   subscribeToNotifications(@Param('id') id: string, @Body() callback: (notification: any) => void) {
     return this.notifications.subscribeToNotifications(+id, callback);
   }

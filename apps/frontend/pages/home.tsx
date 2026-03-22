@@ -21,6 +21,8 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { EmptyState } from '../components/ui/empty-state';
+import { MobileContextBar } from '../components/ui/mobile-context-bar';
+import { MobilePriorityInbox, MobilePriorityInboxItem } from '../components/ui/mobile-priority-inbox';
 import { MobileCardSkeleton } from '../components/ui/page-states';
 import { PageHero } from '../components/ui/page-hero';
 import { SectionHeader } from '../components/ui/section-header';
@@ -126,6 +128,45 @@ export default function HomePage() {
 
   const onboardingSteps = useMemo(() => getOnboardingSteps(role), [role]);
   const quickLinks = useMemo(() => getRoleQuickLinks(role, snapshot?.metrics ?? [], snapshot?.nextActions ?? []), [role, snapshot]);
+  const priorityItems = useMemo<MobilePriorityInboxItem[]>(() => {
+    if (!snapshot) return [];
+    return snapshot.nextActions.slice(0, 3).map((action, index) => ({
+      id: `${action.href}-${index}`,
+      status:
+        index === 0
+          ? 'Needs action'
+          : action.title.includes('התראות') || action.title.includes('תשלומים')
+            ? 'At risk'
+            : 'In progress',
+      tone: index === 0 ? 'warning' : index === 1 ? 'active' : 'neutral',
+      title: action.title,
+      reason: action.description,
+      meta: snapshot.metrics[index]?.hint,
+      href: action.href,
+      ctaLabel: 'Open',
+    }));
+  }, [snapshot]);
+  const recentActivity = useMemo(() => snapshot?.spotlightItems.slice(0, 3) ?? [], [snapshot]);
+  const contextLabel = useMemo(() => {
+    switch (role) {
+      case 'RESIDENT':
+        return 'Self-service workspace';
+      case 'PM':
+        return 'Portfolio action console';
+      case 'ADMIN':
+        return 'Executive control';
+      case 'ACCOUNTANT':
+        return 'Finance oversight';
+      case 'TECH':
+        return 'Field operations';
+      default:
+        return 'Operational workspace';
+    }
+  }, [role]);
+  const contextChips = useMemo(
+    () => (snapshot ? snapshot.metrics.slice(0, 2).map((metric) => `${metric.label}: ${metric.value}`) : []),
+    [snapshot],
+  );
 
   function completeOnboarding() {
     if (currentUserId && typeof window !== 'undefined') {
@@ -145,6 +186,14 @@ export default function HomePage() {
 
   return (
     <div className="space-y-5 sm:space-y-8">
+      <MobileContextBar
+        roleLabel={snapshot.roleTitle}
+        contextLabel={contextLabel}
+        syncLabel="Live portfolio sync"
+        lastUpdated={formatDate(new Date())}
+        chips={contextChips}
+      />
+
       <motion.div variants={heroVariants} initial="initial" animate="animate">
         <PageHero
           className="mobile-only-glow"
@@ -179,7 +228,7 @@ export default function HomePage() {
           }
           aside={
             <div className="space-y-3">
-              <div className="text-[11px] tracking-[0.16em] text-white/65 sm:text-xs sm:tracking-[0.18em]">היום במסך אחד</div>
+              <div className="text-[11px] tracking-[0.16em] text-white/65 sm:text-xs sm:tracking-[0.18em]">Today in one view</div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-1 sm:gap-3">
                 {snapshot.metrics.slice(0, 3).map((metric) => (
                   <div key={metric.label} className="rounded-xl border border-white/10 bg-white/6 p-2.5 sm:rounded-[20px] sm:p-3.5">
@@ -194,11 +243,17 @@ export default function HomePage() {
         />
       </motion.div>
 
+      <MobilePriorityInbox
+        title="Priority inbox"
+        subtitle="What changed, what needs action, and what could become a blocker if left alone."
+        items={priorityItems}
+      />
+
       <section className="space-y-3">
         <SectionHeader
-          title="לאן ממשיכים מכאן"
-          subtitle="יעדים קבועים ונגישים מהמסך הראשון, בלי לחפש בין תפריטים."
-          meta="קיצורי דרך"
+          title="פעולות ראשיות"
+          subtitle="Two-tap access to the actions this role uses most on mobile."
+          meta="Primary actions"
         />
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 xl:grid-cols-4">
           {quickLinks.map((item, index) => (
@@ -216,9 +271,9 @@ export default function HomePage() {
 
       <section className="space-y-3">
         <SectionHeader
-          title="נקודות בקרה"
-          subtitle="מדדים תומכים שמבהירים מה פתוח, מה בסיכון ומה כבר מאוזן."
-          meta="מדדים"
+          title="מדדים מרכזיים"
+          subtitle="Compact numbers that explain workload, risk, and current balance without forcing a deep dive."
+          meta="Key KPIs"
         />
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
           {snapshot.metrics.map((metric, index) => (
@@ -238,9 +293,9 @@ export default function HomePage() {
         <Card variant="elevated" className="overflow-hidden">
           <CardHeader>
             <SectionHeader
-              title="הפעולה הבאה שכדאי לבצע"
-              subtitle="המערכת כבר ממיינת מה הכי חשוב לפי התפקיד, הסיכון והעומסים הנוכחיים."
-              meta="הפעולה הבאה"
+              title="Suggested next action"
+              subtitle="A ranked list of the most useful actions for the role, based on current load and visible risk."
+              meta="Next up"
             />
           </CardHeader>
           <CardContent className="space-y-3">
@@ -268,14 +323,14 @@ export default function HomePage() {
         <Card variant="featured" className="overflow-hidden">
           <CardHeader>
             <SectionHeader
-              title={snapshot.spotlightTitle}
-              subtitle={snapshot.spotlightDescription}
-              meta="חיזוי והכוונה"
+              title="Recent activity and signals"
+              subtitle="Plain-language operational notes instead of decorative insight cards."
+              meta="What changed"
             />
           </CardHeader>
           <CardContent className="space-y-3">
-            {snapshot.spotlightItems.length ? (
-              snapshot.spotlightItems.map((item, index) => (
+            {recentActivity.length ? (
+              recentActivity.map((item, index) => (
                 <motion.div
                   key={item}
                   initial={{ opacity: 0, y: 10 }}
@@ -301,9 +356,9 @@ export default function HomePage() {
         <Card variant="muted" className="overflow-hidden">
           <CardHeader>
             <SectionHeader
-              title="תמונת מצב מהירה"
-              subtitle="סיכום קצר יותר למסך הנייד: מה דורש תשומת לב מידית ומה עומד ברקע."
-              meta="מבט מהיר"
+              title="Mobile summary"
+              subtitle="One compressed strip for buyers and operators who need the state of play in seconds."
+              meta="At a glance"
             />
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-3">
@@ -320,17 +375,17 @@ export default function HomePage() {
         <Card variant="elevated" className="overflow-hidden">
           <CardHeader>
             <SectionHeader
-              title={snapshot.digestTitle}
-              subtitle="המערכת מייצרת עבורך ניסוח שבועי מוכן לשיתוף או להעתקה."
-              meta="סיכום אוטומטי"
+              title="Operational digest"
+              subtitle="A shareable, audit-friendly summary for weekly review or handoff."
+              meta="Digest"
               actions={
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => navigator.clipboard.writeText(snapshot.digestMarkdown)}>
-                    העתק תקציר
+                    Copy digest
                   </Button>
                   <Button asChild>
                     <Link href={snapshot.nextActions[0]?.href || '/home'}>
-                      המשך לעבודה
+                      Continue
                       <ArrowLeft className="ms-2 h-4 w-4" />
                     </Link>
                   </Button>

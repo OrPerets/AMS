@@ -18,7 +18,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
-import { authFetch, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
+import { authFetch, getCurrentUserId, getEffectiveRole, isMasterPendingRoleSelection } from '../../lib/auth';
 import { cn } from '../../lib/utils';
 
 type CommandItem = {
@@ -148,6 +148,13 @@ export function GlobalCommandPalette({
     let ignore = false;
 
     async function load() {
+      if (isMasterPendingRoleSelection()) {
+        setRecentTickets([]);
+        setRecentBuildings([]);
+        setRecentNotifications([]);
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
         const ticketsPromise =

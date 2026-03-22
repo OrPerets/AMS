@@ -20,6 +20,9 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { KpiCard } from '../components/ui/kpi-card';
+import { MobileContextBar } from '../components/ui/mobile-context-bar';
+import { MobilePriorityInbox } from '../components/ui/mobile-priority-inbox';
+import { SectionHeader } from '../components/ui/section-header';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -412,9 +415,46 @@ export default function Buildings() {
   }
 
   const selectedBuilding = filteredBuildings.find((building) => building.id === selectedBuildingId) ?? null;
+  const rankedBuildings = [...filteredBuildings]
+    .sort((left, right) => {
+      const leftOccupancy = left.totalUnits && left.occupiedUnits ? left.occupiedUnits / left.totalUnits : 0;
+      const rightOccupancy = right.totalUnits && right.occupiedUnits ? right.occupiedUnits / right.totalUnits : 0;
+      const leftRisk = (left.status === 'MAINTENANCE' ? 2 : left.status === 'INACTIVE' ? 3 : 0) + (1 - leftOccupancy);
+      const rightRisk = (right.status === 'MAINTENANCE' ? 2 : right.status === 'INACTIVE' ? 3 : 0) + (1 - rightOccupancy);
+      return rightRisk - leftRisk;
+    })
+    .slice(0, 3);
+  const priorityItems = rankedBuildings.map((building) => {
+    const occupancyRate = building.totalUnits && building.occupiedUnits ? Math.round((building.occupiedUnits / building.totalUnits) * 100) : 0;
+    const reasons = [
+      building.status === 'MAINTENANCE' ? 'maintenance status' : null,
+      building.status === 'INACTIVE' ? 'inactive building' : null,
+      occupancyRate < 85 ? `${100 - occupancyRate}% vacancy` : null,
+      !building.lastInspection ? 'missing recent inspection' : null,
+    ].filter(Boolean);
+
+    return {
+      id: `building-${building.id}`,
+      status: building.status === 'ACTIVE' ? 'In progress' : 'At risk',
+      tone: building.status === 'ACTIVE' ? 'active' as const : 'warning' as const,
+      title: building.name,
+      reason: reasons.length ? `Priority because of ${reasons.join(', ')}.` : 'Healthy occupancy with no obvious immediate blocker.',
+      meta: `${building.occupiedUnits || 0}/${building.totalUnits || 0} occupied`,
+      href: `/buildings/${building.id}`,
+      ctaLabel: 'Open building',
+    };
+  });
 
   return (
     <div className="space-y-6">
+      <MobileContextBar
+        roleLabel="Manager workspace"
+        contextLabel={selectedBuilding ? selectedBuilding.name : 'Portfolio overview'}
+        syncLabel="Portfolio data synced"
+        lastUpdated={new Date().toLocaleDateString('he-IL')}
+        chips={[`Buildings: ${kpis.totalBuildings}`, `Occupancy: ${kpis.occupancyRate}%`]}
+      />
+
       {/* Header */}
       <div className="page-header">
         <div>
@@ -448,6 +488,12 @@ export default function Buildings() {
           </Button>
         </div>
       </div>
+
+      <MobilePriorityInbox
+        title="Portfolio priorities"
+        subtitle="The buildings that deserve attention first and the reason they are ranked there."
+        items={priorityItems}
+      />
 
       {/* KPI Cards */}
       <div className="page-kpi-grid">
@@ -489,7 +535,7 @@ export default function Buildings() {
       </div>
 
       {/* Filters */}
-      <div className="page-filter-bar rounded-xl border bg-card p-3">
+      <div className="page-filter-bar sticky top-16 z-10 rounded-xl border bg-card/95 p-3 backdrop-blur">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">סינון:</span>
@@ -517,6 +563,55 @@ export default function Buildings() {
           </Button>
         )}
       </div>
+
+      <Card variant="featured">
+        <CardContent className="space-y-4 p-4 sm:p-5">
+          <SectionHeader
+            title="Manager action console"
+            subtitle="Urgent buildings, unresolved items, today’s tasks, and quick drilldowns for mobile decision-making."
+            meta={selectedBuilding ? `Focused on ${selectedBuilding.name}` : 'Select a building'}
+          />
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <Button className="justify-between" onClick={() => router.push(selectedBuilding ? `/buildings/${selectedBuilding.id}` : '/buildings')}>
+              Open issues
+            </Button>
+            <Button variant="outline" className="justify-between" onClick={() => router.push('/payments')}>
+              Collection risk
+            </Button>
+            <Button variant="outline" className="justify-between" onClick={() => router.push('/maintenance')}>
+              Upcoming maintenance
+            </Button>
+            <Button variant="outline" className="justify-between" onClick={() => router.push('/tickets')}>
+              Urgent tickets
+            </Button>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
+              <div className="text-xs uppercase tracking-[0.16em] text-tertiary">Building switcher</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {filteredBuildings.slice(0, 6).map((building) => (
+                  <Button
+                    key={building.id}
+                    size="sm"
+                    variant={building.id === selectedBuildingId ? 'default' : 'outline'}
+                    onClick={() => setSelectedBuildingId(building.id)}
+                  >
+                    {building.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
+              <div className="text-xs uppercase tracking-[0.16em] text-tertiary">Why this building is prioritized</div>
+              <div className="mt-2 text-sm text-foreground">
+                {selectedBuilding
+                  ? `Highest-value next step for ${selectedBuilding.name}: review open issues, confirm collection exposure, and inspect upcoming maintenance from one mobile workflow.`
+                  : 'Choose a building to get a ranked explanation and action shortcuts.'}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-[1.35fr_0.9fr]">
         <Card>

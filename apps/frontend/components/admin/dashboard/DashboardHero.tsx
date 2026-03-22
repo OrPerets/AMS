@@ -73,7 +73,10 @@ export function DashboardHero({
           </div>
         </div>
 
-        <div className="space-y-3 self-start rounded-xl sm:rounded-[24px] border border-white/10 bg-black/15 p-3 backdrop-blur sm:p-4">
+        <div className="sticky top-16 space-y-3 self-start rounded-xl sm:rounded-[24px] border border-white/10 bg-black/15 p-3 backdrop-blur sm:static sm:p-4">
+          <div className="rounded-2xl border border-white/10 bg-white/6 px-3 py-2 text-[11px] text-white/75">
+            {buildingId === 'all' ? 'All buildings' : `Building ${buildingId}`} · {data.filters.rangeLabel}
+          </div>
           <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
             <div className="space-y-1.5">
               <p className="text-[11px] font-medium uppercase tracking-wider text-white/60">בניין</p>

@@ -29,4 +29,23 @@ describe('AuthService', () => {
   it('throws on invalid credentials', async () => {
     await expect(service.validateUser('test@example.com', 'wrong')).rejects.toBeDefined();
   });
+
+  it('preserves impersonation claims when issuing tokens', async () => {
+    const tokens = await service.login({
+      sub: 8,
+      email: 'resident@demo.com',
+      role: 'MASTER',
+      tenantId: 1,
+      actAsRole: 'RESIDENT',
+      originalSub: 1,
+      originalEmail: 'master@demo.com',
+      originalTenantId: 1,
+    });
+
+    const payload = jwtService.decode(tokens.accessToken) as Record<string, any>;
+    expect(payload.sub).toBe(8);
+    expect(payload.actAsRole).toBe('RESIDENT');
+    expect(payload.originalSub).toBe(1);
+    expect(payload.originalEmail).toBe('master@demo.com');
+  });
 });

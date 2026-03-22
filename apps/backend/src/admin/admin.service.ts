@@ -18,6 +18,29 @@ export class AdminService {
     private approvals: ApprovalService,
   ) {}
 
+  private async resolveImpersonationUser(role: Role, tenantId: number) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        role: role as PrismaRole,
+        tenantId,
+      },
+      orderBy: {
+        id: 'asc',
+      },
+      select: {
+        id: true,
+        email: true,
+        tenantId: true,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException(`No ${role} user exists for tenant ${tenantId}.`);
+    }
+
+    return user;
+  }
+
   async overview() {
     const [
       openTickets,
@@ -439,12 +462,16 @@ export class AdminService {
     if (dto.role === Role.MASTER || !Object.values(Role).includes(dto.role)) {
       throw new BadRequestException('Invalid role');
     }
+    const targetUser = await this.resolveImpersonationUser(dto.role, dto.tenantId);
     const payload = {
-      sub: user.sub,
-      email: user.email,
+      sub: targetUser.id,
+      email: targetUser.email,
       role: user.role,
       actAsRole: dto.role,
       tenantId: dto.tenantId,
+      originalSub: user.originalSub ?? user.sub,
+      originalEmail: user.originalEmail ?? user.email,
+      originalTenantId: user.originalTenantId ?? user.tenantId,
     };
     const accessToken = await this.jwt.signAsync(payload, {
       secret: process.env.JWT_SECRET || 'secret',
@@ -456,7 +483,7 @@ export class AdminService {
     });
     await this.prisma.impersonationEvent.create({
       data: {
-        masterUserId: user.sub,
+        masterUserId: user.originalSub ?? user.sub,
         action: 'START',
         targetRole: dto.role,
         tenantId: dto.tenantId,
@@ -466,7 +493,7 @@ export class AdminService {
       },
     });
     await this.activityLog.log({
-      userId: user.sub,
+      userId: user.originalSub ?? user.sub,
       entityType: 'IMPERSONATION',
       action: 'START',
       summary: `התחזות הופעלה לתפקיד ${dto.role}.`,
@@ -477,11 +504,12 @@ export class AdminService {
   }
 
   async stopImpersonation(user: any, ip: string, userAgent: string) {
+    const masterUserId = user.originalSub ?? user.sub;
     const payload = {
-      sub: user.sub,
-      email: user.email,
+      sub: masterUserId,
+      email: user.originalEmail ?? user.email,
       role: user.role,
-      tenantId: user.tenantId,
+      tenantId: user.originalTenantId ?? user.tenantId,
     };
     const accessToken = await this.jwt.signAsync(payload, {
       secret: process.env.JWT_SECRET || 'secret',
@@ -493,21 +521,21 @@ export class AdminService {
     });
     await this.prisma.impersonationEvent.create({
       data: {
-        masterUserId: user.sub,
+        masterUserId,
         action: 'STOP',
         targetRole: user.actAsRole,
-        tenantId: user.tenantId,
+        tenantId: user.originalTenantId ?? user.tenantId,
         ip,
         userAgent,
       },
     });
     await this.activityLog.log({
-      userId: user.sub,
+      userId: masterUserId,
       entityType: 'IMPERSONATION',
       action: 'STOP',
       summary: 'התחזות הופסקה וחזרה לחשבון הראשי.',
       severity: ActivitySeverity.INFO,
-      metadata: { tenantId: user.tenantId },
+      metadata: { tenantId: user.originalTenantId ?? user.tenantId },
     });
     return { accessToken, refreshToken };
   }

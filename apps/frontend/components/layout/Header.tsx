@@ -9,7 +9,7 @@ import { Badge } from '../ui/badge';
 import { useTheme, useDirection, useLocale } from '../../lib/providers';
 import { cn, formatDateTime } from '../../lib/utils';
 import UserMenu from './UserMenu';
-import { authFetch, getCurrentUserId } from '../../lib/auth';
+import { authFetch, getCurrentUserId, isMasterPendingRoleSelection } from '../../lib/auth';
 import { websocketService } from '../../lib/websocket';
 import { emitNotificationsChanged, subscribeToNotificationsChanged } from '../../lib/notification-events';
 import { deriveNotificationPriority } from '../ui/notification-center';
@@ -75,7 +75,7 @@ export default function Header({
   const currentUserId = getCurrentUserId();
 
   const loadNotifications = async () => {
-    if (!currentUserId) {
+    if (!currentUserId || isMasterPendingRoleSelection()) {
       setNotifications([]);
       return;
     }

@@ -10,6 +10,12 @@ import { KpiGrid } from '../../components/admin/dashboard/KpiGrid';
 import { OperationalGrid } from '../../components/admin/dashboard/OperationalGrid';
 import { RiskAndSystemGrid } from '../../components/admin/dashboard/RiskAndSystemGrid';
 import { DashboardResponse } from '../../components/admin/dashboard/types';
+import { MobileContextBar } from '../../components/ui/mobile-context-bar';
+import { MobilePriorityInbox } from '../../components/ui/mobile-priority-inbox';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { SectionHeader } from '../../components/ui/section-header';
+import { Button } from '../../components/ui/button';
+import Link from 'next/link';
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardResponse | null>(null);
@@ -58,6 +64,19 @@ export default function AdminDashboardPage() {
     if (!totalUnits) return 0;
     return Math.round((data.portfolioKpis.occupiedUnits / totalUnits) * 100);
   }, [data]);
+  const mobilePriorityItems = useMemo(() => {
+    if (!data) return [];
+    return data.attentionItems.slice(0, 4).map((item) => ({
+      id: item.id,
+      status: item.tone === 'danger' ? 'Needs action' : item.tone === 'warning' ? 'At risk' : 'Updated',
+      tone: item.tone === 'danger' ? 'danger' as const : item.tone === 'warning' ? 'warning' as const : 'active' as const,
+      title: item.title,
+      reason: item.description,
+      meta: item.value,
+      href: item.ctaHref,
+      ctaLabel: item.ctaLabel,
+    }));
+  }, [data]);
 
   if (loading || !data) {
     if (!loading && error) {
@@ -69,6 +88,14 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-5 sm:space-y-8">
+      <MobileContextBar
+        roleLabel="Admin control"
+        contextLabel={buildingId === 'all' ? 'All buildings' : `Building ${buildingId}`}
+        syncLabel={`Window ${range}`}
+        lastUpdated={formatDate(new Date())}
+        chips={[`${data.filters.rangeLabel}`, `${data.portfolioKpis.openTickets} open tickets`, `${data.systemAdmin.stats.pendingApprovals} approvals waiting`]}
+      />
+
       {error ? (
         <InlineErrorPanel
           className="border-warning/40 bg-warning/5 text-foreground"
@@ -88,14 +115,103 @@ export default function AdminDashboardPage() {
         occupancyRate={occupancyRate}
       />
 
-      <KpiGrid data={data} />
-      <AttentionGrid data={data} />
-      <OperationalGrid data={data} formatDate={(value) => formatDate(new Date(value))} />
-      <RiskAndSystemGrid
-        data={data}
-        formatCurrency={formatCurrency}
-        formatDate={(value) => formatDate(new Date(value))}
-      />
+      <div className="md:hidden">
+        <MobilePriorityInbox
+          title="Admin triage"
+          subtitle="One ranked list for urgent operational risks, financial exposure, and sensitive admin alerts."
+          items={mobilePriorityItems}
+        />
+
+        <div className="grid gap-4">
+          <Card variant="elevated">
+            <CardHeader>
+              <SectionHeader
+                title="Portfolio health"
+                subtitle="The few signals that explain current load and executive risk on mobile."
+                meta="Overview"
+              />
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-3">
+              <CompactMetric label="Open tickets" value={data.portfolioKpis.openTickets} />
+              <CompactMetric label="SLA breaches" value={data.portfolioKpis.slaBreaches} />
+              <CompactMetric label="Unpaid balance" value={formatCurrency(data.portfolioKpis.unpaidBalance)} />
+              <CompactMetric label="Occupancy" value={`${occupancyRate}%`} />
+            </CardContent>
+          </Card>
+
+          <Card variant="elevated">
+            <CardHeader>
+              <SectionHeader
+                title="Decision shortcuts"
+                subtitle="Explicit actions for the top risk instead of passive dashboard cards."
+                meta="Act now"
+              />
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-3">
+              <Button asChild><Link href="/tickets">Assign</Link></Button>
+              <Button asChild variant="outline"><Link href="/admin/activity">Escalate</Link></Button>
+              <Button asChild variant="outline"><a href={exportHref} target="_blank" rel="noreferrer">Export</a></Button>
+              <Button asChild variant="outline"><Link href="/admin/notifications">Notify</Link></Button>
+            </CardContent>
+          </Card>
+
+          <Card variant="elevated">
+            <CardHeader>
+              <CardTitle>System and admin alerts</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <details className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
+                <summary className="cursor-pointer text-sm font-semibold text-foreground">System health</summary>
+                <div className="mt-3 space-y-2">
+                  {Object.values(data.systemAdmin.health).map((item) => (
+                    <div key={item.label} className="rounded-2xl border border-subtle-border bg-muted/20 px-3 py-2.5">
+                      <div className="text-sm font-medium text-foreground">{item.label}</div>
+                      <div className="text-xs text-muted-foreground">{item.value} · {item.description}</div>
+                    </div>
+                  ))}
+                </div>
+              </details>
+              <details className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
+                <summary className="cursor-pointer text-sm font-semibold text-foreground">Sensitive admin activity</summary>
+                <div className="mt-3 space-y-2">
+                  <div className="rounded-2xl border border-subtle-border bg-muted/20 px-3 py-2.5 text-sm text-foreground">
+                    {data.systemAdmin.recentImpersonationEvents.length} impersonation events logged recently.
+                  </div>
+                  <div className="rounded-2xl border border-subtle-border bg-muted/20 px-3 py-2.5 text-sm text-foreground">
+                    {data.systemAdmin.stats.pendingApprovals} approvals are currently waiting.
+                  </div>
+                </div>
+              </details>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="hidden md:block">
+        <KpiGrid data={data} />
+      </div>
+      <div className="hidden md:block">
+        <AttentionGrid data={data} />
+      </div>
+      <div className="hidden md:block">
+        <OperationalGrid data={data} formatDate={(value) => formatDate(new Date(value))} />
+      </div>
+      <div className="hidden md:block">
+        <RiskAndSystemGrid
+          data={data}
+          formatCurrency={formatCurrency}
+          formatDate={(value) => formatDate(new Date(value))}
+        />
+      </div>
+    </div>
+  );
+}
+
+function CompactMetric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-[20px] border border-subtle-border bg-background/88 p-3">
+      <div className="text-[11px] uppercase tracking-[0.16em] text-tertiary">{label}</div>
+      <div className="mt-1 text-base font-semibold text-foreground">{value}</div>
     </div>
   );
 }

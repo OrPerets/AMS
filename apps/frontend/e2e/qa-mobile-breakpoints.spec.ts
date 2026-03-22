@@ -16,6 +16,8 @@ test.describe('sprint 10 mobile breakpoint coverage', () => {
 
       await page.goto('/buildings');
       await expect(page.getByRole('heading', { name: 'ניהול בניינים' })).toBeVisible();
+      await expect(page.getByText(/Portfolio priorities/i)).toBeVisible();
+      await expect(page.getByText(/Manager action console/i)).toBeVisible();
       await expect(page.getByRole('button', { name: 'צפה' }).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
 
@@ -31,12 +33,16 @@ test.describe('sprint 10 mobile breakpoint coverage', () => {
       await mockApi(page);
 
       await page.goto('/resident/account');
-      await expect(page.getByRole('heading', { name: 'האזור האישי של הדייר' })).toBeVisible();
+      await expect(page.getByText(/זה המצב שלך היום|This is your status today/i).first()).toBeVisible();
+      await expect(page.getByText(/Resident priority inbox/i)).toBeVisible();
+      await expect(page.getByText(/Primary actions/i)).toBeVisible();
       await expect(page.getByRole('button', { name: 'שלם עכשיו' }).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
 
       await page.goto('/resident/requests');
       await expect(page.getByRole('heading', { name: 'בקשות דייר' })).toBeVisible();
+      await expect(page.getByText(/Service queue/i)).toBeVisible();
+      await expect(page.getByText(/שלב 1: בחר סוג בקשה/)).toBeVisible();
       await expectNoHorizontalOverflow(page);
     });
   }

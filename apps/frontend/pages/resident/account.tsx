@@ -23,6 +23,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { EmptyState } from '../../components/ui/empty-state';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { MobileActionBar } from '../../components/ui/mobile-action-bar';
+import { MobileContextBar } from '../../components/ui/mobile-context-bar';
+import { MobilePriorityInbox } from '../../components/ui/mobile-priority-inbox';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
 import { PageHero } from '../../components/ui/page-hero';
 import { SectionHeader } from '../../components/ui/section-header';
@@ -586,12 +588,60 @@ export default function ResidentAccountPage() {
           label: 'מעודכן',
           title: 'אין כרגע הודעות שלא נקראו',
           description: 'התראות חדשות והודעות ועד יופיעו כאן.',
-        },
+      },
+  ];
+  const priorityInboxItems = attentionCards.map((item) => ({
+    id: item.key,
+    status:
+      item.tone === 'danger'
+        ? 'Needs action'
+        : item.tone === 'warning'
+          ? 'Waiting'
+          : item.tone === 'active'
+            ? 'In progress'
+            : item.tone === 'success'
+              ? 'Completed'
+              : 'Updated',
+    tone: item.tone,
+    title: item.title,
+    reason: item.description,
+    meta: primaryBuilding?.name || 'Resident account',
+  }));
+  const accountStatusItems = [
+    {
+      label: 'Balance',
+      value: summary ? formatCurrency(summary.currentBalance) : 'Not available',
+      hint: nextPaymentDue ? `Due ${formatDate(nextPaymentDue.dueDate, locale)}` : 'No unpaid invoice',
+    },
+    {
+      label: 'Open issues',
+      value: String(openTickets.length),
+      hint: openTickets[0] ? `Opened ${formatDate(openTickets[0].createdAt, locale)}` : 'No open service issue',
+    },
+    {
+      label: 'Unread updates',
+      value: String(unreadNotifications.length),
+      hint: unreadNotifications[0]?.title || 'Everything already reviewed',
+    },
+    {
+      label: 'Payment mode',
+      value: autopayEnabled ? 'AutoPay on' : 'Manual',
+      hint: autopayEnabled ? 'Primary card will be charged automatically' : 'Charges will stay manual until enabled',
+    },
   ];
 
   return (
     <div className="space-y-5 sm:space-y-8 pb-28 lg:pb-0">
+      <MobileContextBar
+        roleLabel="Resident account"
+        contextLabel={primaryBuilding?.name ? `${primaryBuilding.name} / Unit ${primaryUnit?.number}` : 'Resident profile'}
+        syncLabel="Account data synced"
+        lastUpdated={formatDate(new Date(), locale)}
+        chips={[context.user.email, autopayEnabled ? 'Autopay active' : 'Manual payment']}
+      />
+
       <PageHero
+        compact
         className="resident-landing-hero"
         kicker="שירות עצמי לדייר"
         eyebrow={
@@ -601,7 +651,7 @@ export default function ResidentAccountPage() {
           </>
         }
         title={`שלום ${accountDisplayName}, זה המצב שלך היום`}
-        description="המסך הזה מרכז את מצב החשבון, קריאות השירות, מסמכים ועדכוני בניין בלי לחפש בין כמה אזורים נפרדים."
+        description="Everything important on one mobile screen: account status, service progress, documents, and building updates."
         actions={
           <>
             <Button variant="hero" asChild>
@@ -621,39 +671,34 @@ export default function ResidentAccountPage() {
             ) : null}
           </>
         }
-        aside={
-          <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
-            <SummaryCard label="פניות פתוחות" value={openTickets.length} description="קריאות שירות שממתינות לעדכון" />
-            <SummaryCard
-              label="תשלום קרוב"
-              value={nextPaymentDue ? formatCurrency(nextPaymentDue.amount) : 'מעודכן'}
-              description={nextPaymentDue ? formatDate(nextPaymentDue.dueDate, locale) : 'אין חיוב קרוב'}
-            />
-            <SummaryCard label="התראות שלא נקראו" value={unreadNotifications.length} description="הודעות ועד ועדכוני מערכת" />
-            <SummaryCard label="מסמכים ופעילות" value={recentUpdatesCount} description="מסמכים חדשים ועדכונים אחרונים" />
-          </div>
-        }
+        aside={<div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">{accountStatusItems.slice(0, 4).map((item) => <SummaryCard key={item.label} label={item.label} value={item.value} description={item.hint} />)}</div>}
+      />
+
+      <MobilePriorityInbox
+        title="Resident priority inbox"
+        subtitle="Payments, service tickets, and new building updates are ranked here in plain language."
+        items={priorityInboxItems}
       />
 
       <Card variant="featured">
         <CardContent className="space-y-4 p-4 sm:p-5">
           <SectionHeader
-            title="קיצורים ראשיים"
-            subtitle="הפעולות הנפוצות ביותר מהאזור האישי, כדי שהמסך הראשון כבר יענה על השאלה לאן ממשיכים."
-            meta="גישה מהירה"
+            title="Primary actions"
+            subtitle="The four actions residents need most should always be reachable without scrolling through administrative detail."
+            meta="Quick access"
           />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Button variant="outline" className="justify-between" onClick={() => scrollToSection('payments-section')}>
-              תשלומים
+            <Button className="justify-between" onClick={() => scrollToSection('payments-section')}>
+              שלם עכשיו
+            </Button>
+            <Button variant="outline" className="justify-between" asChild>
+              <Link href="/resident/requests">פתח בקשה</Link>
             </Button>
             <Button variant="outline" className="justify-between" onClick={() => scrollToSection('tickets-section')}>
-              קריאות שירות
+              עקוב אחרי טיפול
             </Button>
             <Button variant="outline" className="justify-between" asChild>
-              <Link href="/notifications">התראות</Link>
-            </Button>
-            <Button variant="outline" className="justify-between" asChild>
-              <Link href="/documents">מסמכים</Link>
+              <Link href="/documents">צפה במסמכים</Link>
             </Button>
           </div>
         </CardContent>
@@ -664,7 +709,7 @@ export default function ResidentAccountPage() {
           <div className="rounded-[24px] border border-subtle-border bg-background/84 p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-[11px] uppercase tracking-[0.2em] text-tertiary">סיכום חשבון</div>
+                <div className="text-[11px] uppercase tracking-[0.2em] text-tertiary">Account status</div>
                 <div className="mt-2 text-lg font-semibold text-foreground">{accountDisplayName}</div>
                 <div className="mt-1 text-sm text-muted-foreground">{context.user.email}</div>
               </div>
@@ -677,16 +722,13 @@ export default function ResidentAccountPage() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            <div className="rounded-[20px] border border-subtle-border bg-background/84 p-3 sm:rounded-[22px] sm:p-4">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-tertiary sm:text-[11px]">יתרה</div>
-              <div className="mt-1.5 text-base font-semibold text-foreground sm:mt-2 sm:text-lg">{summary ? formatCurrency(summary.currentBalance) : 'לא זמין'}</div>
-              <div className="mt-1 text-xs text-muted-foreground sm:text-sm">תמונת מצב מיידית של החשבון</div>
-            </div>
-            <div className="rounded-[20px] border border-subtle-border bg-background/84 p-3 sm:rounded-[22px] sm:p-4">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-tertiary sm:text-[11px]">עדכונים</div>
-              <div className="mt-1.5 text-base font-semibold text-foreground sm:mt-2 sm:text-lg">{unreadNotifications.length}</div>
-              <div className="mt-1 text-xs text-muted-foreground sm:text-sm">התראות חדשות שממתינות לקריאה</div>
-            </div>
+            {accountStatusItems.map((item) => (
+              <div key={item.label} className="rounded-[20px] border border-subtle-border bg-background/84 p-3 sm:rounded-[22px] sm:p-4">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-tertiary sm:text-[11px]">{item.label}</div>
+                <div className="mt-1.5 text-base font-semibold text-foreground sm:mt-2 sm:text-lg">{item.value}</div>
+                <div className="mt-1 text-xs text-muted-foreground sm:text-sm">{item.hint}</div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -696,9 +738,9 @@ export default function ResidentAccountPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-primary" />
-              מה חשוב עכשיו
+              Status timeline
             </CardTitle>
-            <CardDescription>הבדלה ברורה בין מה שדחוף, מה רק לידיעה, ומה כבר מאחוריך.</CardDescription>
+            <CardDescription>Plain-language updates that tell the resident what changed, what is blocked, and what already moved forward.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2.5 sm:gap-3">
             {attentionCards.map((item) => (

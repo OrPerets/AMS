@@ -14,7 +14,7 @@ import { ErrorBoundary, CompactErrorFallback } from './ui/error-boundary';
 import { cn } from '../lib/utils';
 import { websocketService } from '../lib/websocket';
 import { toast } from './ui/use-toast';
-import { authFetch, getAccessToken, getCurrentUserId, isAuthenticated } from '../lib/auth';
+import { authFetch, getAccessToken, getCurrentUserId, isAuthenticated, isMasterPendingRoleSelection } from '../lib/auth';
 import { useBottomSurface } from '../lib/bottom-surface';
 
 interface Props {
@@ -31,7 +31,7 @@ export default function Layout({ children }: Props) {
   const { t } = useLocale();
   const { totalOffset } = useBottomSurface();
   const router = useRouter();
-  const publicRoutes = new Set(['/', '/404', '/_error', '/login', '/privacy', '/terms', '/support']);
+  const publicRoutes = new Set(['/', '/404', '/_error', '/login', '/privacy', '/terms', '/support', '/role-selection']);
   const isPublicRoute = publicRoutes.has(router.pathname);
 
   useEffect(() => {
@@ -110,7 +110,7 @@ export default function Layout({ children }: Props) {
     websocketService.on('new_notification', handleNewNotification);
 
     const userId = getCurrentUserId();
-    if (userId) {
+    if (userId && !isMasterPendingRoleSelection()) {
       authFetch(`/api/v1/notifications/user/${userId}`)
         .then((res) => (res.ok ? res.json() : []))
         .then((data: any[]) => setUnreadNotifications(Array.isArray(data) ? data.filter((n) => !n.read).length : 0))

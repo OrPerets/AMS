@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Plus } from 'lucide-react';
-import { authFetch, getCurrentUserId, getEffectiveRole } from '../../../lib/auth';
+import { authFetch, getCurrentUserId, getEffectiveRole, hasRoleAccess } from '../../../lib/auth';
 import { Skeleton } from '../../ui/skeleton';
 import { toast } from '../../ui/use-toast';
 import { Button } from '../../ui/button';
@@ -134,15 +134,24 @@ export function DispatchWorkspace() {
   }, [technicians, workloadByTechnicianId]);
 
   useEffect(() => {
-    setCurrentRole(getEffectiveRole());
+    const role = getEffectiveRole();
+    setCurrentRole(role);
     const storedFilters = loadStoredFilters();
     setFilters(storedFilters);
     setSearchInput(storedFilters.search);
     setCustomPresets(loadCustomPresets());
     setSelectedPresetId(loadLastPresetId());
     void loadCreateBuildings();
-    void loadTechnicians();
-    void loadVendors();
+    if (hasRoleAccess(['ADMIN', 'PM', 'TECH', 'MASTER'], role)) {
+      void loadTechnicians();
+    } else {
+      setTechnicians([]);
+    }
+    if (hasRoleAccess(['ADMIN', 'PM', 'ACCOUNTANT', 'MASTER'], role)) {
+      void loadVendors();
+    } else {
+      setVendors([]);
+    }
   }, []);
 
   useEffect(() => {

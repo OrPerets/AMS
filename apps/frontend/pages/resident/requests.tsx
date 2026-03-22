@@ -9,6 +9,8 @@ import { EmptyState } from '../../components/ui/empty-state';
 import { FormField, FormErrorSummary } from '../../components/ui/form-field';
 import { Input } from '../../components/ui/input';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
+import { MobileContextBar } from '../../components/ui/mobile-context-bar';
+import { MobilePriorityInbox } from '../../components/ui/mobile-priority-inbox';
 import { MobileCardSkeleton } from '../../components/ui/page-states';
 import { PageHero } from '../../components/ui/page-hero';
 import { PullToRefreshIndicator } from '../../components/ui/pull-to-refresh-indicator';
@@ -75,6 +77,9 @@ export default function ResidentRequestsPage() {
   const [formTouched, setFormTouched] = useState<Record<string, boolean>>({});
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [formStep, setFormStep] = useState<1 | 2>(1);
+  const [submittedRequestKey, setSubmittedRequestKey] = useState<string | null>(null);
+  const [submittedRequestType, setSubmittedRequestType] = useState<string | null>(null);
 
   const activeType = requestTypes.find((item) => item.value === form.requestType)!;
   const { pullDistance, isRefreshing } = usePullToRefresh({
@@ -181,12 +186,16 @@ export default function ResidentRequestsPage() {
         }),
       });
       if (!response.ok) throw new Error(await response.text());
+      const payload = await response.json().catch(() => ({}));
       toast({ title: 'הבקשה נשלחה לצוות הניהול', variant: 'success' });
       triggerHaptic('success');
+      setSubmittedRequestKey(payload?.requestKey || `REQ-${new Date().getTime().toString().slice(-6)}`);
+      setSubmittedRequestType(form.requestType);
       setForm(emptyForm);
       setFormTouched({});
       setFormSubmitted(false);
       setSubmitError(null);
+      setFormStep(1);
       await loadHistory();
     } catch (error) {
       console.error(error);
@@ -200,16 +209,45 @@ export default function ResidentRequestsPage() {
   const openRequests = history.filter((item) => item.status === 'SUBMITTED' || item.status === 'IN_REVIEW');
   const closedRequests = history.filter((item) => item.status === 'COMPLETED' || item.status === 'CLOSED');
   const filtersApplied = historyFilter.status !== 'ALL' || historyFilter.requestType !== 'ALL';
+  const priorityItems = [
+    openRequests[0]
+      ? {
+          id: 'open-request',
+          status: openRequests[0].status === 'SUBMITTED' ? 'Waiting' : 'In progress',
+          tone: openRequests[0].status === 'SUBMITTED' ? 'warning' as const : 'active' as const,
+          title: openRequests[0].subject.replace(/^[A-Z_]+:\s*/, ''),
+          reason: openRequests[0].statusNotes || 'The team has your request and the next update will appear here.',
+          meta: `Updated ${formatDate(new Date(openRequests[0].updatedAt || openRequests[0].createdAt), locale)}`,
+        }
+      : {
+          id: 'no-open-request',
+          status: 'Completed',
+          tone: 'success' as const,
+          title: 'No resident request is waiting on you',
+          reason: 'Use the request flow only when you need documents, parking changes, move coordination, or profile updates.',
+        },
+  ];
+  const selectedTypeDescription = getRequestExpectations(form.requestType);
+  const submittedTypeDescription = getRequestExpectations(submittedRequestType || form.requestType);
 
   return (
     <div className="space-y-5 sm:space-y-8">
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label="משוך כדי לרענן בקשות דייר" />
+
+      <MobileContextBar
+        roleLabel="Resident service"
+        contextLabel="Self-service request desk"
+        syncLabel="Service updates synced"
+        lastUpdated={formatDate(new Date(), locale)}
+        chips={[`Open requests: ${openRequests.length}`, `Closed: ${closedRequests.length}`]}
+      />
 
       <PageHero
         compact
         kicker="שירות עצמי לדייר"
         eyebrow={<StatusBadge label="שירות דיירים" tone="finance" />}
         title="בקשות דייר"
+        description="בחר את סוג הבקשה, אשר מה צפוי לקרות אחריה, ושלח רק את הפרטים שהצוות באמת צריך כדי לטפל."
         actions={
           <Button asChild variant="hero" size="sm">
             <Link href="/create-call">פתח קריאת תחזוקה</Link>
@@ -217,10 +255,42 @@ export default function ResidentRequestsPage() {
         }
       />
 
+      <MobilePriorityInbox
+        title="Service queue"
+        subtitle="What is currently waiting, what is already being handled, and when you should expect movement."
+        items={priorityItems}
+      />
+
+      {submittedRequestKey ? (
+        <Card variant="featured">
+          <CardContent className="space-y-3 p-4 sm:p-5">
+            <SectionHeader
+              title="הבקשה התקבלה"
+              subtitle="מספר המעקב והשלב הבא ברורים כבר עכשיו, כדי שלא תצטרך לחפש מה קורה."
+              meta={submittedRequestKey}
+            />
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-[20px] border border-subtle-border bg-background/88 p-3">
+                <div className="text-xs text-tertiary">זמן תגובה משוער</div>
+                <div className="mt-1 text-sm font-semibold text-foreground">{submittedTypeDescription.responseWindow}</div>
+              </div>
+              <div className="rounded-[20px] border border-subtle-border bg-background/88 p-3">
+                <div className="text-xs text-tertiary">מי מקבל את הבקשה</div>
+                <div className="mt-1 text-sm font-semibold text-foreground">{submittedTypeDescription.owner}</div>
+              </div>
+              <div className="rounded-[20px] border border-subtle-border bg-background/88 p-3">
+                <div className="text-xs text-tertiary">מה אפשר לעשות עכשיו</div>
+                <div className="mt-1 text-sm font-semibold text-foreground">{submittedTypeDescription.nextStep}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid gap-4 sm:gap-6 xl:grid-cols-[0.8fr_1.2fr]">
         <Card variant="elevated">
           <CardHeader>
-            <CardTitle>בחר סוג בקשה</CardTitle>
+            <CardTitle>שלב 1: בחר סוג בקשה</CardTitle>
             <CardDescription>לקריאת תחזוקה השתמשו במסלול הייעודי כדי לצרף תמונות ולקבל טיפול מהיר.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 sm:space-y-3">
@@ -235,7 +305,11 @@ export default function ResidentRequestsPage() {
                   className={`w-full rounded-xl sm:rounded-[20px] border p-3 sm:p-4 text-start transition active:scale-[0.98] ${
                     isActive ? 'border-primary bg-primary/10 shadow-sm' : 'border-subtle-border bg-background hover:border-primary/40 hover:bg-muted/40'
                   }`}
-                  onClick={() => setForm((current) => ({ ...current, requestType: type.value }))}
+                  onClick={() => {
+                    setForm((current) => ({ ...current, requestType: type.value }));
+                    setFormStep(2);
+                    setSubmittedRequestKey(null);
+                  }}
                 >
                   <div className="flex items-center gap-2.5 sm:gap-3">
                     <div className={`rounded-xl sm:rounded-2xl p-2 ${isActive ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'}`}>
@@ -254,17 +328,43 @@ export default function ResidentRequestsPage() {
 
         <Card variant="elevated">
           <CardHeader>
-            <CardTitle>{activeType.label}</CardTitle>
-            <CardDescription>{activeType.description}</CardDescription>
+            <CardTitle>{formStep === 1 ? 'שלב 2: מלא רק את הפרטים הנדרשים' : activeType.label}</CardTitle>
+            <CardDescription>{selectedTypeDescription.description}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className={`rounded-[18px] border px-3 py-2.5 text-sm ${formStep >= 1 ? 'border-primary/25 bg-primary/8 text-foreground' : 'border-subtle-border bg-muted/15 text-muted-foreground'}`}>
+                1. בחרת סוג בקשה
+              </div>
+              <div className={`rounded-[18px] border px-3 py-2.5 text-sm ${formStep >= 2 ? 'border-primary/25 bg-primary/8 text-foreground' : 'border-subtle-border bg-muted/15 text-muted-foreground'}`}>
+                2. ממלאים פרטים קצרים
+              </div>
+              <div className="rounded-[18px] border border-subtle-border bg-muted/15 px-3 py-2.5 text-sm text-muted-foreground">
+                3. עוקבים אחרי התקדמות ועדכונים
+              </div>
+            </div>
+
             <SectionHeader
               title="פרטי הפנייה"
               subtitle="שדות חובה ברורים יותר, עם הסבר קצר על כל אזור כדי לקצר ניסוח ולצמצם פניות חסרות."
-              meta="טופס ממוקד"
+              meta={formStep === 1 ? 'בחר סוג בקשה כדי להמשיך' : 'טופס ממוקד'}
             />
 
-            {visibleFormErrors.length > 0 ? (
+            <div className="rounded-xl sm:rounded-[20px] border border-subtle-border bg-muted/25 p-3 sm:p-4 text-sm">
+              <div className="font-semibold text-foreground">מה קורה אחרי השליחה</div>
+              <div className="mt-1 text-muted-foreground">{selectedTypeDescription.afterSubmit}</div>
+            </div>
+
+            {formStep === 1 ? (
+              <EmptyState
+                type="action"
+                size="sm"
+                title="בחר סוג בקשה כדי להמשיך"
+                description="הטופס הבא יותאם אוטומטית למה שבחרת, כדי שתצטרך למלא רק את הפרטים הרלוונטיים."
+              />
+            ) : null}
+
+            {formStep === 2 && visibleFormErrors.length > 0 ? (
               <FormErrorSummary
                 errors={visibleFormErrors}
                 fieldLabels={{ subject: 'נושא', message: 'פירוט הבקשה', requestedDate: 'תאריך מבוקש' }}
@@ -272,12 +372,14 @@ export default function ResidentRequestsPage() {
               />
             ) : null}
 
-            {submitError ? (
+            {formStep === 2 && submitError ? (
               <div className="flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
                 {submitError}
               </div>
             ) : null}
 
+            {formStep === 2 ? (
+              <>
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 label="נושא"
@@ -439,12 +541,19 @@ export default function ResidentRequestsPage() {
             <div className="flex flex-col gap-3 rounded-xl sm:rounded-[20px] border border-subtle-border bg-muted/30 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4 sm:py-4">
               <div className="space-y-0.5 sm:space-y-1">
                 <div className="text-xs sm:text-sm font-semibold text-foreground">בקשת {activeType.label}</div>
-                <div className="text-xs sm:text-sm text-muted-foreground">עקוב אחרי סטטוס וטיפול לאחר השליחה.</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">{selectedTypeDescription.nextStep}</div>
               </div>
-              <Button onClick={submitRequest} disabled={submitting || Boolean(formErrors.subject || formErrors.message)} className="w-full sm:w-auto">
-                {submitting ? 'שולח...' : 'שלח בקשה'}
-              </Button>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <Button variant="outline" onClick={() => setFormStep(1)} className="w-full sm:w-auto">
+                  חזרה לבחירה
+                </Button>
+                <Button onClick={submitRequest} disabled={submitting || Boolean(formErrors.subject || formErrors.message)} className="w-full sm:w-auto">
+                  {submitting ? 'שולח...' : 'שלח בקשה'}
+                </Button>
+              </div>
             </div>
+              </>
+            ) : null}
           </CardContent>
         </Card>
       </div>
@@ -603,4 +712,49 @@ function RequestHistoryList({ items, locale }: { items: RequestHistoryItem[]; lo
       ))}
     </div>
   );
+}
+
+function getRequestExpectations(requestType: string) {
+  switch (requestType) {
+    case 'MOVING':
+      return {
+        description: 'מעבר דירה דורש תיאום מדויק, ולכן הטופס יתמקד בחלון זמן, מעלית שירות ופרטי לוגיסטיקה.',
+        responseWindow: 'עד יום עסקים אחד',
+        owner: 'צוות ניהול הבניין',
+        nextStep: 'שמור את מספר הבקשה ועקוב אחרי אישור חלון המעבר.',
+        afterSubmit: 'הצוות בודק זמינות מעלית, גישה לבניין והאם נדרש עדכון לדיירים או לשומר.',
+      };
+    case 'PARKING':
+      return {
+        description: 'בקשות חניה צריכות רק את סוג השינוי ואת פרטי הרכב אם יש, כדי שהבדיקה תהיה מהירה וברורה.',
+        responseWindow: 'עד 2 ימי עסקים',
+        owner: 'צוות ניהול וחניה',
+        nextStep: 'אם יש שינוי בהקצאה, הוא יופיע כהודעה מעודכנת במסך זה.',
+        afterSubmit: 'הצוות בודק הקצאה, זמינות, או בעיה קיימת ומעדכן אם נדרש אישור נוסף.',
+      };
+    case 'DOCUMENT':
+      return {
+        description: 'לבקשת מסמך מספיק לציין מה נדרש ועד מתי, בלי למלא פרטים תפעוליים לא רלוונטיים.',
+        responseWindow: 'עד יום עסקים אחד',
+        owner: 'צוות הנהלה או גבייה',
+        nextStep: 'המסמך יישלח או יועלה לאזור האישי כאשר הוא מוכן.',
+        afterSubmit: 'הצוות מאתר את המסמך המתאים, בודק אם נדרש אישור, ומחזיר אותו דרך המסמכים או בעדכון ישיר.',
+      };
+    case 'CONTACT_UPDATE':
+      return {
+        description: 'עדכון פרטי קשר צריך להיות קצר ומדויק, כדי שהמערכת והצוות יעבדו תמיד עם הפרטים העדכניים ביותר.',
+        responseWindow: 'עד יום עסקים אחד',
+        owner: 'צוות שירות דיירים',
+        nextStep: 'בדוק בהמשך שהפרטים החדשים נקלטו בהצלחה.',
+        afterSubmit: 'הצוות מאשר את פרטי הקשר החדשים ומעדכן את החשבון אם נדרש אימות נוסף.',
+      };
+    default:
+      return {
+        description: 'הטופס יתמקד בנושא, תאריך מבוקש ותיאור ברור, כדי שהצוות ידע למי להעביר ומה בדיוק נדרש.',
+        responseWindow: 'עד 2 ימי עסקים',
+        owner: 'צוות שירות וניהול',
+        nextStep: 'עקוב אחר סטטוס הבקשה ותשובות הצוות מתוך היסטוריית הבקשות.',
+        afterSubmit: 'הבקשה תנותב לצוות המתאים, תקבל סטטוס ראשוני, ואם יידרש מידע נוסף תקבל על כך הודעה.',
+      };
+  }
 }

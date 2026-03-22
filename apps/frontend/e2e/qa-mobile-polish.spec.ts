@@ -43,7 +43,8 @@ test.describe('mobile polish smoke', () => {
 
       await page.goto('/home');
       await page.waitForLoadState('networkidle');
-      await expect(page.getByText(/לאן ממשיכים מכאן|Where to next/i)).toBeVisible();
+      await expect(page.getByText(/Priority inbox/i).first()).toBeVisible();
+      await expect(page.getByText(/פעולות ראשיות|Primary actions/i).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
       await captureToMobilePolish(page, testInfo, `home-${scenario.name}.png`);
 
@@ -61,7 +62,8 @@ test.describe('mobile polish smoke', () => {
 
       await page.goto('/resident/account');
       await expect(page.getByText(/זה המצב שלך היום|This is your status today/i).first()).toBeVisible();
-      await expect(page.getByText(/קיצורים ראשיים|Primary shortcuts/i).first()).toBeVisible();
+      await expect(page.getByText(/Resident priority inbox/i).first()).toBeVisible();
+      await expect(page.getByText(/Primary actions/i).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
       await captureToMobilePolish(page, testInfo, `resident-account-${scenario.name}.png`);
     });

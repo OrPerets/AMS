@@ -14,7 +14,7 @@ import {
   XCircle,
   Activity
 } from 'lucide-react';
-import { authFetch, getAccessToken } from '../lib/auth';
+import { authFetch, getAccessToken, getCurrentUserId } from '../lib/auth';
 import { websocketService } from '../lib/websocket';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -75,15 +75,19 @@ export default function MayaDashboard() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const { t } = useLocale();
   const { fmtTime } = useFormatting();
+  const currentUserId = getCurrentUserId();
 
   // Real-time polling interval
   const POLL_INTERVAL = 3000; // 3 seconds
 
   const loadDashboardData = async () => {
     try {
+      const notificationsPromise = currentUserId
+        ? authFetch(`/api/v1/notifications/user/${currentUserId}`)
+        : Promise.resolve(null);
       const [ticketsRes, notificationsRes] = await Promise.all([
         authFetch('/api/v1/tickets'),
-        authFetch('/api/v1/notifications/user/1') // TODO: Get actual Maya's user ID
+        notificationsPromise,
       ]);
 
       if (ticketsRes.ok) {
@@ -111,7 +115,7 @@ export default function MayaDashboard() {
         setStats(stats);
       }
 
-      if (notificationsRes.ok) {
+      if (notificationsRes?.ok) {
         const notificationsData = await notificationsRes.json();
         setNotifications(notificationsData.slice(0, 10)); // Show latest 10
       }

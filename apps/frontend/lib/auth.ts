@@ -76,6 +76,15 @@ export function getCurrentUserId(): number | null {
   return null;
 }
 
+export function hasRoleAccess(allowedRoles: string[], role = getEffectiveRole()): boolean {
+  return !!role && allowedRoles.includes(role);
+}
+
+export function isMasterPendingRoleSelection(): boolean {
+  const payload = getTokenPayload();
+  return Boolean(payload?.role === 'MASTER' && !payload?.actAsRole);
+}
+
 export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
   const headers = new Headers(init.headers || {});
   const token = getAccessToken();

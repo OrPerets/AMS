@@ -15,13 +15,27 @@ export class AuthService {
     return user;
   }
 
-  async login(user: { id?: number; sub?: number; email?: string; role: string; tenantId: number }) {
+  async login(user: {
+    id?: number;
+    sub?: number;
+    email?: string;
+    role: string;
+    tenantId: number;
+    actAsRole?: string;
+    originalSub?: number;
+    originalEmail?: string;
+    originalTenantId?: number;
+  }) {
     const subject = user.id ?? user.sub;
     const payload = {
       sub: subject,
       email: user.email,
       role: user.role,
       tenantId: user.tenantId,
+      ...(user.actAsRole ? { actAsRole: user.actAsRole } : {}),
+      ...(user.originalSub ? { originalSub: user.originalSub } : {}),
+      ...(user.originalEmail ? { originalEmail: user.originalEmail } : {}),
+      ...(user.originalTenantId ? { originalTenantId: user.originalTenantId } : {}),
     };
     const accessToken = await this.jwt.signAsync(payload, {
       secret: process.env.JWT_SECRET || 'secret',

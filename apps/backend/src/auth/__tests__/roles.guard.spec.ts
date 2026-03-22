@@ -6,7 +6,10 @@ import { ExecutionContext } from '@nestjs/common';
 describe('RolesGuard', () => {
   function setup(user: any, required: Role[]) {
     const reflector = {
-      getAllAndOverride: jest.fn().mockReturnValue(required),
+      getAllAndOverride: jest
+        .fn()
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(required),
     } as unknown as Reflector;
     const guard = new RolesGuard(reflector);
     const context = {
@@ -30,5 +33,10 @@ describe('RolesGuard', () => {
   it('denies when actAsRole mismatch', () => {
     const { guard, context } = setup({ role: Role.MASTER, actAsRole: Role.TECH }, [Role.ADMIN]);
     expect(guard.canActivate(context)).toBe(false);
+  });
+
+  it('allows master-only route while impersonating another role', () => {
+    const { guard, context } = setup({ role: Role.MASTER, actAsRole: Role.RESIDENT }, [Role.MASTER]);
+    expect(guard.canActivate(context)).toBe(true);
   });
 });
