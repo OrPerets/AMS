@@ -24,19 +24,19 @@ export default function Document() {
                 function getInitialTheme() {
                   const stored = localStorage.getItem('amit-theme');
                   if (stored && stored !== 'system') return stored;
-                  
+
                   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                 }
-                
+
                 function getInitialDirection() {
                   const stored = localStorage.getItem('amit-direction');
                   return stored || 'rtl';
                 }
-                
+
                 try {
                   const theme = getInitialTheme();
                   const direction = getInitialDirection();
-                  
+
                   document.documentElement.className = theme;
                   document.documentElement.setAttribute('dir', direction);
                   document.documentElement.lang = direction === 'rtl' ? 'he' : 'en';
@@ -46,6 +46,40 @@ export default function Document() {
                   document.documentElement.setAttribute('dir', 'rtl');
                   document.documentElement.lang = 'he';
                 }
+              })();
+            `,
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                if (typeof window === 'undefined') {
+                  return;
+                }
+
+                window.__amitDeferredInstallPrompt = window.__amitDeferredInstallPrompt || null;
+
+                window.addEventListener('beforeinstallprompt', function(event) {
+                  event.preventDefault();
+                  window.__amitDeferredInstallPrompt = event;
+                  window.dispatchEvent(new Event('amit:beforeinstallprompt'));
+                });
+
+                window.addEventListener('appinstalled', function() {
+                  window.__amitDeferredInstallPrompt = null;
+                  window.dispatchEvent(new Event('amit:appinstalled'));
+                });
+
+                if (!('serviceWorker' in navigator)) {
+                  return;
+                }
+
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {
+                    // PWA support is progressive enhancement.
+                  });
+                });
               })();
             `,
           }}

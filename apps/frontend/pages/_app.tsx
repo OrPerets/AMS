@@ -9,7 +9,6 @@ import Layout from '../components/Layout';
 import { AppProviders } from '../lib/providers';
 import { cn } from '../lib/utils';
 import { Toaster as SonnerToaster } from 'sonner';
-import { PwaBootstrap } from '../components/pwa/PwaBootstrap';
 import { PwaInstallPrompt } from '../components/pwa/PwaInstallPrompt';
 import { BottomSurfaceProvider } from '../lib/bottom-surface';
 
@@ -43,7 +42,6 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       </Head>
       <AppProviders>
         <BottomSurfaceProvider>
-          <PwaBootstrap />
           <Layout>
             <Component {...pageProps} />
           </Layout>

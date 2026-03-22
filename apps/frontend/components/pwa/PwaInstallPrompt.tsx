@@ -13,9 +13,17 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 };
 
+declare global {
+  interface Window {
+    __amitDeferredInstallPrompt?: BeforeInstallPromptEvent | null;
+  }
+}
+
 const DISMISS_KEY = 'amit-pwa-install-dismissed';
 const INTERACTION_THRESHOLD = 1;
 const PROMPT_DELAY_MS = 15000;
+const PENDING_PROMPT_EVENT = 'amit:beforeinstallprompt';
+const INSTALLED_EVENT = 'amit:appinstalled';
 
 function isStandalone() {
   if (typeof window === 'undefined') {
@@ -36,7 +44,6 @@ export function PwaInstallPrompt() {
   const [showIosHint, setShowIosHint] = useState(false);
   const [interactions, setInteractions] = useState(0);
   const [delayElapsed, setDelayElapsed] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
 
   const { refCallback, essentialOffset } = useRegisterBottomSurface('pwa-install-prompt', 'promotional');
 
@@ -58,13 +65,12 @@ export function PwaInstallPrompt() {
     const shouldHidePrompt = shouldDismiss || isStandalone() || !isTouchDevice();
 
     setIsIos(ios);
-    setIsAndroid(android);
     setDismissed(shouldHidePrompt);
     setShowIosHint(ios && !isStandalone());
+    setDeferredPrompt(window.__amitDeferredInstallPrompt ?? null);
 
-    const handleBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setDeferredPrompt(event as BeforeInstallPromptEvent);
+    const handlePendingPrompt = () => {
+      setDeferredPrompt(window.__amitDeferredInstallPrompt ?? null);
       setDismissed(shouldHidePrompt);
     };
 
@@ -74,19 +80,21 @@ export function PwaInstallPrompt() {
       window.localStorage.setItem(DISMISS_KEY, 'true');
     };
 
-    const markInteraction = () => setInteractions((count) => (count >= INTERACTION_THRESHOLD ? count : count + 1));
+    const markInteraction = () => {
+      setInteractions((count) => (count >= INTERACTION_THRESHOLD ? count : count + 1));
+    };
     const delayTimer = window.setTimeout(() => setDelayElapsed(true), PROMPT_DELAY_MS);
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleInstalled);
+    window.addEventListener(PENDING_PROMPT_EVENT, handlePendingPrompt);
+    window.addEventListener(INSTALLED_EVENT, handleInstalled);
     window.addEventListener('pointerdown', markInteraction, { passive: true });
     window.addEventListener('scroll', markInteraction, { passive: true });
     window.addEventListener('keydown', markInteraction);
 
     return () => {
       window.clearTimeout(delayTimer);
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleInstalled);
+      window.removeEventListener(PENDING_PROMPT_EVENT, handlePendingPrompt);
+      window.removeEventListener(INSTALLED_EVENT, handleInstalled);
       window.removeEventListener('pointerdown', markInteraction);
       window.removeEventListener('scroll', markInteraction);
       window.removeEventListener('keydown', markInteraction);
@@ -100,8 +108,8 @@ export function PwaInstallPrompt() {
       return false;
     }
 
-    return Boolean(deferredPrompt) || showIosHint || isAndroid;
-  }, [deferredPrompt, dismissed, hasEngagement, showIosHint, isAndroid]);
+    return Boolean(deferredPrompt) || showIosHint;
+  }, [deferredPrompt, dismissed, hasEngagement, showIosHint]);
 
   const dismiss = () => {
     if (typeof window !== 'undefined') {
@@ -121,6 +129,9 @@ export function PwaInstallPrompt() {
     if (choice.outcome === 'accepted') {
       setDeferredPrompt(null);
       setDismissed(true);
+      if (typeof window !== 'undefined') {
+        window.__amitDeferredInstallPrompt = null;
+      }
     }
   };
 
@@ -148,9 +159,7 @@ export function PwaInstallPrompt() {
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
             {deferredPrompt
               ? 'התקינו את AMIT כדי לקבל חוויית מובייל מלאה, פתיחה מהירה ומסך מלא.'
-              : isIos
-                ? 'ב-iPhone אפשר לפתוח את תפריט השיתוף ב-Safari ולבחור "Add to Home Screen".'
-                : 'ב-Android פתחו את תפריט Chrome ובחרו "Install app". אם האפשרות עדיין לא מופיעה, המתינו כמה שניות ונסו שוב.'}
+              : 'ב-iPhone אפשר לפתוח את תפריט השיתוף ב-Safari ולבחור "Add to Home Screen".'}
           </p>
           <div className="mt-3 flex items-center gap-2">
             {deferredPrompt ? (
