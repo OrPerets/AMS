@@ -34,7 +34,7 @@ import { lockAppScroll } from '../../lib/scroll-lock';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { cn } from '../../lib/utils';
 import { useDirection, useLocale, useTheme } from '../../lib/providers';
-import { getTokenPayload } from '../../lib/auth';
+import { getTokenPayload, normalizeRole } from '../../lib/auth';
 
 interface SidebarProps {
   className?: string;
@@ -352,13 +352,13 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
   useEffect(() => {
     setMounted(true);
     const payload = getTokenPayload();
-    setUserRole(payload?.actAsRole || payload?.role || 'RESIDENT');
+    setUserRole(normalizeRole(payload?.actAsRole || payload?.role) || 'RESIDENT');
   }, []);
 
   // Listen for route changes to re-read token payload (for role changes)
   useEffect(() => {
     const payload = getTokenPayload();
-    setUserRole(payload?.actAsRole || payload?.role || 'RESIDENT');
+    setUserRole(normalizeRole(payload?.actAsRole || payload?.role) || 'RESIDENT');
   }, [router.pathname]);
   
   const navigationGroups = getNavigationGroups(userRole, t);
