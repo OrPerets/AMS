@@ -58,6 +58,77 @@ interface NavigationItem {
 
 // Navigation items configuration with logical grouping
 const getNavigationGroups = (role: string, t: (key: string) => string): NavigationGroup[] => {
+  if (role === 'RESIDENT') {
+    return [
+      {
+        title: 'גישה מהירה',
+        roles: ['RESIDENT'],
+        items: [
+          {
+            title: 'בית הדייר',
+            href: '/resident/account',
+            icon: Home,
+            roles: ['RESIDENT'],
+          },
+          {
+            title: t('nav.residentRequests'),
+            href: '/resident/requests',
+            icon: ClipboardList,
+            roles: ['RESIDENT'],
+          },
+          {
+            title: 'תשלומים',
+            href: '/resident/account#payments-section',
+            icon: CreditCard,
+            roles: ['RESIDENT'],
+          },
+          {
+            title: t('nav.documents'),
+            href: '/documents',
+            icon: Folder,
+            roles: ['RESIDENT'],
+          },
+        ],
+      },
+      {
+        title: 'שירות ותמיכה',
+        roles: ['RESIDENT'],
+        items: [
+          {
+            title: t('nav.newTicket'),
+            href: '/create-call',
+            icon: Ticket,
+            roles: ['RESIDENT'],
+          },
+          {
+            title: t('nav.notifications'),
+            href: '/notifications',
+            icon: Bell,
+            roles: ['RESIDENT'],
+          },
+          {
+            title: 'הבניין שלי',
+            href: '/resident/account#building-section',
+            icon: Building,
+            roles: ['RESIDENT'],
+          },
+          {
+            title: 'צור קשר',
+            href: '/support',
+            icon: MessageCircle,
+            roles: ['RESIDENT'],
+          },
+          {
+            title: t('shell.settings'),
+            href: '/settings',
+            icon: Settings,
+            roles: ['RESIDENT'],
+          },
+        ],
+      },
+    ];
+  }
+
   const groups: NavigationGroup[] = [
     {
       title: t('nav.group.dashboard'),
@@ -438,7 +509,7 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
         </TooltipProvider>
 
         {/* Footer - Settings */}
-        {!collapsed && (
+        {!collapsed && userRole !== 'RESIDENT' && (
           <div className="border-t p-4">
             <Link
               href="/settings"

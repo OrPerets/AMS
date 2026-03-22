@@ -151,6 +151,7 @@ export default function Header({
   }, [notifications]);
   const mobileContext = useMemo(() => getMobileRouteContext(router.pathname), [router.pathname]);
   const MobileContextIcon = mobileContext.icon;
+  const isResidentMobileRoute = /^\/resident\/(account|requests)/.test(router.pathname);
 
   const navigateToInbox = () => {
     setPreviewOpen(false);
@@ -174,35 +175,52 @@ export default function Header({
             <Menu className="h-4 w-4" />
           </Button>
 
-          <Link href="/home" className="mobile-shell-panel flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] border touch-manipulation">
-            <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-card">
-              A
-            </div>
-          </Link>
+          {isResidentMobileRoute ? (
+            <Link
+              href="/resident/account"
+              className="mobile-shell-panel flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2 touch-manipulation"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[16px] bg-primary/12 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.28)]">
+                <MobileContextIcon className="h-4.5 w-4.5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[9px] font-medium uppercase tracking-[0.18em] text-tertiary">{t('app.shortName')}</div>
+                <div className="truncate text-[14px] font-semibold leading-tight text-foreground">{mobileContext.title}</div>
+              </div>
+            </Link>
+          ) : (
+            <>
+              <Link href="/home" className="mobile-shell-panel flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] border touch-manipulation">
+                <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-card">
+                  A
+                </div>
+              </Link>
 
-          <Link
-            href={router.pathname === '/home' ? '/home' : router.asPath}
-            className="mobile-shell-panel flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 touch-manipulation"
-          >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[14px] bg-primary/10 text-primary">
-              <MobileContextIcon className="h-4 w-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[9px] font-medium uppercase tracking-[0.15em] text-tertiary">{t('app.shortName')}</div>
-              <div className="truncate text-[13px] font-semibold leading-tight text-foreground">{mobileContext.title}</div>
-              <div className="truncate text-[10px] leading-tight text-muted-foreground">{mobileContext.subtitle}</div>
-            </div>
-          </Link>
+              <Link
+                href={router.pathname === '/home' ? '/home' : router.asPath}
+                className="mobile-shell-panel flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 touch-manipulation"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[14px] bg-primary/10 text-primary">
+                  <MobileContextIcon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[9px] font-medium uppercase tracking-[0.15em] text-tertiary">{t('app.shortName')}</div>
+                  <div className="truncate text-[13px] font-semibold leading-tight text-foreground">{mobileContext.title}</div>
+                  <div className="truncate text-[10px] leading-tight text-muted-foreground">{mobileContext.subtitle}</div>
+                </div>
+              </Link>
 
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onCommandPaletteOpen}
-            className="mobile-touch-strip h-10 w-10 shrink-0 border-0 px-0 shadow-none shell-frost touch-manipulation"
-            aria-label={t('header.openCommandPalette')}
-          >
-            <Search className="h-4 w-4" />
-          </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={onCommandPaletteOpen}
+                className="mobile-touch-strip h-10 w-10 shrink-0 border-0 px-0 shadow-none shell-frost touch-manipulation"
+                aria-label={t('header.openCommandPalette')}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            </>
+          )}
 
           <Link href="/notifications" className="relative mobile-shell-panel flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] border touch-manipulation">
             <Bell className="h-4 w-4 text-foreground" />

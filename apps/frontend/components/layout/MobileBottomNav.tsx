@@ -68,9 +68,9 @@ function getRoleBottomNav(role: string, t: (key: string) => string): NavItem[] {
       ];
     case 'RESIDENT':
       return [
-        { label: t('nav.homeOverview'), hint: 'היום', href: '/home', icon: Home },
-        { label: t('nav.residentRequests'), hint: 'בקשות', href: '/resident/requests', icon: ClipboardList },
-        { label: t('nav.tickets'), hint: 'שירות', href: '/tickets', icon: Ticket },
+        { label: 'בית', hint: 'ראשי', href: '/resident/account', icon: Home },
+        { label: 'בקשות', hint: 'מעקב', href: '/resident/requests', icon: ClipboardList },
+        { label: 'תשלומים', hint: 'חיובים', href: '/resident/account#payments-section', icon: CreditCard },
       ];
     case 'ACCOUNTANT':
       return [
@@ -87,6 +87,27 @@ function getRoleBottomNav(role: string, t: (key: string) => string): NavItem[] {
 }
 
 function getRoleSecondaryGroups(role: string, t: (key: string) => string): SecondaryGroup[] {
+  if (role === 'RESIDENT') {
+    return [
+      {
+        title: 'שירות ותמיכה',
+        items: [
+          { label: t('nav.newTicket'), hint: 'פתיחת קריאה', href: '/create-call', icon: Ticket },
+          { label: t('nav.notifications'), hint: 'מרכז עדכונים', href: '/notifications', icon: Bell },
+          { label: 'צור קשר', hint: 'תמיכה ונציג בניין', href: '/support', icon: MessageCircle },
+        ],
+      },
+      {
+        title: 'חשבון ובניין',
+        items: [
+          { label: t('nav.documents'), hint: 'פרוטוקולים וקבצים', href: '/documents', icon: Folder },
+          { label: 'הבניין שלי', hint: 'אנשי קשר ומידע', href: '/resident/account#building-section', icon: Building },
+          { label: t('shell.settings'), hint: 'העדפות אישיות', href: '/settings', icon: Settings },
+        ],
+      },
+    ];
+  }
+
   const groups: SecondaryGroup[] = [];
 
   const operations: NavItem[] = [];
@@ -210,13 +231,26 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
 
   const primaryItems = getRoleBottomNav(userRole, t);
   const secondaryGroups = getRoleSecondaryGroups(userRole, t);
+  const isResident = userRole === 'RESIDENT';
 
   const isActive = (href: string) => {
+    if (href === '/resident/account') {
+      return router.pathname === '/resident/account' && !router.asPath.includes('#');
+    }
+    if (href.includes('#')) {
+      const [basePath, hash] = href.split('#');
+      return router.pathname === basePath && router.asPath.includes(`#${hash}`);
+    }
     if (href === '/' || href === '/home') {
       return router.pathname === '/' || router.pathname === '/home';
     }
     return router.pathname.startsWith(href);
   };
+
+  const isMoreRouteActive = isResident
+    ? ['/documents', '/notifications', '/support', '/settings', '/create-call'].some((path) => router.pathname.startsWith(path)) ||
+      (router.pathname === '/resident/account' && router.asPath.includes('#building-section'))
+    : false;
 
   return (
     <>
@@ -266,13 +300,13 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
             type="button"
             className={cn(
               'relative flex min-h-[54px] flex-col items-center justify-center gap-0.5 rounded-[18px] px-1 py-1.5 text-[10px] font-medium transition-colors touch-manipulation active:scale-95',
-              moreOpen ? 'text-primary' : 'text-muted-foreground',
+              moreOpen || isMoreRouteActive ? 'text-primary' : 'text-muted-foreground',
             )}
             onClick={() => setMoreOpen(!moreOpen)}
             aria-expanded={moreOpen}
             aria-label={t('bottomNav.more')}
           >
-            {moreOpen ? (
+            {moreOpen || isMoreRouteActive ? (
               <span className="absolute inset-0 rounded-[18px] bg-primary/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]" />
             ) : null}
             <span className="relative z-10 flex h-7 w-7 items-center justify-center">
@@ -319,7 +353,9 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-semibold">{t('bottomNav.moreMenu')}</h2>
-              <p className="text-xs text-muted-foreground">פעולות משלימות לפי משימה, לא לפי מבנה ארגוני.</p>
+              <p className="text-xs text-muted-foreground">
+                {isResident ? 'כלים משלימים למסמכים, תמיכה והגדרות אישיות.' : 'פעולות משלימות לפי משימה, לא לפי מבנה ארגוני.'}
+              </p>
             </div>
           <button
             type="button"

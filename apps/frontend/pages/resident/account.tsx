@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { type ComponentType, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import {
   AlertTriangle,
+  Bell,
   Building2,
   CalendarClock,
   ChevronDown,
   ChevronUp,
+  ClipboardList,
   CreditCard,
   Download,
   FileText,
@@ -22,17 +24,13 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { EmptyState } from '../../components/ui/empty-state';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
-import { MobileActionBar } from '../../components/ui/mobile-action-bar';
-import { MobileActionHub } from '../../components/ui/mobile-action-hub';
-import { MobileContextBar } from '../../components/ui/mobile-context-bar';
-import { MobilePriorityInbox } from '../../components/ui/mobile-priority-inbox';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
 import { PageHero } from '../../components/ui/page-hero';
 import { SectionHeader } from '../../components/ui/section-header';
 import { Switch } from '../../components/ui/switch';
 import { StatusBadge } from '../../components/ui/status-badge';
 import { toast } from '../../components/ui/use-toast';
-import { formatCurrency, formatDate, getPriorityLabel, getStatusLabel, getTicketStatusTone, getUserRoleLabel, humanizeEnum } from '../../lib/utils';
+import { cn, formatCurrency, formatDate, getPriorityLabel, getStatusLabel, getTicketStatusTone, getUserRoleLabel, humanizeEnum } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
 import { websocketService } from '../../lib/websocket';
 import { triggerHaptic } from '../../lib/mobile';
@@ -536,7 +534,6 @@ export default function ResidentAccountPage() {
   const primaryUnit = context.units[0] ?? null;
   const primaryBuilding = primaryUnit?.building ?? null;
   const buildingGuidance = getBuildingGuidance(primaryBuilding?.notes);
-  const recentUpdatesCount = context.documents.slice(0, 4).length + context.recentActivity.slice(0, 4).length;
   const currentYear = new Date().getFullYear();
   const accountDisplayName = context.user.email.split('@')[0];
   const profileChips = [
@@ -587,28 +584,11 @@ export default function ResidentAccountPage() {
           key: 'notification',
           tone: 'neutral' as const,
           label: 'מעודכן',
-          title: 'אין כרגע הודעות שלא נקראו',
-          description: 'התראות חדשות והודעות ועד יופיעו כאן.',
+        title: 'אין כרגע הודעות שלא נקראו',
+        description: 'התראות חדשות והודעות ועד יופיעו כאן.',
       },
   ];
-  const priorityInboxItems = attentionCards.map((item) => ({
-    id: item.key,
-    status:
-      item.tone === 'danger'
-        ? t('status.needsAction')
-        : item.tone === 'warning'
-          ? t('status.waiting')
-          : item.tone === 'active'
-            ? t('status.inProgress')
-            : item.tone === 'success'
-              ? t('status.completed')
-              : t('status.updated'),
-    tone: item.tone,
-    title: item.title,
-    reason: item.description,
-    meta: primaryBuilding?.name || t('residentAccount.mobile.roleLabel'),
-  }));
-  const accountStatusItems = [
+  const heroStatusItems = [
     {
       label: t('residentAccount.metric.balance'),
       value: summary ? formatCurrency(summary.currentBalance) : t('residentAccount.metric.notAvailable'),
@@ -624,135 +604,113 @@ export default function ResidentAccountPage() {
       value: String(unreadNotifications.length),
       hint: unreadNotifications[0]?.title || t('residentAccount.metric.allReviewed'),
     },
+  ];
+  const residentShortcutItems: ResidentShortcutItem[] = [
     {
-      label: t('residentAccount.metric.paymentMode'),
-      value: autopayEnabled ? t('residentAccount.metric.autopayOn') : t('residentAccount.metric.manual'),
-      hint: autopayEnabled ? t('residentAccount.metric.autopayHint') : t('residentAccount.metric.manualHint'),
+      id: 'notifications',
+      label: 'עדכונים',
+      description: unreadNotifications.length ? `${unreadNotifications.length} הודעות חדשות` : 'מרכז ההתראות והודעות הוועד',
+      href: '/notifications',
+      icon: Bell,
+      badge: unreadNotifications.length || undefined,
+    },
+    {
+      id: 'requests',
+      label: 'בקשות',
+      description: 'מעקב מסודר אחרי פניות שירות',
+      href: '/resident/requests',
+      icon: ClipboardList,
+    },
+    {
+      id: 'payments',
+      label: 'תשלומים',
+      description: nextPaymentDue ? `לתשלום ${formatCurrency(nextPaymentDue.amount)}` : 'חיובים, קבלות וכרטסת',
+      onClick: () => scrollToSection('payments-section'),
+      icon: CreditCard,
+      badge: nextPaymentDue ? 'חדש' : undefined,
+    },
+    {
+      id: 'service',
+      label: 'שירות',
+      description: openTickets.length ? `${openTickets.length} קריאות פעילות` : 'פתח קריאת שירות חדשה',
+      href: openTickets.length ? '/tickets' : '/create-call',
+      icon: Wrench,
+    },
+    {
+      id: 'documents',
+      label: 'מסמכים',
+      description: `${context.documents.length} קבצים זמינים`,
+      href: '/documents',
+      icon: FileText,
+    },
+    {
+      id: 'building',
+      label: 'הבניין שלי',
+      description: primaryBuilding?.name || 'אנשי קשר, הנחיות ומתקנים',
+      onClick: () => scrollToSection('building-section'),
+      icon: Building2,
     },
   ];
-  const todayStatusItems = accountStatusItems.slice(0, 3);
 
   return (
-    <div className="space-y-5 sm:space-y-8 pb-28 lg:pb-0">
-      <MobileContextBar
-        roleLabel={t('residentAccount.mobile.roleLabel')}
-        contextLabel={
-          primaryBuilding?.name
-            ? t('residentAccount.mobile.unitLabel', { building: primaryBuilding.name, unit: primaryUnit?.number ?? '—' })
-            : t('residentAccount.mobile.profileLabel')
-        }
-        syncLabel={t('residentAccount.mobile.syncedLabel')}
-        lastUpdated={formatDate(new Date(), locale)}
-        chips={[context.user.email, autopayEnabled ? t('residentAccount.mobile.autopayActive') : t('residentAccount.mobile.manualPayment')]}
-      />
-
+    <div className="space-y-6 pb-16 sm:space-y-8 lg:pb-0">
       <PageHero
         compact
         className="resident-landing-hero"
-        kicker="שירות עצמי לדייר"
+        kicker="פורטל דיירים"
         eyebrow={
           <>
-            <StatusBadge label="האזור האישי" tone="finance" />
+            <StatusBadge label="בית הדייר" tone="finance" />
             {primaryBuilding?.name ? <Badge variant="outline" className="border-white/12 bg-white/8 text-white/82">{primaryBuilding.name}</Badge> : null}
           </>
         }
-        title={`שלום ${accountDisplayName}, זה המצב שלך היום`}
-        description="שלושה סימנים מהירים כדי להבין מה דורש טיפול עכשיו ומה כבר בשליטה."
+        title={`שלום ${accountDisplayName}, הכל מוכן עבורך במקום אחד`}
+        description="תשלומים, בקשות, שירות ומסמכי בניין עם ניווט ברור, פחות עומס ופעולה מהירה מהמסך הראשון."
         actions={
           <>
             <Button asChild>
-              <Link href="/create-call">פתח קריאת שירות</Link>
+              <Link href="/resident/requests">בקשה חדשה</Link>
             </Button>
             <Button variant="outline" className="border-white/15 bg-white/5 text-white hover:bg-white/10" asChild>
-              <Link href="/resident/requests">בקשות דייר</Link>
+              <Link href="/notifications">עדכונים</Link>
             </Button>
           </>
         }
-        aside={<div className="grid gap-2.5 sm:grid-cols-3 sm:gap-3">{todayStatusItems.map((item) => <SummaryCard key={item.label} label={item.label} value={item.value} description={item.hint} />)}</div>}
       />
 
-      <MobilePriorityInbox
-        title={t('residentAccount.priorityTitle')}
-        subtitle={t('residentAccount.prioritySubtitle')}
-        items={priorityInboxItems}
-      />
+      <section className="grid gap-3 sm:grid-cols-3" aria-label="מצב חשבון מהיר">
+        {heroStatusItems.map((item) => (
+          <ResidentStatusCard key={item.label} label={item.label} value={item.value} description={item.hint} />
+        ))}
+      </section>
 
-      <MobileActionHub
-        title={t('residentAccount.primaryActionsTitle')}
-        subtitle="פעולות מהירות לתשלום, בקשות, שירות ומסמכים."
-        items={[
-          {
-            id: 'pay',
-            label: 'שלם',
-            description: nextPaymentDue ? `לתשלום ${formatCurrency(nextPaymentDue.amount)}` : 'אין יתרה מיידית',
-            icon: CreditCard,
-            accent: nextPaymentDue ? 'warning' : 'success',
-            onClick: () => scrollToSection('payments-section'),
-          },
-          {
-            id: 'requests',
-            label: 'בקשות',
-            description: 'מעקב אחרי פניות ועדכונים',
-            href: '/resident/requests',
-            icon: MessageSquare,
-            accent: 'primary',
-          },
-          {
-            id: 'service',
-            label: 'שירות',
-            description: openTickets[0] ? `קריאה #${openTickets[0].id}` : 'אין קריאות פתוחות',
-            onClick: () => scrollToSection('tickets-section'),
-            icon: Wrench,
-            accent: openTickets.length ? 'info' : 'neutral',
-          },
-          {
-            id: 'documents',
-            label: 'מסמכים',
-            description: `${context.documents.length} זמינים`,
-            href: '/documents',
-            icon: FileText,
-            accent: 'neutral',
-          },
-        ]}
-      />
-
-      <Card variant="muted">
-        <CardContent className="grid gap-3 p-4 sm:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-[24px] border border-subtle-border bg-background/84 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-[11px] tracking-[0.2em] text-tertiary">{t('residentAccount.accountStatusTitle')}</div>
-                <div className="mt-2 text-lg font-semibold text-foreground">{accountDisplayName}</div>
-                <div className="mt-1 text-sm text-muted-foreground">{context.user.email}</div>
-              </div>
-              <Badge variant="finance">{getUserRoleLabel(context.user.role)}</Badge>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {profileChips.map((item) => (
-                <Badge key={item} variant="outline">{item}</Badge>
-              ))}
-            </div>
+      <section className="space-y-3" aria-label="ניווט מהיר לדייר">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">ניווט מהיר</h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              הפעולות החשובות של הדייר מרוכזות כאן, עם שפה פשוטה וגישה מיידית.
+            </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            {todayStatusItems.map((item) => (
-              <div key={item.label} className="rounded-[20px] border border-subtle-border bg-background/84 p-3 sm:rounded-[22px] sm:p-4">
-                <div className="text-[10px] uppercase tracking-[0.2em] text-tertiary sm:text-[11px]">{item.label}</div>
-                <div className="mt-1.5 text-base font-semibold text-foreground sm:mt-2 sm:text-lg">{item.value}</div>
-                <div className="mt-1 text-xs text-muted-foreground sm:text-sm">{item.hint}</div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+          <Badge variant="outline" className="hidden sm:inline-flex">
+            {autopayEnabled ? t('residentAccount.mobile.autopayActive') : t('residentAccount.mobile.manualPayment')}
+          </Badge>
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          {residentShortcutItems.map((item) => (
+            <ResidentShortcutTile key={item.id} item={item} />
+          ))}
+        </div>
+      </section>
 
       <div className="grid gap-3 sm:gap-4 xl:grid-cols-[0.95fr_1.05fr]">
         <Card variant="featured">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-primary" />
-              {t('residentAccount.timelineTitle')}
+              מה חדש היום
             </CardTitle>
-            <CardDescription>{t('residentAccount.timelineSubtitle')}</CardDescription>
+            <CardDescription>עדכונים חשובים, מה דורש טיפול ומה כבר התקדם מאז הכניסה הקודמת.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2.5 sm:gap-3">
             {attentionCards.map((item) => (
@@ -773,9 +731,9 @@ export default function ResidentAccountPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-primary" />
-              פרופיל ומבנה מגורים
+              פרופיל, חשבון וגישה מהירה
             </CardTitle>
-            <CardDescription>זהות, יחידות וקיצורים שימושיים מרוכזים יחד כדי להפוך את האזור האישי למסך תפעולי ולא רק מידע.</CardDescription>
+            <CardDescription>מידע אישי ברור, פרטי היחידה וגישה שקטה להגדרות ולמסמכים בלי להעמיס על ראש המסך.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 sm:space-y-5">
             <div className="rounded-[24px] border border-subtle-border bg-muted/24 p-4">
@@ -815,23 +773,16 @@ export default function ResidentAccountPage() {
                 </div>
               </div>
               <div className="rounded-xl sm:rounded-[20px] border border-subtle-border bg-background p-3 sm:p-4">
-                <div className="text-xs sm:text-sm font-semibold text-foreground">סטטוס אישי</div>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-xs sm:text-sm">
+                <div className="text-xs sm:text-sm font-semibold text-foreground">תמונת מצב אישית</div>
+                <div className="mt-2 space-y-2 text-xs sm:text-sm text-muted-foreground">
                   <div className="rounded-[18px] border border-subtle-border/70 bg-muted/20 px-3 py-2.5">
-                    <div className="text-tertiary">תשלומים פתוחים</div>
-                    <div className="mt-1 font-semibold text-foreground">{summary?.unpaidInvoices ?? 0}</div>
+                    {autopayEnabled ? 'חיוב אוטומטי פעיל ומוכן לחשבוניות עתידיות.' : 'חיובים כרגע מתבצעים ידנית דרך האזור האישי.'}
                   </div>
                   <div className="rounded-[18px] border border-subtle-border/70 bg-muted/20 px-3 py-2.5">
-                    <div className="text-tertiary">התראות חדשות</div>
-                    <div className="mt-1 font-semibold text-foreground">{unreadNotifications.length}</div>
+                    {summary?.overdueInvoices ? `${summary.overdueInvoices} חשבוניות דורשות טיפול בהקדם.` : 'אין כרגע פיגורים או חריגות בחשבון.'}
                   </div>
                   <div className="rounded-[18px] border border-subtle-border/70 bg-muted/20 px-3 py-2.5">
-                    <div className="text-tertiary">קריאות פתוחות</div>
-                    <div className="mt-1 font-semibold text-foreground">{openTickets.length}</div>
-                  </div>
-                  <div className="rounded-[18px] border border-subtle-border/70 bg-muted/20 px-3 py-2.5">
-                    <div className="text-tertiary">מסמכים זמינים</div>
-                    <div className="mt-1 font-semibold text-foreground">{context.documents.length}</div>
+                    {openTickets.length ? `יש ${openTickets.length} קריאות פתוחות במעקב.` : 'אין כרגע קריאות שירות פתוחות.'}
                   </div>
                 </div>
               </div>
@@ -842,7 +793,7 @@ export default function ResidentAccountPage() {
                 <Link href="/settings">העדפות</Link>
               </Button>
               <Button variant="outline" size="sm" className="justify-between sm:h-11 sm:px-5 sm:text-sm" asChild>
-                <Link href="/resident/requests">בקשות דייר</Link>
+                <Link href="/documents">מסמכים</Link>
               </Button>
               <Button variant="outline" size="sm" className="col-span-2 sm:col-span-1 justify-between sm:h-11 sm:px-5 sm:text-sm" onClick={() => void loadAccount()}>
                 רענן נתונים
@@ -1265,7 +1216,7 @@ export default function ResidentAccountPage() {
         </section>
       </div>
 
-      <section className="space-y-3 sm:space-y-4">
+      <section id="building-section" className="space-y-3 sm:space-y-4">
         <SectionHeader
           title="הבניין שלי"
           subtitle="אנשי קשר, הנחיות חירום ושירותי הבניין."
@@ -1362,34 +1313,68 @@ export default function ResidentAccountPage() {
         </Card>
       </section>
 
-      <MobileActionBar
-        title={nextPaymentDue ? `לתשלום כעת ${formatCurrency(nextPaymentDue.amount)}` : 'כל החשבוניות מעודכנות'}
-        description="פתיחה מהירה של התשלום, קריאת שירות ובקשות דייר בלי לחפש בתוך המסך."
-        aside={
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/resident/requests">בקשות דייר</Link>
-          </Button>
-        }
-      >
-        <div className="grid gap-2.5 sm:grid-cols-2">
-          <Button onClick={() => (nextPaymentDue ? void initiatePayment(nextPaymentDue.id) : scrollToSection('payments-section'))} disabled={Boolean(nextPaymentDue && processingInvoiceId === nextPaymentDue.id)}>
-            {nextPaymentDue ? 'שלם עכשיו' : 'צפה בתשלומים'}
-          </Button>
-          <Button variant="outline" onClick={() => void router.push('/create-call')}>
-            פתח קריאה
-          </Button>
-        </div>
-      </MobileActionBar>
     </div>
   );
 }
 
-function SummaryCard({ label, value, description }: { label: string; value: string | number; description: string }) {
+function ResidentStatusCard({ label, value, description }: { label: string; value: string | number; description: string }) {
   return (
-    <div className="rounded-xl sm:rounded-[20px] border border-white/12 bg-white/7 p-2.5 sm:p-3.5">
-      <div className="text-[10px] sm:text-xs tracking-[0.12em] text-white/65">{label}</div>
-      <div className="mt-1 text-lg font-black text-white sm:mt-2 sm:text-2xl">{value}</div>
-      <div className="mt-0.5 text-[11px] text-white/75 sm:mt-1 sm:text-sm">{description}</div>
+    <div className="rounded-[24px] border border-subtle-border bg-card/96 p-4 shadow-card">
+      <div className="text-[10px] uppercase tracking-[0.2em] text-tertiary">{label}</div>
+      <div className="mt-2 text-xl font-black text-foreground sm:text-2xl">{value}</div>
+      <div className="mt-1 text-sm leading-6 text-muted-foreground">{description}</div>
     </div>
+  );
+}
+
+type ResidentShortcutItem = {
+  id: string;
+  label: string;
+  description: string;
+  icon: ComponentType<{ className?: string }>;
+  href?: string;
+  onClick?: () => void;
+  badge?: string | number;
+};
+
+function ResidentShortcutTile({ item }: { item: ResidentShortcutItem }) {
+  const Icon = item.icon;
+  const className =
+    'group flex min-h-[154px] flex-col rounded-[30px] border border-subtle-border bg-card/96 p-4 text-start shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/26 hover:shadow-raised active:translate-y-0';
+
+  const content = (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-primary/14 bg-[radial-gradient(circle_at_32%_28%,rgba(255,255,255,0.96),rgba(255,255,255,0.72)_42%,rgba(212,168,8,0.18)_43%,rgba(212,168,8,0.1)_100%)] text-primary shadow-[0_12px_28px_rgba(18,24,38,0.08),inset_0_1px_0_rgba(255,255,255,0.85)]">
+          <Icon className="h-7 w-7" />
+        </span>
+        {item.badge !== undefined ? (
+          <span className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+            {item.badge}
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-4 space-y-1.5">
+        <div className="text-base font-semibold text-foreground">{item.label}</div>
+        <div className="line-clamp-2 text-sm leading-6 text-muted-foreground">{item.description}</div>
+      </div>
+      <div className="mt-auto pt-4 text-xs font-semibold uppercase tracking-[0.18em] text-tertiary">
+        פתח
+      </div>
+    </>
+  );
+
+  if (item.href) {
+    return (
+      <Link href={item.href} className={className}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" onClick={item.onClick} className={cn(className, !item.onClick && 'pointer-events-none')}>
+      {content}
+    </button>
   );
 }
