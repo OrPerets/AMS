@@ -113,7 +113,7 @@ export default function NewUnitPage() {
         </div>
         <Button asChild variant="outline">
           <Link href={form.buildingId ? `/buildings/${form.buildingId}` : '/buildings'}>
-            <ArrowLeft className="me-2 h-4 w-4" />
+            <ArrowLeft className="me-2 h-4 w-4 icon-directional" />
             חזרה
           </Link>
         </Button>

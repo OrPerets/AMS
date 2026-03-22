@@ -162,24 +162,24 @@ export default function Header({
       className
     )}>
       <div className="container px-3 sm:px-6">
-        <div className="flex items-center gap-2 py-2 md:hidden">
-          <Link href="/home" className="mobile-shell-panel flex h-11 w-11 items-center justify-center rounded-[20px] border">
-            <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-primary text-xs font-bold text-primary-foreground shadow-card">
+        <div className="flex items-center gap-1.5 py-2 md:hidden" style={{ maxWidth: '100vw' }}>
+          <Link href="/home" className="mobile-shell-panel flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] border touch-manipulation">
+            <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-card">
               A
             </div>
           </Link>
 
           <Link
             href={router.pathname === '/home' ? '/home' : router.asPath}
-            className="mobile-shell-panel flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5"
+            className="mobile-shell-panel flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 touch-manipulation"
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[18px] bg-primary/10 text-primary">
-              <MobileContextIcon className="h-4.5 w-4.5" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[14px] bg-primary/10 text-primary">
+              <MobileContextIcon className="h-4 w-4" />
             </div>
-            <div className="min-w-0">
-              <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-tertiary">{t('app.shortName')}</div>
-              <div className="truncate text-sm font-semibold text-foreground">{mobileContext.title}</div>
-              <div className="truncate text-[11px] text-muted-foreground">{mobileContext.subtitle}</div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[9px] font-medium uppercase tracking-[0.15em] text-tertiary">{t('app.shortName')}</div>
+              <div className="truncate text-[13px] font-semibold leading-tight text-foreground">{mobileContext.title}</div>
+              <div className="truncate text-[10px] leading-tight text-muted-foreground">{mobileContext.subtitle}</div>
             </div>
           </Link>
 
@@ -187,14 +187,14 @@ export default function Header({
             variant="outline"
             size="icon"
             onClick={onCommandPaletteOpen}
-            className="mobile-touch-strip h-11 w-11 border-0 px-0 shadow-none shell-frost"
+            className="mobile-touch-strip h-10 w-10 shrink-0 border-0 px-0 shadow-none shell-frost touch-manipulation"
             aria-label={t('header.openCommandPalette')}
           >
             <Search className="h-4 w-4" />
           </Button>
 
-          <Link href="/notifications" className="relative mobile-shell-panel flex h-11 w-11 items-center justify-center rounded-[20px] border">
-            <Bell className="h-4.5 w-4.5 text-foreground" />
+          <Link href="/notifications" className="relative mobile-shell-panel flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] border touch-manipulation">
+            <Bell className="h-4 w-4 text-foreground" />
             {unreadCount > 0 && (
               <span className="absolute -end-0.5 -top-0.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
                 {unreadCount > 9 ? '9+' : unreadCount}
@@ -202,7 +202,7 @@ export default function Header({
             )}
           </Link>
 
-          <div className="mobile-shell-panel rounded-full border p-0.5">
+          <div className="mobile-shell-panel shrink-0 rounded-full border p-0.5 touch-manipulation">
             <UserMenu />
           </div>
         </div>

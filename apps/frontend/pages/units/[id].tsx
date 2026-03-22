@@ -136,7 +136,7 @@ export default function UnitDetailPage() {
           </Button>
           <Button asChild variant="outline">
             <Link href={`/buildings/${unit.buildingId}`}>
-              <ArrowLeft className="me-2 h-4 w-4" />
+              <ArrowLeft className="me-2 h-4 w-4 icon-directional" />
               חזרה לבניין
             </Link>
           </Button>

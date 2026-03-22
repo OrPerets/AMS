@@ -246,7 +246,7 @@ export default function AssetDetailPage() {
           </Button>
           <Button asChild variant="outline" className="w-full sm:w-auto">
             <Link href="/assets" className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" /> חזרה לרשימה
+              <ArrowLeft className="h-4 w-4 icon-directional" /> חזרה לרשימה
             </Link>
           </Button>
         </div>

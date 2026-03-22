@@ -647,16 +647,16 @@ export default function ResidentAccountPage() {
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-[22px] border border-subtle-border bg-background/84 p-4">
-              <div className="text-[11px] uppercase tracking-[0.2em] text-tertiary">יתרה</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">{summary ? formatCurrency(summary.currentBalance) : 'לא זמין'}</div>
-              <div className="mt-1 text-sm text-muted-foreground">תמונת מצב מיידית של החשבון</div>
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            <div className="rounded-[20px] border border-subtle-border bg-background/84 p-3 sm:rounded-[22px] sm:p-4">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-tertiary sm:text-[11px]">יתרה</div>
+              <div className="mt-1.5 text-base font-semibold text-foreground sm:mt-2 sm:text-lg">{summary ? formatCurrency(summary.currentBalance) : 'לא זמין'}</div>
+              <div className="mt-1 text-xs text-muted-foreground sm:text-sm">תמונת מצב מיידית של החשבון</div>
             </div>
-            <div className="rounded-[22px] border border-subtle-border bg-background/84 p-4">
-              <div className="text-[11px] uppercase tracking-[0.2em] text-tertiary">עדכונים</div>
-              <div className="mt-2 text-lg font-semibold text-foreground">{unreadNotifications.length}</div>
-              <div className="mt-1 text-sm text-muted-foreground">התראות חדשות שממתינות לקריאה</div>
+            <div className="rounded-[20px] border border-subtle-border bg-background/84 p-3 sm:rounded-[22px] sm:p-4">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-tertiary sm:text-[11px]">עדכונים</div>
+              <div className="mt-1.5 text-base font-semibold text-foreground sm:mt-2 sm:text-lg">{unreadNotifications.length}</div>
+              <div className="mt-1 text-xs text-muted-foreground sm:text-sm">התראות חדשות שממתינות לקריאה</div>
             </div>
           </div>
         </CardContent>
