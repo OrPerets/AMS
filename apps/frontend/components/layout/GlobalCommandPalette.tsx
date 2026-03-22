@@ -249,36 +249,36 @@ export function GlobalCommandPalette({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="dark-surface max-w-3xl overflow-hidden border-white/10 bg-slate-950/95 text-white shadow-modal backdrop-blur-xl">
+      <DialogContent className="dark-surface max-w-3xl overflow-hidden border-white/10 bg-slate-950/95 text-white shadow-modal backdrop-blur-xl max-sm:max-h-[calc(100dvh-1.5rem)] max-sm:w-[calc(100vw-1rem)] max-sm:rounded-[20px] max-sm:p-3">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-white">
-            <Command className="h-5 w-5 text-primary" />
-            שכבת פיקוד חוצת-מערכת
+          <DialogTitle className="flex items-center gap-2 text-white max-sm:text-base">
+            <Command className="h-5 w-5 shrink-0 text-primary" />
+            לוח פקודות
           </DialogTitle>
-          <DialogDescription className="text-white/65">
-            חפש מסך, קריאה, בניין או התראה בלי לזכור איפה הם בתפריט.
+          <DialogDescription className="text-white/65 max-sm:text-xs">
+            נווט לקריאה, בניין או תצוגה שמורה מתוך המערכת.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="relative">
-            <Search className="absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45" />
+            <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45 sm:start-4" />
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="לדוגמה: קריאה 104, בניין הרצל, דוחות, התראות"
+              placeholder="חפש קריאה, בניין או תצוגה..."
               autoFocus
-              className="h-12 rounded-2xl border-white/10 bg-white/6 ps-11 text-white placeholder:text-white/35"
+              className="h-11 rounded-2xl border-white/10 bg-white/6 ps-10 text-sm text-white placeholder:text-white/35 sm:h-12 sm:ps-11"
             />
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-            <section className="space-y-3 rounded-[24px] border border-white/10 bg-white/5 p-4">
+          <div className="grid gap-3 sm:gap-4 md:grid-cols-[1fr_1fr]">
+            <section className="max-h-[35vh] space-y-2 overflow-y-auto overscroll-contain rounded-[18px] border border-white/10 bg-white/5 p-3 sm:max-h-none sm:space-y-3 sm:rounded-[24px] sm:p-4">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-white">ניווט מהיר</div>
-                <Badge variant="gold">Cmd/Ctrl + K</Badge>
+                <div className="text-xs font-semibold text-white sm:text-sm">ניווט מהיר</div>
+                <Badge variant="gold" className="hidden sm:inline-flex">Cmd/Ctrl + K</Badge>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {filteredStatic.map((item) => (
                   <PaletteLink
                     key={item.id}
@@ -292,14 +292,14 @@ export function GlobalCommandPalette({
               </div>
             </section>
 
-            <section className="space-y-3 rounded-[24px] border border-white/10 bg-white/5 p-4">
+            <section className="max-h-[35vh] space-y-2 overflow-y-auto overscroll-contain rounded-[18px] border border-white/10 bg-white/5 p-3 sm:max-h-none sm:space-y-3 sm:rounded-[24px] sm:p-4">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-white">תוצאות חיות</div>
+                <div className="text-xs font-semibold text-white sm:text-sm">תוצאות חיות</div>
                 <Badge variant="outline" className="border-white/10 bg-white/5 text-white/70">
                   {loading ? 'טוען' : 'עדכני'}
                 </Badge>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {liveResults.length ? (
                   liveResults.map((item) => (
                     <PaletteLink
@@ -313,13 +313,13 @@ export function GlobalCommandPalette({
                     />
                   ))
                 ) : (
-                  <div className="rounded-[20px] border border-dashed border-white/10 bg-white/4 p-5 text-sm leading-7 text-white/55">
+                  <div className="rounded-[16px] border border-dashed border-white/10 bg-white/4 p-3 text-xs leading-6 text-white/55 sm:rounded-[20px] sm:p-5 sm:text-sm sm:leading-7">
                     <div className="flex items-center gap-2 font-medium text-white/85">
                       <Sparkles className="h-4 w-4 text-primary" />
                       אין התאמות כרגע
                     </div>
-                    <div className="mt-2">
-                      נסה לחפש לפי מספר קריאה, שם בניין או סוג מסך. כשהמערכת עמוסה, זו הדרך הקצרה ביותר להגיע לפעולה הבאה.
+                    <div className="mt-1.5 sm:mt-2">
+                      נסה לחפש לפי מספר קריאה, שם בניין או סוג מסך.
                     </div>
                   </div>
                 )}
@@ -352,16 +352,16 @@ function PaletteLink({
       href={href}
       onClick={onSelect}
       className={cn(
-        'flex items-start gap-3 rounded-[20px] border p-3 text-start transition duration-200 hover:-translate-y-0.5 hover:border-primary/40',
+        'flex items-center gap-2.5 rounded-[16px] border p-2.5 text-start transition duration-200 hover:border-primary/40 sm:items-start sm:gap-3 sm:rounded-[20px] sm:p-3 active:scale-[0.98]',
         tone === 'live' ? 'border-white/10 bg-white/8 hover:bg-white/12' : 'border-white/8 bg-black/20 hover:bg-white/8',
       )}
     >
-      <div className="mt-0.5 rounded-2xl bg-primary/15 p-2 text-primary">
+      <div className="shrink-0 rounded-xl bg-primary/15 p-1.5 text-primary sm:mt-0.5 sm:rounded-2xl sm:p-2">
         <Icon className="h-4 w-4" />
       </div>
-      <div className="space-y-1">
-        <div className="font-medium text-white">{label}</div>
-        <div className="text-sm leading-6 text-white/60">{description}</div>
+      <div className="min-w-0 space-y-0.5 sm:space-y-1">
+        <div className="truncate text-sm font-medium text-white">{label}</div>
+        <div className="line-clamp-1 text-xs leading-5 text-white/60 sm:text-sm sm:leading-6">{description}</div>
       </div>
     </Link>
   );

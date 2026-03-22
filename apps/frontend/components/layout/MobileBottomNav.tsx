@@ -225,7 +225,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
         role="navigation"
         aria-label={t('bottomNav.label')}
       >
-        <div className="grid grid-cols-4 gap-1 px-2 py-2">
+        <div className="grid grid-cols-4 gap-0.5 px-1.5 py-1.5">
           {primaryItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -234,7 +234,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'relative flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[20px] px-1.5 py-2 text-[10px] font-medium transition-colors',
+                  'relative flex min-h-[54px] flex-col items-center justify-center gap-0.5 rounded-[18px] px-1 py-1.5 text-[10px] font-medium transition-colors touch-manipulation active:scale-95',
                   active ? 'text-primary' : 'text-muted-foreground',
                 )}
                 aria-current={active ? 'page' : undefined}
@@ -242,14 +242,14 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                 {active ? (
                   <motion.span
                     layoutId="mobile-bottom-nav-active"
-                    className="absolute inset-0 rounded-[20px] bg-primary/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
+                    className="absolute inset-0 rounded-[18px] bg-primary/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                   />
                 ) : null}
-                <span className="relative z-10 flex h-8 w-8 items-center justify-center rounded-2xl">
-                  <Icon className={cn('h-5 w-5 transition-transform duration-200', active && 'scale-110')} />
+                <span className="relative z-10 flex h-7 w-7 items-center justify-center">
+                  <Icon className={cn('h-[18px] w-[18px] transition-transform duration-200', active && 'scale-110')} />
                 </span>
-                <span className="relative z-10 max-w-[68px] truncate">{item.label}</span>
+                <span className="relative z-10 w-full truncate text-center text-[9px] leading-tight">{item.label}</span>
               </Link>
             );
           })}
@@ -257,7 +257,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
           <button
             type="button"
             className={cn(
-              'relative flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[20px] px-1.5 py-2 text-[10px] font-medium transition-colors',
+              'relative flex min-h-[54px] flex-col items-center justify-center gap-0.5 rounded-[18px] px-1 py-1.5 text-[10px] font-medium transition-colors touch-manipulation active:scale-95',
               moreOpen ? 'text-primary' : 'text-muted-foreground',
             )}
             onClick={() => setMoreOpen(!moreOpen)}
@@ -265,17 +265,17 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
             aria-label={t('bottomNav.more')}
           >
             {moreOpen ? (
-              <span className="absolute inset-0 rounded-[20px] bg-primary/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]" />
+              <span className="absolute inset-0 rounded-[18px] bg-primary/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]" />
             ) : null}
-            <span className="relative z-10 flex h-8 w-8 items-center justify-center rounded-2xl">
-              <MoreHorizontal className="h-5 w-5" />
+            <span className="relative z-10 flex h-7 w-7 items-center justify-center">
+              <MoreHorizontal className="h-[18px] w-[18px]" />
               {unreadNotifications > 0 ? (
-                <span className="absolute -end-2 -top-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                <span className="absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground">
                   {unreadNotifications > 9 ? '9+' : unreadNotifications}
                 </span>
               ) : null}
             </span>
-            <span className="relative z-10">{t('bottomNav.more')}</span>
+            <span className="relative z-10 text-[9px] leading-tight">{t('bottomNav.more')}</span>
           </button>
         </div>
       </nav>
@@ -293,10 +293,11 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
       <div
         ref={moreSheetRef}
         className={cn(
-          'fixed inset-x-0 bottom-0 z-50 max-h-[78vh] overflow-y-auto rounded-t-[30px] border-t bg-background shadow-modal md:hidden',
+          'fixed inset-x-0 bottom-0 z-50 max-h-[78vh] overflow-y-auto overscroll-contain rounded-t-[28px] border-t bg-background shadow-modal md:hidden',
           'transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
           moreOpen ? 'translate-y-0' : 'translate-y-full',
         )}
+        style={{ WebkitOverflowScrolling: 'touch' }}
         role="dialog"
         aria-modal="true"
         aria-label={t('bottomNav.moreMenu')}

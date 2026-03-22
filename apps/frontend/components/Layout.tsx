@@ -175,7 +175,8 @@ export default function Layout({ children }: Props) {
       
       {/* Main Content */}
       <main className={cn(
-        "app-main mobile-premium-shell flex min-w-0 flex-col overflow-hidden",
+        "app-main mobile-premium-shell flex min-w-0 flex-col",
+        "overflow-x-hidden overflow-y-hidden",
         sidebarCollapsed ? "md:ms-16" : "md:ms-64",
         "transition-all duration-300"
       )} id="main-content" tabIndex={-1}>
@@ -187,9 +188,13 @@ export default function Layout({ children }: Props) {
         </div>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-x-hidden overflow-y-auto min-h-0" data-scroll-container="app">
+        <div
+          className="flex-1 overflow-x-hidden overflow-y-auto min-h-0"
+          data-scroll-container="app"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           <div
-            className="container min-h-full px-3 py-3 sm:px-6 sm:py-6 safe-pb"
+            className="container min-h-full max-w-full px-3 py-3 sm:px-6 sm:py-6 safe-pb"
             style={
               totalOffset > 0
                 ? { paddingBottom: `max(calc(env(safe-area-inset-bottom, 0px) + 1rem), ${totalOffset + 20}px)` }
