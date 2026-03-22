@@ -258,7 +258,7 @@ export default function CreateCall() {
           size="icon"
           onClick={() => router.back()}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4 icon-directional" />
         </Button>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">פתיחת קריאת שירות</h1>
