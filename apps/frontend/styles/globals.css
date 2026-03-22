@@ -699,7 +699,7 @@
   @media (max-width: 768px) {
     [data-scroll-container] {
       -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain;
+      overscroll-behavior-y: auto;
       scroll-behavior: auto;
       touch-action: pan-y pinch-zoom;
     }

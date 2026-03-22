@@ -176,10 +176,10 @@ export default function Layout({ children }: Props) {
       {/* Main Content */}
       <main className={cn(
         "app-main mobile-premium-shell flex min-w-0 flex-col",
-        "overflow-x-hidden overflow-y-hidden",
+        "overflow-x-hidden overflow-y-auto",
         sidebarCollapsed ? "md:ms-16" : "md:ms-64",
         "transition-all duration-300"
-      )} id="main-content" tabIndex={-1}>
+      )} id="main-content" tabIndex={-1} data-scroll-container="app" style={{ WebkitOverflowScrolling: 'touch' }}>
         {/* Breadcrumbs */}
         <div className="hidden border-b bg-background/72 backdrop-blur-sm md:block">
           <div className="container px-3 py-2 sm:px-6 sm:py-3">
@@ -189,9 +189,7 @@ export default function Layout({ children }: Props) {
 
         {/* Page Content */}
         <div
-          className="flex-1 overflow-x-hidden overflow-y-auto min-h-0"
-          data-scroll-container="app"
-          style={{ WebkitOverflowScrolling: 'touch' }}
+          className="flex-1 min-h-0 overflow-x-hidden"
         >
           <div
             className="container min-h-full max-w-full px-3 py-3 sm:px-6 sm:py-6 safe-pb"
