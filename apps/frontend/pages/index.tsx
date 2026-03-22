@@ -14,8 +14,21 @@ import {
   CheckCircle2,
   Lock,
   BarChart3,
+  Download,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { getDefaultRoute, isAuthenticated } from '../lib/auth';
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+};
+
+declare global {
+  interface Window {
+    __amitDeferredInstallPrompt?: BeforeInstallPromptEvent | null;
+  }
+}
 
 const glassPanelClass =
   'relative overflow-hidden rounded-[2rem] border border-[#d4a808]/18 bg-white/[0.045] backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.35)]';
@@ -30,6 +43,8 @@ export default function LandingPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [init, setInit] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
   const prefersReducedMotion = useReducedMotion();
   const { scrollY } = useScroll();
   const y1 = useTransform(scrollY, [0, 300], [0, 200]);
@@ -51,6 +66,36 @@ export default function LandingPage() {
     }
   }, [prefersReducedMotion]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const standalone =
+      window.matchMedia?.('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+    setIsStandalone(standalone);
+    setInstallPrompt(window.__amitDeferredInstallPrompt ?? null);
+
+    const handlePendingPrompt = () => {
+      setInstallPrompt(window.__amitDeferredInstallPrompt ?? null);
+    };
+
+    const handleInstalled = () => {
+      setInstallPrompt(null);
+      setIsStandalone(true);
+    };
+
+    window.addEventListener('amit:beforeinstallprompt', handlePendingPrompt);
+    window.addEventListener('amit:appinstalled', handleInstalled);
+
+    return () => {
+      window.removeEventListener('amit:beforeinstallprompt', handlePendingPrompt);
+      window.removeEventListener('amit:appinstalled', handleInstalled);
+    };
+  }, []);
+
   const particlesLoaded = useCallback(async (_container: any) => {}, []);
 
   const [heroRef, heroInView] = useInView({ threshold: 0.3, triggerOnce: true });
@@ -71,6 +116,40 @@ export default function LandingPage() {
 
   const handleGardenersManagementClick = () => {
     window.open('https://amit-gardens.vercel.app/', '_blank');
+  };
+
+  const handleInstallClick = async () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (installPrompt) {
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+
+      if (choice.outcome === 'accepted') {
+        setInstallPrompt(null);
+        window.__amitDeferredInstallPrompt = null;
+      }
+
+      return;
+    }
+
+    const ua = window.navigator.userAgent.toLowerCase();
+    const isAndroid = /android/.test(ua);
+    const isIos = /iphone|ipad|ipod/.test(ua);
+
+    if (isIos) {
+      toast('להתקנת האפליקציה ב-iPhone פתחו את תפריט השיתוף ובחרו "Add to Home Screen".');
+      return;
+    }
+
+    if (isAndroid) {
+      toast('בדפדפן הזה אפשר להוסיף למסך הבית. ב-Chrome תופיע גם אפשרות התקנה מלאה כשהדפדפן מאפשר זאת.');
+      return;
+    }
+
+    toast('כדי להתקין את האפליקציה, פתחו את האתר בדפדפן Chrome או Edge במכשיר נייד.');
   };
 
   if (!mounted) return null;
@@ -308,6 +387,17 @@ export default function LandingPage() {
                   מעבר לניהול גננים
                   <ArrowRight className="mr-2 h-5 w-5 transition-transform group-hover:-translate-x-1" />
                 </Button>
+
+                {!isStandalone ? (
+                  <Button
+                    onClick={() => void handleInstallClick()}
+                    size="lg"
+                    className={`${darkButtonClass} group`}
+                  >
+                    הורד אפליקציה
+                    <Download className="mr-2 h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
+                  </Button>
+                ) : null}
               </div>
             </motion.div>
           </motion.div>
