@@ -594,9 +594,14 @@ export default function ResidentAccountPage() {
       <PageHero
         className="resident-landing-hero"
         kicker="שירות עצמי לדייר"
-        eyebrow={<StatusBadge label="האזור האישי" tone="finance" />}
-        title="האזור האישי של הדייר"
-        description={`שלום ${accountDisplayName}, ריכזנו במקום אחד את מה שצריך לדעת עכשיו: תשלום קרוב, פניות פתוחות, מסמכים חדשים ופרטי הבניין.`}
+        eyebrow={
+          <>
+            <StatusBadge label="האזור האישי" tone="finance" />
+            {primaryBuilding?.name ? <Badge variant="outline" className="border-white/12 bg-white/8 text-white/82">{primaryBuilding.name}</Badge> : null}
+          </>
+        }
+        title={`שלום ${accountDisplayName}, זה המצב שלך היום`}
+        description="המסך הזה מרכז את מצב החשבון, קריאות השירות, מסמכים ועדכוני בניין בלי לחפש בין כמה אזורים נפרדים."
         actions={
           <>
             <Button variant="hero" asChild>
@@ -629,6 +634,30 @@ export default function ResidentAccountPage() {
           </div>
         }
       />
+
+      <Card variant="featured">
+        <CardContent className="space-y-4 p-4 sm:p-5">
+          <SectionHeader
+            title="קיצורים ראשיים"
+            subtitle="הפעולות הנפוצות ביותר מהאזור האישי, כדי שהמסך הראשון כבר יענה על השאלה לאן ממשיכים."
+            meta="גישה מהירה"
+          />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Button variant="outline" className="justify-between" onClick={() => scrollToSection('payments-section')}>
+              תשלומים
+            </Button>
+            <Button variant="outline" className="justify-between" onClick={() => scrollToSection('tickets-section')}>
+              קריאות שירות
+            </Button>
+            <Button variant="outline" className="justify-between" asChild>
+              <Link href="/notifications">התראות</Link>
+            </Button>
+            <Button variant="outline" className="justify-between" asChild>
+              <Link href="/documents">מסמכים</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card variant="muted">
         <CardContent className="grid gap-3 p-4 sm:grid-cols-[1.1fr_0.9fr]">
@@ -692,30 +721,64 @@ export default function ResidentAccountPage() {
               <Building2 className="h-5 w-5 text-primary" />
               פרופיל ומבנה מגורים
             </CardTitle>
-            <CardDescription>פרטים אישיים, יחידות משויכות ופעולות מהירות שממשיכות איתך גם במובייל.</CardDescription>
+            <CardDescription>זהות, יחידות וקיצורים שימושיים מרוכזים יחד כדי להפוך את האזור האישי למסך תפעולי ולא רק מידע.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 sm:space-y-5">
-            <div className="grid gap-2.5 sm:gap-4 md:grid-cols-2">
-              <div className="rounded-xl sm:rounded-[20px] border border-subtle-border bg-muted/30 p-3 sm:p-4">
-                <div className="text-xs sm:text-sm font-semibold text-foreground">{context.user.email}</div>
-                <div className="mt-1.5 sm:mt-2 flex flex-wrap items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                  <Badge variant="finance">{getUserRoleLabel(context.user.role)}</Badge>
-                  {context.user.phone ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                      {context.user.phone}
-                    </span>
-                  ) : null}
+            <div className="rounded-[24px] border border-subtle-border bg-muted/24 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-primary/12 text-base font-bold text-primary shadow-sm">
+                    {accountDisplayName.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-base font-semibold text-foreground">{context.user.email}</div>
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                      <Badge variant="finance">{getUserRoleLabel(context.user.role)}</Badge>
+                      {context.user.phone ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Phone className="h-3.5 w-3.5" />
+                          {context.user.phone}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/settings">העדפות חשבון</Link>
+                </Button>
               </div>
-              <div className="rounded-xl sm:rounded-[20px] border border-subtle-border bg-muted/30 p-3 sm:p-4">
+            </div>
+
+            <div className="grid gap-2.5 sm:gap-4 md:grid-cols-2">
+              <div className="rounded-xl sm:rounded-[20px] border border-subtle-border bg-background p-3 sm:p-4">
                 <div className="text-xs sm:text-sm font-semibold text-foreground">דירות ובניינים</div>
-                <div className="mt-1.5 sm:mt-2 space-y-1.5 text-xs sm:text-sm text-muted-foreground">
+                <div className="mt-2 space-y-2 text-xs sm:text-sm text-muted-foreground">
                   {context.units.map((unit) => (
-                    <div key={unit.id}>
+                    <div key={unit.id} className="rounded-[18px] border border-subtle-border/70 bg-muted/20 px-3 py-2.5">
                       {unit.building.name} · דירה {unit.number}
                     </div>
                   ))}
+                </div>
+              </div>
+              <div className="rounded-xl sm:rounded-[20px] border border-subtle-border bg-background p-3 sm:p-4">
+                <div className="text-xs sm:text-sm font-semibold text-foreground">סטטוס אישי</div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs sm:text-sm">
+                  <div className="rounded-[18px] border border-subtle-border/70 bg-muted/20 px-3 py-2.5">
+                    <div className="text-tertiary">תשלומים פתוחים</div>
+                    <div className="mt-1 font-semibold text-foreground">{summary?.unpaidInvoices ?? 0}</div>
+                  </div>
+                  <div className="rounded-[18px] border border-subtle-border/70 bg-muted/20 px-3 py-2.5">
+                    <div className="text-tertiary">התראות חדשות</div>
+                    <div className="mt-1 font-semibold text-foreground">{unreadNotifications.length}</div>
+                  </div>
+                  <div className="rounded-[18px] border border-subtle-border/70 bg-muted/20 px-3 py-2.5">
+                    <div className="text-tertiary">קריאות פתוחות</div>
+                    <div className="mt-1 font-semibold text-foreground">{openTickets.length}</div>
+                  </div>
+                  <div className="rounded-[18px] border border-subtle-border/70 bg-muted/20 px-3 py-2.5">
+                    <div className="text-tertiary">מסמכים זמינים</div>
+                    <div className="mt-1 font-semibold text-foreground">{context.documents.length}</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -921,7 +984,7 @@ export default function ResidentAccountPage() {
         </div>
       </section>
 
-      <section className="space-y-3 sm:space-y-4">
+      <section id="tickets-section" className="space-y-3 sm:space-y-4">
         <SectionHeader
           title="קריאות שירות"
           subtitle="סטטוס, שלבי טיפול והיסטוריה."

@@ -15,6 +15,7 @@ export function usePullToRefresh({
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const startYRef = useRef<number | null>(null);
+  const startXRef = useRef<number | null>(null);
   const shouldTrackRef = useRef(false);
   const refreshRef = useRef(onRefresh);
   const pullDistanceRef = useRef(0);
@@ -34,6 +35,7 @@ export function usePullToRefresh({
 
     const reset = () => {
       startYRef.current = null;
+      startXRef.current = null;
       shouldTrackRef.current = false;
       pullDistanceRef.current = 0;
       setPullDistance(0);
@@ -46,22 +48,40 @@ export function usePullToRefresh({
 
       shouldTrackRef.current = scrollContainer.scrollTop <= 0;
       startYRef.current = shouldTrackRef.current ? event.touches[0].clientY : null;
+      startXRef.current = shouldTrackRef.current ? event.touches[0].clientX : null;
     };
 
     const handleTouchMove = (event: TouchEvent) => {
-      if (!shouldTrackRef.current || startYRef.current === null) {
+      if (!shouldTrackRef.current || startYRef.current === null || startXRef.current === null) {
         return;
       }
 
-      const delta = event.touches[0].clientY - startYRef.current;
-      if (delta <= 0) {
+      if (scrollContainer.scrollTop > 0) {
+        reset();
+        return;
+      }
+
+      const touch = event.touches[0];
+      const deltaY = touch.clientY - startYRef.current;
+      const deltaX = touch.clientX - startXRef.current;
+
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        reset();
+        return;
+      }
+
+      if (deltaY <= 0) {
         pullDistanceRef.current = 0;
         setPullDistance(0);
         return;
       }
 
-      event.preventDefault();
-      const nextDistance = Math.min(delta * 0.6, threshold * 1.4);
+      // Let small gestures scroll naturally; only hijack once an intentional pull begins.
+      if (deltaY > 10 && event.cancelable) {
+        event.preventDefault();
+      }
+
+      const nextDistance = Math.min(deltaY * 0.6, threshold * 1.4);
       pullDistanceRef.current = nextDistance;
       setPullDistance(nextDistance);
     };

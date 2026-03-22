@@ -30,6 +30,7 @@ import { cn } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
 import { getTokenPayload } from '../../lib/auth';
 import { useRegisterBottomSurface } from '../../lib/bottom-surface';
+import { lockAppScroll } from '../../lib/scroll-lock';
 
 type NavItem = {
   label: string;
@@ -187,8 +188,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
 
   useEffect(() => {
     if (!moreOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockAppScroll();
 
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMoreOpen(false);
@@ -196,7 +196,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
     document.addEventListener('keydown', handleKey);
 
     return () => {
-      document.body.style.overflow = prev;
+      unlock();
       document.removeEventListener('keydown', handleKey);
     };
   }, [moreOpen]);

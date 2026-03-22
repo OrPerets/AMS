@@ -503,8 +503,10 @@ export default function NotificationsPage() {
                     title={item.label}
                     description={item.desc}
                     consequence={item.consequence}
-                    checked={preferences[item.key]}
-                    onCheckedChange={(checked) => setPreferences((current) => ({ ...current, [item.key]: checked }))}
+                    checked={preferences[item.key as keyof NotificationPreferences]}
+                    onCheckedChange={(checked) =>
+                      setPreferences((current) => ({ ...current, [item.key]: checked }))
+                    }
                   />
                 ))}
               </div>
@@ -517,7 +519,7 @@ export default function NotificationsPage() {
                 title={t('notifications.preference.group.topics')}
                 subtitle={t('notifications.preference.group.topicsDesc')}
                 meta={`${topicPrefs.length} ${t('notifications.total')}`}
-                actions={<StatusBadge label={t('notifications.tabPreferences')} tone="info" />}
+                actions={<StatusBadge label={t('notifications.tabPreferences')} tone="active" />}
               />
 
               <div className="grid gap-3 md:grid-cols-2">
@@ -527,8 +529,10 @@ export default function NotificationsPage() {
                     title={item.label}
                     description={item.desc}
                     consequence={item.consequence}
-                    checked={preferences[item.key]}
-                    onCheckedChange={(checked) => setPreferences((current) => ({ ...current, [item.key]: checked }))}
+                    checked={preferences[item.key as keyof NotificationPreferences]}
+                    onCheckedChange={(checked) =>
+                      setPreferences((current) => ({ ...current, [item.key]: checked }))
+                    }
                   />
                 ))}
               </div>

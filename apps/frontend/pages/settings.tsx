@@ -256,7 +256,7 @@ export default function SettingsPage() {
         eyebrow={
           <>
             <StatusBadge label={t('settings.heroBadge')} tone="finance" />
-            <StatusBadge label={direction === 'rtl' ? t('settings.direction.rtl') : t('settings.direction.ltr')} tone="info" />
+            <StatusBadge label={direction === 'rtl' ? t('settings.direction.rtl') : t('settings.direction.ltr')} tone="active" />
           </>
         }
         title={t('settings.heroTitle')}
@@ -487,7 +487,7 @@ export default function SettingsPage() {
                 title={t('settings.section.preferencesTitle')}
                 subtitle={t('settings.section.preferencesSubtitle')}
                 meta={savingPreferences ? t('common.saving') : t('settings.meta.personalized')}
-                actions={<StatusBadge label={`${enabledTopics}/${topicPrefs.length}`} tone="info" />}
+                actions={<StatusBadge label={`${enabledTopics}/${topicPrefs.length}`} tone="active" />}
               />
               <div className="rounded-[24px] border border-subtle-border bg-background/86 p-4 text-sm leading-6 text-muted-foreground">
                 {t('settings.preference.explanation')}

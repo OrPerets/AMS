@@ -284,6 +284,7 @@
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    overscroll-behavior-x: none;
   }
 
   html,
@@ -699,7 +700,8 @@
     [data-scroll-container] {
       -webkit-overflow-scrolling: touch;
       overscroll-behavior-y: contain;
-      scroll-behavior: smooth;
+      scroll-behavior: auto;
+      touch-action: pan-y pinch-zoom;
     }
 
     ::-webkit-scrollbar {
@@ -871,6 +873,12 @@
 
   input, textarea, select {
     font-size: 16px;
+  }
+
+  html,
+  body {
+    min-height: 100%;
+    overscroll-behavior-y: auto;
   }
 }
 

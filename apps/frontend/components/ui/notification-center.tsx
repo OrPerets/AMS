@@ -155,6 +155,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     offset: number;
   }>({ id: null, offset: 0 });
   const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const swipeLockedRef = useRef(false);
 
   const normalizedNotifications = useMemo(
     () =>
@@ -228,17 +230,30 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         )}
         style={{
           transform: dragState.id === notification.id ? `translateX(${dragState.offset}px)` : undefined,
+          touchAction: 'pan-y',
         }}
         onTouchStart={(event) => {
           touchStartXRef.current = event.touches[0]?.clientX ?? null;
-          setDragState({ id: notification.id, offset: 0 });
+          touchStartYRef.current = event.touches[0]?.clientY ?? null;
+          swipeLockedRef.current = false;
+          setDragState({ id: null, offset: 0 });
         }}
         onTouchMove={(event) => {
-          if (touchStartXRef.current === null) return;
-          const delta = event.touches[0].clientX - touchStartXRef.current;
+          if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+          const deltaX = event.touches[0].clientX - touchStartXRef.current;
+          const deltaY = event.touches[0].clientY - touchStartYRef.current;
+
+          if (!swipeLockedRef.current) {
+            if (Math.abs(deltaY) > Math.abs(deltaX) || Math.abs(deltaX) < 18) {
+              return;
+            }
+
+            swipeLockedRef.current = true;
+          }
+
           setDragState({
             id: notification.id,
-            offset: Math.max(Math.min(delta, 120), -120),
+            offset: Math.max(Math.min(deltaX, 120), -120),
           });
         }}
         onTouchEnd={() => {
@@ -249,6 +264,14 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             triggerHaptic("light");
           }
           touchStartXRef.current = null;
+          touchStartYRef.current = null;
+          swipeLockedRef.current = false;
+          setDragState({ id: null, offset: 0 });
+        }}
+        onTouchCancel={() => {
+          touchStartXRef.current = null;
+          touchStartYRef.current = null;
+          swipeLockedRef.current = false;
           setDragState({ id: null, offset: 0 });
         }}
       >

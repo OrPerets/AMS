@@ -23,25 +23,49 @@ export function DispatchDetailPanel({
   onNavigateNext?: () => void;
 }) {
   const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
   const touchDeltaXRef = useRef(0);
+  const swipeLockedRef = useRef(false);
 
   const handleTouchStart = (event: TouchEvent<HTMLElement>) => {
     touchStartXRef.current = event.touches[0]?.clientX ?? null;
+    touchStartYRef.current = event.touches[0]?.clientY ?? null;
     touchDeltaXRef.current = 0;
+    swipeLockedRef.current = false;
   };
 
   const handleTouchMove = (event: TouchEvent<HTMLElement>) => {
-    if (touchStartXRef.current === null) {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) {
       return;
     }
 
-    touchDeltaXRef.current = event.touches[0].clientX - touchStartXRef.current;
+    const deltaX = event.touches[0].clientX - touchStartXRef.current;
+    const deltaY = event.touches[0].clientY - touchStartYRef.current;
+
+    if (!swipeLockedRef.current) {
+      if (Math.abs(deltaY) > Math.abs(deltaX) || Math.abs(deltaX) < 18) {
+        return;
+      }
+
+      swipeLockedRef.current = true;
+    }
+
+    touchDeltaXRef.current = deltaX;
   };
 
   const handleTouchEnd = () => {
+    if (!swipeLockedRef.current) {
+      touchStartXRef.current = null;
+      touchStartYRef.current = null;
+      touchDeltaXRef.current = 0;
+      return;
+    }
+
     if (Math.abs(touchDeltaXRef.current) < 72) {
       touchStartXRef.current = null;
+      touchStartYRef.current = null;
       touchDeltaXRef.current = 0;
+      swipeLockedRef.current = false;
       return;
     }
 
@@ -54,15 +78,19 @@ export function DispatchDetailPanel({
     }
 
     touchStartXRef.current = null;
+    touchStartYRef.current = null;
     touchDeltaXRef.current = 0;
+    swipeLockedRef.current = false;
   };
 
   return (
     <Card
       className="rounded-[28px] border-slate-200"
+      style={{ touchAction: 'pan-y' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     >
       <CardHeader className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

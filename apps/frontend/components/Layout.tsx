@@ -219,7 +219,7 @@ export default function Layout({ children }: Props) {
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 z-20 bg-black/50 md:hidden"
+          className="fixed inset-0 z-50 bg-black/50 md:hidden"
           aria-hidden="true"
           onClick={() => setSidebarOpen(false)}
         />

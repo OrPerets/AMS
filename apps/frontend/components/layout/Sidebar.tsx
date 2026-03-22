@@ -29,6 +29,7 @@ import {
   Sun,
 } from 'lucide-react';
 import { Button } from '../ui/button';
+import { lockAppScroll } from '../../lib/scroll-lock';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { cn } from '../../lib/utils';
 import { useDirection, useLocale, useTheme } from '../../lib/providers';
@@ -297,8 +298,7 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
       return;
     }
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockAppScroll();
     window.setTimeout(() => closeButtonRef.current?.focus(), 0);
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -342,7 +342,7 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
 
     document.addEventListener('keydown', handleKeyDown);
     return () => {
-      document.body.style.overflow = previousOverflow;
+      unlock();
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose, open]);
@@ -446,7 +446,7 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
 
       {/* Mobile Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 z-30 flex w-[min(calc(100vw-2.5rem),22rem)] max-w-full flex-col border-e bg-background shadow-modal backdrop-blur-xl transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] md:hidden",
+        "fixed inset-y-0 z-[60] flex w-[min(calc(100vw-2.5rem),22rem)] max-w-full flex-col border-e bg-background shadow-modal backdrop-blur-xl transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] md:hidden",
         direction === 'rtl' ? "right-0" : "left-0",
         open
           ? "translate-x-0"
