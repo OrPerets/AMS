@@ -7,7 +7,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { PasswordInput } from '../components/ui/password-input';
 import { useFormValidation } from '../hooks/use-form-validation';
-import { getDefaultRoute, getTokenPayload, login, shouldRouteToWorkerHub } from '../lib/auth';
+import { getDefaultRoute, getPortalEntryRoute, getTokenPayload, login, shouldRouteToWorkerHub } from '../lib/auth';
 import { useDirection, useLocale } from '../lib/providers';
 
 export default function LoginPage() {
@@ -51,8 +51,15 @@ export default function LoginPage() {
       await login(normalizedEmail, form.values.password);
       const payload = getTokenPayload();
       const next = typeof router.query.next === 'string' ? router.query.next : undefined;
+      const portal = router.query.portal === 'resident' || router.query.portal === 'worker'
+        ? router.query.portal
+        : undefined;
       const role = payload?.actAsRole || payload?.role;
-      const defaultRoute = shouldRouteToWorkerHub(role) ? '/worker-hub' : getDefaultRoute(role);
+      const defaultRoute = portal
+        ? getPortalEntryRoute(portal, role)
+        : shouldRouteToWorkerHub(role)
+          ? '/worker-hub'
+          : getDefaultRoute(role);
       const destination = next || defaultRoute;
 
       router.replace(destination);

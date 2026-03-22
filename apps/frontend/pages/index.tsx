@@ -7,7 +7,7 @@ import { loadSlim } from '@tsparticles/slim';
 import { Button } from '../components/ui/button';
 import { Building2, Shield, Users, Zap, ArrowRight, CheckCircle2, Lock, BarChart3, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { getDefaultRoute, isAuthenticated, shouldRouteToWorkerHub } from '../lib/auth';
+import { getPortalEntryRoute, isAuthenticated } from '../lib/auth';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -94,7 +94,7 @@ export default function LandingPage() {
 
   const handleResidentLoginClick = () => {
     if (isAuthenticated()) {
-      router.push(getDefaultRoute());
+      router.push(getPortalEntryRoute('resident'));
     } else {
       router.push('/login?portal=resident');
     }
@@ -102,7 +102,7 @@ export default function LandingPage() {
 
   const handleWorkerLoginClick = () => {
     if (isAuthenticated()) {
-      router.push(shouldRouteToWorkerHub() ? '/worker-hub' : getDefaultRoute());
+      router.push(getPortalEntryRoute('worker'));
     } else {
       router.push('/login?portal=worker');
     }

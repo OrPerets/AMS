@@ -305,6 +305,23 @@ export function getDefaultRoute(role?: string | null): string {
   return routeForRole(effectiveRole);
 }
 
+export function getPortalEntryRoute(
+  portal: 'resident' | 'worker',
+  role?: string | null,
+): string {
+  const effectiveRole = role || getEffectiveRole();
+
+  if (portal === 'resident') {
+    if (effectiveRole === 'RESIDENT' || isMasterPendingRoleSelection()) {
+      return '/resident/account';
+    }
+
+    return getDefaultRoute(effectiveRole);
+  }
+
+  return shouldRouteToWorkerHub(effectiveRole) ? '/worker-hub' : getDefaultRoute(effectiveRole);
+}
+
 function isTokenExpired(token: string) {
   try {
     const [, payload] = token.split('.');
