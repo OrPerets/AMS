@@ -15,14 +15,14 @@ export const localeMeta: Record<Locale, { intl: string; direction: Direction; la
   en: {
     intl: 'en-US',
     direction: 'ltr',
-    label: 'English',
+    label: 'אנגלית',
   },
 };
 
 export const regionalFormats: Record<RegionalFormat, { label: string; dateStyle: Intl.DateTimeFormatOptions['dateStyle']; timeStyle: Intl.DateTimeFormatOptions['timeStyle'] }> = {
   'he-IL': { label: 'ישראל (עברית)', dateStyle: 'long', timeStyle: 'short' },
-  'en-US': { label: 'United States', dateStyle: 'long', timeStyle: 'short' },
-  'en-IL': { label: 'Israel (English)', dateStyle: 'long', timeStyle: 'short' },
+  'en-US': { label: 'ארצות הברית (אנגלית)', dateStyle: 'long', timeStyle: 'short' },
+  'en-IL': { label: 'ישראל (אנגלית)', dateStyle: 'long', timeStyle: 'short' },
 };
 
 export function formatDate(date: Date | string | number, regional: RegionalFormat = 'he-IL'): string {
@@ -469,7 +469,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'settings.direction.rtl': 'ימין לשמאל (RTL)',
     'settings.direction.ltr': 'שמאל לימין (LTR)',
     'settings.language.he': 'עברית',
-    'settings.language.en': 'English',
+    'settings.language.en': 'אנגלית',
     'settings.action.saveLanguage': 'שמור העדפות שפה',
     'settings.languageSavedToast': 'הגדרות השפה נשמרו',
     'settings.unsavedChanges': 'יש שינויים שלא נשמרו',
@@ -604,7 +604,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'login.submitting': 'Signing in...',
     'login.supportNote': 'For help with access, permissions, or invoices, contact the support center or your system administrator.',
     'login.footer': 'All rights reserved.',
-    'login.switchLanguage': 'עברית / English',
+    'login.switchLanguage': 'עברית / אנגלית',
     'login.error.emailRequired': 'Enter an email address.',
     'login.error.emailInvalid': 'Enter a valid email address.',
     'login.error.passwordShort': 'Password must contain at least 6 characters.',

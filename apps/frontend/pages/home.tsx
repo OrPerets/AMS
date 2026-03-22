@@ -68,6 +68,42 @@ type HomeSnapshot = {
   digestMarkdown: string;
 };
 
+type TicketsSnapshot = {
+  summary?: {
+    open?: number;
+    inProgress?: number;
+  };
+  meta?: {
+    total?: number;
+  };
+  riskSummary?: {
+    atRisk?: number;
+    dueToday?: number;
+    breached?: number;
+  };
+  items?: Array<{
+    severity?: string;
+    status?: string;
+  }>;
+};
+
+type MaintenanceExceptionsSnapshot = {
+  summary?: {
+    unverifiedMaintenance?: number;
+    openWorkOrders?: number;
+  };
+};
+
+type OperationsCalendarSnapshot = {
+  summary?: {
+    total?: number;
+  };
+};
+
+type UserNotificationSnapshot = Array<{
+  read?: boolean;
+}>;
+
 const roleTitles: Record<RoleKey, string> = {
   ADMIN: 'מנהל מערכת',
   PM: 'מנהל נכס',
@@ -134,33 +170,33 @@ export default function HomePage() {
       id: `${action.href}-${index}`,
       status:
         index === 0
-          ? 'Needs action'
+          ? 'דורש פעולה'
           : action.title.includes('התראות') || action.title.includes('תשלומים')
-            ? 'At risk'
-            : 'In progress',
+            ? 'בסיכון'
+            : 'בתהליך',
       tone: index === 0 ? 'warning' : index === 1 ? 'active' : 'neutral',
       title: action.title,
       reason: action.description,
       meta: snapshot.metrics[index]?.hint,
       href: action.href,
-      ctaLabel: 'Open',
+      ctaLabel: 'פתח',
     }));
   }, [snapshot]);
   const recentActivity = useMemo(() => snapshot?.spotlightItems.slice(0, 3) ?? [], [snapshot]);
   const contextLabel = useMemo(() => {
     switch (role) {
       case 'RESIDENT':
-        return 'Self-service workspace';
+        return 'מרכז שירות עצמי';
       case 'PM':
-        return 'Portfolio action console';
+        return 'קונסולת ניהול נכסים';
       case 'ADMIN':
-        return 'Executive control';
+        return 'שליטה ניהולית';
       case 'ACCOUNTANT':
-        return 'Finance oversight';
+        return 'בקרת כספים';
       case 'TECH':
-        return 'Field operations';
+        return 'תפעול שטח';
       default:
-        return 'Operational workspace';
+        return 'מרכז עבודה תפעולי';
     }
   }, [role]);
   const contextChips = useMemo(
@@ -189,7 +225,7 @@ export default function HomePage() {
       <MobileContextBar
         roleLabel={snapshot.roleTitle}
         contextLabel={contextLabel}
-        syncLabel="Live portfolio sync"
+        syncLabel="סנכרון חי עם המערכת"
         lastUpdated={formatDate(new Date())}
         chips={contextChips}
       />
@@ -228,7 +264,7 @@ export default function HomePage() {
           }
           aside={
             <div className="space-y-3">
-              <div className="text-[11px] tracking-[0.16em] text-white/65 sm:text-xs sm:tracking-[0.18em]">Today in one view</div>
+              <div className="text-[11px] tracking-[0.16em] text-white/65 sm:text-xs sm:tracking-[0.18em]">תמונת מצב לרגע זה</div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-1 sm:gap-3">
                 {snapshot.metrics.slice(0, 3).map((metric) => (
                   <div key={metric.label} className="rounded-xl border border-white/10 bg-white/6 p-2.5 sm:rounded-[20px] sm:p-3.5">
@@ -244,16 +280,16 @@ export default function HomePage() {
       </motion.div>
 
       <MobilePriorityInbox
-        title="Priority inbox"
-        subtitle="What changed, what needs action, and what could become a blocker if left alone."
+        title="תיבת עדיפויות"
+        subtitle="מה השתנה, מה דורש פעולה עכשיו, ומה עלול להפוך לחסם אם נשאיר אותו פתוח."
         items={priorityItems}
       />
 
       <section className="space-y-3">
         <SectionHeader
           title="פעולות ראשיות"
-          subtitle="Two-tap access to the actions this role uses most on mobile."
-          meta="Primary actions"
+          subtitle="גישה מהירה לפעולות המרכזיות של התפקיד שלך, בלי לחפש בין מסכים."
+          meta="פעולות מהירות"
         />
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 xl:grid-cols-4">
           {quickLinks.map((item, index) => (
@@ -272,8 +308,8 @@ export default function HomePage() {
       <section className="space-y-3">
         <SectionHeader
           title="מדדים מרכזיים"
-          subtitle="Compact numbers that explain workload, risk, and current balance without forcing a deep dive."
-          meta="Key KPIs"
+          subtitle="מספרים קצרים שמבהירים עומס, סיכון ומצב נוכחי בלי לצלול לעומק בכל פעם."
+          meta="מדדי ליבה"
         />
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
           {snapshot.metrics.map((metric, index) => (
@@ -293,9 +329,9 @@ export default function HomePage() {
         <Card variant="elevated" className="overflow-hidden">
           <CardHeader>
             <SectionHeader
-              title="Suggested next action"
-              subtitle="A ranked list of the most useful actions for the role, based on current load and visible risk."
-              meta="Next up"
+              title="הפעולה הבאה המומלצת"
+              subtitle="רשימה מדורגת של הצעדים שכדאי לבצע עכשיו לפי עומס, סיכון והקשר תפעולי."
+              meta="הבא בתור"
             />
           </CardHeader>
           <CardContent className="space-y-3">
@@ -323,9 +359,9 @@ export default function HomePage() {
         <Card variant="featured" className="overflow-hidden">
           <CardHeader>
             <SectionHeader
-              title="Recent activity and signals"
-              subtitle="Plain-language operational notes instead of decorative insight cards."
-              meta="What changed"
+              title="פעילות אחרונה ואותות"
+              subtitle="הערות תפעוליות בשפה פשוטה במקום כרטיסי תובנה דקורטיביים."
+              meta="מה השתנה"
             />
           </CardHeader>
           <CardContent className="space-y-3">
@@ -356,9 +392,9 @@ export default function HomePage() {
         <Card variant="muted" className="overflow-hidden">
           <CardHeader>
             <SectionHeader
-              title="Mobile summary"
-              subtitle="One compressed strip for buyers and operators who need the state of play in seconds."
-              meta="At a glance"
+              title="תקציר מהיר"
+              subtitle="ריכוז קצר למי שצריך להבין את מצב העניינים תוך כמה שניות."
+              meta="במבט אחד"
             />
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-3">
@@ -375,17 +411,17 @@ export default function HomePage() {
         <Card variant="elevated" className="overflow-hidden">
           <CardHeader>
             <SectionHeader
-              title="Operational digest"
-              subtitle="A shareable, audit-friendly summary for weekly review or handoff."
-              meta="Digest"
+              title="תקציר תפעולי"
+              subtitle="סיכום שיתופי וקריא לבקרה שבועית, תיאום או העברת משמרת."
+              meta="תקציר"
               actions={
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => navigator.clipboard.writeText(snapshot.digestMarkdown)}>
-                    Copy digest
+                    העתק תקציר
                   </Button>
                   <Button asChild>
                     <Link href={snapshot.nextActions[0]?.href || '/home'}>
-                      Continue
+                      המשך
                       <ArrowLeft className="ms-2 h-4 w-4" />
                     </Link>
                   </Button>
@@ -444,10 +480,12 @@ export default function HomePage() {
 }
 
 async function buildSnapshot(role: RoleKey, currentUserId: number | null): Promise<HomeSnapshot> {
+  if ((role === 'RESIDENT' || role === 'TECH') && !currentUserId) {
+    return buildFallbackSnapshot(role);
+  }
+
   if (role === 'RESIDENT' && currentUserId) {
-    const response = await authFetch(`/api/v1/invoices/account/${currentUserId}`);
-    if (!response.ok) throw new Error('resident snapshot failed');
-    const data = await response.json();
+    const data = await fetchRequiredJson<any>(`/api/v1/invoices/account/${currentUserId}`);
 
     const nextActions: HomeAction[] = [
       data.summary?.overdueInvoices
@@ -485,7 +523,7 @@ async function buildSnapshot(role: RoleKey, currentUserId: number | null): Promi
       roleTitle: roleTitles[role],
       headline: 'הכול מרוכז עבורך במקום אחד',
       description: 'המסך הזה מחליף פתיחה גנרית בסיכום אישי: מה דחוף, מה פתוח ומה הכי כדאי לבצע עכשיו כדי לסגור לולאות מהר.',
-      eyebrowLabel: 'Resident flow',
+      eyebrowLabel: 'מסלול דייר',
       metrics: [
         { label: 'יתרה נוכחית', value: formatCurrency(data.summary?.currentBalance ?? 0), hint: 'תמונת מצב מיידית של מצב החשבון.', tone: 'info' },
         { label: 'חיובים שלא שולמו', value: data.summary?.unpaidInvoices ?? 0, hint: 'כולל גם חיובים לקראת מועד פירעון.', tone: 'warning' },
@@ -519,13 +557,10 @@ async function buildSnapshot(role: RoleKey, currentUserId: number | null): Promi
   }
 
   if (role === 'TECH' && currentUserId) {
-    const [ticketsResponse, notificationsResponse] = await Promise.all([
-      authFetch(`/api/v1/tickets?view=dispatch&assigneeId=${currentUserId}&limit=24`),
-      authFetch(`/api/v1/notifications/user/${currentUserId}`),
+    const [tickets, notifications] = await Promise.all([
+      fetchRequiredJson<TicketsSnapshot>(`/api/v1/tickets?view=dispatch&assigneeId=${currentUserId}&limit=24`),
+      fetchRequiredJson<UserNotificationSnapshot>(`/api/v1/notifications/user/${currentUserId}`),
     ]);
-    if (!ticketsResponse.ok || !notificationsResponse.ok) throw new Error('tech snapshot failed');
-    const tickets = await ticketsResponse.json();
-    const notifications = await notificationsResponse.json();
     const urgentCount = tickets.items?.filter((item: any) => item.severity === 'URGENT' && item.status !== 'RESOLVED').length ?? 0;
     const riskCount = (tickets.riskSummary?.atRisk ?? 0) + (tickets.riskSummary?.dueToday ?? 0) + (tickets.riskSummary?.breached ?? 0);
 
@@ -533,7 +568,7 @@ async function buildSnapshot(role: RoleKey, currentUserId: number | null): Promi
       roleTitle: roleTitles[role],
       headline: 'היום שלך כבר מסודר לפי דחיפות',
       description: 'במקום לפתוח כמה מסכים, המרכז מציג את הקריאות שהכי חשוב להתחיל מהן, את עומס הסיכון ואת נקודות החיכוך שעלולות לעכב יציאה לשטח.',
-      eyebrowLabel: 'Field operations',
+      eyebrowLabel: 'תפעול שטח',
       metrics: [
         { label: 'קריאות פעילות', value: tickets.summary?.inProgress ?? tickets.meta?.total ?? 0, hint: 'כל מה שכבר משויך אליך ומצריך טיפול.', tone: 'info' },
         { label: 'בהולות', value: urgentCount, hint: 'כדאי לפתוח אותן לפני כל עבודה אחרת.', tone: 'warning' },
@@ -584,20 +619,29 @@ async function buildSnapshot(role: RoleKey, currentUserId: number | null): Promi
     };
   }
 
-  const [ticketsResponse, exceptionsResponse, operationsResponse, notificationsResponse] = await Promise.all([
-    authFetch('/api/v1/tickets?view=dispatch&limit=40'),
-    authFetch('/api/v1/maintenance/exceptions'),
-    authFetch('/api/v1/operations/calendar'),
-    currentUserId ? authFetch(`/api/v1/notifications/user/${currentUserId}`) : Promise.resolve(null),
-  ]);
-  if (!ticketsResponse.ok || !exceptionsResponse.ok || !operationsResponse.ok) throw new Error('ops snapshot failed');
+  const ticketsPromise = fetchOptionalJson<TicketsSnapshot>('/api/v1/tickets?view=dispatch&limit=40');
+  const exceptionsPromise =
+    role === 'ACCOUNTANT'
+      ? Promise.resolve(null)
+      : fetchOptionalJson<MaintenanceExceptionsSnapshot>('/api/v1/maintenance/exceptions');
+  const operationsPromise = fetchOptionalJson<OperationsCalendarSnapshot>('/api/v1/operations/calendar');
+  const notificationsPromise = currentUserId
+    ? fetchOptionalJson<UserNotificationSnapshot>(`/api/v1/notifications/user/${currentUserId}`)
+    : Promise.resolve(null);
 
-  const tickets = await ticketsResponse.json();
-  const exceptions = await exceptionsResponse.json();
-  const operations = await operationsResponse.json();
-  const notifications = notificationsResponse?.ok ? await notificationsResponse.json() : [];
-  const riskCount = (tickets.riskSummary?.atRisk ?? 0) + (tickets.riskSummary?.dueToday ?? 0) + (tickets.riskSummary?.breached ?? 0);
-  const openWorkOrders = exceptions.summary?.openWorkOrders ?? 0;
+  const [tickets, exceptions, operations, notifications] = await Promise.all([
+    ticketsPromise,
+    exceptionsPromise,
+    operationsPromise,
+    notificationsPromise,
+  ]);
+
+  if (!tickets && !exceptions && !operations) {
+    throw new Error('ops snapshot failed');
+  }
+
+  const riskCount = (tickets?.riskSummary?.atRisk ?? 0) + (tickets?.riskSummary?.dueToday ?? 0) + (tickets?.riskSummary?.breached ?? 0);
+  const openWorkOrders = exceptions?.summary?.openWorkOrders ?? 0;
 
   const nextActions: HomeAction[] = [
     {
@@ -611,14 +655,14 @@ async function buildSnapshot(role: RoleKey, currentUserId: number | null): Promi
     },
     {
       title: 'עבור ליומן התפעול',
-      description: `מרוכזים שם ${operations.summary?.total ?? 0} אירועים קרובים של תחזוקה, חוזים ופירעונות.`,
+      description: `מרוכזים שם ${operations?.summary?.total ?? 0} אירועים קרובים של תחזוקה, חוזים ופירעונות.`,
       href: '/operations/calendar',
       icon: CalendarClock,
       accent: 'from-sky-500/18 to-cyan-500/18',
     },
     {
       title: role === 'ACCOUNTANT' ? 'עבור למסך התשלומים' : 'עבור ללוח הניהול',
-      description: role === 'ACCOUNTANT' ? 'גבייה, פירעונות וניתוח מגמות במקום אחד.' : 'תמונת מערכת רחבה עם KPI, סיכונים ואירועים ניהוליים.',
+      description: role === 'ACCOUNTANT' ? 'גבייה, פירעונות וניתוח מגמות במקום אחד.' : 'תמונת מערכת רחבה עם מדדי ליבה, סיכונים ואירועים ניהוליים.',
       href: role === 'ACCOUNTANT' ? '/payments' : '/admin/dashboard',
       icon: role === 'ACCOUNTANT' ? CreditCard : Building2,
       accent: 'from-emerald-500/18 to-lime-500/18',
@@ -632,11 +676,11 @@ async function buildSnapshot(role: RoleKey, currentUserId: number | null): Promi
       role === 'ACCOUNTANT'
         ? 'המסך מציף נקודות גבייה, עומסים תפעוליים ואירועים קרובים כדי לחבר בין כספים לתפעול, במקום לנתח כל רשימה בנפרד.'
         : 'במקום פתיחה גנרית, קיבלת סיכום שמבליט חריגות SLA, תחזוקה לא מאומתת, עומס עבודה והמהלך הבא שכדאי לבצע.',
-    eyebrowLabel: role === 'ACCOUNTANT' ? 'Finance control' : 'Operations intelligence',
+    eyebrowLabel: role === 'ACCOUNTANT' ? 'בקרת כספים' : 'מודיעין תפעולי',
     metrics: [
-      { label: 'קריאות פתוחות', value: tickets.summary?.open ?? 0, hint: 'כלל התור הפעיל כרגע במערכת.', tone: 'info' },
+      { label: 'קריאות פתוחות', value: tickets?.summary?.open ?? 0, hint: 'כלל התור הפעיל כרגע במערכת.', tone: 'info' },
       { label: 'סיכון SLA', value: riskCount, hint: 'כולל קריאות בחריגה, יעד היום או סיכון קרוב.', tone: 'warning' },
-      { label: 'תחזוקה לא מאומתת', value: exceptions.summary?.unverifiedMaintenance ?? 0, hint: 'פעולות שבוצעו אבל עדיין לא נסגרו כראוי.', tone: 'warning' },
+      { label: 'תחזוקה לא מאומתת', value: exceptions?.summary?.unverifiedMaintenance ?? 0, hint: 'פעולות שבוצעו אבל עדיין לא נסגרו כראוי.', tone: 'warning' },
       { label: 'הזמנות עבודה פתוחות', value: openWorkOrders, hint: 'מסמן איפה יש חיכוך בין מוקד, ספק ואישור.', tone: 'neutral' },
     ],
     nextActions,
@@ -649,10 +693,12 @@ async function buildSnapshot(role: RoleKey, currentUserId: number | null): Promi
       riskCount
         ? `זוהו ${riskCount} קריאות בסיכון SLA. זהו כרגע צוואר הבקבוק המרכזי במסלול השירות.`
         : 'אין כרגע צבר קריאות מסוכן, כך שאפשר לעבור למניעה ולאופטימיזציה.',
-      exceptions.summary?.unverifiedMaintenance
+      exceptions?.summary?.unverifiedMaintenance
         ? `יש ${exceptions.summary.unverifiedMaintenance} פעולות תחזוקה שבוצעו ועדיין לא אומתו. זה סיכון שקט שכדאי לסגור.`
-        : 'אין כרגע פעולות תחזוקה ממתינות לאימות, וזה משחרר זמן להסתכלות קדימה.',
-      operations.summary?.total
+        : role === 'ACCOUNTANT'
+          ? 'תמונת התחזוקה המעמיקה לא זמינה לתפקיד הכספים, ולכן המיקוד כאן הוא באירועים ותזרים.'
+          : 'אין כרגע פעולות תחזוקה ממתינות לאימות, וזה משחרר זמן להסתכלות קדימה.',
+      operations?.summary?.total
         ? `ביומן התפעול מחכים ${operations.summary.total} אירועים קרובים. שימוש ביומן עכשיו חוסך הפתעות מאוחרות יותר.`
         : 'לא זוהו אירועים תפעוליים חריגים בטווח הקרוב.',
     ],
@@ -660,11 +706,11 @@ async function buildSnapshot(role: RoleKey, currentUserId: number | null): Promi
     digestMarkdown: [
       role === 'ACCOUNTANT' ? '# תקציר כספים שבועי' : '# תקציר תפעולי שבועי',
       `- תאריך: ${formatDate(new Date())}`,
-      `- קריאות פתוחות: ${tickets.summary?.open ?? 0}`,
+      `- קריאות פתוחות: ${tickets?.summary?.open ?? 0}`,
       `- קריאות בסיכון SLA: ${riskCount}`,
-      `- תחזוקה לא מאומתת: ${exceptions.summary?.unverifiedMaintenance ?? 0}`,
+      `- תחזוקה לא מאומתת: ${exceptions?.summary?.unverifiedMaintenance ?? 0}`,
       `- הזמנות עבודה פתוחות: ${openWorkOrders}`,
-      `- אירועים ביומן התפעול: ${operations.summary?.total ?? 0}`,
+      `- אירועים ביומן התפעול: ${operations?.summary?.total ?? 0}`,
       `- התראות שלא נקראו: ${Array.isArray(notifications) ? notifications.filter((item: any) => !item.read).length : 0}`,
       ``,
       `המלצה לשבוע הקרוב: ${nextActions[0].description}`,
@@ -672,12 +718,28 @@ async function buildSnapshot(role: RoleKey, currentUserId: number | null): Promi
   };
 }
 
+async function fetchRequiredJson<T>(path: string): Promise<T> {
+  const response = await authFetch(path);
+  if (!response.ok) {
+    throw new Error(`${path} failed with ${response.status}`);
+  }
+  return response.json() as Promise<T>;
+}
+
+async function fetchOptionalJson<T>(path: string): Promise<T | null> {
+  try {
+    return await fetchRequiredJson<T>(path);
+  } catch {
+    return null;
+  }
+}
+
 function buildFallbackSnapshot(role: RoleKey): HomeSnapshot {
   return {
     roleTitle: roleTitles[role],
     headline: 'מרכז עבודה חכם בבנייה',
     description: 'החיבור לנתונים לא הצליח כרגע, אבל שכבת הניווט, המסלול האישי והפעולות המומלצות כבר מוכנים.',
-    eyebrowLabel: 'Fallback mode',
+    eyebrowLabel: 'מצב גיבוי',
     metrics: [
       { label: 'מצב נתונים', value: 'לא זמין', hint: 'נסה לרענן בעוד רגע.', tone: 'warning' },
       { label: 'מרכז התראות', value: 'מוכן', hint: 'הניווט וההתראות ממשיכים לעבוד.', tone: 'success' },
@@ -692,7 +754,7 @@ function buildFallbackSnapshot(role: RoleKey): HomeSnapshot {
     spotlightTitle: 'מה עדיין כן עובד',
     spotlightDescription: 'גם בזמן תקלה זמנית נשמרת דרך קצרה לחזור לעבודה.',
     spotlightItems: [
-      'שכבת הפקודות החוצת-מערכת זמינה דרך Cmd/Ctrl + K.',
+      'שכבת הפקודות החוצת-מערכת זמינה דרך מקש Command או Ctrl יחד עם K.',
       'מרכז ההתראות נשאר נגיש כדי שלא תפספס אירועים חדשים.',
       'המסלולים המרכזיים זמינים גם בלי בניית סיכום עשיר.',
     ],
@@ -715,7 +777,7 @@ function getOnboardingSteps(role: RoleKey) {
 
   const roleSpecific: Record<RoleKey, { title: string; description: string }> = {
     ADMIN: { title: 'בדוק חריגות תחזוקה וסיכון SLA יחד', description: 'זו הצטלבות שמזהה איפה נדרש תיאום ניהולי ולא רק טיפול בודד.' },
-    PM: { title: 'הפעל triage חכם מתוך לוח הקריאות', description: 'המערכת כבר ממליצה על קטגוריה, עדיפות ושיוך, כדי לחסוך סבב ניחושים ידני.' },
+    PM: { title: 'הפעל מיון חכם מתוך לוח הקריאות', description: 'המערכת כבר ממליצה על קטגוריה, עדיפות ושיוך, כדי לחסוך סבב ניחושים ידני.' },
     TECH: { title: 'סגור לולאה עם עדכון קצר מהשטח', description: 'עדכון אחד בזמן מקטין הסלמה ומשאיר את התמונה הניהולית נקייה.' },
     RESIDENT: { title: 'עקוב אחרי שירות ותשלומים מאותו מסך', description: 'אין צורך יותר לדלג בין אזור אישי, בקשות וקריאות כדי להבין את מצבך.' },
     ACCOUNTANT: { title: 'שלב יומן תפעול עם גבייה', description: 'כך תזהה חידושי חוזים, פירעונות והתראות לפני שהם הופכים לבור עבודה.' },

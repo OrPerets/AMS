@@ -521,7 +521,7 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
               </Button>
               <Button variant="outline" size="sm" className="justify-start text-xs" onClick={toggleLocaleAndDirection}>
                 <Globe className="me-1.5 h-3.5 w-3.5" />
-                {locale === 'he' ? 'English' : 'עברית'}
+                {locale === 'he' ? 'אנגלית' : 'עברית'}
               </Button>
             </div>
             <Link
