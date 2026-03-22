@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Menu, Sun, Moon, Globe, ChevronLeft, ChevronRight, Bell, Command, Search, ArrowRight, AlertTriangle, Clock, Info } from 'lucide-react';
+import { Sun, Moon, Globe, ChevronLeft, ChevronRight, Bell, Command, Search, ArrowRight, AlertTriangle, Clock, Info, Home, Building2, Settings as SettingsIcon, Wrench, CreditCard, ClipboardList } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { useTheme, useDirection, useLocale } from '../../lib/providers';
@@ -37,9 +37,27 @@ const priorityColor: Record<NotificationPriority, string> = {
   completed: 'text-muted-foreground',
 };
 
+function getMobileRouteContext(pathname: string) {
+  const contexts = [
+    { match: /^\/home$|^\/$/, title: 'מרכז העבודה', subtitle: 'הפעולות והסיכונים של היום', icon: Home },
+    { match: /^\/notifications/, title: 'התראות ועדכונים', subtitle: 'פיד חי, מסננים והעדפות', icon: Bell },
+    { match: /^\/settings/, title: 'הגדרות אישיות', subtitle: 'חשבון, אבטחה ושפה', icon: SettingsIcon },
+    { match: /^\/resident\/account/, title: 'האזור האישי', subtitle: 'תשלומים, מסמכים ופניות', icon: CreditCard },
+    { match: /^\/resident\/requests/, title: 'בקשות דייר', subtitle: 'פעולות שירות עצמי במקום אחד', icon: ClipboardList },
+    { match: /^\/tickets/, title: 'לוח קריאות', subtitle: 'תור העבודה והעדכונים האחרונים', icon: Wrench },
+    { match: /^\/buildings/, title: 'בניינים ונכסים', subtitle: 'קודים, פרטים ואנשי קשר', icon: Building2 },
+    { match: /^\/payments/, title: 'גבייה ותשלומים', subtitle: 'יתרות, חיובים ופעולות גבייה', icon: CreditCard },
+  ];
+
+  return contexts.find((item) => item.match.test(pathname)) ?? {
+    title: 'AMS',
+    subtitle: 'פלטפורמת ניהול חכמה לבניינים',
+    icon: Home,
+  };
+}
+
 export default function Header({
   className,
-  onMenuClick,
   sidebarCollapsed,
   onToggleCollapse,
   onCommandPaletteOpen,
@@ -130,6 +148,8 @@ export default function Header({
       .slice(0, 3)
       .map(n => ({ ...n, _priority: deriveNotificationPriority(n) }));
   }, [notifications]);
+  const mobileContext = useMemo(() => getMobileRouteContext(router.pathname), [router.pathname]);
+  const MobileContextIcon = mobileContext.icon;
 
   const navigateToInbox = () => {
     setPreviewOpen(false);
@@ -138,10 +158,56 @@ export default function Header({
 
   return (
     <header className={cn(
-      "sticky top-0 z-40 w-full border-b bg-background/85 backdrop-blur-md",
+      "sticky top-0 z-40 w-full border-b bg-background/72 backdrop-blur-xl",
       className
     )}>
-      <div className="container flex h-12 sm:h-16 items-center justify-between gap-1.5 sm:gap-2 px-3 sm:px-6">
+      <div className="container px-3 sm:px-6">
+        <div className="flex items-center gap-2 py-2 md:hidden">
+          <Link href="/home" className="mobile-shell-panel flex h-11 w-11 items-center justify-center rounded-[20px] border">
+            <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-primary text-xs font-bold text-primary-foreground shadow-card">
+              A
+            </div>
+          </Link>
+
+          <Link
+            href={router.pathname === '/home' ? '/home' : router.asPath}
+            className="mobile-shell-panel flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[18px] bg-primary/10 text-primary">
+              <MobileContextIcon className="h-4.5 w-4.5" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-tertiary">{t('app.shortName')}</div>
+              <div className="truncate text-sm font-semibold text-foreground">{mobileContext.title}</div>
+              <div className="truncate text-[11px] text-muted-foreground">{mobileContext.subtitle}</div>
+            </div>
+          </Link>
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onCommandPaletteOpen}
+            className="mobile-touch-strip h-11 w-11 border-0 px-0 shadow-none shell-frost"
+            aria-label={t('header.openCommandPalette')}
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+
+          <Link href="/notifications" className="relative mobile-shell-panel flex h-11 w-11 items-center justify-center rounded-[20px] border">
+            <Bell className="h-4.5 w-4.5 text-foreground" />
+            {unreadCount > 0 && (
+              <span className="absolute -end-0.5 -top-0.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Link>
+
+          <div className="mobile-shell-panel rounded-full border p-0.5">
+            <UserMenu />
+          </div>
+        </div>
+
+        <div className="hidden h-12 items-center justify-between gap-1.5 sm:h-16 sm:gap-2 md:flex">
         {/* Left section */}
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-4">
           <Link href="/" className="flex items-center gap-1.5 sm:gap-2 md:hidden">
@@ -192,21 +258,8 @@ export default function Header({
           </Button>
         </div>
 
-        {/* Mobile center: page context */}
-        <div className="flex-1 md:hidden" />
-
         {/* Right section */}
         <div className="flex items-center gap-0.5 sm:gap-1.5">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onCommandPaletteOpen}
-            className="shrink-0 md:hidden"
-            aria-label={t('header.openCommandPalette')}
-          >
-            <Search className="h-4 w-4" />
-          </Button>
-
           <Button
             variant="ghost"
             size="icon-sm"
@@ -335,6 +388,7 @@ export default function Header({
           {/* User Menu */}
           <UserMenu />
         </div>
+      </div>
       </div>
     </header>
   );

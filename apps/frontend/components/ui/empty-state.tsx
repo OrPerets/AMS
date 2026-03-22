@@ -1,144 +1,138 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { FileX, Search, AlertCircle, Inbox, Plus, Lock, ClipboardList } from "lucide-react"
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { AlertCircle, ClipboardList, FileX, Inbox, Lock, Plus, Search } from "lucide-react";
 
-import { cn } from "../../lib/utils"
-import { Button } from "./button"
+import { cn } from "../../lib/utils";
+import { Button } from "./button";
 
 const emptyStateVariants = cva(
-  "flex flex-col items-center justify-center text-center space-y-4 py-8",
+  "flex flex-col items-center justify-center rounded-[28px] border border-subtle-border/80 px-5 py-8 text-center shadow-card",
   {
     variants: {
       size: {
-        sm: "py-6 space-y-3",
-        md: "py-8 space-y-4", 
-        lg: "py-12 space-y-6",
+        sm: "gap-3 py-6",
+        md: "gap-4 py-8",
+        lg: "gap-5 py-12",
       },
     },
     defaultVariants: {
       size: "md",
     },
-  }
-)
+  },
+);
 
 interface EmptyStateProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof emptyStateVariants> {
-  icon?: React.ReactNode
-  title: string
-  description?: string
+  icon?: React.ReactNode;
+  title: string;
+  description?: string;
   action?: {
-    label: string
-    onClick: () => void
-    variant?: "default" | "outline"
-  }
-  type?: "empty" | "search" | "error" | "create" | "action" | "restricted"
+    label: string;
+    onClick: () => void;
+    variant?: "default" | "outline";
+  };
+  type?: "empty" | "search" | "error" | "create" | "action" | "restricted";
 }
 
-// Predefined icon components for common states
 const EmptyStateIcons = {
-  empty: <Inbox className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />,
-  search: <Search className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />,
-  error: <AlertCircle className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />,
-  create: <Plus className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />,
-  action: <ClipboardList className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />,
-  restricted: <Lock className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />,
-  default: <FileX className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground/40" />,
-}
+  empty: <Inbox className="h-7 w-7 text-primary sm:h-9 sm:w-9" />,
+  search: <Search className="h-7 w-7 text-primary sm:h-9 sm:w-9" />,
+  error: <AlertCircle className="h-7 w-7 text-destructive sm:h-9 sm:w-9" />,
+  create: <Plus className="h-7 w-7 text-primary sm:h-9 sm:w-9" />,
+  action: <ClipboardList className="h-7 w-7 text-warning sm:h-9 sm:w-9" />,
+  restricted: <Lock className="h-7 w-7 text-muted-foreground sm:h-9 sm:w-9" />,
+  default: <FileX className="h-7 w-7 text-muted-foreground sm:h-9 sm:w-9" />,
+};
 
 const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
   ({ className, size, icon, title, description, action, type = "empty", ...props }, ref) => {
-    const selectedIcon = icon || EmptyStateIcons[type] || EmptyStateIcons.default
+    const selectedIcon = icon || EmptyStateIcons[type] || EmptyStateIcons.default;
 
     return (
       <div
         ref={ref}
-        className={cn(emptyStateVariants({ size }), className)}
+        className={cn(
+          emptyStateVariants({ size }),
+          "surface-list-row bg-[linear-gradient(180deg,hsl(var(--surface-emphasis))/0.44_0%,transparent_100%)]",
+          className,
+        )}
         {...props}
       >
-        <div className="flex h-14 w-14 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-muted/30">
+        <div className="flex h-16 w-16 items-center justify-center rounded-[24px] border border-primary/12 bg-background/88 shadow-card">
           {selectedIcon}
         </div>
-        
-        <div className="space-y-1.5 sm:space-y-2">
-          <h3 className="text-base sm:text-lg font-semibold text-foreground">
-            {title}
-          </h3>
-          {description && (
-            <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-              {description}
-            </p>
-          )}
+
+        <div className="space-y-2">
+          <h3 className="text-base font-semibold text-foreground sm:text-lg">{title}</h3>
+          {description ? (
+            <p className="mx-auto max-w-sm text-sm leading-6 text-muted-foreground">{description}</p>
+          ) : null}
         </div>
 
-        {action && (
-          <Button
-            variant={action.variant || "default"}
-            onClick={action.onClick}
-            className="mt-3 sm:mt-4"
-          >
+        {action ? (
+          <Button variant={action.variant || "default"} onClick={action.onClick} className="mt-1">
             {action.label}
           </Button>
-        )}
+        ) : null}
       </div>
-    )
-  }
-)
-EmptyState.displayName = "EmptyState"
+    );
+  },
+);
+EmptyState.displayName = "EmptyState";
 
-// Specific preset components for common use cases
-const EmptyTickets = (props: Omit<EmptyStateProps, 'title' | 'type'>) => (
+const EmptyTickets = (props: Omit<EmptyStateProps, "title" | "type">) => (
   <EmptyState
     title="אין קריאות שירות"
-    description="לא נמצאו קריאות שירות המתאימות לחיפוש שלך."
+    description="לא נמצאו קריאות שירות שמתאימות למסננים שנבחרו."
     type="empty"
     {...props}
   />
-)
+);
 
-const EmptySearchResults = (props: Omit<EmptyStateProps, 'title' | 'type'>) => (
+const EmptySearchResults = (props: Omit<EmptyStateProps, "title" | "type">) => (
   <EmptyState
     title="לא נמצאו תוצאות"
-    description="נסה לשנות את מונחי החיפוש או לנקות את המסננים."
+    description="כדאי לשנות את מונחי החיפוש או לנקות מסנן אחד או יותר."
     type="search"
     {...props}
   />
-)
+);
 
-const EmptyBuildings = (props: Omit<EmptyStateProps, 'title' | 'type'>) => (
+const EmptyBuildings = (props: Omit<EmptyStateProps, "title" | "type">) => (
   <EmptyState
     title="אין בניינים במערכת"
-    description="הוסף בניין ראשון כדי להתחיל לנהל את הנכסים שלך."
+    description="הוספת בניין ראשון תפתח את מסלולי הניהול, הקודים והיחידות."
     type="create"
     {...props}
   />
-)
+);
 
-const EmptyActionRequired = (props: Omit<EmptyStateProps, 'title' | 'type'>) => (
+const EmptyActionRequired = (props: Omit<EmptyStateProps, "title" | "type">) => (
   <EmptyState
     title="נדרשת פעולה לפני שאפשר להמשיך"
-    description="בדוק את ההגדרות או את נתוני החובה במסך זה, ואז נסה שוב."
+    description="בדוק את שדות החובה או את ההגדרות במסך הזה ואז נסה שוב."
     type="action"
     {...props}
   />
-)
+);
 
-const EmptyRestricted = (props: Omit<EmptyStateProps, 'title' | 'type'>) => (
+const EmptyRestricted = (props: Omit<EmptyStateProps, "title" | "type">) => (
   <EmptyState
     title="אין לך הרשאה לצפות בתוכן הזה"
     description="אם צריך גישה למסך הזה, פנה למנהל המערכת או לצוות התמיכה."
     type="restricted"
     {...props}
   />
-)
+);
 
-export { 
-  EmptyState, 
-  EmptyTickets, 
-  EmptySearchResults, 
-  EmptyBuildings,
+export {
   EmptyActionRequired,
+  EmptyBuildings,
   EmptyRestricted,
+  EmptySearchResults,
+  EmptyState,
+  EmptyTickets,
   emptyStateVariants,
-  type EmptyStateProps 
-}
+  type EmptyStateProps,
+};

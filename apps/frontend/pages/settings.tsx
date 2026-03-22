@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bell, CheckCircle2, Globe, KeyRound, Save, UserRound } from 'lucide-react';
+import { Bell, CheckCircle2, Globe, KeyRound, Save, ShieldCheck, Smartphone, UserRound } from 'lucide-react';
 import { authFetch } from '../lib/auth';
 import { type RegionalFormat, formatCurrency, formatDate, formatNumber, formatTime, regionalFormats } from '../lib/i18n';
 import { isValidEmail } from '../lib/utils';
 import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
-import { EmptyState } from '../components/ui/empty-state';
-import { FormField, FormErrorSummary } from '../components/ui/form-field';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { FormField } from '../components/ui/form-field';
 import { InlineErrorPanel } from '../components/ui/inline-feedback';
 import { Input } from '../components/ui/input';
 import { PageHero } from '../components/ui/page-hero';
@@ -216,18 +215,14 @@ export default function SettingsPage() {
   const profileErrors = useMemo(() => {
     return {
       email: profile.email && isValidEmail(profile.email) ? '' : t('settings.validation.email'),
-      phone:
-        !profile.phone || /^[0-9+\-\s()]{7,}$/.test(profile.phone)
-          ? ''
-          : t('settings.validation.phone'),
+      phone: !profile.phone || /^[0-9+\-\s()]{7,}$/.test(profile.phone) ? '' : t('settings.validation.phone'),
     };
   }, [profile.email, profile.phone, t]);
 
   const passwordErrors = useMemo(() => {
     return {
       currentPassword: passwords.currentPassword ? '' : t('settings.validation.currentPassword'),
-      newPassword:
-        passwords.newPassword.length >= 6 ? '' : t('settings.validation.newPassword'),
+      newPassword: passwords.newPassword.length >= 6 ? '' : t('settings.validation.newPassword'),
     };
   }, [passwords.currentPassword, passwords.newPassword, t]);
 
@@ -246,6 +241,7 @@ export default function SettingsPage() {
     { key: 'workOrderUpdates', label: t('settings.preference.workOrderUpdates'), description: t('settings.preference.workOrderUpdatesDesc') },
   ];
 
+  const enabledTopics = topicPrefs.filter((item) => preferences[item.key]).length;
   const now = new Date();
 
   if (loading) {
@@ -253,12 +249,23 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <PageHero
         compact
         kicker={t('settings.heroKicker')}
-        eyebrow={<StatusBadge label={t('settings.heroBadge')} tone="finance" />}
+        eyebrow={
+          <>
+            <StatusBadge label={t('settings.heroBadge')} tone="finance" />
+            <StatusBadge label={direction === 'rtl' ? t('settings.direction.rtl') : t('settings.direction.ltr')} tone="info" />
+          </>
+        }
         title={t('settings.heroTitle')}
+        description={t('settings.section.profileSubtitle')}
+        actions={
+          <Button variant="outline" size="sm" className="border-white/12 bg-white/8 text-white hover:bg-white/12" onClick={() => void loadSettings()}>
+            {t('notifications.refresh')}
+          </Button>
+        }
       />
 
       {loadError ? <InlineErrorPanel title={t('settings.loadErrorTitle')} description={loadError} onRetry={loadSettings} /> : null}
@@ -272,102 +279,176 @@ export default function SettingsPage() {
         </Card>
       ) : null}
 
-      <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="profile" className="gap-1.5">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <SettingsSummaryCard
+          icon={<UserRound className="h-4 w-4 text-primary" />}
+          label={t('settings.section.profileTitle')}
+          value={profile.email || t('settings.section.profileTitle')}
+          description={profile.phone || t('settings.field.phoneHint')}
+        />
+        <SettingsSummaryCard
+          icon={<Bell className="h-4 w-4 text-primary" />}
+          label={t('settings.section.preferencesTitle')}
+          value={`${enabledTopics}/${topicPrefs.length}`}
+          description={t('settings.preference.explanation')}
+        />
+        <SettingsSummaryCard
+          icon={<Globe className="h-4 w-4 text-primary" />}
+          label={t('settings.section.languageTitle')}
+          value={pendingLocale === 'he' ? t('settings.language.he') : t('settings.language.en')}
+          description={regionalFormats[pendingRegional].label}
+        />
+        <SettingsSummaryCard
+          icon={<ShieldCheck className="h-4 w-4 text-primary" />}
+          label={t('settings.section.passwordTitle')}
+          value={passwords.newPassword ? t('settings.unsavedChanges') : t('settings.meta.secured')}
+          description={languageDirty ? t('settings.unsavedChanges') : t('common.saved')}
+        />
+      </section>
+
+      <Tabs defaultValue="profile" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2 gap-1 rounded-[24px] border border-subtle-border bg-muted/24 p-1 md:grid-cols-4">
+          <TabsTrigger value="profile" className="gap-1.5 rounded-[18px]">
             <UserRound className="h-3.5 w-3.5" />
             {t('settings.section.profileTitle')}
           </TabsTrigger>
-          <TabsTrigger value="security" className="gap-1.5">
+          <TabsTrigger value="security" className="gap-1.5 rounded-[18px]">
             <KeyRound className="h-3.5 w-3.5" />
             {t('settings.section.passwordTitle')}
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-1.5">
+          <TabsTrigger value="notifications" className="gap-1.5 rounded-[18px]">
             <Bell className="h-3.5 w-3.5" />
             {t('settings.section.preferencesTitle')}
           </TabsTrigger>
-          <TabsTrigger value="language" className="gap-1.5">
+          <TabsTrigger value="language" className="gap-1.5 rounded-[18px]">
             <Globe className="h-3.5 w-3.5" />
             {t('settings.section.languageTitle')}
             {languageDirty ? <span className="h-1.5 w-1.5 rounded-full bg-warning" /> : null}
           </TabsTrigger>
         </TabsList>
 
-        {/* Profile Tab */}
-        <TabsContent value="profile">
-          <Card variant="elevated">
-            <CardContent className="space-y-6 p-6">
+        <TabsContent value="profile" className="space-y-4">
+          <Card variant="featured">
+            <CardContent className="space-y-4 p-4 sm:p-5">
               <SectionHeader
                 title={t('settings.section.profileTitle')}
                 subtitle={t('settings.section.profileSubtitle')}
                 meta={savingProfile ? t('common.saving') : t('common.readyToSave')}
-                actions={<UserRound className="h-5 w-5 text-primary" />}
+                actions={<StatusBadge label={profile.email ? t('common.saved') : t('settings.unsavedChanges')} tone="finance" />}
               />
 
-              <FormField label={t('settings.field.email')} error={shouldShowProfileError('email') ? profileErrors.email || undefined : undefined} required>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  inputMode="email"
-                  value={profile.email}
-                  disabled={savingProfile}
-                  onChange={(event) => setProfile((current) => ({ ...current, email: event.target.value }))}
-                  onBlur={() => setProfileTouched((prev) => ({ ...prev, email: true }))}
-                />
-              </FormField>
-
-              <FormField label={t('settings.field.phone')} description={t('settings.field.phoneHint')} error={shouldShowProfileError('phone') ? profileErrors.phone || undefined : undefined}>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  inputMode="tel"
-                  value={profile.phone}
-                  disabled={savingProfile}
-                  onChange={(event) => setProfile((current) => ({ ...current, phone: event.target.value }))}
-                  onBlur={() => setProfileTouched((prev) => ({ ...prev, phone: true }))}
-                />
-              </FormField>
-
-              <FormField label={t('settings.field.pushToken')} description={t('settings.field.pushTokenHint')}>
-                <Input
-                  id="pushToken"
-                  value={profile.pushToken}
-                  disabled={savingProfile}
-                  onChange={(event) => setProfile((current) => ({ ...current, pushToken: event.target.value }))}
-                />
-              </FormField>
-
-              <div className="flex justify-end">
-                <Button onClick={saveProfile} disabled={savingProfile || Boolean(profileErrors.email || profileErrors.phone)}>
-                  <Save className="me-2 h-4 w-4" />
-                  {savingProfile ? t('common.saving') : t('settings.action.saveProfile')}
-                </Button>
+              <div className="grid gap-3 md:grid-cols-2">
+                <ProfileInfoCard title={t('settings.field.email')} value={profile.email || '...'} />
+                <ProfileInfoCard title={t('settings.field.phone')} value={profile.phone || t('settings.field.phoneHint')} />
               </div>
             </CardContent>
           </Card>
+
+          <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+            <Card variant="elevated">
+              <CardContent className="space-y-5 p-4 sm:p-5">
+                <SectionHeader
+                  title={t('settings.section.profileTitle')}
+                  subtitle={t('settings.section.profileSubtitle')}
+                  eyebrow={t('settings.section.profileTitle')}
+                />
+
+                <FormField
+                  label={t('settings.field.email')}
+                  error={shouldShowProfileError('email') ? profileErrors.email || undefined : undefined}
+                  required
+                >
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    inputMode="email"
+                    value={profile.email}
+                    disabled={savingProfile}
+                    onChange={(event) => setProfile((current) => ({ ...current, email: event.target.value }))}
+                    onBlur={() => setProfileTouched((prev) => ({ ...prev, email: true }))}
+                  />
+                </FormField>
+
+                <FormField
+                  label={t('settings.field.phone')}
+                  description={t('settings.field.phoneHint')}
+                  error={shouldShowProfileError('phone') ? profileErrors.phone || undefined : undefined}
+                >
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    inputMode="tel"
+                    value={profile.phone}
+                    disabled={savingProfile}
+                    onChange={(event) => setProfile((current) => ({ ...current, phone: event.target.value }))}
+                    onBlur={() => setProfileTouched((prev) => ({ ...prev, phone: true }))}
+                  />
+                </FormField>
+
+                <div className="flex justify-end">
+                  <Button onClick={saveProfile} disabled={savingProfile || Boolean(profileErrors.email || profileErrors.phone)}>
+                    <Save className="me-2 h-4 w-4" />
+                    {savingProfile ? t('common.saving') : t('settings.action.saveProfile')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card variant="elevated">
+              <CardContent className="space-y-5 p-4 sm:p-5">
+                <SectionHeader
+                  title={t('settings.field.pushToken')}
+                  subtitle={t('settings.field.pushTokenHint')}
+                  eyebrow={t('settings.section.preferencesTitle')}
+                  actions={<Smartphone className="h-4 w-4 text-primary" />}
+                />
+
+                <div className="rounded-[22px] border border-subtle-border bg-muted/24 p-4 text-sm leading-6 text-muted-foreground">
+                  מזהה המכשיר נשמר כדי להפעיל התראות דחיפה מדויקות, בלי להציף אותך בעדכונים כפולים.
+                </div>
+
+                <FormField label={t('settings.field.pushToken')} description={t('settings.field.pushTokenHint')}>
+                  <Input
+                    id="pushToken"
+                    value={profile.pushToken}
+                    disabled={savingProfile}
+                    onChange={(event) => setProfile((current) => ({ ...current, pushToken: event.target.value }))}
+                  />
+                </FormField>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
-        {/* Security Tab */}
-        <TabsContent value="security">
-          <Card variant="elevated">
-            <CardContent className="space-y-6 p-6">
+        <TabsContent value="security" className="space-y-4">
+          <Card variant="featured">
+            <CardContent className="space-y-4 p-4 sm:p-5">
               <SectionHeader
                 title={t('settings.section.passwordTitle')}
                 subtitle={t('settings.section.passwordSubtitle')}
                 meta={savingPassword ? t('common.saving') : t('settings.meta.secured')}
-                actions={<KeyRound className="h-5 w-5 text-primary" />}
+                actions={<StatusBadge label={t('settings.meta.secured')} tone="success" />}
               />
+              <div className="rounded-[24px] border border-subtle-border bg-background/86 p-4 text-sm leading-6 text-muted-foreground">
+                החלפת הסיסמה נשמרת כמשימה קצרה וברורה. אין כאן שדות מיותרים, ורק שתי פעולות נדרשות כדי לסיים.
+              </div>
+            </CardContent>
+          </Card>
 
-              <FormField label={t('settings.field.currentPassword')} error={shouldShowPasswordError('currentPassword') ? passwordErrors.currentPassword || undefined : undefined} required>
+          <Card variant="elevated">
+            <CardContent className="space-y-5 p-4 sm:p-5">
+              <FormField
+                label={t('settings.field.currentPassword')}
+                error={shouldShowPasswordError('currentPassword') ? passwordErrors.currentPassword || undefined : undefined}
+                required
+              >
                 <PasswordInput
                   id="currentPassword"
                   name="currentPassword"
                   value={passwords.currentPassword}
-                  onChange={(event) =>
-                    setPasswords((current) => ({ ...current, currentPassword: event.target.value }))
-                  }
+                  onChange={(event) => setPasswords((current) => ({ ...current, currentPassword: event.target.value }))}
                   onBlur={() => setPasswordTouched((prev) => ({ ...prev, currentPassword: true }))}
                   autoComplete="current-password"
                 />
@@ -383,9 +464,7 @@ export default function SettingsPage() {
                   id="newPassword"
                   name="newPassword"
                   value={passwords.newPassword}
-                  onChange={(event) =>
-                    setPasswords((current) => ({ ...current, newPassword: event.target.value }))
-                  }
+                  onChange={(event) => setPasswords((current) => ({ ...current, newPassword: event.target.value }))}
                   onBlur={() => setPasswordTouched((prev) => ({ ...prev, newPassword: true }))}
                   autoComplete="new-password"
                 />
@@ -401,67 +480,56 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        {/* Notifications Tab */}
-        <TabsContent value="notifications">
-          <div className="space-y-6">
+        <TabsContent value="notifications" className="space-y-4">
+          <Card variant="featured">
+            <CardContent className="space-y-4 p-4 sm:p-5">
+              <SectionHeader
+                title={t('settings.section.preferencesTitle')}
+                subtitle={t('settings.section.preferencesSubtitle')}
+                meta={savingPreferences ? t('common.saving') : t('settings.meta.personalized')}
+                actions={<StatusBadge label={`${enabledTopics}/${topicPrefs.length}`} tone="info" />}
+              />
+              <div className="rounded-[24px] border border-subtle-border bg-background/86 p-4 text-sm leading-6 text-muted-foreground">
+                {t('settings.preference.explanation')}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
             <Card variant="elevated">
-              <CardContent className="space-y-6 p-6">
-                <SectionHeader
-                  title={t('settings.section.preferencesTitle')}
-                  subtitle={t('settings.section.preferencesSubtitle')}
-                  meta={savingPreferences ? t('common.saving') : t('settings.meta.personalized')}
-                  actions={<Bell className="h-5 w-5 text-primary" />}
-                />
+              <CardHeader>
+                <CardTitle>{t('notifications.preference.group.channels')}</CardTitle>
+                <CardDescription>{t('notifications.preference.group.channelsDesc')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {channelPrefs.map((item) => (
+                  <PreferenceRow
+                    key={item.key}
+                    title={item.label}
+                    description={item.description}
+                    checked={preferences[item.key]}
+                    onCheckedChange={(checked) => setPreferences((current) => ({ ...current, [item.key]: checked }))}
+                  />
+                ))}
+              </CardContent>
+            </Card>
 
-                <p className="rounded-[22px] border border-subtle-border bg-muted/40 p-4 text-sm text-muted-foreground">
-                  {t('settings.preference.explanation')}
-                </p>
-
-                {/* Channel preferences */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-foreground">{t('notifications.preference.group.channels')}</h4>
-                  <p className="text-xs text-muted-foreground">{t('notifications.preference.group.channelsDesc')}</p>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {channelPrefs.map((item) => (
-                      <div key={item.key} className="flex items-start justify-between gap-3 rounded-[22px] border border-subtle-border bg-background p-4">
-                        <div className="space-y-1">
-                          <div className="text-sm font-medium text-foreground">{item.label}</div>
-                          <div className="text-xs leading-5 text-muted-foreground">{item.description}</div>
-                        </div>
-                        <Switch
-                          checked={preferences[item.key]}
-                          onCheckedChange={(checked) =>
-                            setPreferences((current) => ({ ...current, [item.key]: checked }))
-                          }
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Topic preferences */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-foreground">{t('notifications.preference.group.topics')}</h4>
-                  <p className="text-xs text-muted-foreground">{t('notifications.preference.group.topicsDesc')}</p>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {topicPrefs.map((item) => (
-                      <div key={item.key} className="flex items-start justify-between gap-4 rounded-[22px] border border-subtle-border bg-background p-4">
-                        <div className="space-y-1">
-                          <div className="text-sm font-medium text-foreground">{item.label}</div>
-                          <div className="text-xs leading-5 text-muted-foreground">{item.description}</div>
-                        </div>
-                        <Switch
-                          checked={preferences[item.key]}
-                          onCheckedChange={(checked) =>
-                            setPreferences((current) => ({ ...current, [item.key]: checked }))
-                          }
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
+            <Card variant="elevated">
+              <CardHeader>
+                <CardTitle>{t('notifications.preference.group.topics')}</CardTitle>
+                <CardDescription>{t('notifications.preference.group.topicsDesc')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {topicPrefs.map((item) => (
+                  <PreferenceRow
+                    key={item.key}
+                    title={item.label}
+                    description={item.description}
+                    checked={preferences[item.key]}
+                    onCheckedChange={(checked) => setPreferences((current) => ({ ...current, [item.key]: checked }))}
+                  />
+                ))}
+                <div className="flex justify-end pt-2">
                   <Button onClick={savePreferences} disabled={savingPreferences}>
                     <Save className="me-2 h-4 w-4" />
                     {savingPreferences ? t('common.saving') : t('settings.action.savePreferences')}
@@ -472,107 +540,154 @@ export default function SettingsPage() {
           </div>
         </TabsContent>
 
-        {/* Language & Region Tab */}
-        <TabsContent value="language">
-          <Card variant="elevated">
-            <CardContent className="space-y-6 p-6">
+        <TabsContent value="language" className="space-y-4">
+          <Card variant="featured">
+            <CardContent className="space-y-4 p-4 sm:p-5">
               <SectionHeader
                 title={t('settings.section.languageTitle')}
                 subtitle={t('settings.section.languageSubtitle')}
-                meta={
-                  languageDirty
-                    ? <span className="inline-flex items-center gap-1.5 text-warning"><span className="h-1.5 w-1.5 rounded-full bg-warning" />{t('settings.unsavedChanges')}</span>
-                    : t('common.saved')
-                }
-                actions={<Globe className="h-5 w-5 text-primary" />}
+                meta={languageDirty ? t('settings.unsavedChanges') : t('common.saved')}
+                actions={<StatusBadge label={languageDirty ? t('settings.unsavedChanges') : t('common.saved')} tone={languageDirty ? 'warning' : 'success'} />}
               />
-
-              <FormField label={t('settings.field.language')} description={t('settings.field.languageHint')}>
-                <div className="flex gap-2">
-                  <Button
-                    variant={pendingLocale === 'he' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => {
-                      setPendingLocale('he');
-                      setPendingDirection('rtl');
-                    }}
-                  >
-                    {t('settings.language.he')}
-                  </Button>
-                  <Button
-                    variant={pendingLocale === 'en' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => {
-                      setPendingLocale('en');
-                      setPendingDirection('ltr');
-                    }}
-                  >
-                    {t('settings.language.en')}
-                  </Button>
-                </div>
-              </FormField>
-
-              <FormField label={t('settings.field.direction')} description={t('settings.field.directionHint')}>
-                <div className="flex gap-2">
-                  <Button
-                    variant={pendingDirection === 'rtl' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setPendingDirection('rtl')}
-                  >
-                    {t('settings.direction.rtl')}
-                  </Button>
-                  <Button
-                    variant={pendingDirection === 'ltr' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setPendingDirection('ltr')}
-                  >
-                    {t('settings.direction.ltr')}
-                  </Button>
-                </div>
-              </FormField>
-
-              <FormField label={t('settings.field.regionalFormat')} description={t('settings.field.regionalFormatHint')}>
-                <div className="flex flex-wrap gap-2">
-                  {(Object.entries(regionalFormats) as [RegionalFormat, { label: string }][]).map(([key, meta]) => (
-                    <Button
-                      key={key}
-                      variant={pendingRegional === key ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setPendingRegional(key)}
-                    >
-                      {meta.label}
-                    </Button>
-                  ))}
-                </div>
-              </FormField>
-
-              {/* Live format preview */}
-              <div className="rounded-[22px] border border-subtle-border bg-muted/40 p-4 space-y-2">
-                <h4 className="text-sm font-semibold text-foreground">{t('settings.formatPreview')}</h4>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-muted-foreground">
-                  <span>{t('settings.formatPreviewDate', { value: formatDate(now, pendingRegional) })}</span>
-                  <span>{t('settings.formatPreviewTime', { value: formatTime(now, pendingRegional) })}</span>
-                  <span>{t('settings.formatPreviewNumber', { value: formatNumber(12345.67, pendingRegional) })}</span>
-                  <span>{t('settings.formatPreviewCurrency', { value: formatCurrency(12345.67, 'ILS', pendingRegional) })}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3">
-                {languageDirty ? (
-                  <span className="text-xs text-warning">{t('settings.unsavedChanges')}</span>
-                ) : null}
-                <Button
-                  onClick={saveLanguagePreferences}
-                  disabled={savingLanguage || !languageDirty}
-                >
-                  <Save className="me-2 h-4 w-4" />
-                  {savingLanguage ? t('common.saving') : t('settings.action.saveLanguage')}
-                </Button>
-              </div>
             </CardContent>
           </Card>
+
+          <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+            <Card variant="elevated">
+              <CardContent className="space-y-5 p-4 sm:p-5">
+                <FormField label={t('settings.field.language')} description={t('settings.field.languageHint')}>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={pendingLocale === 'he' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => {
+                        setPendingLocale('he');
+                        setPendingDirection('rtl');
+                      }}
+                    >
+                      {t('settings.language.he')}
+                    </Button>
+                    <Button
+                      variant={pendingLocale === 'en' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => {
+                        setPendingLocale('en');
+                        setPendingDirection('ltr');
+                      }}
+                    >
+                      {t('settings.language.en')}
+                    </Button>
+                  </div>
+                </FormField>
+
+                <FormField label={t('settings.field.direction')} description={t('settings.field.directionHint')}>
+                  <div className="flex gap-2">
+                    <Button variant={pendingDirection === 'rtl' ? 'default' : 'outline'} size="sm" onClick={() => setPendingDirection('rtl')}>
+                      {t('settings.direction.rtl')}
+                    </Button>
+                    <Button variant={pendingDirection === 'ltr' ? 'default' : 'outline'} size="sm" onClick={() => setPendingDirection('ltr')}>
+                      {t('settings.direction.ltr')}
+                    </Button>
+                  </div>
+                </FormField>
+
+                <FormField label={t('settings.field.regionalFormat')} description={t('settings.field.regionalFormatHint')}>
+                  <div className="flex flex-wrap gap-2">
+                    {(Object.entries(regionalFormats) as [RegionalFormat, { label: string }][]).map(([key, meta]) => (
+                      <Button key={key} variant={pendingRegional === key ? 'default' : 'outline'} size="sm" onClick={() => setPendingRegional(key)}>
+                        {meta.label}
+                      </Button>
+                    ))}
+                  </div>
+                </FormField>
+              </CardContent>
+            </Card>
+
+            <Card variant="elevated">
+              <CardContent className="space-y-5 p-4 sm:p-5">
+                <SectionHeader
+                  title={t('settings.formatPreview')}
+                  subtitle={t('settings.field.regionalFormatHint')}
+                  eyebrow={t('settings.section.languageTitle')}
+                />
+
+                <div className="rounded-[24px] border border-subtle-border bg-muted/24 p-4">
+                  <div className="grid gap-3 text-sm text-muted-foreground">
+                    <div>{t('settings.formatPreviewDate', { value: formatDate(now, pendingRegional) })}</div>
+                    <div>{t('settings.formatPreviewTime', { value: formatTime(now, pendingRegional) })}</div>
+                    <div>{t('settings.formatPreviewNumber', { value: formatNumber(12345.67, pendingRegional) })}</div>
+                    <div>{t('settings.formatPreviewCurrency', { value: formatCurrency(12345.67, 'ILS', pendingRegional) })}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3">
+                  {languageDirty ? <span className="text-xs text-warning">{t('settings.unsavedChanges')}</span> : null}
+                  <Button onClick={saveLanguagePreferences} disabled={savingLanguage || !languageDirty}>
+                    <Save className="me-2 h-4 w-4" />
+                    {savingLanguage ? t('common.saving') : t('settings.action.saveLanguage')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function SettingsSummaryCard({
+  icon,
+  label,
+  value,
+  description,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  description: string;
+}) {
+  return (
+    <Card variant="elevated">
+      <CardContent className="space-y-2 p-4">
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-tertiary">
+          {icon}
+          {label}
+        </div>
+        <div className="text-sm font-semibold text-foreground">{value}</div>
+        <div className="text-xs leading-5 text-muted-foreground">{description}</div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ProfileInfoCard({ title, value }: { title: string; value: string }) {
+  return (
+    <div className="rounded-[24px] border border-subtle-border bg-background/88 p-4 shadow-card">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-tertiary">{title}</div>
+      <div className="mt-2 text-sm font-semibold text-foreground">{value}</div>
+    </div>
+  );
+}
+
+function PreferenceRow({
+  title,
+  description,
+  checked,
+  onCheckedChange,
+}: {
+  title: string;
+  description: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-[22px] border border-subtle-border bg-background/88 p-4 shadow-card">
+      <div className="space-y-1">
+        <div className="text-sm font-semibold text-foreground">{title}</div>
+        <div className="text-sm leading-6 text-muted-foreground">{description}</div>
+      </div>
+      <Switch checked={checked} onCheckedChange={onCheckedChange} />
     </div>
   );
 }

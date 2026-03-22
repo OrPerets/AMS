@@ -536,6 +536,11 @@ export default function ResidentAccountPage() {
   const recentUpdatesCount = context.documents.slice(0, 4).length + context.recentActivity.slice(0, 4).length;
   const currentYear = new Date().getFullYear();
   const accountDisplayName = context.user.email.split('@')[0];
+  const profileChips = [
+    primaryBuilding?.name ? `${primaryBuilding.name} · דירה ${primaryUnit?.number}` : null,
+    context.user.phone ? context.user.phone : 'טלפון לא הוגדר',
+    autopayEnabled ? 'חיוב אוטומטי פעיל' : 'חיוב ידני',
+  ].filter(Boolean) as string[];
   const attentionCards: Array<{ key: string; tone: TimelineTone; label: string; title: string; description: string }> = [
     nextPaymentDue
       ? {
@@ -625,6 +630,38 @@ export default function ResidentAccountPage() {
         }
       />
 
+      <Card variant="muted">
+        <CardContent className="grid gap-3 p-4 sm:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-[24px] border border-subtle-border bg-background/84 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.2em] text-tertiary">סיכום חשבון</div>
+                <div className="mt-2 text-lg font-semibold text-foreground">{accountDisplayName}</div>
+                <div className="mt-1 text-sm text-muted-foreground">{context.user.email}</div>
+              </div>
+              <Badge variant="finance">{getUserRoleLabel(context.user.role)}</Badge>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {profileChips.map((item) => (
+                <Badge key={item} variant="outline">{item}</Badge>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-[22px] border border-subtle-border bg-background/84 p-4">
+              <div className="text-[11px] uppercase tracking-[0.2em] text-tertiary">יתרה</div>
+              <div className="mt-2 text-lg font-semibold text-foreground">{summary ? formatCurrency(summary.currentBalance) : 'לא זמין'}</div>
+              <div className="mt-1 text-sm text-muted-foreground">תמונת מצב מיידית של החשבון</div>
+            </div>
+            <div className="rounded-[22px] border border-subtle-border bg-background/84 p-4">
+              <div className="text-[11px] uppercase tracking-[0.2em] text-tertiary">עדכונים</div>
+              <div className="mt-2 text-lg font-semibold text-foreground">{unreadNotifications.length}</div>
+              <div className="mt-1 text-sm text-muted-foreground">התראות חדשות שממתינות לקריאה</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-3 sm:gap-4 xl:grid-cols-[0.95fr_1.05fr]">
         <Card variant="featured">
           <CardHeader>
@@ -653,7 +690,7 @@ export default function ResidentAccountPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-primary" />
-              סיכום אישי
+              פרופיל ומבנה מגורים
             </CardTitle>
             <CardDescription>פרטים אישיים, יחידות משויכות ופעולות מהירות שממשיכות איתך גם במובייל.</CardDescription>
           </CardHeader>

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { motion } from 'framer-motion';
 import {
   Home,
   Ticket,
@@ -26,7 +27,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { useDirection, useLocale } from '../../lib/providers';
+import { useLocale } from '../../lib/providers';
 import { getTokenPayload } from '../../lib/auth';
 import { useRegisterBottomSurface } from '../../lib/bottom-surface';
 
@@ -49,41 +50,35 @@ function getRoleBottomNav(role: string, t: (key: string) => string): NavItem[] {
         { label: t('nav.homeOverview'), href: '/home', icon: Home },
         { label: t('nav.dashboard'), href: '/admin/dashboard', icon: BarChart3 },
         { label: t('nav.tickets'), href: '/tickets', icon: Ticket },
-        { label: t('nav.notifications'), href: '/notifications', icon: Bell },
       ];
     case 'PM':
       return [
         { label: t('nav.homeOverview'), href: '/home', icon: Home },
         { label: t('nav.tickets'), href: '/tickets', icon: Ticket },
         { label: t('nav.buildings'), href: '/buildings', icon: Building },
-        { label: t('nav.notifications'), href: '/notifications', icon: Bell },
       ];
     case 'TECH':
       return [
         { label: t('nav.homeOverview'), href: '/home', icon: Home },
         { label: t('nav.techJobs'), href: '/tech/jobs', icon: Wrench },
         { label: t('nav.tickets'), href: '/tickets', icon: Ticket },
-        { label: t('nav.notifications'), href: '/notifications', icon: Bell },
       ];
     case 'RESIDENT':
       return [
         { label: t('nav.homeOverview'), href: '/home', icon: Home },
         { label: t('nav.residentRequests'), href: '/resident/requests', icon: ClipboardList },
         { label: t('nav.tickets'), href: '/tickets', icon: Ticket },
-        { label: t('nav.notifications'), href: '/notifications', icon: Bell },
       ];
     case 'ACCOUNTANT':
       return [
         { label: t('nav.homeOverview'), href: '/home', icon: Home },
         { label: t('nav.payments'), href: '/payments', icon: CreditCard },
         { label: t('nav.budgets'), href: '/finance/budgets', icon: Wallet },
-        { label: t('nav.notifications'), href: '/notifications', icon: Bell },
       ];
     default:
       return [
         { label: t('nav.homeOverview'), href: '/home', icon: Home },
         { label: t('nav.tickets'), href: '/tickets', icon: Ticket },
-        { label: t('nav.notifications'), href: '/notifications', icon: Bell },
       ];
   }
 }
@@ -95,6 +90,10 @@ function getRoleSecondaryGroups(role: string, t: (key: string) => string): Secon
   const properties: NavItem[] = [];
   const finance: NavItem[] = [];
   const admin: NavItem[] = [];
+  const system: NavItem[] = [
+    { label: t('nav.notifications'), href: '/notifications', icon: Bell },
+    { label: t('shell.settings'), href: '/settings', icon: Settings },
+  ];
 
   if (['ADMIN', 'PM', 'TECH'].includes(role)) {
     operations.push({ label: t('nav.maintenance'), href: '/maintenance', icon: CalendarClock });
@@ -149,9 +148,9 @@ function getRoleSecondaryGroups(role: string, t: (key: string) => string): Secon
   if (finance.length) groups.push({ title: t('nav.group.finance'), items: finance });
   if (admin.length) groups.push({ title: t('nav.group.admin'), items: admin });
 
-  groups.push({
-    title: t('shell.settings'),
-    items: [{ label: t('shell.settings'), href: '/settings', icon: Settings }],
+  groups.unshift({
+    title: t('bottomNav.moreMenu'),
+    items: system,
   });
 
   return groups;
@@ -165,7 +164,6 @@ interface MobileBottomNavProps {
 export default function MobileBottomNav({ className, unreadNotifications = 0 }: MobileBottomNavProps) {
   const router = useRouter();
   const { t } = useLocale();
-  const { direction } = useDirection();
   const [userRole, setUserRole] = useState<string>('RESIDENT');
   const [moreOpen, setMoreOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -215,25 +213,20 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
     return router.pathname.startsWith(href);
   };
 
-  const primaryItemsWithBadges = primaryItems.map((item) => ({
-    ...item,
-    badge: item.href === '/notifications' ? unreadNotifications : undefined,
-  }));
-
   return (
     <>
       <nav
         ref={navRef}
         className={cn(
-          'fixed inset-x-0 bottom-0 z-40 border-t bg-background/92 backdrop-blur-lg md:hidden',
+          'fixed inset-x-0 bottom-0 z-40 border-t shell-frost md:hidden',
           'safe-pb thumb-zone',
           className,
         )}
         role="navigation"
         aria-label={t('bottomNav.label')}
       >
-        <div className="flex items-stretch justify-around px-1">
-          {primaryItemsWithBadges.map((item) => {
+        <div className="grid grid-cols-4 gap-1 px-2 py-2">
+          {primaryItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
             return (
@@ -241,25 +234,22 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[10px] font-medium transition-colors',
-                  active
-                    ? 'text-primary'
-                    : 'text-muted-foreground',
+                  'relative flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[20px] px-1.5 py-2 text-[10px] font-medium transition-colors',
+                  active ? 'text-primary' : 'text-muted-foreground',
                 )}
                 aria-current={active ? 'page' : undefined}
               >
-                <span className="relative">
-                  <Icon className={cn('h-5 w-5', active && 'scale-110')} />
-                  {item.badge && item.badge > 0 ? (
-                    <span className="absolute -end-2.5 -top-1.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground">
-                      {item.badge > 99 ? '99+' : item.badge}
-                    </span>
-                  ) : null}
+                {active ? (
+                  <motion.span
+                    layoutId="mobile-bottom-nav-active"
+                    className="absolute inset-0 rounded-[20px] bg-primary/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
+                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  />
+                ) : null}
+                <span className="relative z-10 flex h-8 w-8 items-center justify-center rounded-2xl">
+                  <Icon className={cn('h-5 w-5 transition-transform duration-200', active && 'scale-110')} />
                 </span>
-                <span className="truncate max-w-[64px]">{item.label}</span>
-                {active && (
-                  <span className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" />
-                )}
+                <span className="relative z-10 max-w-[68px] truncate">{item.label}</span>
               </Link>
             );
           })}
@@ -267,15 +257,25 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
           <button
             type="button"
             className={cn(
-              'relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[10px] font-medium transition-colors',
+              'relative flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[20px] px-1.5 py-2 text-[10px] font-medium transition-colors',
               moreOpen ? 'text-primary' : 'text-muted-foreground',
             )}
             onClick={() => setMoreOpen(!moreOpen)}
             aria-expanded={moreOpen}
             aria-label={t('bottomNav.more')}
           >
-            <MoreHorizontal className="h-5 w-5" />
-            <span>{t('bottomNav.more')}</span>
+            {moreOpen ? (
+              <span className="absolute inset-0 rounded-[20px] bg-primary/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]" />
+            ) : null}
+            <span className="relative z-10 flex h-8 w-8 items-center justify-center rounded-2xl">
+              <MoreHorizontal className="h-5 w-5" />
+              {unreadNotifications > 0 ? (
+                <span className="absolute -end-2 -top-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                </span>
+              ) : null}
+            </span>
+            <span className="relative z-10">{t('bottomNav.more')}</span>
           </button>
         </div>
       </nav>
@@ -293,7 +293,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
       <div
         ref={moreSheetRef}
         className={cn(
-          'fixed inset-x-0 bottom-0 z-50 max-h-[70vh] overflow-y-auto rounded-t-2xl border-t bg-background shadow-modal md:hidden',
+          'fixed inset-x-0 bottom-0 z-50 max-h-[78vh] overflow-y-auto rounded-t-[30px] border-t bg-background shadow-modal md:hidden',
           'transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
           moreOpen ? 'translate-y-0' : 'translate-y-full',
         )}
@@ -302,8 +302,13 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
         aria-label={t('bottomNav.moreMenu')}
         aria-hidden={!moreOpen}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/95 px-4 py-3 backdrop-blur-sm">
-          <h2 className="text-sm font-semibold">{t('bottomNav.moreMenu')}</h2>
+        <div className="sticky top-0 z-10 border-b bg-background/92 px-4 pb-3 pt-3 backdrop-blur-xl">
+          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted-foreground/25" />
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold">{t('bottomNav.moreMenu')}</h2>
+              <p className="text-xs text-muted-foreground">שאר המודולים והמסכים המשלימים מרוכזים כאן.</p>
+            </div>
           <button
             type="button"
             onClick={() => setMoreOpen(false)}
@@ -312,15 +317,16 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
           >
             <X className="h-4 w-4" />
           </button>
+          </div>
         </div>
 
         <div className="space-y-4 px-3 py-3 safe-pb">
           {secondaryGroups.map((group) => (
-            <div key={group.title} className="space-y-1">
+            <div key={group.title} className="mobile-shell-panel space-y-2 px-2 py-2.5">
               <h3 className="px-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {group.title}
               </h3>
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.href);
@@ -330,14 +336,24 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                       href={item.href}
                       onClick={() => setMoreOpen(false)}
                       className={cn(
-                        'flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-colors',
+                        'flex min-h-[52px] items-center gap-3 rounded-[18px] px-3 py-3 text-[13px] font-medium transition-colors',
                         active
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'text-foreground/75 hover:bg-muted active:bg-muted/80',
+                          ? 'surface-action text-foreground'
+                          : 'text-foreground/75 hover:bg-muted/60 active:bg-muted/80',
                       )}
                     >
-                      <Icon className="h-[18px] w-[18px] shrink-0" />
-                      <span>{item.label}</span>
+                      <span className={cn(
+                        'flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl',
+                        active ? 'bg-primary/12 text-primary' : 'bg-muted/60 text-muted-foreground',
+                      )}>
+                        <Icon className="h-[18px] w-[18px]" />
+                      </span>
+                      <span className="flex-1">{item.label}</span>
+                      {item.href === '/notifications' && unreadNotifications > 0 ? (
+                        <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+                          {unreadNotifications}
+                        </span>
+                      ) : null}
                     </Link>
                   );
                 })}

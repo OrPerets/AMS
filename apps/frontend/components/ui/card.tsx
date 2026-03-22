@@ -3,16 +3,18 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 
 const cardVariants = cva(
-  "rounded-2xl sm:rounded-[24px] border text-card-foreground transition-all duration-300",
+  "rounded-[24px] sm:rounded-[28px] border text-card-foreground transition-[transform,box-shadow,border-color,background] duration-300 ease-[var(--ease-enter)]",
   {
     variants: {
       variant: {
         default: "surface-card bg-card",
         elevated: "surface-elevated bg-elevated-surface",
-        metric: "surface-card bg-card hover:-translate-y-0.5",
-        action: "surface-card bg-card hover:border-strong-border hover:-translate-y-0.5 hover:shadow-raised",
-        warning: "border-warning/30 bg-warning/10 shadow-card",
-        featured: "border-primary/25 bg-gradient-to-br from-card via-card to-primary/10 shadow-raised",
+        metric: "surface-card bg-card/95 hover:-translate-y-0.5",
+        action: "surface-action bg-card hover:-translate-y-1 hover:border-primary/30 hover:shadow-raised",
+        warning: "surface-critical bg-card text-card-foreground",
+        featured: "surface-feature bg-elevated-surface",
+        listRow: "surface-list-row bg-muted-surface/95 rounded-[22px] sm:rounded-[24px]",
+        muted: "surface-muted bg-muted-surface/92",
       },
     },
     defaultVariants: {
@@ -32,7 +34,12 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={cn(cardVariants({ variant }), isInteractive && "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", className)}
+        className={cn(
+          cardVariants({ variant }),
+          isInteractive &&
+            "cursor-pointer active:scale-[0.995] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          className,
+        )}
         role={role ?? (isInteractive ? "button" : undefined)}
         tabIndex={tabIndex ?? (isInteractive ? 0 : undefined)}
         data-interactive-card={isInteractive ? "true" : undefined}
@@ -63,14 +70,18 @@ CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h3 ref={ref} className={cn("text-base sm:text-lg font-semibold leading-tight tracking-tight text-foreground", className)} {...props} />
+    <h3
+      ref={ref}
+      className={cn("text-[15px] font-semibold leading-tight tracking-tight text-foreground sm:text-lg", className)}
+      {...props}
+    />
   )
 );
 CardTitle.displayName = "CardTitle";
 
 const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn("text-sm leading-6 text-muted-foreground", className)} {...props} />
+    <p ref={ref} className={cn("text-[13px] leading-6 text-muted-foreground sm:text-sm", className)} {...props} />
   )
 );
 CardDescription.displayName = "CardDescription";

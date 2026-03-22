@@ -1,25 +1,24 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Bell, Filter, Radio, RefreshCw, Settings } from 'lucide-react';
+import { Bell, Filter, Radio, RefreshCw, Settings, SlidersHorizontal } from 'lucide-react';
 import { authFetch, getAccessToken, getCurrentUserId } from '../lib/auth';
-import { websocketService } from '../lib/websocket';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Switch } from '../components/ui/switch';
-import { Label } from '../components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import {
-  NotificationCenter,
-  NotificationItem,
-  deriveNotificationPriority,
-} from '../components/ui/notification-center';
-import { PullToRefreshIndicator } from '../components/ui/pull-to-refresh-indicator';
-import { toast } from '../components/ui/use-toast';
-import { usePullToRefresh } from '../hooks/use-pull-to-refresh';
 import { triggerHaptic } from '../lib/mobile';
 import { emitNotificationsChanged } from '../lib/notification-events';
 import { useLocale } from '../lib/providers';
+import { websocketService } from '../lib/websocket';
+import { NotificationCenter, NotificationItem, deriveNotificationPriority } from '../components/ui/notification-center';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { PageHero } from '../components/ui/page-hero';
+import { PullToRefreshIndicator } from '../components/ui/pull-to-refresh-indicator';
+import { SectionHeader } from '../components/ui/section-header';
+import { StatusBadge } from '../components/ui/status-badge';
+import { Switch } from '../components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { toast } from '../components/ui/use-toast';
+import { usePullToRefresh } from '../hooks/use-pull-to-refresh';
 
 interface NotificationPreferences {
   email: boolean;
@@ -80,6 +79,7 @@ export default function NotificationsPage() {
   const persisted = useMemo(() => loadPersistedFilters(), []);
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(persisted.quickFilter);
   const [searchTerm, setSearchTerm] = useState(persisted.searchTerm);
+  const deferredSearchTerm = useDeferredValue(searchTerm);
 
   useEffect(() => {
     persistFilters(quickFilter, searchTerm);
@@ -122,7 +122,7 @@ export default function NotificationsPage() {
         setLoading(false);
       }
     },
-    [currentUserId, t]
+    [currentUserId, t],
   );
 
   const loadPreferences = useCallback(
@@ -144,7 +144,7 @@ export default function NotificationsPage() {
         setPreferencesLoading(false);
       }
     },
-    [currentUserId, t]
+    [currentUserId, t],
   );
 
   useEffect(() => {
@@ -161,13 +161,10 @@ export default function NotificationsPage() {
     const handleNewNotification = (event: { notification?: any }) => {
       const notification = event.notification;
       if (!notification) return;
-      setNotifications((current) => {
-        const next = [
-          normalizeNotifications([notification])[0],
-          ...current.filter((item) => item.id !== notification.id),
-        ];
-        return next;
-      });
+      setNotifications((current) => [
+        normalizeNotifications([notification])[0],
+        ...current.filter((item) => item.id !== notification.id),
+      ]);
       emitNotificationsChanged();
       toast({ title: t('notifications.newToastTitle'), description: notification.title });
     };
@@ -215,9 +212,7 @@ export default function NotificationsPage() {
     try {
       const response = await authFetch(`/api/v1/notifications/${id}/read`, { method: 'POST' });
       if (!response.ok) throw new Error(await response.text());
-      setNotifications((current) =>
-        current.map((item) => (item.id === id ? { ...item, read: true } : item))
-      );
+      setNotifications((current) => current.map((item) => (item.id === id ? { ...item, read: true } : item)));
       emitNotificationsChanged();
       triggerHaptic('success');
     } catch {
@@ -232,11 +227,7 @@ export default function NotificationsPage() {
   const markAllAsRead = async () => {
     const unreadIds = notifications.filter((item) => !item.read).map((item) => item.id);
     try {
-      await Promise.all(
-        unreadIds.map((id) =>
-          authFetch(`/api/v1/notifications/${id}/read`, { method: 'POST' })
-        )
-      );
+      await Promise.all(unreadIds.map((id) => authFetch(`/api/v1/notifications/${id}/read`, { method: 'POST' })));
       setNotifications((current) => current.map((item) => ({ ...item, read: true })));
       emitNotificationsChanged();
       toast({ title: t('notifications.markAllDone') });
@@ -263,9 +254,9 @@ export default function NotificationsPage() {
       if (dismissedIds.includes(notification.id)) return false;
 
       const matchesSearch =
-        !searchTerm ||
-        notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        notification.message.toLowerCase().includes(searchTerm.toLowerCase());
+        !deferredSearchTerm ||
+        notification.title.toLowerCase().includes(deferredSearchTerm.toLowerCase()) ||
+        notification.message.toLowerCase().includes(deferredSearchTerm.toLowerCase());
 
       if (!matchesSearch) return false;
 
@@ -277,22 +268,19 @@ export default function NotificationsPage() {
           return priority === 'critical' || priority === 'needs_action';
         }
         case 'assigned':
-          return (
-            typeof notification.metadata?.workOrderId === 'number' ||
-            typeof notification.metadata?.ticketId === 'number'
-          );
+          return typeof notification.metadata?.workOrderId === 'number' || typeof notification.metadata?.ticketId === 'number';
         case 'archived':
           return notification.read;
         default:
           return true;
       }
     });
-  }, [dismissedIds, notifications, searchTerm, quickFilter]);
+  }, [deferredSearchTerm, dismissedIds, notifications, quickFilter]);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
-  const urgentCount = notifications.filter((n) => {
-    const p = deriveNotificationPriority(n);
-    return p === 'critical';
+  const unreadCount = notifications.filter((item) => !item.read).length;
+  const urgentCount = notifications.filter((item) => {
+    const priority = deriveNotificationPriority(item);
+    return priority === 'critical' || priority === 'needs_action';
   }).length;
 
   const filterChips: Array<{ key: QuickFilter; labelKey: string }> = [
@@ -364,216 +352,267 @@ export default function NotificationsPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <PullToRefreshIndicator
-        pullDistance={pullDistance}
-        isRefreshing={isRefreshing}
-        label={t('notifications.pullToRefresh')}
+    <div className="space-y-5 sm:space-y-6">
+      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label={t('notifications.pullToRefresh')} />
+
+      <PageHero
+        compact
+        kicker={t('notifications.title')}
+        eyebrow={
+          <>
+            <StatusBadge label={liveConnected ? t('notifications.liveConnected') : t('notifications.liveDisconnected')} tone={liveConnected ? 'success' : 'warning'} />
+            <Badge variant="outline" className="border-white/12 bg-white/8 text-white/82">
+              {unreadCount} {t('notifications.unread')}
+            </Badge>
+          </>
+        }
+        title={t('notifications.title')}
+        description={t('notifications.description')}
+        actions={
+          <>
+            {unreadCount > 0 ? (
+              <Button size="sm" variant="hero" onClick={markAllAsRead}>
+                {t('common.markAllAsRead')}
+              </Button>
+            ) : null}
+            <Button variant="outline" size="sm" className="border-white/12 bg-white/8 text-white hover:bg-white/12" onClick={() => loadNotifications()}>
+              <RefreshCw className="me-1.5 h-3.5 w-3.5" />
+              {t('notifications.refresh')}
+            </Button>
+          </>
+        }
       />
 
-      {/* Page header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tight sm:text-3xl">
-            {t('notifications.title')}
-          </h1>
-          <p className="text-sm text-muted-foreground sm:text-base">
-            {t('notifications.description')}
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          {unreadCount > 0 && (
-            <Button size="sm" onClick={markAllAsRead}>
-              {t('common.markAllAsRead')}
-            </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={() => loadNotifications()}>
-            <RefreshCw className="me-1.5 h-3.5 w-3.5" />
-            {t('notifications.refresh')}
-          </Button>
-        </div>
-      </div>
+      <section className="grid grid-cols-3 gap-3">
+        <NotificationMetricCard
+          title={t('notifications.unread')}
+          value={unreadCount}
+          description={t('notifications.unreadHelp')}
+          tone="primary"
+        />
+        <NotificationMetricCard
+          title={t('notifications.total')}
+          value={notifications.length}
+          description={t('notifications.totalHelp')}
+          tone="neutral"
+        />
+        <NotificationMetricCard
+          title={t('notifications.live')}
+          value={liveConnected ? t('notifications.liveConnected') : t('notifications.liveDisconnected')}
+          description={t('notifications.liveHelp')}
+          tone={liveConnected ? 'success' : 'warning'}
+          icon={<Radio className={`h-3.5 w-3.5 ${liveConnected ? 'text-success' : 'text-warning'}`} />}
+        />
+      </section>
 
-      {/* KPI cards */}
-      <div className="grid gap-3 grid-cols-3 sm:gap-4">
-        <Card>
-          <CardHeader className="p-3 pb-1 sm:p-6 sm:pb-3">
-            <CardDescription className="text-[11px] sm:text-sm">
-              {t('notifications.unread')}
-            </CardDescription>
-            <CardTitle className="text-lg sm:text-2xl">{unreadCount}</CardTitle>
-          </CardHeader>
-          <CardContent className="hidden p-3 pt-0 text-sm text-muted-foreground sm:block sm:p-6 sm:pt-0">
-            {t('notifications.unreadHelp')}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="p-3 pb-1 sm:p-6 sm:pb-3">
-            <CardDescription className="text-[11px] sm:text-sm">
-              {t('notifications.total')}
-            </CardDescription>
-            <CardTitle className="text-lg sm:text-2xl">{notifications.length}</CardTitle>
-          </CardHeader>
-          <CardContent className="hidden p-3 pt-0 text-sm text-muted-foreground sm:block sm:p-6 sm:pt-0">
-            {t('notifications.totalHelp')}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="p-3 pb-1 sm:p-6 sm:pb-3">
-            <CardDescription className="text-[11px] sm:text-sm">
-              {t('notifications.live')}
-            </CardDescription>
-            <CardTitle className="flex items-center gap-1.5 text-lg sm:gap-2 sm:text-2xl">
-              <Radio
-                className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${liveConnected ? 'text-emerald-500' : 'text-amber-500'}`}
-              />
-              <span className="text-xs sm:text-base">
-                {liveConnected
-                  ? t('notifications.liveConnected')
-                  : t('notifications.liveDisconnected')}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="hidden p-3 pt-0 text-sm text-muted-foreground sm:block sm:p-6 sm:pt-0">
-            {t('notifications.liveHelp')}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="notifications" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
+      <Tabs defaultValue="notifications" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2 rounded-[24px] border border-subtle-border bg-muted/24 p-1">
+          <TabsTrigger value="notifications" className="gap-2 rounded-[18px]">
             <Bell className="h-4 w-4" />
             {t('notifications.tabList')}
           </TabsTrigger>
-          <TabsTrigger value="preferences" className="flex items-center gap-2">
+          <TabsTrigger value="preferences" className="gap-2 rounded-[18px]">
             <Settings className="h-4 w-4" />
             {t('notifications.tabPreferences')}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="notifications" className="space-y-4">
-          {/* Filter chips */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            {filterChips.map((chip) => (
-              <Button
-                key={chip.key}
-                size="sm"
-                className="h-8 rounded-full px-3 text-xs"
-                variant={quickFilter === chip.key ? 'default' : 'outline'}
-                onClick={() => setQuickFilter(chip.key)}
-              >
-                {t(chip.labelKey)}
-                {chip.key === 'unread' && unreadCount > 0 && (
-                  <span className="ms-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-primary-foreground/20 px-1 text-[10px] font-bold">
-                    {unreadCount}
-                  </span>
-                )}
-                {chip.key === 'urgent' && urgentCount > 0 && (
-                  <span className="ms-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive/20 px-1 text-[10px] font-bold text-destructive">
-                    {urgentCount}
-                  </span>
-                )}
-              </Button>
-            ))}
-          </div>
-
-          {/* Search */}
-          <Input
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder={t('notifications.searchPlaceholder')}
-            className="max-w-md"
-          />
-
-          {/* Triage notification center */}
-          <NotificationCenter
-            notifications={filteredNotifications}
-            onMarkAsRead={markAsRead}
-            onDismiss={(id) =>
-              setDismissedIds((current) =>
-                current.includes(id) ? current : [...current, id]
-              )
-            }
-            mode="triage"
-            className={loading ? 'opacity-60' : ''}
-          />
-        </TabsContent>
-
-        <TabsContent value="preferences" className="space-y-6">
-          {/* Channel preferences */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('notifications.preference.group.channels')}</CardTitle>
-              <CardDescription>
-                {t('notifications.preference.group.channelsDesc')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {channelPrefs.map((item) => (
-                <div
-                  key={item.key}
-                  className="flex items-start justify-between gap-4 rounded-xl border border-subtle-border bg-background p-4"
-                >
-                  <div className="space-y-1">
-                    <Label htmlFor={`channel-${item.key}`} className="font-medium">
-                      {item.label}
-                    </Label>
-                    <p className="text-sm text-muted-foreground">{item.desc}</p>
-                    <p className="text-xs text-muted-foreground/70 italic">{item.consequence}</p>
+          <Card variant="elevated">
+            <CardContent className="space-y-4 p-4 sm:p-5">
+              <SectionHeader
+                title={t('notifications.tabList')}
+                subtitle={t('notifications.description')}
+                meta={`${filteredNotifications.length} ${t('notifications.total')}`}
+                actions={
+                  <div className="inline-flex items-center gap-2 rounded-full border border-subtle-border bg-background px-3 py-1 text-xs text-muted-foreground">
+                    <Radio className={`h-3.5 w-3.5 ${liveConnected ? 'text-success' : 'text-warning'}`} />
+                    {liveConnected ? t('notifications.liveConnected') : t('notifications.liveDisconnected')}
                   </div>
-                  <Switch
-                    id={`channel-${item.key}`}
-                    checked={preferences[item.key as keyof NotificationPreferences] as boolean}
-                    onCheckedChange={(checked) =>
-                      updatePreferences({ ...preferences, [item.key]: checked })
-                    }
-                    disabled={preferencesLoading}
-                  />
+                }
+              />
+
+              <div className="rounded-[24px] border border-subtle-border bg-background/88 p-3 sm:p-4">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-tertiary">
+                  <Filter className="h-3.5 w-3.5" />
+                  {t('notifications.filter.all')}
                 </div>
-              ))}
+                <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                  {filterChips.map((chip) => {
+                    const selected = quickFilter === chip.key;
+                    const badgeCount =
+                      chip.key === 'unread' ? unreadCount : chip.key === 'urgent' ? urgentCount : undefined;
+
+                    return (
+                      <Button
+                        key={chip.key}
+                        size="sm"
+                        variant={selected ? 'default' : 'outline'}
+                        className="h-9 shrink-0 rounded-full px-4 text-xs"
+                        onClick={() => setQuickFilter(chip.key)}
+                      >
+                        {t(chip.labelKey)}
+                        {badgeCount ? (
+                          <span className={cnInlineBadge(selected)}>
+                            {badgeCount}
+                          </span>
+                        ) : null}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+                <Input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder={t('notifications.searchPlaceholder')}
+                />
+                <Button variant="outline" className="justify-start lg:justify-center" onClick={() => router.push('/settings')}>
+                  <SlidersHorizontal className="me-2 h-4 w-4" />
+                  {t('notifications.tabPreferences')}
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Topic preferences */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('notifications.preference.group.topics')}</CardTitle>
-              <CardDescription>{t('notifications.preference.group.topicsDesc')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                {t('notifications.preferencePermissionHint')}
-              </p>
-              {topicPrefs.map((item) => (
-                <div
-                  key={item.key}
-                  className="flex items-start justify-between gap-4 rounded-xl border border-subtle-border bg-background p-4"
-                >
-                  <div className="space-y-1">
-                    <Label htmlFor={`topic-${item.key}`} className="font-medium">
-                      {item.label}
-                    </Label>
-                    <p className="text-sm text-muted-foreground">{item.desc}</p>
-                    {!preferences[item.key as keyof NotificationPreferences] && (
-                      <p className="text-xs text-warning italic">{item.consequence}</p>
-                    )}
-                  </div>
-                  <Switch
-                    id={`topic-${item.key}`}
-                    checked={preferences[item.key as keyof NotificationPreferences] as boolean}
-                    onCheckedChange={(checked) =>
-                      updatePreferences({ ...preferences, [item.key]: checked })
-                    }
-                    disabled={preferencesLoading}
+          <NotificationCenter
+            notifications={filteredNotifications}
+            onMarkAsRead={markAsRead}
+            onDismiss={(id) => setDismissedIds((current) => (current.includes(id) ? current : [...current, id]))}
+            mode="triage"
+            className={loading ? 'opacity-65' : ''}
+          />
+        </TabsContent>
+
+        <TabsContent value="preferences" className="space-y-4">
+          <Card variant="featured">
+            <CardContent className="space-y-4 p-4 sm:p-5">
+              <SectionHeader
+                title={t('notifications.tabPreferences')}
+                subtitle={t('notifications.preference.group.channelsDesc')}
+                meta={preferencesLoading ? t('common.loading') : t('common.readyToSave')}
+                actions={<StatusBadge label={t('notifications.preference.group.channels')} tone="finance" />}
+              />
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                {channelPrefs.map((item) => (
+                  <PreferenceTile
+                    key={item.key}
+                    title={item.label}
+                    description={item.desc}
+                    consequence={item.consequence}
+                    checked={preferences[item.key]}
+                    onCheckedChange={(checked) => setPreferences((current) => ({ ...current, [item.key]: checked }))}
                   />
-                </div>
-              ))}
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card variant="elevated">
+            <CardContent className="space-y-4 p-4 sm:p-5">
+              <SectionHeader
+                title={t('notifications.preference.group.topics')}
+                subtitle={t('notifications.preference.group.topicsDesc')}
+                meta={`${topicPrefs.length} ${t('notifications.total')}`}
+                actions={<StatusBadge label={t('notifications.tabPreferences')} tone="info" />}
+              />
+
+              <div className="grid gap-3 md:grid-cols-2">
+                {topicPrefs.map((item) => (
+                  <PreferenceTile
+                    key={item.key}
+                    title={item.label}
+                    description={item.desc}
+                    consequence={item.consequence}
+                    checked={preferences[item.key]}
+                    onCheckedChange={(checked) => setPreferences((current) => ({ ...current, [item.key]: checked }))}
+                  />
+                ))}
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={() => void updatePreferences(preferences)} disabled={preferencesLoading}>
+                  {preferencesLoading ? t('common.saving') : t('settings.action.savePreferences')}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
   );
+}
+
+function NotificationMetricCard({
+  title,
+  value,
+  description,
+  tone,
+  icon,
+}: {
+  title: string;
+  value: React.ReactNode;
+  description: string;
+  tone: 'primary' | 'success' | 'warning' | 'neutral';
+  icon?: React.ReactNode;
+}) {
+  const toneClass: Record<typeof tone, string> = {
+    primary: 'border-primary/16 bg-primary/8',
+    success: 'border-success/18 bg-success/8',
+    warning: 'border-warning/18 bg-warning/8',
+    neutral: 'border-subtle-border bg-card',
+  };
+
+  return (
+    <Card className={toneClass[tone]}>
+      <CardHeader className="space-y-1 p-3 pb-2 sm:p-4">
+        <CardDescription className="text-[11px] sm:text-xs">{title}</CardDescription>
+        <CardTitle className="flex items-center gap-2 text-base sm:text-xl">
+          {icon}
+          <span className="truncate">{value}</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-3 pt-0 text-[11px] leading-5 text-muted-foreground sm:p-4 sm:pt-0 sm:text-xs">
+        {description}
+      </CardContent>
+    </Card>
+  );
+}
+
+function PreferenceTile({
+  title,
+  description,
+  consequence,
+  checked,
+  onCheckedChange,
+}: {
+  title: string;
+  description: string;
+  consequence: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="rounded-[24px] border border-subtle-border bg-background/88 p-4 shadow-card">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1.5">
+          <div className="text-sm font-semibold text-foreground">{title}</div>
+          <div className="text-sm leading-6 text-muted-foreground">{description}</div>
+        </div>
+        <Switch checked={checked} onCheckedChange={onCheckedChange} />
+      </div>
+      <div className="mt-3 rounded-[18px] border border-subtle-border/70 bg-muted/24 px-3 py-2 text-xs leading-5 text-muted-foreground">
+        {consequence}
+      </div>
+    </div>
+  );
+}
+
+function cnInlineBadge(selected: boolean) {
+  return selected
+    ? 'ms-1 inline-flex min-w-[1rem] items-center justify-center rounded-full bg-primary-foreground/16 px-1.5 py-0.5 text-[10px] font-bold'
+    : 'ms-1 inline-flex min-w-[1rem] items-center justify-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary';
 }

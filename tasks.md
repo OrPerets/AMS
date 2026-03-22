@@ -1,463 +1,314 @@
-# Mobile UX Enterprise Refinement Plan
-
-This document replaces the previous backlog and turns the latest UX review into a sprinted execution plan focused on making the mobile experience feel professional, efficient, engaging, and enterprise-ready.
-
-## Objective
-
-Deliver a mobile-first experience that is:
-
-- fast to learn,
-- easy to operate under pressure,
-- visually polished without being noisy,
-- trustworthy for enterprise buyers,
-- scalable across roles,
-- consistent across all major workflows.
-
-## Delivery principles
-
-1. Mobile primary workflows come before decorative polish.
-2. Shared patterns come before page-by-page one-off fixes.
-3. Enterprise trust, clarity, and recoverability matter as much as visual quality.
-4. Every sprint must ship visible UX gains and reduce design debt.
-5. Navigation, forms, notifications, and feedback must work equally well for repeat users and first-time users.
-
-## Definition of done for every sprint
-
-A sprint is only complete when:
-
-- the affected flows work on small mobile screens,
-- touch targets and spacing are mobile-safe,
-- loading, empty, success, and error states exist,
-- actions are clearly prioritized,
-- no critical content is hidden behind fixed surfaces,
-- the updated UI uses shared components or documented patterns,
-- acceptance criteria are reviewed against real role-based workflows.
-
----
-
-# Sprint 1 — Mobile Navigation Reset
+# Mobile App Polish Plan Based on `mobile-app.mp4`
 
 ## Goal
 
-Create a navigation model that lets each role reach its most important tasks in one or two taps.
+Use the reference video in `mobile-app.mp4` as inspiration for structure and polish, but do **not** copy it 1:1. The target outcome is:
 
-## Outcomes
+- clearer mobile information architecture
+- more premium and intentional visual hierarchy
+- stronger "wow" factor through motion, depth, and branded surfaces
+- a more professional resident/mobile experience inside the existing AMS frontend
 
-- Mobile users no longer rely on a dense drawer for primary work.
-- Top-level navigation becomes role-aware and predictable.
-- Secondary/admin destinations move out of the critical path.
+This app is already using a premium token system and mobile shell. The work should extend the current design language, not replace it with a generic clone of the reference.
 
-## Detailed TODO
+## What The Reference Video Is Doing Well
 
-### 1. Define the mobile information architecture
+Observed from the video:
 
-- [x] Audit all current routes and map them by role: Resident, PM, Admin, Tech, Accountant.
-- [x] Identify the top 3-5 most frequent destinations per role.
-- [x] Define which routes are top-level navigation destinations versus secondary destinations.
-- [x] Create a route ownership table showing which screen belongs to which mobile nav bucket.
-- [x] Document edge cases for shared screens that appear in more than one role.
+- a simple bottom-tab mental model with 4 persistent destinations and low navigation ambiguity
+- a home screen built around a branded top image plus a grid of obvious entry points
+- list screens that stay single-column, roomy, and easy to scan
+- cards with large radius, thin borders, soft contrast, and consistent vertical rhythm
+- profile/settings screens that group information into compact chunks instead of long mixed forms
+- service directory patterns that use repeating reusable cards with icon + title + supporting text
+- alerts/messages presented as stacked feed items with clear separation and comfortable tap areas
+- FAQ/legal content handled with predictable accordion/list layouts rather than complex compositions
 
-### 2. Design the mobile primary nav pattern
+## What We Should Extract, Not Copy
 
-- [x] Introduce a persistent bottom navigation for mobile only.
-- [x] Limit bottom navigation to a maximum of 5 items per role.
-- [x] Ensure each nav item has both icon and text label.
-- [x] Add active-state treatment that is visually obvious in both light and dark themes.
-- [x] Add support for badges for unread notifications, open tasks, or urgent work.
+Extract these principles:
 
-### 3. Separate primary from secondary actions
+- mobile-first single-column composition
+- stable bottom navigation with a very clear active state
+- obvious category entry points on the home screen
+- repeated card patterns instead of many one-off layouts
+- generous spacing and tap targets
+- simple visual language for profile, services, alerts, FAQ, and contacts
 
-- [x] Move secondary/admin destinations into a mobile “More” sheet or drawer.
-- [x] Keep rarely used configuration and admin routes out of the primary bottom nav.
-- [x] Ensure destructive or account-level actions are visually separated from standard navigation actions.
-- [x] Add clear grouping in the secondary menu to avoid long undifferentiated lists.
+Do **not** copy these literally:
 
-### 4. Preserve navigation context
+- the exact icon set, icon-in-circle treatment, or exact card outlines
+- the exact home grid layout or count of actions
+- the washed-out pale pink/white tone of the reference
+- exact Hebrew copy, screen names, or ordering
+- brand header photography style as-is
 
-- [x] Ensure deep links still highlight the correct top-level mobile destination.
-- [x] Preserve scroll position and filter state when navigating back from detail pages.
-- [x] Confirm nested routes do not cause bottom-nav state confusion.
-- [x] Add a predictable back behavior model for detail pages and subflows.
+AMS should feel more premium than the reference: richer contrast, better depth, stronger typography, cleaner states, and more purposeful motion.
+
+## Target Design Direction For AMS
 
-### 5. Implementation and QA
+### Overall direction
 
-- [x] Implement mobile nav without regressing desktop sidebar behavior.
-- [x] Verify navigation on common breakpoints: small phone, large phone, tablet.
-- [x] Test each role’s nav map end-to-end.
-- [x] Validate no destination becomes unreachable during the transition.
+Blend the reference app's clarity with AMS's existing premium theme:
 
-## Acceptance criteria
+- keep the current premium token base in `apps/frontend/styles/premium-theme.css`
+- preserve the strong display typography and warm luxury palette already in the app
+- simplify dense screens so they feel closer to a high-end mobile product than a responsive desktop app
 
-- Each role has a clearly defined mobile top-level nav.
-- Users can reach their highest-value tasks in one tap from the app shell.
-- The sidebar remains a desktop/tablet pattern, not the default mobile primary nav.
+### Desired visual qualities
 
----
+- fewer competing surfaces per screen
+- stronger top-level hierarchy: hero, primary action, grouped content
+- cleaner section spacing and alignment
+- one dominant accent per screen, not many competing accents
+- more depth through layered shadows, gradients, and frosted surfaces
+- restrained motion that feels expensive rather than busy
 
-# Sprint 2 — Mobile Header Simplification and Faster Time-to-Action
+### "Wow" without overdesign
 
-## Goal
+Add wow through:
 
-Reduce header clutter and get users to the main task faster on small screens.
+- branded hero backplates and premium texture
+- elegant animation on first load and section reveal
+- refined active states in bottom navigation
+- better cards, badges, and status styling
+- polished empty/loading/success states
+
+Avoid wow through:
+
+- random neon colors
+- overly glassy unreadable surfaces
+- excessive bounce animations
+- many different card styles on the same page
+
+## Implementation Instructions By Area
+
+## 1. Strengthen the mobile visual system first
+
+Files:
 
-## Outcomes
-
-- The mobile header becomes focused and calm.
-- Users see the page purpose faster.
-- Decorative content no longer delays core work.
-
-## Detailed TODO
-
-### 1. Simplify the mobile header
-
-- [x] Split header behavior into mobile and desktop variants.
-- [x] Keep only the essential mobile header actions: back/menu, page title, one contextual utility.
-- [x] Remove redundant always-visible actions from the mobile header.
-- [x] Route non-essential tools such as global search into dedicated mobile-friendly entry points.
-- [x] Replace dense header dropdown behavior with route-based or full-height sheet behavior where appropriate.
-
-### 2. Introduce compact mobile hero rules
-
-- [x] Create a compact mobile variant of the page hero component.
-- [x] Reduce title size, vertical padding, and supporting copy on mobile.
-- [x] Show only one primary CTA on mobile hero sections by default.
-- [x] Move secondary KPIs and supporting content below the fold when they are not immediately actionable.
-- [x] Remove or collapse side panels/aside content inside hero sections on small screens.
-
-### 3. Prioritize immediate actions on key pages
-
-- [x] Update Home so the first visible action supports the role’s main daily job.
-- [x] Update Resident Requests so the request form or request-type selector is reachable faster.
-- [x] Update Settings so the first viewport focuses on the user’s most common task, not page chrome.
-- [x] Update Notifications so filters and critical messages are visible before lower-priority content.
-
-### 4. Validate scannability
-
-- [x] Review all top mobile pages for first-screen scan order.
-- [x] Ensure users can answer these questions within seconds:
-  - where am I?
-  - what matters most?
-  - what should I do next?
-- [x] Remove visual noise that competes with primary actions.
-
-## Acceptance criteria
-
-- The mobile header no longer feels crowded.
-- Core action areas are visible earlier on key pages.
-- The app feels faster even before performance work begins.
-
----
-
-# Sprint 3 — Form UX, Validation, and Recovery Hardening
-
-## Goal
-
-Make all high-value forms feel safe, clear, and enterprise-grade on mobile.
-
-## Outcomes
-
-- Users understand what is required.
-- Validation helps rather than interrupts.
-- Recovery paths are obvious when something goes wrong.
-
-## Detailed TODO
-
-### 1. Standardize validation behavior
-
-- [x] Introduce a consistent touched/dirty strategy across forms.
-- [x] Prevent untouched fields from rendering as invalid on first load.
-- [x] Validate on blur or submit rather than aggressively on each keystroke.
-- [x] Ensure every invalid field has a specific, actionable error message.
-- [x] Add consistent success messaging after save/submit events.
-
-### 2. Improve form accessibility and recovery
-
-- [x] Auto-focus and scroll to the first invalid field on submit failure.
-- [x] Add a reusable top-of-form error summary for multi-error forms.
-- [x] Ensure error messages are announced accessibly.
-- [x] Verify labels, helper text, and required states are consistent across all forms.
-- [x] Distinguish clearly between disabled, read-only, and editable states.
-
-### 3. Improve mobile input ergonomics
-
-- [x] Add password show/hide support to the shared input pattern.
-- [x] Verify semantic input types are used for email, phone, and numeric fields.
-- [x] Confirm input heights and spacing remain touch-friendly across breakpoints.
-- [x] Ensure suffix/prefix icons never obscure user-entered text.
-- [x] Review keyboard behavior and autofill support on login and account forms.
-
-### 4. Upgrade the highest-impact flows first
-
-- [x] Login: add recovery path, clearer auth errors, and password visibility.
-- [x] Settings: stop showing validation errors before user interaction.
-- [x] Resident Requests: add clearer inline guidance and more forgiving recovery after failed submit.
-- [x] Any password update flow: add stronger confirmation feedback.
-
-### 5. QA and consistency pass
-
-- [x] Test forms with slow network and failed submissions.
-- [x] Test forms in RTL, small mobile widths, and large text settings.
-- [x] Ensure all success, warning, and destructive states are visually distinct.
-
-## Acceptance criteria
-
-- No major form shows premature validation states.
-- Submit failures take users directly to the field that needs attention.
-- All major forms support confident completion on mobile.
-
----
-
-# Sprint 4 — Notification Triage and Operational Inbox
-
-## Goal
-
-Turn notifications from a generic feed into a useful enterprise inbox that helps users decide what to act on first.
-
-## Outcomes
-
-- Critical items are distinguishable from informational items.
-- Users can triage work quickly on mobile.
-- Header notifications become a lightweight preview, not the full system.
-
-## Detailed TODO
-
-### 1. Redesign the notification model for actionability
-
-- [x] Define notification priority levels: Critical, Needs Action, Informational, Completed/Archived.
-- [x] Define display rules for urgency, unread state, and SLA relevance.
-- [x] Add source context and recommended next action to each notification item.
-- [x] Identify which notification types should open a detail screen versus perform a quick action.
-
-### 2. Improve the notification page
-
-- [x] Rebuild the page around triage sections rather than a flat chronological list.
-- [x] Add mobile-friendly filter chips for unread, urgent, assigned to me, and archived.
-- [x] Keep batch actions visible but not dominant.
-- [x] Make the first screen show the highest-value or most urgent items.
-- [x] Preserve filter and search state when users navigate away and back.
-
-### 3. Simplify the header notification experience
-
-- [x] Reduce the mobile header notification surface to a lightweight preview.
-- [x] Replace mobile dropdown-heavy behavior with a route or sheet pattern.
-- [x] Limit preview content to the most important items.
-- [x] Add a clear transition into the full notification workspace.
-
-### 4. Improve notification preferences UX
-
-- [x] Group preferences by channel and by event type.
-- [x] Reduce cognitive overload in the settings/preferences UI.
-- [x] Explain the consequence of toggling each preference.
-- [x] Ensure saved state feedback is immediate and clear.
-
-### 5. QA and metrics
-
-- [x] Test unread count accuracy across shell and notification page.
-- [x] Test live updates and read-state changes under real-time events.
-- [x] Validate mobile usability with large numbers of notifications.
-
-## Acceptance criteria
-
-- Critical and actionable notifications are immediately obvious.
-- Mobile users can triage and act without digging through a long feed.
-- Notification preview and full inbox serve clearly different purposes.
-
----
-
-# Sprint 5 — Landing and Brand Trust Optimization
-
-## Goal
-
-Make the marketing/entry experience feel premium, trustworthy, and enterprise-appropriate without overusing visual effects.
-
-## Outcomes
-
-- The landing page feels calmer and more credible.
-- Motion supports brand quality instead of distracting from it.
-- Enterprise buyers see proof, trust, and clarity earlier.
-
-## Detailed TODO
-
-### 1. Reduce decorative overload
-
-- [x] Audit all non-essential motion on the landing page.
-- [x] Remove or reduce infinite decorative animations that do not support comprehension.
-- [x] Disable touch-interactive particle behavior on mobile devices.
-- [x] Respect reduced-motion settings across hero experiences.
-- [x] Keep only one premium motion signature for the hero.
-
-### 2. Strengthen enterprise trust signals
-
-- [x] Rework above-the-fold content so proof points appear earlier.
-- [x] Add stronger messaging around reliability, operational control, and security.
-- [x] Highlight role-based workflows and business outcomes rather than generic feature claims.
-- [x] Clarify the primary CTA path for invited users versus evaluators.
-
-### 3. Improve readability and scan behavior
-
-- [x] Review contrast and readability of gold-on-dark treatments.
-- [x] Simplify headline, subheadline, and CTA hierarchy.
-- [x] Reduce visual competition between logo effects, particles, gradients, and type animation.
-- [x] Ensure the first screen reads clearly without motion.
-
-### 4. Align login entry with enterprise expectations
-
-- [x] Add trust/support messaging to the login experience.
-- [x] Add a visible recovery path for password issues.
-- [x] Reserve space for future enterprise auth methods if needed.
-- [x] Clarify error states for invalid credentials versus provisioning/access issues.
-
-### 5. QA and performance review
-
-- [x] Review mobile battery and perceived performance impact of visual effects.
-- [x] Test landing readability on bright screens and low-power devices.
-- [x] Confirm the page still feels premium after motion reduction.
-
-## Acceptance criteria
-
-- The landing experience feels premium but restrained.
-- Buyers see trust and value faster than decorative flair.
-- Mobile motion no longer feels heavy or distracting.
-
----
-
-# Sprint 6 — Safe Areas, Bottom Surfaces, and Shell Reliability
-
-## Goal
-
-Make fixed mobile surfaces behave predictably so content and CTAs are never blocked.
-
-## Outcomes
-
-- Bottom bars, install prompts, and sticky actions no longer compete for the same space.
-- Scroll areas remain readable and actionable to the last item.
-- The shell feels intentionally engineered for mobile.
-
-## Detailed TODO
-
-### 1. Inventory fixed and sticky mobile surfaces
-
-- [x] List every bottom-anchored or fixed mobile surface in the app shell.
-- [x] Classify each as essential, optional, promotional, or contextual.
-- [x] Document which combinations are currently allowed to appear at the same time.
-
-### 2. Create a shared bottom-inset system
-
-- [x] Introduce a shared offset strategy for all bottom-fixed UI.
-- [x] Ensure scroll containers account for active bottom surfaces dynamically.
-- [x] Respect safe areas for iPhone and Android gesture zones.
-- [x] Prevent promotional surfaces from overlapping primary task controls.
-
-### 3. Rationalize promotional and contextual surfaces
-
-- [x] Ensure only one promotional surface can appear at a time.
-- [x] Review whether the PWA install prompt should be delayed until the user has completed a meaningful action.
-- [x] Make quick-action bars contextual rather than globally persistent where appropriate.
-- [x] Confirm dismiss actions are easy, clear, and remembered.
-
-### 4. Validate end-of-page usability
-
-- [x] Test long forms, long lists, and list detail pages with bottom surfaces active.
-- [x] Confirm the last button, input, or card is never hidden.
-- [x] Check pull-to-refresh, sticky bars, and bottom prompts together on touch devices.
-
-## Acceptance criteria
-
-- No mobile bottom surface obscures critical content.
-- Fixed shell elements cooperate predictably.
-- Safe areas are respected across all primary flows.
-
----
-
-# Sprint 7 — Internationalization Clarity and Settings Polish
-
-## Goal
-
-Improve trust and clarity by making language, direction, and user preferences behave predictably.
-
-## Outcomes
-
-- Locale handling feels intentional, not bundled together implicitly.
-- Settings become easier to understand and maintain.
-- International users get more reliable behavior.
-
-## Detailed TODO
-
-### 1. Separate preference concepts
-
-- [x] Split language, layout direction, and regional formatting into distinct settings.
-- [x] Define sensible defaults for Hebrew and English users without hard-coupling every preference.
-- [x] Review where users should access quick language changes versus persistent preference settings.
-
-### 2. Improve settings information architecture
-
-- [x] Group settings into clearer sections: Profile, Security, Notifications, Language & Region.
-- [x] Reduce repeated or overlapping preference controls between notifications and settings where possible.
-- [x] Add concise helper text to clarify consequences of key settings.
-- [x] Make save states and unsaved changes more obvious.
-
-### 3. Audit formatting consistency
-
-- [x] Review locale-sensitive date, time, and number formatting across the app.
-- [x] Ensure notification timestamps, dashboard metrics, and history screens follow the selected locale rules.
-- [x] Verify RTL spacing, alignment, and icon mirroring across critical screens.
-
-### 4. QA and regression checks
-
-- [x] Test language changes on key flows without full confusion or visual breakage.
-- [x] Test both RTL and LTR shells on mobile.
-- [x] Confirm that settings changes persist and remain understandable after reload.
-
-## Acceptance criteria
-
-- Language and direction feel deliberate and professional.
-- Settings are easier to scan, edit, and trust.
-- Locale-sensitive UI behaves consistently across the product.
-
----
-
-# Cross-sprint QA checklist
-
-Use this checklist in every sprint review.
-
-## Mobile usability
-
-- [ ] All primary tap targets are comfortably touchable.
-- [ ] No horizontal scroll appears on key pages.
-- [ ] The most important action is visible without confusion.
-- [ ] Fixed surfaces do not cover the final actionable element.
-
-## Accessibility
-
-- [ ] Focus order is logical.
-- [ ] Errors are announced and understandable.
-- [ ] Color is not the only status signal.
-- [ ] Reduced motion and large text do not break critical flows.
-
-## Enterprise readiness
-
-- [ ] The UI prioritizes trust over decoration.
-- [ ] Error states explain recovery paths.
-- [ ] Notifications and tasks help users act, not just observe.
-- [ ] Repeated-use workflows feel efficient for operational teams.
-
-## Design system discipline
-
-- [ ] Shared patterns are used instead of ad-hoc markup.
-- [ ] Visual hierarchy is consistent across updated screens.
-- [ ] Primary and secondary actions are clearly differentiated.
-- [ ] Mobile and desktop variants follow one coherent system.
-
----
-
-# Recommended implementation order
-
-1. Sprint 1 — Mobile Navigation Reset
-2. Sprint 2 — Mobile Header Simplification and Faster Time-to-Action
-3. Sprint 3 — Form UX, Validation, and Recovery Hardening
-4. Sprint 4 — Notification Triage and Operational Inbox
-5. Sprint 5 — Landing and Brand Trust Optimization
-6. Sprint 6 — Safe Areas, Bottom Surfaces, and Shell Reliability
-7. Sprint 7 — Internationalization Clarity and Settings Polish
-
-This order delivers the biggest improvement in perceived professionalism and usability earliest, while also reducing the biggest sources of mobile friction for enterprise users.
+- `apps/frontend/styles/premium-theme.css`
+- `apps/frontend/styles/globals.css`
+- `apps/frontend/components/ui/card.tsx`
+- `apps/frontend/components/ui/button.tsx`
+- `apps/frontend/components/ui/badge.tsx`
+
+Instructions:
+
+- increase mobile polish by tightening the token system before changing screens
+- keep the warm premium palette, but improve separation between page background, card background, muted surfaces, and active accents
+- slightly increase perceived softness and luxury:
+  - keep `--radius` around large mobile-friendly values
+  - tune surface shadows to be softer and more layered
+  - introduce one subtle page background treatment for mobile, such as radial glow plus very light texture
+- standardize card variants so every mobile screen can use the same 4-5 surface types:
+  - primary feature card
+  - default content card
+  - muted list row card
+  - action card
+  - warning/critical card
+- make primary buttons feel more premium:
+  - clearer weight
+  - better press state
+  - slightly stronger depth
+  - optional subtle shimmer/gradient only on hero CTAs
+- make badges/status pills more compact and deliberate
+
+Acceptance criteria:
+
+- screens look related even before page-specific redesign starts
+- mobile cards/buttons/badges no longer feel like generic Tailwind defaults
+- contrast remains strong in both light and dark themes
+
+## 2. Upgrade the mobile shell
+
+Files:
+
+- `apps/frontend/components/Layout.tsx`
+- `apps/frontend/components/layout/Header.tsx`
+- `apps/frontend/components/layout/MobileBottomNav.tsx`
+- `apps/frontend/components/ui/mobile-action-bar.tsx`
+
+Instructions:
+
+- make the shell feel like a real mobile product, not desktop chrome compressed to phone width
+- reduce header noise on mobile
+- turn the mobile header into a compact branded context bar:
+  - current page or building context
+  - search/access action
+  - notification access
+  - avatar/profile shortcut where useful
+- redesign bottom navigation to borrow the reference app's clarity while exceeding it in quality:
+  - 4 stable primary tabs max
+  - stronger active state, preferably pill/backplate instead of only icon tint
+  - better unread badge placement
+  - improved spacing for thumb reach
+- keep the "More" sheet, but make its grouping look premium and easier to scan
+- ensure safe-area handling remains correct in PWA/standalone mode
+
+Acceptance criteria:
+
+- top and bottom bars feel intentionally designed as one system
+- active tab is obvious at a glance
+- mobile chrome consumes less visual attention than page content
+
+## 3. Rebuild the home screen around mobile entry patterns from the reference
+
+Files:
+
+- `apps/frontend/pages/home.tsx`
+- `apps/frontend/components/ui/page-hero.tsx`
+- `apps/frontend/components/ui/section-header.tsx`
+- `apps/frontend/components/ui/card.tsx`
+
+Instructions:
+
+- the reference app's home screen works because it answers "where do I go next?" immediately
+- adapt that principle using AMS content:
+  - keep a premium hero, but make it shorter and more mobile-efficient
+  - place 4-8 top actions/categories near the top in a highly tappable layout
+  - use one consistent quick-action card/grid pattern
+  - keep role-specific actions, but visually normalize them
+- reduce visual competition between hero, metrics, next actions, and spotlight content
+- reorganize the home page into this order:
+  1. compact branded hero with one main CTA
+  2. quick actions / main destinations
+  3. critical metrics or urgent items
+  4. prioritized work queue / next actions
+  5. supporting insights
+- on mobile, prioritize scan speed over desktop drama
+
+Acceptance criteria:
+
+- user can understand the app's main areas within 3 seconds
+- top tasks are reachable with one thumb from the first screenful
+- screen feels premium, not crowded
+
+## 4. Create reusable list/detail patterns inspired by the video
+
+Files:
+
+- `apps/frontend/pages/notifications.tsx`
+- `apps/frontend/pages/settings.tsx`
+- `apps/frontend/pages/resident/account.tsx`
+- `apps/frontend/components/ui/notification-center.tsx`
+- `apps/frontend/components/ui/empty-state.tsx`
+- `apps/frontend/components/ui/page-states.tsx`
+
+Instructions:
+
+- the reference app repeatedly uses a few strong patterns; AMS should do the same
+- define reusable mobile patterns for:
+  - stacked feed items
+  - grouped settings cards
+  - service/category directory cards
+  - accordion/help/legal sections
+  - profile summary panels
+- notifications:
+  - make feed items more editorial and premium
+  - improve title/message/date hierarchy
+  - use cleaner priority styling
+  - preserve swipe interactions, but make cards calmer and more readable
+- settings/profile:
+  - avoid giant uninterrupted forms
+  - split into grouped cards with short section intros
+  - add a clearer profile summary header
+  - make switches/preferences feel like premium controls, not raw form rows
+- empty/loading states:
+  - replace generic placeholders with polished states that match the premium design language
+
+Acceptance criteria:
+
+- all list-heavy mobile screens feel like variations of one coherent system
+- settings/profile flows become easier to scan and less fatiguing
+- notification feed feels operationally serious and visually polished
+
+## 5. Improve motion, transitions, and perceived quality
+
+Files:
+
+- `apps/frontend/pages/home.tsx`
+- `apps/frontend/components/layout/MobileBottomNav.tsx`
+- `apps/frontend/components/ui/page-hero.tsx`
+- relevant card/list components that already use `framer-motion`
+
+Instructions:
+
+- keep motion restrained and deliberate
+- add:
+  - soft page-enter animation
+  - staggered reveal for cards on home and major lists
+  - subtle tab transition/active-indicator motion
+  - stronger pressed/active feedback on tappable cards
+- avoid:
+  - large springy movement
+  - long durations
+  - animation on every small element
+
+Acceptance criteria:
+
+- the app feels smoother and more expensive
+- animation improves hierarchy and feedback instead of distracting
+- motion remains performant on mid-range mobile devices
+
+## 6. Use the reference IA patterns where they fit AMS
+
+Translate the reference app's screen ideas into AMS equivalents:
+
+- branded home dashboard -> AMS role-based work hub
+- services catalog -> AMS quick actions / modules / resident self-service categories
+- alerts feed -> AMS notifications and announcements
+- profile/about screen -> AMS account/settings summary
+- FAQ accordion -> AMS help/support/knowledge sections
+- contact/company directory -> AMS vendors, managers, building contacts
+
+Do not force all reference patterns onto every role. Keep role-specific relevance.
+
+## Detailed To-Do List
+
+- [ ] Create a short screenshot sheet from `mobile-app.mp4` and keep 6-8 representative frames for design reference during implementation.
+- [ ] Write a one-page visual rules note inside the task branch describing what is allowed to borrow from the reference and what is forbidden to copy.
+- [ ] Refine core design tokens in `apps/frontend/styles/premium-theme.css` for mobile surface contrast, radius, shadows, and accent hierarchy.
+- [ ] Add one subtle branded mobile page background treatment in `apps/frontend/styles/globals.css`.
+- [ ] Audit `Card`, `Button`, `Badge`, and related primitives so they express a single premium mobile visual language.
+- [ ] Add or refine a "feature card" and "list row card" variant for repeated mobile use.
+- [ ] Redesign the mobile header in `apps/frontend/components/layout/Header.tsx` to be more compact, branded, and context-aware.
+- [ ] Redesign `apps/frontend/components/layout/MobileBottomNav.tsx` with clearer active-state treatment and better visual weight.
+- [ ] Polish `apps/frontend/components/ui/mobile-action-bar.tsx` so it matches the upgraded shell.
+- [ ] Recompose `apps/frontend/pages/home.tsx` around mobile-first quick entry, urgent items, and one dominant CTA.
+- [ ] Convert top home destinations into a reusable quick-actions pattern instead of ad hoc blocks.
+- [ ] Shorten the mobile hero so important actions appear above the fold.
+- [ ] Simplify metric styling so metrics support the page instead of competing with the hero.
+- [ ] Redesign `apps/frontend/components/ui/notification-center.tsx` cards for stronger hierarchy and calmer scanning.
+- [ ] Update `apps/frontend/pages/notifications.tsx` so filters, preferences, and live-state indicators feel like part of one premium flow.
+- [ ] Restructure `apps/frontend/pages/settings.tsx` into grouped premium settings cards with clearer sectioning.
+- [ ] Add a stronger profile/account summary header to `apps/frontend/pages/resident/account.tsx` or the closest resident account surface.
+- [ ] Standardize accordion/help/legal list styling to match the new card system.
+- [ ] Upgrade empty, loading, and error states so they feel branded and intentional.
+- [ ] Add restrained motion polish to hero, home cards, and bottom-nav active state.
+- [ ] Verify touch targets, safe-area padding, and thumb reach on iPhone-sized viewports.
+- [ ] Test RTL layout carefully because the reference video is Hebrew and AMS already supports RTL/LTR switching.
+- [ ] Test both light and dark themes after token changes.
+- [ ] Check performance on first mobile load so extra gradients and motion do not hurt responsiveness.
+- [ ] Run Playwright or manual mobile QA for `home`, `notifications`, `settings`, and at least one resident flow after redesign.
+
+## Suggested Execution Order
+
+1. Design tokens and primitive surfaces
+2. Mobile shell
+3. Home screen
+4. Notifications and list/feed patterns
+5. Settings/profile patterns
+6. Empty/loading/error polish
+7. Motion tuning
+8. Mobile QA and performance pass
+
+## Definition of Done
+
+The redesign is done when:
+
+- AMS clearly reflects inspiration from the reference video's structure without resembling it visually
+- mobile screens feel premium and cohesive across shell, home, feeds, and settings
+- the first screenful of `home`, `notifications`, and `settings` looks intentionally designed on phone widths
+- interaction quality feels smoother and more professional
+- no regression is introduced in RTL, dark mode, PWA safe areas, or mobile navigation

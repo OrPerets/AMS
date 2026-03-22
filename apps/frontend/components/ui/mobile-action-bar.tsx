@@ -30,31 +30,33 @@ export function MobileActionBar({
     >
       <div className="safe-pb safe-px flex justify-center pt-2">
         <div className="pointer-events-auto thumb-zone w-full max-w-md">
-          <div className="rounded-2xl border border-subtle-border/80 bg-card/97 p-1.5 shadow-elevation-3 backdrop-blur-xl">
+          <div className="mobile-shell-panel rounded-[26px] border p-1.5">
             {!open ? (
               <Button
                 type="button"
                 variant="ghost"
-                className="h-auto w-full justify-between rounded-xl px-3 py-2.5 text-right hover:bg-muted/60 active:bg-muted/80"
+                className="h-auto w-full justify-between rounded-[20px] px-3 py-2.5 text-right hover:bg-muted/60 active:bg-muted/80"
                 onClick={() => setOpen(true)}
               >
                 <span className="flex min-w-0 items-center gap-2.5">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] bg-primary text-primary-foreground shadow-card">
                     <Sparkles className="h-3.5 w-3.5" />
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-[13px] font-semibold text-foreground">פעולות מהירות</span>
+                    <span className="block text-[10px] font-medium uppercase tracking-[0.18em] text-tertiary">פעולות מהירות</span>
+                    <span className="block text-[13px] font-semibold text-foreground">המשך בלי לחפש מסך</span>
                     <span className="mt-0.5 block truncate text-[11px] leading-4 text-muted-foreground">{title}</span>
                   </span>
                 </span>
-                <span className="rounded-full border border-subtle-border bg-background px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
+                <span className="rounded-full border border-subtle-border bg-background/88 px-2.5 py-0.5 text-[11px] font-semibold text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]">
                   פתח
                 </span>
               </Button>
             ) : (
-              <div className="rounded-xl bg-background/75 p-2">
+              <div className="rounded-[22px] bg-background/82 p-2">
                 <div className="mb-2.5 flex items-start justify-between gap-2 px-1.5 pt-0.5">
                   <div className="min-w-0">
+                    <div className="mb-1 text-[10px] font-medium uppercase tracking-[0.18em] text-tertiary">קיצורי דרך</div>
                     <div className="text-[13px] font-semibold text-foreground">{title}</div>
                     {description ? <div className="mt-0.5 text-[11px] leading-4 text-muted-foreground line-clamp-2">{description}</div> : null}
                   </div>

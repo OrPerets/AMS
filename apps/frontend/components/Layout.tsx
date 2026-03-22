@@ -175,12 +175,12 @@ export default function Layout({ children }: Props) {
       
       {/* Main Content */}
       <main className={cn(
-        "app-main flex min-w-0 flex-col overflow-hidden",
+        "app-main mobile-premium-shell flex min-w-0 flex-col overflow-hidden",
         sidebarCollapsed ? "md:ms-16" : "md:ms-64",
         "transition-all duration-300"
       )} id="main-content" tabIndex={-1}>
         {/* Breadcrumbs */}
-        <div className="border-b bg-background/85 backdrop-blur-sm">
+        <div className="hidden border-b bg-background/72 backdrop-blur-sm md:block">
           <div className="container px-3 py-2 sm:px-6 sm:py-3">
             <Breadcrumbs />
           </div>
@@ -190,7 +190,11 @@ export default function Layout({ children }: Props) {
         <div className="flex-1 overflow-x-hidden overflow-y-auto min-h-0" data-scroll-container="app">
           <div
             className="container min-h-full px-3 py-3 sm:px-6 sm:py-6 safe-pb"
-            style={totalOffset > 0 ? { paddingBottom: `max(calc(env(safe-area-inset-bottom, 0px) + 1rem), ${totalOffset + 16}px)` } : undefined}
+            style={
+              totalOffset > 0
+                ? { paddingBottom: `max(calc(env(safe-area-inset-bottom, 0px) + 1rem), ${totalOffset + 20}px)` }
+                : undefined
+            }
           >
             <ErrorBoundary fallback={CompactErrorFallback}>
               {children}

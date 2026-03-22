@@ -4,20 +4,28 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex touch-manipulation items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex touch-manipulation items-center justify-center whitespace-nowrap rounded-full border border-transparent text-sm font-semibold ring-offset-background transition-[transform,box-shadow,background-color,border-color,color,opacity] duration-200 ease-[var(--ease-enter)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-card hover:-translate-y-0.5 hover:bg-primary/90 active:translate-y-0 active:shadow-sm",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-subtle-border bg-background text-foreground hover:border-strong-border hover:bg-muted/70 active:bg-muted/90",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "text-foreground hover:bg-muted/70 active:bg-muted/90",
+        default:
+          "bg-[linear-gradient(180deg,hsl(var(--primary))/0.94_0%,hsl(var(--primary))/1_100%)] text-primary-foreground shadow-card hover:-translate-y-0.5 hover:shadow-raised active:translate-y-0 active:scale-[0.99]",
+        destructive:
+          "bg-[linear-gradient(180deg,hsl(var(--destructive))/0.92_0%,hsl(var(--destructive))/1_100%)] text-destructive-foreground shadow-card hover:-translate-y-0.5 hover:shadow-raised",
+        outline:
+          "border-subtle-border bg-[linear-gradient(180deg,hsl(var(--surface-tint))/0.76_0%,transparent_100%)] text-foreground shadow-[inset_0_1px_0_rgb(255_255_255_/_0.65)] hover:-translate-y-0.5 hover:border-strong-border hover:bg-muted/80 hover:shadow-card active:translate-y-0 active:bg-muted/95",
+        secondary:
+          "bg-[linear-gradient(180deg,hsl(var(--secondary))/0.92_0%,hsl(var(--muted-surface))/1_100%)] text-secondary-foreground shadow-card hover:-translate-y-0.5 hover:shadow-card",
+        ghost: "text-foreground hover:bg-muted/70 active:scale-[0.99] active:bg-muted/90",
         link: "text-primary underline-offset-4 hover:underline",
-        success: "bg-success text-success-foreground hover:bg-success/90",
-        warning: "bg-warning text-warning-foreground hover:bg-warning/90",
-        info: "bg-info text-info-foreground hover:bg-info/90",
-        hero: "bg-white text-slate-950 shadow-card hover:-translate-y-0.5 hover:bg-primary/10 active:translate-y-0",
+        success:
+          "bg-[linear-gradient(180deg,hsl(var(--success))/0.92_0%,hsl(var(--success))/1_100%)] text-success-foreground shadow-card hover:-translate-y-0.5 hover:shadow-raised",
+        warning:
+          "bg-[linear-gradient(180deg,hsl(var(--warning))/0.9_0%,hsl(var(--warning))/1_100%)] text-warning-foreground shadow-card hover:-translate-y-0.5 hover:shadow-raised",
+        info:
+          "bg-[linear-gradient(180deg,hsl(var(--info))/0.92_0%,hsl(var(--info))/1_100%)] text-info-foreground shadow-card hover:-translate-y-0.5 hover:shadow-raised",
+        hero:
+          "relative overflow-hidden border-white/20 bg-[linear-gradient(135deg,rgba(255,255,255,0.98)_0%,rgba(252,245,233,0.94)_56%,rgba(255,232,188,0.86)_100%)] text-slate-950 shadow-raised before:absolute before:inset-y-0 before:left-[-45%] before:w-1/2 before:rotate-12 before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.58),transparent)] before:opacity-70 before:transition-transform before:duration-700 hover:-translate-y-0.5 hover:shadow-[0_28px_68px_-36px_rgba(45,24,3,0.45)] hover:before:translate-x-[240%] active:translate-y-0 active:scale-[0.99]",
       },
       size: {
         default: "h-10 px-4 py-2 sm:h-11 sm:px-5 sm:py-2.5",
@@ -54,6 +62,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           ref={ref}
           aria-busy={loading || undefined}
           data-touch-target="true"
+          data-loading={loading ? "true" : undefined}
           {...props}
         >
           {children}
@@ -67,6 +76,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         data-touch-target="true"
+        data-loading={loading ? "true" : undefined}
         {...props}
       >
         {loading && (
