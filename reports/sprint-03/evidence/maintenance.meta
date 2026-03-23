@@ -1,3 +1,0 @@
-maintenance_status=200
-maintenance_method=GET
-maintenance_path=/api/v1/maintenance

@@ -465,10 +465,10 @@ async function buildPmHomeData(): Promise<PmMobileHomeData> {
       { id: 'urgent', label: 'דחוף', value: urgentCount, tone: urgentCount > 0 ? 'danger' : 'success', href: '/tickets' },
     ],
     primaryAction: {
-      eyebrow: 'Primary Action',
-      title: `${newTickets} קריאות חדשות ממתינות לשיוך`,
-      description: `${urgentCount} קריאות דחופות בתור ו-${pendingRequests} בקשות דייר שממתינות לסקירה.`,
-      ctaLabel: 'שייך עכשיו',
+      eyebrow: 'פעולה ראשית',
+      title: urgentCount > 0 ? `שייך עכשיו ${urgentCount} קריאות דחופות` : `שייך עכשיו ${newTickets} קריאות חדשות`,
+      description: `${pendingRequests} בקשות דייר ממתינות לסקירה · ${calendarEvents} פריטים קרובים ביומן התפעול.`,
+      ctaLabel: 'שייך קריאות דחופות',
       href: '/tickets',
       tone: urgentCount > 0 ? 'danger' : 'warning',
     },
@@ -523,20 +523,20 @@ async function buildTechHomeData(currentUserId: number | null): Promise<TechMobi
       { id: 'urgent', label: 'דחוף', value: urgentOrders.length, tone: urgentOrders.length > 0 ? 'danger' : 'success', href: '/tech/jobs' },
     ],
     primaryAction: {
-      eyebrow: 'Next Job',
-      title: nextJob ? `${getSeverityLabel(nextJob.ticket.severity)} — ${nextJob.ticket.title || 'משימה לשטח'}` : 'אין כרגע משימה דחופה',
+      eyebrow: 'המשימה הבאה',
+      title: nextJob ? `המשך לטיפול ב-${nextJob.ticket.title || 'משימת שטח'}` : 'אין כרגע משימה דחופה',
       description: nextJob
-        ? `${nextJob.location?.building || 'בניין לא צוין'}${nextJob.location?.floor ? ` · קומה ${nextJob.location.floor}` : ''} · ${formatRelativeAge(nextJob.assignedAt || nextJob.dueTime)}`
-        : 'התור פתוח עבורך. אפשר לעבור על העבודות, לעדכן סטטוס או לבדוק גינון.',
-      ctaLabel: 'התחל טיפול',
+        ? `${getSeverityLabel(nextJob.ticket.severity)} · ${nextJob.location?.building || 'בניין לא צוין'}${nextJob.location?.floor ? ` · קומה ${nextJob.location.floor}` : ''} · ${formatRelativeAge(nextJob.assignedAt || nextJob.dueTime)}`
+        : 'תור העבודות פתוח עבורך. אפשר לפתוח עבודה, לעדכן סטטוס או להמשיך לחודש הגינון.',
+      ctaLabel: nextJob ? 'המשך למשימה' : 'פתח תור עבודות',
       href: nextJob ? `/work-orders/${nextJob.id}` : '/tech/jobs',
       tone: urgentOrders.length > 0 ? 'danger' : 'warning',
-      secondaryAction: { label: 'ניווט 📍', href: '/tech/jobs' },
+      secondaryAction: { label: 'עדכן סטטוס', href: '/tickets?mine=true' },
     },
     quickActions: [
       { id: 'jobs', title: 'עבודות', value: activeOrders.length, subtitle: 'היום', href: '/tech/jobs', icon: homeIcons.maintenance, tone: activeOrders.length > 0 ? 'warning' : 'success' },
-      { id: 'gardens', title: 'גינון', value: 'חודשי', subtitle: '🌿', href: '/gardens', icon: homeIcons.calendar },
-      { id: 'status', title: 'עדכן', value: 'סטטוס', subtitle: '✏️', href: '/tickets?mine=true', icon: homeIcons.ticket },
+      { id: 'gardens', title: 'גינון', value: 'חודשי', subtitle: 'תוכנית', href: '/gardens', icon: homeIcons.calendar },
+      { id: 'status', title: 'עדכן', value: 'סטטוס', subtitle: 'שלי', href: '/tickets?mine=true', icon: homeIcons.ticket },
       { id: 'alerts', title: 'התראות', value: unreadNotifications, subtitle: 'חדשות', href: '/notifications', icon: homeIcons.notifications, tone: unreadNotifications > 0 ? 'warning' : 'default' },
     ],
     queueItems: activeOrders.slice(0, 4).map((order) => ({

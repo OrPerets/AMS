@@ -50,6 +50,7 @@ export type HomeBlueprintShellProps = {
   inboxItems: MobilePriorityInboxItem[];
   emptyTitle?: string;
   emptyDescription?: string;
+  prioritizeInbox?: boolean;
 };
 
 export function RoleHomeShell({
@@ -63,11 +64,22 @@ export function RoleHomeShell({
   inboxItems,
   emptyTitle,
   emptyDescription,
+  prioritizeInbox = false,
 }: HomeBlueprintShellProps) {
   const icon = getRoleStatusIcon(roleKey);
+  const inbox = (
+    <MobilePriorityInbox
+      title={inboxTitle}
+      subtitle={inboxSubtitle}
+      items={inboxItems}
+      emptyTitle={emptyTitle}
+      emptyDescription={emptyDescription}
+    />
+  );
+  const quickActionsGrid = <HomeQuickActionsGrid items={quickActions} />;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       <CompactStatusStrip
         roleLabel={roleLabel}
         icon={icon}
@@ -101,22 +113,15 @@ export function RoleHomeShell({
         }
       />
 
-      <HomeQuickActionsGrid items={quickActions} />
-
-      <MobilePriorityInbox
-        title={inboxTitle}
-        subtitle={inboxSubtitle}
-        items={inboxItems}
-        emptyTitle={emptyTitle}
-        emptyDescription={emptyDescription}
-      />
+      {prioritizeInbox ? inbox : quickActionsGrid}
+      {prioritizeInbox ? quickActionsGrid : inbox}
     </div>
   );
 }
 
 export function HomeQuickActionsGrid({ items }: { items: HomeQuickAction[] }) {
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-2.5">
       {items.slice(0, 4).map((item) => {
         const Icon = item.icon;
         return (
@@ -124,26 +129,29 @@ export function HomeQuickActionsGrid({ items }: { items: HomeQuickAction[] }) {
             <Card
               variant="elevated"
               className={cn(
-                'h-full min-h-[132px] rounded-[24px] border transition duration-200 hover:-translate-y-0.5 hover:shadow-card',
+                'h-full min-h-[104px] rounded-[20px] border transition duration-200 hover:-translate-y-0.5 hover:shadow-card',
                 item.tone === 'warning' && 'border-warning/30 bg-warning/5',
                 item.tone === 'danger' && 'border-destructive/30 bg-destructive/5',
                 item.tone === 'success' && 'border-success/30 bg-success/5',
               )}
             >
-              <CardContent className="flex h-full flex-col justify-between p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="text-sm font-semibold text-foreground">{item.title}</div>
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                    <Icon className="h-4 w-4" strokeWidth={1.75} />
+              <CardContent className="flex h-full flex-col justify-between p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="text-[13px] font-semibold leading-5 text-foreground">{item.title}</div>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[16px] bg-primary/10 text-primary">
+                    <Icon className="h-3.5 w-3.5" strokeWidth={1.8} />
                   </span>
                 </div>
                 <div>
-                  <div className="text-2xl font-black leading-none text-foreground">
+                  <div className="text-[1.35rem] font-black leading-none text-foreground">
                     <bdi>{item.value}</bdi>
                   </div>
-                  <div className="mt-1 flex items-center justify-between gap-2 text-[12px] leading-5 text-secondary-foreground">
+                  <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] leading-4 text-secondary-foreground">
                     <span>{item.subtitle}</span>
-                    <ArrowUpRight className="icon-directional h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+                    <span className="inline-flex items-center gap-1 font-semibold text-primary">
+                      פתח
+                      <ArrowUpRight className="icon-directional h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+                    </span>
                   </div>
                 </div>
               </CardContent>

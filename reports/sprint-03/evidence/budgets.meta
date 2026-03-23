@@ -1,3 +1,0 @@
-budgets_status=200
-budgets_method=GET
-budgets_path=/api/v1/budgets

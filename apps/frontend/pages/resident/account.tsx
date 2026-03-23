@@ -121,6 +121,57 @@ export default function ResidentAccountPage() {
   const openTickets = useMemo(() => (context?.tickets ?? []).filter((ticket) => ticket.status !== 'RESOLVED'), [context?.tickets]);
   const unreadNotifications = useMemo(() => (context?.notifications ?? []).filter((item) => !item.read), [context?.notifications]);
   const recentDocuments = useMemo(() => [...(context?.documents ?? [])].slice(0, 2), [context?.documents]);
+  const labels = locale === 'en'
+    ? {
+        home: 'My account',
+        quickState: 'Quick account view',
+        quickStateSubtitle: 'Due now, active requests, and recent updates in one place.',
+        openTickets: 'Open requests',
+        dueNow: 'Due now',
+        documents: 'Documents',
+        activeNow: 'Needs attention now',
+        activeNowSubtitle: 'The next item to pay, track, or open.',
+        actions: 'Quick actions',
+        actionsSubtitle: 'Short, clear, touch-friendly actions.',
+        recentDocs: 'Recent documents',
+        allDocs: 'All documents',
+        trackedTickets: 'Tracked requests',
+        track: 'Track requests',
+        noUrgent: 'Nothing urgent right now',
+        noUrgentDesc: 'When a charge, request, or new update appears, it will show here first.',
+        docsEmpty: 'No recent documents',
+        docsEmptyDesc: 'New committee files and updates will appear here.',
+        noTickets: 'No open requests',
+        noTicketsDesc: 'If something breaks, you can open a new service call in one tap.',
+        createCall: 'Open service call',
+        updatesReady: '{{count}} new updates are waiting',
+        updatesClear: 'You are up to date',
+      }
+    : {
+        home: 'האזור האישי',
+        quickState: 'תמונת חשבון מהירה',
+        quickStateSubtitle: 'לתשלום עכשיו, קריאות פתוחות ועדכונים חדשים במבט אחד.',
+        openTickets: 'קריאות פתוחות',
+        dueNow: 'לתשלום',
+        documents: 'מסמכים',
+        activeNow: 'פעיל עכשיו',
+        activeNowSubtitle: 'הפריט הבא שכדאי לשלם, לעקוב אחריו או לפתוח.',
+        actions: 'פעולות מהירות',
+        actionsSubtitle: 'הכול קצר, ברור ולחיץ.',
+        recentDocs: 'מסמכים אחרונים',
+        allDocs: 'לכל המסמכים',
+        trackedTickets: 'קריאות במעקב',
+        track: 'למעקב',
+        noUrgent: 'אין משהו דחוף כרגע',
+        noUrgentDesc: 'כשתיפתח קריאה, יופיע חיוב או ייכנס עדכון חדש, נראה אותו כאן.',
+        docsEmpty: 'אין מסמכים חדשים',
+        docsEmptyDesc: 'כשהצוות יעלה מסמך חדש, הוא יופיע כאן.',
+        noTickets: 'אין קריאות פתוחות',
+        noTicketsDesc: 'אם יש תקלה, אפשר לפתוח קריאה חדשה בלחיצה אחת.',
+        createCall: 'פתח קריאה',
+        updatesReady: '{{count}} עדכונים חדשים מחכים לך',
+        updatesClear: 'כל העדכונים האחרונים נקראו',
+      };
   const nextPaymentDue = useMemo(
     () =>
       [...(finance?.invoices ?? [])]
@@ -224,7 +275,7 @@ export default function ResidentAccountPage() {
   return (
     <div dir="rtl" className="space-y-4 text-right sm:space-y-6">
       <CompactStatusStrip
-        roleLabel={primaryBuilding ? `${primaryBuilding.name} · דירה ${primaryUnit?.number}` : 'האזור האישי'}
+        roleLabel={primaryBuilding ? `${primaryBuilding.name} · דירה ${primaryUnit?.number}` : labels.home}
         icon={<Building2 className="h-4 w-4" strokeWidth={1.75} />}
         metrics={[
           {
@@ -245,9 +296,9 @@ export default function ResidentAccountPage() {
       />
 
       <section className="space-y-3">
-        <div className="rounded-[28px] bg-[linear-gradient(180deg,rgba(37,99,235,0.08)_0%,rgba(255,255,255,0.9)_100%)] p-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+        <div className="rounded-[24px] border border-subtle-border bg-[linear-gradient(180deg,rgba(37,99,235,0.07)_0%,rgba(255,255,255,0.96)_100%)] p-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
           <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary-foreground">שלום {residentName}</div>
-          <h1 className="mt-2 text-2xl font-black leading-tight text-foreground">מה תרצה לעשות עכשיו?</h1>
+          <h1 className="mt-2 text-2xl font-black leading-tight text-foreground">{labels.quickState}</h1>
           <p className="mt-1 text-sm text-secondary-foreground">
             {primaryBuilding ? `${primaryBuilding.name} · ${primaryBuilding.address}` : 'כל הפעולות החשובות במקום אחד'}
           </p>
@@ -276,8 +327,8 @@ export default function ResidentAccountPage() {
 
       <MobileActionHub
         mobileHomeEffect
-        title="פעולות מהירות"
-        subtitle="הכול קצר, ברור ולחיץ"
+        title={labels.actions}
+        subtitle={labels.actionsSubtitle}
         items={actionItems}
       />
 
@@ -285,38 +336,38 @@ export default function ResidentAccountPage() {
         <CardContent className="space-y-4 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-foreground">מצב מהיר</h2>
-              <p className="text-sm text-secondary-foreground">ללא גלילה ארוכה</p>
+              <h2 className="text-lg font-semibold text-foreground">{labels.quickState}</h2>
+              <p className="text-sm text-secondary-foreground">{labels.quickStateSubtitle}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs text-secondary-foreground">
-              <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">{openTickets.length} קריאות</span>
+              <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">{openTickets.length} {labels.openTickets}</span>
               <span className="rounded-full bg-muted px-2.5 py-1 font-semibold">{unreadNotifications.length} עדכונים</span>
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-center">
-            <QuickMetric label="פתוחות" value={openTickets.length} href="/resident/requests?view=history" />
-            <QuickMetric label="לתשלום" value={finance?.summary.unpaidInvoices ?? 0} href="/payments/resident" />
-            <QuickMetric label="מסמכים" value={context.documents.length} href="/documents" />
+            <QuickMetric label={labels.openTickets} value={openTickets.length} href="/resident/requests?view=history" />
+            <QuickMetric label={labels.dueNow} value={finance?.summary.unpaidInvoices ?? 0} href="/payments/resident" />
+            <QuickMetric label={labels.documents} value={context.documents.length} href="/documents" />
           </div>
         </CardContent>
       </Card>
 
       <MobilePriorityInbox
-        title="פעיל עכשיו"
-        subtitle="הפריטים שכנראה תרצה לפתוח עכשיו"
+        title={labels.activeNow}
+        subtitle={labels.activeNowSubtitle}
         items={activeItems.slice(0, 2)}
-        emptyTitle="אין משהו דחוף כרגע"
-        emptyDescription="כשתיפתח קריאה, יופיע חיוב או ייכנס עדכון חדש, נראה אותו כאן."
+        emptyTitle={labels.noUrgent}
+        emptyDescription={labels.noUrgentDesc}
       />
 
       <section className="grid gap-3 md:grid-cols-2">
         <Card variant="muted" className="rounded-[24px] border-subtle-border/80">
           <CardContent className="space-y-3 p-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-foreground">מסמכים אחרונים</h3>
+              <h3 className="text-base font-semibold text-foreground">{labels.recentDocs}</h3>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/documents">לכל המסמכים</Link>
+                <Link href="/documents">{labels.allDocs}</Link>
               </Button>
             </div>
 
@@ -335,7 +386,7 @@ export default function ResidentAccountPage() {
                 </Link>
               ))
             ) : (
-              <EmptyState type="empty" size="sm" title="אין מסמכים חדשים" description="כשהצוות יעלה מסמך חדש, הוא יופיע כאן." />
+              <EmptyState type="empty" size="sm" title={labels.docsEmpty} description={labels.docsEmptyDesc} />
             )}
           </CardContent>
         </Card>
@@ -343,9 +394,9 @@ export default function ResidentAccountPage() {
         <Card variant="muted" className="rounded-[24px] border-subtle-border/80">
           <CardContent className="space-y-3 p-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-foreground">קריאות במעקב</h3>
+              <h3 className="text-base font-semibold text-foreground">{labels.trackedTickets}</h3>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/resident/requests?view=history">למעקב</Link>
+                <Link href="/resident/requests?view=history">{labels.track}</Link>
               </Button>
             </div>
 
@@ -374,7 +425,7 @@ export default function ResidentAccountPage() {
                 </Link>
               ))
             ) : (
-              <EmptyState type="action" size="sm" title="אין קריאות פתוחות" description="אם יש תקלה, אפשר לפתוח קריאה חדשה בלחיצה אחת." action={{ label: 'פתח קריאה', onClick: () => void router.push('/create-call') }} />
+              <EmptyState type="action" size="sm" title={labels.noTickets} description={labels.noTicketsDesc} action={{ label: labels.createCall, onClick: () => void router.push('/create-call') }} />
             )}
           </CardContent>
         </Card>
@@ -382,7 +433,9 @@ export default function ResidentAccountPage() {
 
       <div className="flex items-center justify-center gap-2 text-center text-xs text-secondary-foreground">
         <Bell className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
-        {unreadNotifications.length ? `${unreadNotifications.length} עדכונים חדשים מחכים לך` : 'כל העדכונים האחרונים נקראו'}
+        {unreadNotifications.length
+          ? labels.updatesReady.replace('{{count}}', String(unreadNotifications.length))
+          : labels.updatesClear}
       </div>
     </div>
   );

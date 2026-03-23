@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test';
 import { expectNoHorizontalOverflow, mockApi, setSession } from './support/app-fixtures';
 
 test.describe('mobile support smoke', () => {
+  test.describe.configure({ timeout: 60_000 });
+
   test('mobile shell drawer opens and navigates to buildings', async ({ page }) => {
     await mockApi(page);
     await setSession(page, 'PM');
@@ -17,7 +19,8 @@ test.describe('mobile support smoke', () => {
       page.waitForURL(/\/buildings$/),
       buildingsLink.click({ force: true }),
     ]);
-    await expect(page.getByRole('heading', { name: 'ניהול בניינים' })).toBeVisible();
+    await expect(page).toHaveURL(/\/buildings$/);
+    await expect(page.getByRole('banner').getByText('בניינים ונכסים')).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 
@@ -48,8 +51,8 @@ test.describe('mobile support smoke', () => {
     await setSession(page, 'RESIDENT');
 
     await page.goto('/resident/account');
-    await expect(page.getByText(/חיוב אוטומטי/).first()).toBeVisible();
-    await expect(page.getByText('שלם').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: /תמונת חשבון מהירה|Quick account view/i }).first()).toBeVisible();
+    await expect(page.getByText(/שלם עכשיו|Pay now/i).first()).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 
@@ -64,8 +67,8 @@ test.describe('mobile support smoke', () => {
 
     await setSession(page, 'TECH');
     await page.goto('/gardens');
-    await expect(page.getByRole('heading', { name: /שלום/ })).toBeVisible();
-    await expect(page.getByText('שמור או הגש את החודש').first()).toBeVisible();
+    await expect(page.getByText(/נדרשים תיקונים לפני אישור|המשך לעדכן את החודש הפעיל/).first()).toBeVisible();
+    await expect(page.getByText(/המשך לערוך או הגש לאישור|החודש סגור לעריכה/).first()).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 });

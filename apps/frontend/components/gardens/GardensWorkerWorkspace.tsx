@@ -47,6 +47,43 @@ function entryMapToAssignments(entries: Record<string, DayEntry>) {
     .filter((entry) => entry.location);
 }
 
+function getWorkerStateCopy(status: GardensWorkerMonth['month']['status'], assignmentCount: number, reviewNote?: string | null) {
+  switch (status) {
+    case 'NEEDS_CHANGES':
+      return {
+        badge: 'דורש עדכון',
+        title: 'נדרשים תיקונים לפני אישור',
+        description: reviewNote || 'פתח את החודש, עדכן את הימים שסומנו, והגש מחדש רק אחרי בדיקה קצרה.',
+        actionTitle: 'בדוק את ההערות והמשך לעריכה',
+        actionDescription: `מולאו כרגע ${assignmentCount} ימים. שמור טיוטה תוך כדי עבודה והגש מחדש אחרי תיקון.`,
+      };
+    case 'SUBMITTED':
+      return {
+        badge: 'הוגש',
+        title: 'החודש כבר הוגש לבדיקה',
+        description: 'אין צורך לבצע פעולה נוספת עד שיחזור משוב מהמנהל.',
+        actionTitle: 'המתן למשוב מנהל',
+        actionDescription: 'אפשר לעבור על החודש לקריאה בלבד ולהתכונן לשינויים אם יידרשו.',
+      };
+    case 'APPROVED':
+      return {
+        badge: 'אושר',
+        title: 'החודש אושר וננעל',
+        description: 'התוכנית סגורה לקריאה בלבד כדי לשמור על גרסה מוסכמת אחת.',
+        actionTitle: 'החודש סגור לעריכה',
+        actionDescription: 'אם יש צורך בשינוי נוסף, פנה למנהל לפני פתיחת עדכון חדש.',
+      };
+    default:
+      return {
+        badge: 'טיוטה',
+        title: 'המשך לעדכן את החודש הפעיל',
+        description: 'מלא רק ימים שבהם יש עבודה בפועל, ואז שמור או הגש כשהחודש מוכן.',
+        actionTitle: 'המשך למלא את החודש',
+        actionDescription: `מולאו כרגע ${assignmentCount} ימים. הפעולה הראשית היא לשמור טיוטה או להגיש כשהכול סגור.`,
+      };
+  }
+}
+
 export function GardensWorkerWorkspace() {
   const [dashboard, setDashboard] = useState<GardensWorkerDashboard | null>(null);
   const [activeMonth, setActiveMonth] = useState<GardensWorkerMonth | null>(null);
@@ -139,6 +176,10 @@ export function GardensWorkerWorkspace() {
     () => Object.keys(entries).filter((key) => entries[key]?.address?.trim()).length,
     [entries],
   );
+  const workerState = useMemo(
+    () => getWorkerStateCopy(activeMonth?.month?.status ?? 'DRAFT', assignmentCount, activeMonth?.month?.reviewNote),
+    [activeMonth?.month?.reviewNote, activeMonth?.month?.status, assignmentCount],
+  );
 
   const save = async () => {
     if (!activeMonth?.month) {
@@ -209,30 +250,41 @@ export function GardensWorkerWorkspace() {
     <div className="space-y-8">
       <PageHero
         variant="operational"
-        eyebrow={<GardensStatusBadge status={activeMonth.month.status} />}
-        kicker="Worker Workspace"
-        title={`שלום ${dashboard.worker.displayName}`}
-        description="עדכן את החודש, בדוק מה עוד חסר, והגש לאישור כשהכול מוכן."
-        actions={
-          <GardensStatusBadge status={activeMonth.month.status} />
+        compact
+        eyebrow={
+          <>
+            <GardensStatusBadge status={activeMonth.month.status} />
+            <Badge variant="outline">{workerState.badge}</Badge>
+          </>
         }
-        aside={
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-tertiary">חודש פעיל</div>
-              <div className="mt-2 text-xl font-black">{formatPlanLabel(activeMonth.month.plan)}</div>
-            </div>
-            <div className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-tertiary">יעד הגשה</div>
-              <div className="mt-2 text-sm font-semibold">{formatDateLabel(activeMonth.month.submissionDeadline)}</div>
-            </div>
-            <div className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-tertiary">ימים שמולאו</div>
-              <div className="mt-2 text-xl font-black">{assignmentCount}</div>
-            </div>
-          </div>
+        kicker="WORKSPACE"
+        title={workerState.title}
+        description={workerState.description}
+        actions={
+          <Button asChild size="sm">
+            <a href="#gardens-worker-month-grid">{editable ? 'המשך לעריכה' : 'צפה בחודש'}</a>
+          </Button>
         }
       />
+
+      <Card variant="featured" className="overflow-hidden rounded-[22px]">
+        <CardContent className="grid gap-3 p-4 sm:grid-cols-[1.2fr_0.8fr_0.8fr] sm:p-5">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-tertiary">פעולה ראשית</div>
+            <div className="mt-1 text-base font-semibold text-foreground">{workerState.actionTitle}</div>
+            <div className="mt-1 text-sm leading-6 text-secondary-foreground">{workerState.actionDescription}</div>
+          </div>
+          <div className="rounded-[18px] border border-subtle-border bg-background/82 p-3">
+            <div className="text-xs uppercase tracking-[0.16em] text-tertiary">חודש פעיל</div>
+            <div className="mt-2 text-lg font-black">{formatPlanLabel(activeMonth.month.plan)}</div>
+          </div>
+          <div className="rounded-[18px] border border-subtle-border bg-background/82 p-3">
+            <div className="text-xs uppercase tracking-[0.16em] text-tertiary">יעד הגשה</div>
+            <div className="mt-2 text-sm font-semibold">{formatDateLabel(activeMonth.month.submissionDeadline)}</div>
+            <div className="mt-1 text-xs text-secondary-foreground">{assignmentCount} ימים מולאו</div>
+          </div>
+        </CardContent>
+      </Card>
 
       {activeMonth.month.status === 'NEEDS_CHANGES' && activeMonth.month.reviewNote ? (
         <Alert variant="warning">
@@ -298,7 +350,7 @@ export function GardensWorkerWorkspace() {
           </CardContent>
         </Card>
 
-        <Card variant="elevated">
+        <Card id="gardens-worker-month-grid" variant="elevated">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4" />
@@ -371,8 +423,8 @@ export function GardensWorkerWorkspace() {
       </section>
 
       <MobileActionBar
-        title="שמור או הגש את החודש"
-        description={editable ? 'מומלץ לשמור טיוטה במהלך העבודה ולהגיש רק אחרי בדיקה קצרה.' : 'החודש סגור לעריכה כרגע.'}
+        title={editable ? 'המשך לערוך או הגש לאישור' : 'החודש סגור לעריכה'}
+        description={workerState.actionDescription}
       >
         <div className="grid gap-2">
           <Button variant="outline" onClick={() => void save()} loading={saving} disabled={!editable} className="w-full justify-between">

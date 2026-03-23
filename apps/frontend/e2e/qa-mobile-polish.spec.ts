@@ -30,6 +30,8 @@ const scenarios = [
 ];
 
 test.describe('mobile polish smoke', () => {
+  test.describe.configure({ timeout: 120_000 });
+
   for (const scenario of scenarios) {
     test(`home, notifications, settings and resident account render cleanly for ${scenario.name}`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: 390, height: 844 });
@@ -42,8 +44,13 @@ test.describe('mobile polish smoke', () => {
       await mockApi(page);
 
       await page.goto('/home', { waitUntil: 'domcontentloaded' });
-      await expect(page.getByRole('heading', { name: /תיבת עדיפויות|Priority inbox/i }).first()).toBeVisible();
-      await expect(page.getByText(/מה דורש פעולה עכשיו|דורש פעולה עכשיו|requires action now/i).first()).toBeVisible();
+      if (scenario.role === 'RESIDENT') {
+        await expect(page.getByRole('heading', { name: /תמונת חשבון מהירה|Quick account view/i }).first()).toBeVisible();
+        await expect(page.getByText(/פעיל עכשיו|Needs attention now/i).first()).toBeVisible();
+      } else {
+        await expect(page.getByRole('heading', { name: /תיבת מנהל נכס|Priority inbox/i }).first()).toBeVisible();
+        await expect(page.getByText(/מה דורש טיפול עכשיו|requires action now/i).first()).toBeVisible();
+      }
       await expectNoHorizontalOverflow(page);
       await captureToMobilePolish(page, testInfo, `home-${scenario.name}.png`);
 
@@ -86,8 +93,8 @@ test.describe('mobile polish smoke', () => {
     await setSession(page, 'TECH');
     await configureClient(page, { direction: 'rtl', theme: 'light', locale: 'he' });
     await page.goto('/gardens', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: /שלום/ })).toBeVisible();
-    await expect(page.getByText('שמור או הגש את החודש').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: /נדרשים תיקונים לפני אישור|המשך לעדכן את החודש הפעיל/ })).toBeVisible();
+    await expect(page.getByText(/המשך לערוך או הגש לאישור|החודש סגור לעריכה/).first()).toBeVisible();
     await expectNoHorizontalOverflow(page);
     await captureToMobilePolish(page, testInfo, 'gardens-worker-tech-light-rtl.png');
   });

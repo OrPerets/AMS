@@ -17,10 +17,11 @@ export function PmMobileHome({ data }: { data: PmMobileHomeData }) {
       primaryAction={data.primaryAction}
       quickActions={data.quickActions}
       inboxTitle="תיבת מנהל נכס"
-      inboxSubtitle="שיוכים, בקשות דייר ולוחות זמנים קרובים במסלול עבודה אחד."
+      inboxSubtitle="מה דורש טיפול עכשיו, מה בסיכון, ומה כבר חורג."
       inboxItems={data.priorityItems}
       emptyTitle="אין קריאות חדשות"
       emptyDescription="כל הקריאות שויכו. זה זמן טוב לעבור על הבניינים והיומן הקרוב."
+      prioritizeInbox
     />
   );
 }
