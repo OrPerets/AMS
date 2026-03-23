@@ -138,6 +138,20 @@ export type GardensWorkerPlanDetail = {
   }[];
 };
 
+type StoredGardensResume = {
+  href: string;
+  label: string;
+  role: string;
+  userId: number | null;
+  savedAt: string;
+};
+
+const LAST_GARDENS_ROUTE_KEY = 'ams:gardens:last-route';
+
+function isBrowser() {
+  return typeof window !== 'undefined';
+}
+
 async function readJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await authFetch(path, init);
   if (!response.ok) {
@@ -254,5 +268,52 @@ export async function submitGardensWorkerMonth(plan: string) {
     {
       method: 'POST',
     },
+  );
+}
+
+function getGardensResumeScope(role?: string | null, userId?: number | null) {
+  return `${role || 'UNKNOWN'}:${typeof userId === 'number' ? userId : 'guest'}`;
+}
+
+export function getLatestGardensPlan(months: Array<{ plan: string }> = []) {
+  return [...months]
+    .map((month) => month.plan)
+    .sort((left, right) => right.localeCompare(left))[0] ?? null;
+}
+
+export function getStoredGardensResume(role?: string | null, userId?: number | null) {
+  if (!isBrowser()) return null;
+
+  const rawValue = window.localStorage.getItem(
+    `${LAST_GARDENS_ROUTE_KEY}:${getGardensResumeScope(role, userId)}`,
+  );
+  if (!rawValue) return null;
+
+  try {
+    const parsed = JSON.parse(rawValue) as StoredGardensResume;
+    if (!parsed?.href || !parsed?.label) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredGardensResume(
+  href: string,
+  options: { role?: string | null; userId?: number | null; label: string },
+) {
+  if (!isBrowser()) return;
+
+  const storedValue: StoredGardensResume = {
+    href,
+    label: options.label,
+    role: options.role || 'UNKNOWN',
+    userId: typeof options.userId === 'number' ? options.userId : null,
+    savedAt: new Date().toISOString(),
+  };
+
+  window.localStorage.setItem(
+    `${LAST_GARDENS_ROUTE_KEY}:${getGardensResumeScope(options.role, storedValue.userId)}`,
+    JSON.stringify(storedValue),
   );
 }

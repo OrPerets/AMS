@@ -10,6 +10,7 @@ import { PageHero } from '../ui/page-hero';
 import { SectionHeader } from '../ui/section-header';
 import { Textarea } from '../ui/textarea';
 import { toast } from '../ui/use-toast';
+import { GardensModuleShell } from './GardensModuleShell';
 import {
   formatDateLabel,
   formatPlanLabel,
@@ -17,6 +18,7 @@ import {
   reviewGardensWorkerPlan,
   type GardensWorkerPlanDetail,
 } from '../../lib/gardens';
+import { getEffectiveRole } from '../../lib/auth';
 import { GardensStatusBadge } from './GardensStatusBadge';
 
 export function GardensWorkerReview({
@@ -31,6 +33,7 @@ export function GardensWorkerReview({
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState<'APPROVED' | 'NEEDS_CHANGES' | null>(null);
+  const role = getEffectiveRole();
 
   const load = async () => {
     setLoading(true);
@@ -99,40 +102,47 @@ export function GardensWorkerReview({
   }
 
   return (
-    <div className="space-y-8">
-      <PageHero
-        eyebrow={<GardensStatusBadge status={detail.planState.status} />}
-        kicker="Gardens Review"
-        title={detail.worker.displayName}
-        description={`סקירת תוכנית העבודה עבור ${formatPlanLabel(plan)} לפני אישור סופי או החזרה לעדכון.`}
-        actions={
-          <Button variant="outline" onClick={() => void router.push(`/gardens/months/${plan}`)}>
-            <Undo2 className="me-2 h-4 w-4" />
-            חזרה לחודש
-          </Button>
-        }
-        aside={
-          <div className="space-y-3 text-white">
-            <div className="rounded-[20px] border border-white/10 bg-white/5 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-white/55">הוגש בתאריך</div>
-              <div className="mt-2 text-lg font-black">
-                {detail.planState.submittedAt
-                  ? formatDateLabel(detail.planState.submittedAt, {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    })
-                  : 'עדיין לא הוגש'}
+    <GardensModuleShell
+      role={role}
+      activePlan={plan}
+      moduleLabel={`סקירת עובד ${detail.worker.displayName}`}
+      title={`אישור תוכנית עבור ${detail.worker.displayName}`}
+      description="אתה נמצא בתוך מסלול האישורים של מודול הגינון. מכאן אפשר לבדוק את פרטי ההגשה, להחזיר לעדכון או לאשר סופית."
+      actions={
+        <Button variant="outline" onClick={() => void router.push(`/gardens/months/${plan}`)}>
+          <Undo2 className="me-2 h-4 w-4" />
+          חזרה לחודש
+        </Button>
+      }
+    >
+      <div className="space-y-8">
+        <PageHero
+          eyebrow={<GardensStatusBadge status={detail.planState.status} />}
+          kicker="Gardens Review"
+          title={detail.worker.displayName}
+          description={`סקירת תוכנית העבודה עבור ${formatPlanLabel(plan)} לפני אישור סופי או החזרה לעדכון.`}
+          aside={
+            <div className="space-y-3 text-white">
+              <div className="rounded-[20px] border border-white/10 bg-white/5 p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-white/55">הוגש בתאריך</div>
+                <div className="mt-2 text-lg font-black">
+                  {detail.planState.submittedAt
+                    ? formatDateLabel(detail.planState.submittedAt, {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      })
+                    : 'עדיין לא הוגש'}
+                </div>
+              </div>
+              <div className="rounded-[20px] border border-white/10 bg-white/5 p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-white/55">ערוץ קשר</div>
+                <div className="mt-2 text-sm font-semibold">{detail.worker.email}</div>
               </div>
             </div>
-            <div className="rounded-[20px] border border-white/10 bg-white/5 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-white/55">ערוץ קשר</div>
-              <div className="mt-2 text-sm font-semibold">{detail.worker.email}</div>
-            </div>
-          </div>
-        }
-      />
+          }
+        />
 
-      <section className="grid gap-4 lg:grid-cols-3">
+        <section className="grid gap-4 lg:grid-cols-3">
         <Card variant="metric">
           <CardContent className="p-5">
             <div className="text-xs text-muted-foreground">ימי שיבוץ</div>
@@ -151,17 +161,17 @@ export function GardensWorkerReview({
             <div className="mt-2 text-3xl font-black">{summary.withNotes}</div>
           </CardContent>
         </Card>
-      </section>
+        </section>
 
-      {detail.planState.status === 'NEEDS_CHANGES' && detail.planState.reviewNote ? (
-        <Alert variant="warning">
-          <AlertIcon variant="warning" />
-          <AlertTitle>התוכנית כבר הוחזרה בעבר לעדכון</AlertTitle>
-          <AlertDescription>{detail.planState.reviewNote}</AlertDescription>
-        </Alert>
-      ) : null}
+        {detail.planState.status === 'NEEDS_CHANGES' && detail.planState.reviewNote ? (
+          <Alert variant="warning">
+            <AlertIcon variant="warning" />
+            <AlertTitle>התוכנית כבר הוחזרה בעבר לעדכון</AlertTitle>
+            <AlertDescription>{detail.planState.reviewNote}</AlertDescription>
+          </Alert>
+        ) : null}
 
-      <section className="space-y-4">
+        <section className="space-y-4">
         <SectionHeader
           title="פירוט שיבוצים"
           subtitle="בדוק תאריכים, עומסים, כפילויות והערות לפני אישור."
@@ -190,9 +200,9 @@ export function GardensWorkerReview({
             </table>
           </CardContent>
         </Card>
-      </section>
+        </section>
 
-      <section className="space-y-4">
+        <section className="space-y-4">
         <SectionHeader
           title="החלטת מנהל"
           subtitle="אפשר לאשר את התוכנית כפי שהיא, או להחזיר אותה לעדכון עם הערה ברורה לעובד."
@@ -225,7 +235,8 @@ export function GardensWorkerReview({
             </div>
           </CardContent>
         </Card>
-      </section>
-    </div>
+        </section>
+      </div>
+    </GardensModuleShell>
   );
 }

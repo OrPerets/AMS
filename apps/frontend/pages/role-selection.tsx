@@ -18,6 +18,7 @@ import {
   setStoredWorkspaceChoice,
   type WorkspaceChoice,
 } from '../lib/auth';
+import { canAccessGardens } from '../gardens/lib/ams-auth';
 import { useDirection, useLocale } from '../lib/providers';
 
 type WorkspaceCard = {
@@ -63,6 +64,7 @@ export default function RoleSelectionPage() {
 
   const next = typeof router.query.next === 'string' ? router.query.next : undefined;
   const amsHref = next || getAmsRouteForRole(role);
+  const gardensHref = canAccessGardens(role) ? '/gardens' : null;
   const cards = useMemo<WorkspaceCard[]>(() => ([
     {
       choice: 'ams',
@@ -87,9 +89,9 @@ export default function RoleSelectionPage() {
       description: t('roleSelection.card.gardensDescription'),
       cta: t('roleSelection.card.gardensCta'),
       icon: Leaf,
-      href: '/gardens',
+      href: gardensHref,
     },
-  ]), [amsHref, next, t]);
+  ]), [amsHref, gardensHref, next, t]);
 
   const lastUsedCard = cards.find((card) => card.choice === lastChoice);
   const isUnsupportedRole = ready && !amsHref && role !== 'MASTER';
