@@ -35,6 +35,10 @@ export default function Breadcrumbs() {
       maintenance: t('nav.maintenance'),
       tech: t('nav.techJobs'),
       jobs: t('nav.techJobs'),
+      gardens: 'מודול הגינון',
+      months: 'חודשי עבודה',
+      reminders: 'תזכורות',
+      workers: 'אישורי עובדים',
       communications: t('nav.communications'),
       // Property Management
       buildings: t('nav.buildings'),

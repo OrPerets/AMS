@@ -281,48 +281,71 @@ Turn gardens into a standalone module inside the system, with the same functiona
 
 ## Tasks
 ### 4.1 Map current functionality
-- Map all existing garden screens:
-  - home / overview
-  - months
-  - worker planning
-  - approvals
-  - reports
-  - reminders
-- Identify the permissions required for each flow.
+- [x] Mapped all existing garden screens:
+  - [x] home / overview
+  - [x] months
+  - [x] worker planning
+  - [x] approvals
+  - [x] reports
+  - [x] reminders
+- [x] Identified the permissions required for each flow.
+
+#### Current gardens flow map
+| Flow | Route | Current owner | Permission |
+| --- | --- | --- | --- |
+| Module home / overview | `/gardens` | `pages/gardens/index.tsx` → manager or worker home switch | `ADMIN`, `PM`, `MASTER`, `TECH` |
+| Manager month overview | `/gardens/months/[plan]` | `GardensManagerMonth` | `ADMIN`, `PM`, `MASTER` |
+| Worker planning | `/gardens` worker workspace + month selector | `GardensWorkerWorkspace` | `TECH` |
+| Approvals | `/gardens/months/[plan]/workers/[workerProfileId]` | `GardensWorkerReview` | `ADMIN`, `PM`, `MASTER` |
+| Reports | `/gardens/months/[plan]/report/[workerProfileId]` | printable worker report | `ADMIN`, `PM`, `MASTER` |
+| Reminders | `/gardens/reminders` | now a dedicated reminders center | `ADMIN`, `PM`, `MASTER` |
+
+#### Permissions confirmed
+- `canAccessGardens(role)` allows access only for `ADMIN`, `PM`, `MASTER`, and `TECH`.
+- Managers/coordinators (`ADMIN`, `PM`, `MASTER`) use the managerial flow: module home, month drill-down, reminders, approvals, and printable reports.
+- Workers (`TECH`) use the personal workspace flow: active month planning, save, submit, and month history.
 
 ### 4.2 Define a standalone entry point
-- Create a clear standalone entry into the gardens module.
-- Define a gardens shell / header / navigation context as a standalone product area inside AMS.
-- Remove the feeling that it is just a hidden internal page under admin.
+- [x] Created a clear standalone entry into the gardens module.
+- [x] Defined a gardens shell / header / navigation context as a standalone product area inside AMS.
+- [x] Removed the feeling that it is just a hidden internal page under admin.
 
 ### 4.3 Separate navigation
-- Add navigation tailored to gardens inside the module itself.
-- Consider breadcrumbs / subnav / tabs depending on the scenario.
-- Make it clear when the user is inside general AMS and when they are inside the gardens module.
+- [x] Added navigation tailored to gardens inside the module itself.
+- [x] Added module-level breadcrumbs / subnav / resume affordances depending on the scenario.
+- [x] Made it clear when the user is inside general AMS and when they are inside the gardens module.
 
 ### 4.4 Preserve all existing capabilities
-- Make sure all current functionality remains intact:
-  - create a new month
-  - assign workers
-  - worker submissions
-  - approvals
-  - reports
-  - reminders
-- If there are dependencies on admin screens, split them gradually without breaking workflows.
+- [x] Preserved all current functionality:
+  - [x] create a new month
+  - [x] assign workers
+  - [x] worker submissions
+  - [x] approvals
+  - [x] reports
+  - [x] reminders
+- [x] Split the experience away from the general admin feel without breaking the existing workflows.
 
 ### 4.5 Different home screens by user type
-- Manager / Coordinator: a managerial home page with monthly status, waiting workers, and shortcuts.
-- Worker: a personal home page with the active month, open days/tasks, and a direct continue action.
+- [x] Manager / Coordinator: built a managerial home page with monthly status, waiting workers, and shortcuts.
+- [x] Worker: built a personal home page with the active month, open days/tasks, and a direct continue action.
 
 ### 4.6 Connect it to the new selection screen
-- The "Garden management" card on the selection screen should route directly to this entry point.
-- If a user lacks garden permissions, show a disabled state or hide the option entirely — based on product decision.
+- [x] Connected the "Garden management" card on the selection screen directly to the new entry point.
+- [x] Disabled the card for roles without garden permissions instead of allowing an incorrect entry.
 
 ### 4.7 Engagement improvements for gardens
-- Add quick resume: "Continue where you left off".
-- Show pending actions when entering the module.
-- Show clear empty states with a single CTA.
-- Add short and precise success messages after critical actions.
+- [x] Added quick resume: "Continue where you left off".
+- [x] Showed pending actions when entering the module.
+- [x] Added clear empty states with a single CTA.
+- [x] Added short and precise success messages after critical actions.
+
+#### Sprint 4 implementation notes
+- Added a dedicated gardens module shell with standalone messaging, module-specific navigation, an explicit return-to-AMS action, and persisted “continue where you left off” behavior per user and role.
+- Reworked the managerial gardens home so it behaves like a real module hub: monthly status cards, pending-work indicators, direct shortcuts to approvals/reports/reminders, and clearer month cards.
+- Kept the worker workspace intact while reframing it inside the standalone module shell and surfacing clearer pending-action guidance, direct continue actions, and home metrics.
+- Added a dedicated reminders center route instead of redirecting back to the module root, so reminder sending is now a first-class screen with month switching and per-worker actions.
+- Updated global mobile context and breadcrumbs so `/gardens` clearly reads as a dedicated module rather than a generic admin page.
+- Updated role selection so garden entry is only active for supported garden roles, with unsupported roles seeing the existing disabled-card treatment.
 
 ---
 
