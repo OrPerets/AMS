@@ -56,39 +56,137 @@ Lock the new entry experience end-to-end before deeper code changes begin.
 
 ## Tasks
 ### 1.1 Map the current entry flows
-- Map what happens today for each role after login.
-- Document which routes are sent through `getDefaultRoute` and which use manual redirects.
-- Identify overlap or conflict between `/home`, `/resident/account`, `/role-selection`, and module entry points such as `/gardens`.
+- [x] Mapped the current post-login flow by role.
+- [x] Documented the split between `getDefaultRoute` and manual page redirects.
+- [x] Identified overlap between `/home`, `/resident/account`, `/role-selection`, `/gardens`, and `/supervision-report`.
+
+#### Current flow map
+| Scenario | Current behavior | Notes |
+| --- | --- | --- |
+| Landing page | `/` shows multiple entry CTAs, including resident and worker-specific routes. | This does **not** match the requested single "Enter the system" funnel. |
+| Unauthenticated protected route | `Layout` sends the user to `/login?next=...`. | Redirect happens client-side after mount. |
+| Login success with `next` | `/login` prefers `next` over any default role route. | Good for deep links, but adds one more redirect authority. |
+| Login success with `portal` | `/login` uses `getPortalEntryRoute(portal, role)`. | This bypasses the role-selection concept entirely today. |
+| Login success without `next` or `portal` | `/login` uses `getDefaultRoute(role)`. | Residents go to `/resident/account`; all other known roles go to `/home`. |
+| Resident hits `/home` | `/home` immediately redirects to `/resident/account`. | This duplicates the resident redirect already handled by `getDefaultRoute`. |
+| User hits `/role-selection` | Page auto-redirects to `next || getDefaultRoute(role)`. | It is not a real decision screen yet. |
+| User hits `/gardens` | Page is standalone by route, but still framed as a hidden module in the main nav. | Access is guarded by gardens permissions. |
+| User hits `/supervision-report` | Route resolves to the internal maintenance reports page. | This conflicts with the requested external redirect to `https://amit-form.vercel.app`. |
+
+#### Current route ownership
+- `getDefaultRoute(role)` currently sends:
+  - `RESIDENT` → `/resident/account`
+  - `ADMIN`, `PM`, `TECH`, `ACCOUNTANT`, `MASTER` → `/home`
+  - unknown role → `/home`
+- Manual redirects currently exist in:
+  - `Layout` for unauthenticated access.
+  - `/login` after successful authentication.
+  - `/home` for resident users.
+  - `/role-selection` for all authenticated users.
+  - `/resident/account` when `section` query params point to other resident pages.
+
+#### Conflicts found
+- There are currently **multiple redirect authorities** for the same journey: `Layout`, `/login`, `/home`, and `/role-selection`.
+- Residents can be routed correctly by `getDefaultRoute`, but `/home` still contains another resident redirect, which increases flicker risk.
+- `/role-selection` is named like a decision screen but behaves as a loading redirect page.
+- The supervision report route currently points to an internal report page instead of the requested external system.
 
 ### 1.2 Define the target flow
-Define an agreed target flow:
-1. User arrives on the landing page.
-2. A clear CTA is shown: "Enter the system".
-3. From there, the user goes to `/login`.
+- [x] Defined the target entry funnel and destination behavior.
+
+#### Agreed target flow for implementation
+1. User lands on `/`.
+2. The landing page exposes one clear primary CTA: **"Enter the system"**.
+3. That CTA routes to `/login`.
 4. After login:
-   - If the role is `RESIDENT` → direct route to the Resident interface.
-   - If the role is any other role → route to a selection screen.
-5. The selection screen should show 3 options:
-   - Enter the AMS management system.
-   - Go to the supervision report (`https://amit-form.vercel.app`).
-   - Go to garden management.
+   - normalized role `RESIDENT` → direct route to `/resident/account`
+   - every other supported role → route to `/role-selection`
+5. `/role-selection` becomes a real decision screen with 3 choices:
+   - **AMS management system** → route to the role-appropriate AMS home
+   - **Supervision report** → open `https://amit-form.vercel.app`
+   - **Garden management** → route to `/gardens`
+
+#### Route decisions locked in Sprint 1
+- Resident default destination: `/resident/account`
+- Non-resident first decision screen: `/role-selection`
+- AMS destination after choosing the management system:
+  - `ADMIN`, `PM`, `TECH`, `ACCOUNTANT`, `MASTER` → `/home`
+- Garden management destination: `/gardens`
+- Supervision report destination: `https://amit-form.vercel.app`
 
 ### 1.3 Product decisions around roles
-- Define exactly which roles are considered "Resident" and which are considered "Other".
-- Confirm expected behavior for impersonation / `actAsRole`.
-- Define a safe fallback if the token exists but the role is unknown.
+- [x] Defined the Resident vs Other split.
+- [x] Confirmed the expected `actAsRole` behavior.
+- [x] Defined a fallback policy for unknown roles.
+
+#### Role decisions
+- **Resident**
+  - Only normalized role `RESIDENT` is considered a Resident entry flow.
+  - Synonyms already normalized to Resident and should stay equivalent: `TENANT` → `RESIDENT`.
+- **Other**
+  - `ADMIN`
+  - `PM`
+  - `TECH`
+  - `ACCOUNTANT`
+  - `MASTER`
+
+#### Impersonation / `actAsRole`
+- `actAsRole` should always win over the original token `role` for routing decisions.
+- A `MASTER` user impersonating `RESIDENT` should skip the selection screen and land in `/resident/account`.
+- A `MASTER` user impersonating any non-resident role should be treated as "Other" and land on `/role-selection`.
+- A `MASTER` user without `actAsRole` should also be treated as "Other" and land on `/role-selection`.
+
+#### Safe fallback for unknown role
+- If the token exists but the effective role is unknown, the app should **not** silently send the user to `/home`.
+- The safe fallback is:
+  1. route to `/role-selection`
+  2. show a guarded fallback state explaining that the role is not recognized
+  3. disable AMS and gardens entry until permissions are known
+  4. provide a support/contact action
 
 ### 1.4 Define initial acceptance criteria
-- Resident users do not see the selection screen and go directly to the Resident interface.
-- Every other role does see the selection screen.
-- Every option on the selection screen works without a manual refresh.
-- Clicking the supervision report always opens the correct destination.
-- Gardens is accessible as a standalone module and not only as a hidden section inside admin.
+- [x] Converted the sprint goal into concrete acceptance criteria.
+
+#### Initial acceptance criteria
+- Resident users never see `/role-selection` during the standard login flow.
+- Non-resident users always land on `/role-selection` first after login.
+- `/role-selection` presents 3 working choices: AMS, supervision report, and gardens.
+- The supervision report choice always opens `https://amit-form.vercel.app`.
+- Gardens can be entered directly from the selection screen through `/gardens`.
+- No step in the landing → login → destination flow requires a manual browser refresh.
+- Deep-link flows that use `next` still work without breaking the Resident vs Other rule set.
+- Unknown-role users never fall through to an incorrect home page without feedback.
 
 ### 1.5 Map technical risks
-- Check whether flicker is caused by auth state loading on the client only.
-- Check whether there are duplicate redirects between `_app`, `Layout`, guards, and pages.
-- Check whether hydration mismatch, loading skeleton loops, or race conditions are causing the need for refresh.
+- [x] Reviewed likely sources of flicker, refresh requirements, and unstable routing.
+
+#### Technical risks found
+- **Client-only auth gating**
+  - Authentication is derived from `localStorage`, so `Layout` must wait for mount before deciding whether the user is authenticated.
+  - This increases the chance of flashes, skeletons, and redirect flicker on first render.
+- **Duplicate redirect layers**
+  - Redirect logic is split across `Layout`, `/login`, `/home`, and `/role-selection`.
+  - This makes it easier for route transitions to race each other and harder to reason about protected-page refresh behavior.
+- **Animated full-page transitions in `_app`**
+  - `_app` keys page transitions on `router.asPath`, so each route change fully re-animates the page container.
+  - That is good for polish, but it can amplify perceived flicker when redirects happen immediately after mount.
+- **Route naming mismatch**
+  - `/role-selection` sounds like a decision page but currently acts as an auto-redirect page.
+  - `/supervision-report` sounds external in the task plan, but currently resolves to an internal maintenance report route.
+- **Unknown-role fallback is unsafe today**
+  - Current `getDefaultRoute` sends unknown roles to `/home`, which hides role problems and could expose the wrong shell.
+- **Public route classification**
+  - `/role-selection` is currently treated as public by `Layout`, even though it is effectively part of the authenticated app flow.
+  - This can create odd loading behavior when the token is missing or expired.
+
+#### Sprint 1 implementation notes
+- Sprint 1 is completed as a **discovery + alignment sprint** in this file so the next implementation sprints can move with one agreed routing model.
+- The most important follow-up items for Sprint 2 and Sprint 3 are:
+  1. convert `/` to a single-entry landing funnel
+  2. turn `/role-selection` into a real choice screen
+  3. move non-resident post-login routing from `/home` to `/role-selection`
+  4. replace the current `/supervision-report` behavior with the required external redirect
+  5. reduce redirect duplication so the auth flow has one clear source of truth
 
 ---
 
