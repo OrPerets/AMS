@@ -120,11 +120,14 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
     <>
       <nav
         ref={navRef}
-        className={cn('fixed inset-x-0 bottom-0 z-40 border-t shell-frost safe-pb thumb-zone md:hidden', className)}
+        className={cn(
+          'fixed inset-x-0 bottom-0 z-40 border-t border-white/35 bg-[linear-gradient(180deg,rgba(255,252,247,0.92)_0%,rgba(248,244,236,0.98)_100%)] shadow-[0_-18px_40px_rgba(44,28,9,0.08)] backdrop-blur-xl safe-pb thumb-zone md:hidden',
+          className,
+        )}
         role="navigation"
         aria-label={t('bottomNav.label')}
       >
-        <div className="grid grid-cols-5 gap-1 px-1.5 py-1.5">
+        <div className="grid grid-cols-5 gap-1.5 px-2 py-2">
           {primaryItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -134,7 +137,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                 href={item.href}
                 onClick={() => saveRecentItem(item.href)}
                 className={cn(
-                  'relative flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-[18px] px-1 py-1.5 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
+                  'relative flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[18px] px-1 py-1.5 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
                   active ? 'text-primary' : 'text-muted-foreground',
                 )}
                 aria-current={active ? 'page' : undefined}
@@ -143,11 +146,11 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                 {active ? (
                   <motion.span
                     layoutId="mobile-bottom-nav-active"
-                    className="absolute inset-0 rounded-[18px] border border-primary/22 bg-primary/18 shadow-[0_10px_24px_rgba(15,23,42,0.1),inset_0_1px_0_rgba(255,255,255,0.52)]"
+                    className="absolute inset-0 rounded-[18px] border border-primary/24 bg-primary/14 shadow-[0_12px_28px_rgba(44,28,9,0.12),inset_0_1px_0_rgba(255,255,255,0.58)]"
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                   />
                 ) : null}
-                <span className={cn('relative z-10 flex h-8 w-8 items-center justify-center rounded-[14px]', active ? 'bg-background/82 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]' : 'text-muted-foreground')}>
+                <span className={cn('relative z-10 flex h-9 w-9 items-center justify-center rounded-[16px]', active ? 'bg-background/88 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]' : 'text-muted-foreground')}>
                   <Icon className={cn('h-[18px] w-[18px]', active && 'scale-105')} strokeWidth={1.85} />
                 </span>
                 <span className="relative z-10 w-full text-center leading-tight">
@@ -160,7 +163,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
           <button
             type="button"
             className={cn(
-              'relative flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-[18px] px-1 py-1.5 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
+              'relative flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[18px] px-1 py-1.5 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
               moreOpen || isMoreRouteActive ? 'text-primary' : 'text-muted-foreground',
             )}
             onClick={() => setMoreOpen((current) => !current)}
@@ -169,9 +172,9 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
             aria-controls="mobile-more-sheet"
           >
             {moreOpen || isMoreRouteActive ? (
-              <span className="absolute inset-0 rounded-[18px] border border-primary/22 bg-primary/18 shadow-[0_10px_24px_rgba(15,23,42,0.1),inset_0_1px_0_rgba(255,255,255,0.52)]" />
+              <span className="absolute inset-0 rounded-[18px] border border-primary/24 bg-primary/14 shadow-[0_12px_28px_rgba(44,28,9,0.12),inset_0_1px_0_rgba(255,255,255,0.58)]" />
             ) : null}
-            <span className={cn('relative z-10 flex h-8 w-8 items-center justify-center rounded-[14px]', moreOpen || isMoreRouteActive ? 'bg-background/82 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]' : 'text-muted-foreground')}>
+            <span className={cn('relative z-10 flex h-9 w-9 items-center justify-center rounded-[16px]', moreOpen || isMoreRouteActive ? 'bg-background/88 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]' : 'text-muted-foreground')}>
               <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.85} />
               {unreadNotifications > 0 ? (
                 <motion.span

@@ -33,11 +33,13 @@ export function CompactStatusStrip({
   icon,
   metrics,
   className,
+  tone = 'default',
 }: {
   roleLabel: string;
   icon?: React.ReactNode;
   metrics: StatusMetric[];
   className?: string;
+  tone?: 'default' | 'resident' | 'pm' | 'admin';
 }) {
   const reducedMotion = useReducedMotion();
   const [pulsingMetricId, setPulsingMetricId] = React.useState<string | null>(null);
@@ -71,16 +73,31 @@ export function CompactStatusStrip({
   return (
     <section
       className={cn(
-        'flex min-h-[48px] flex-col items-stretch gap-2 overflow-hidden rounded-[20px] border border-subtle-border bg-card px-3 py-2.5 shadow-elevation-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:py-2 sm:pe-4',
+        'flex min-h-[48px] flex-col items-stretch gap-2 overflow-hidden rounded-[20px] border px-3 py-2.5 shadow-elevation-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:py-2 sm:pe-4',
+        tone === 'default' && 'border-subtle-border bg-card',
+        tone === 'resident' &&
+          'border-primary/14 bg-[linear-gradient(180deg,rgba(255,251,245,0.96)_0%,rgba(255,255,255,0.92)_100%)] shadow-[0_14px_30px_rgba(84,58,15,0.08)]',
+        tone === 'pm' &&
+          'border-[hsl(var(--subtle-border))] bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(247,243,234,0.94)_100%)] shadow-[0_12px_26px_rgba(44,28,9,0.06)]',
+        tone === 'admin' &&
+          'border-primary/16 bg-[linear-gradient(180deg,rgba(42,31,18,0.96)_0%,rgba(24,18,12,0.98)_100%)] text-inverse-text shadow-[0_18px_36px_rgba(20,12,6,0.28)]',
         className,
       )}
       aria-label={roleLabel}
     >
       <div className="flex min-w-0 items-center gap-2">
-        <span className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-[14px] bg-primary/10 text-primary" aria-hidden="true">
+        <span
+          className={cn(
+            'flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-[14px]',
+            tone === 'admin' ? 'bg-primary/18 text-primary' : 'bg-primary/10 text-primary',
+          )}
+          aria-hidden="true"
+        >
           {icon ?? <ShieldCheck className="h-4 w-4" strokeWidth={1.75} />}
         </span>
-        <span className="truncate text-[13px] font-semibold text-foreground">{roleLabel}</span>
+        <span className={cn('truncate text-[13px] font-semibold', tone === 'admin' ? 'text-inverse-text' : 'text-foreground')}>
+          {roleLabel}
+        </span>
       </div>
 
       <div className="grid min-w-0 grid-cols-2 gap-1.5 text-right sm:ms-3 sm:flex sm:flex-nowrap">
@@ -89,14 +106,16 @@ export function CompactStatusStrip({
           const shouldPulse = pulsingMetricId === metric.id;
           const content = (
             <>
-              <span className="text-[10px] font-semibold text-secondary-foreground">{metric.label}</span>
+              <span className={cn('text-[10px] font-semibold', tone === 'admin' ? 'text-white/68' : 'text-secondary-foreground')}>
+                {metric.label}
+              </span>
               <motion.span
                 className={cn(
                   'relative text-[15px] font-extrabold tabular-nums text-start',
                   metric.tone === 'danger' && 'text-destructive',
                   metric.tone === 'warning' && 'text-warning',
                   metric.tone === 'success' && 'text-success',
-                  metric.tone === 'default' && 'text-foreground',
+                  metric.tone === 'default' && (tone === 'admin' ? 'text-inverse-text' : 'text-foreground'),
                 )}
                 role="status"
                 aria-live="polite"
@@ -137,12 +156,18 @@ export function CompactStatusStrip({
                   <AnimatedMetricValue value={metric.value} />
                 </span>
               </motion.span>
-              {interactive ? <ChevronLeft className="icon-directional h-4 w-4 text-muted-foreground" strokeWidth={1.75} /> : null}
+              {interactive ? (
+                <ChevronLeft
+                  className={cn('icon-directional h-4 w-4', tone === 'admin' ? 'text-white/48' : 'text-muted-foreground')}
+                  strokeWidth={1.75}
+                />
+              ) : null}
             </>
           );
 
           const wrapperClass = cn(
-            'inline-flex min-h-[42px] min-w-0 items-center justify-between gap-1 rounded-[16px] border border-subtle-border/70 bg-background/75 px-2.5 py-1.5 text-right transition-colors',
+            'inline-flex min-h-[42px] min-w-0 items-center justify-between gap-1 rounded-[16px] border px-2.5 py-1.5 text-right transition-colors',
+            tone === 'admin' ? 'border-white/8 bg-white/6' : 'border-subtle-border/70 bg-background/75',
             shouldPulse && !reducedMotion && 'bg-background/90 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]',
             interactive ? 'cursor-pointer hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2' : '',
             index > 0 && 'sm:border-s sm:border-primary/8 sm:ps-3',

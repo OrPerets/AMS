@@ -18,6 +18,7 @@ export function PrimaryActionCard({
   secondaryAction,
   className,
   mobileHomeEffect = false,
+  visualStyle = 'default',
 }: {
   eyebrow?: string;
   title: string;
@@ -29,6 +30,7 @@ export function PrimaryActionCard({
   secondaryAction?: React.ReactNode;
   className?: string;
   mobileHomeEffect?: boolean;
+  visualStyle?: 'default' | 'resident' | 'pm' | 'admin';
 }) {
   const reducedMotion = useReducedMotion();
   const Icon = tone === 'success' ? CheckCircle2 : CircleAlert;
@@ -42,7 +44,15 @@ export function PrimaryActionCard({
       animate={hold.isHolding && !reducedMotion ? { y: -3, scale: 1.01 } : { y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'overflow-hidden rounded-[24px] border border-primary/12 border-s-4 border-s-primary bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(247,250,255,0.94)_100%)] p-3.5 text-right shadow-[0_18px_40px_rgba(15,23,42,0.10)] transition-[transform,box-shadow,filter] duration-300 sm:rounded-[28px] sm:p-4',
+        'overflow-hidden rounded-[24px] border border-s-4 p-3.5 text-right transition-[transform,box-shadow,filter] duration-300 sm:rounded-[28px] sm:p-4',
+        visualStyle === 'default' &&
+          'border-primary/12 border-s-primary bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(247,250,255,0.94)_100%)] shadow-[0_18px_40px_rgba(15,23,42,0.10)]',
+        visualStyle === 'resident' &&
+          'border-primary/18 border-s-primary bg-[linear-gradient(180deg,rgba(255,249,240,0.98)_0%,rgba(255,255,255,0.94)_52%,rgba(248,243,232,0.92)_100%)] shadow-[0_20px_44px_rgba(84,58,15,0.12)]',
+        visualStyle === 'pm' &&
+          'border-[hsl(var(--subtle-border))] border-s-primary bg-[linear-gradient(180deg,rgba(249,246,240,0.98)_0%,rgba(255,255,255,0.94)_100%)] shadow-[0_18px_34px_rgba(44,28,9,0.08)]',
+        visualStyle === 'admin' &&
+          'border-primary/18 border-s-primary bg-[linear-gradient(180deg,rgba(44,31,18,0.98)_0%,rgba(24,18,12,0.98)_100%)] text-inverse-text shadow-[0_24px_54px_rgba(20,12,6,0.34)]',
         tone === 'warning' && 'border-s-warning',
         tone === 'danger' && 'border-s-destructive',
         tone === 'success' && 'border-s-success',
@@ -55,7 +65,11 @@ export function PrimaryActionCard({
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1 space-y-2">
-          {eyebrow ? <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground">{eyebrow}</div> : null}
+          {eyebrow ? (
+            <div className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', visualStyle === 'admin' ? 'text-white/68' : 'text-secondary-foreground')}>
+              {eyebrow}
+            </div>
+          ) : null}
           <div className="flex items-start gap-2.5">
             <Icon
               className={cn(
@@ -69,8 +83,12 @@ export function PrimaryActionCard({
               aria-hidden="true"
             />
             <div className="min-w-0">
-              <div className="text-[15px] font-semibold leading-6 text-foreground sm:text-base">{title}</div>
-              <div className="text-[13px] leading-5 text-secondary-foreground sm:line-clamp-2">{description}</div>
+              <div className={cn('text-[15px] font-semibold leading-6 sm:text-base', visualStyle === 'admin' ? 'text-inverse-text' : 'text-foreground')}>
+                {title}
+              </div>
+              <div className={cn('text-[13px] leading-5 sm:line-clamp-2', visualStyle === 'admin' ? 'text-white/74' : 'text-secondary-foreground')}>
+                {description}
+              </div>
             </div>
           </div>
         </div>
@@ -79,7 +97,12 @@ export function PrimaryActionCard({
           {href ? (
             <Link
               href={href}
-              className="inline-flex min-h-[46px] w-full items-center justify-center gap-1 rounded-2xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground shadow-[0_10px_22px_rgba(59,130,246,0.24)] sm:min-h-[48px] sm:w-auto"
+              className={cn(
+                'inline-flex min-h-[46px] w-full items-center justify-center gap-1 rounded-2xl px-4 py-2.5 text-center text-sm font-semibold sm:min-h-[48px] sm:w-auto',
+                visualStyle === 'admin'
+                  ? 'bg-primary text-primary-foreground shadow-[0_14px_30px_rgba(194,143,57,0.24)]'
+                  : 'bg-primary text-primary-foreground shadow-[0_10px_22px_rgba(194,143,57,0.22)]',
+              )}
             >
               {ctaLabel}
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.75} />
@@ -88,7 +111,12 @@ export function PrimaryActionCard({
             <button
               type="button"
               onClick={onClick}
-              className="inline-flex min-h-[46px] w-full items-center justify-center gap-1 rounded-2xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground shadow-[0_10px_22px_rgba(59,130,246,0.24)] sm:min-h-[48px] sm:w-auto"
+              className={cn(
+                'inline-flex min-h-[46px] w-full items-center justify-center gap-1 rounded-2xl px-4 py-2.5 text-center text-sm font-semibold sm:min-h-[48px] sm:w-auto',
+                visualStyle === 'admin'
+                  ? 'bg-primary text-primary-foreground shadow-[0_14px_30px_rgba(194,143,57,0.24)]'
+                  : 'bg-primary text-primary-foreground shadow-[0_10px_22px_rgba(194,143,57,0.22)]',
+              )}
             >
               {ctaLabel}
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.75} />

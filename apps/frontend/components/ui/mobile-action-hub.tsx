@@ -18,6 +18,7 @@ export type MobileActionHubItem = {
   accent?: 'primary' | 'success' | 'warning' | 'info' | 'neutral';
   emphasize?: boolean;
   selected?: boolean;
+  priority?: 'primary' | 'secondary' | 'utility';
 };
 
 function toneClasses(accent: MobileActionHubItem['accent']) {
@@ -67,15 +68,18 @@ function TileShell({
 function ActionTile({
   item,
   mobileHomeEffect,
+  layout,
 }: {
   item: MobileActionHubItem;
   mobileHomeEffect: boolean;
+  layout: 'grid' | 'hierarchy';
 }) {
   const reducedMotion = useReducedMotion();
   const depthRef = useMobileDepthEffect(mobileHomeEffect);
   const hold = useTouchHoldLift(true);
   const Icon = item.icon;
   const isSelected = Boolean(item.selected || item.emphasize);
+  const priority = item.priority ?? (isSelected ? 'primary' : 'secondary');
 
   return (
     <motion.div
@@ -94,16 +98,21 @@ function ActionTile({
         onClick={item.onClick}
         selected={isSelected}
         className={cn(
-          'group block min-h-[96px] rounded-[22px] border bg-card/96 p-3 text-center shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target sm:min-h-[104px] sm:rounded-[26px] sm:p-3.5',
+          'group block rounded-[22px] border bg-card/96 p-3 text-center shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target sm:rounded-[26px] sm:p-3.5',
+          layout === 'grid' && 'min-h-[96px] sm:min-h-[104px]',
+          layout === 'hierarchy' && priority === 'primary' && 'min-h-[120px] text-start sm:min-h-[132px]',
+          layout === 'hierarchy' && priority === 'secondary' && 'min-h-[100px]',
+          layout === 'hierarchy' && priority === 'utility' && 'min-h-[84px] bg-muted-surface/85 shadow-elevation-1',
           isSelected && 'border-primary/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(239,246,255,0.96)_100%)] shadow-[0_16px_36px_rgba(59,130,246,0.14)] ring-1 ring-primary/10',
           !item.href && !item.onClick && 'pointer-events-none',
         )}
       >
-        <div className="flex h-full flex-col items-center">
+        <div className={cn('flex h-full flex-col', layout === 'hierarchy' && priority === 'primary' ? 'items-stretch text-start' : 'items-center')}>
           <div className="flex w-full items-start justify-between gap-2">
             <span
               className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-full border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] sm:h-12 sm:w-12',
+                'flex items-center justify-center rounded-full border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]',
+                layout === 'hierarchy' && priority === 'utility' ? 'h-9 w-9' : 'h-10 w-10 sm:h-12 sm:w-12',
                 toneClasses(item.accent),
               )}
             >
@@ -121,13 +130,24 @@ function ActionTile({
             ) : null}
           </div>
 
-          <div className="mt-2.5 flex-1">
-            <div className={cn('text-[15px] font-semibold leading-5 text-foreground sm:text-sm', isSelected && 'text-primary')}>{item.label}</div>
-            {item.description ? <div className="mt-1 line-clamp-2 text-[12px] leading-4.5 text-secondary-foreground sm:line-clamp-1 sm:leading-5">{item.description}</div> : null}
+          <div className={cn('mt-2.5 flex-1', layout === 'hierarchy' && priority === 'primary' && 'w-full')}>
+            <div className={cn(priority === 'primary' ? 'text-[16px]' : 'text-[15px] sm:text-sm', 'font-semibold leading-5 text-foreground', isSelected && 'text-primary')}>
+              {item.label}
+            </div>
+            {item.description ? (
+              <div
+                className={cn(
+                  'mt-1 text-secondary-foreground',
+                  priority === 'utility' ? 'line-clamp-1 text-[11px] leading-4' : 'line-clamp-2 text-[12px] leading-4.5 sm:line-clamp-1 sm:leading-5',
+                )}
+              >
+                {item.description}
+              </div>
+            ) : null}
           </div>
 
           {(item.href || item.onClick) && item.description ? (
-            <div className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-primary sm:mt-2">
+            <div className={cn('mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-primary sm:mt-2', layout === 'hierarchy' && priority === 'primary' && 'justify-start')}>
               <ArrowUpRight className="icon-directional h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} />
             </div>
           ) : null}
@@ -144,6 +164,7 @@ export function MobileActionHub({
   className,
   mobileHomeEffect = false,
   gridClassName,
+  layout = 'grid',
 }: {
   title: React.ReactNode;
   subtitle?: React.ReactNode;
@@ -151,6 +172,7 @@ export function MobileActionHub({
   className?: string;
   mobileHomeEffect?: boolean;
   gridClassName?: string;
+  layout?: 'grid' | 'hierarchy';
 }) {
   return (
     <section className={cn('space-y-3', className)} aria-label={typeof title === 'string' ? title : undefined}>
@@ -163,9 +185,22 @@ export function MobileActionHub({
         </div>
       ) : null}
 
-      <div className={cn('grid grid-cols-2 gap-2 max-[350px]:grid-cols-1 sm:gap-2.5 lg:grid-cols-3', gridClassName)}>
+      <div
+        className={cn(
+          layout === 'grid' && 'grid grid-cols-2 gap-2 max-[350px]:grid-cols-1 sm:gap-2.5 lg:grid-cols-3',
+          layout === 'hierarchy' && 'grid grid-cols-2 gap-2.5',
+          gridClassName,
+        )}
+      >
         {items.map((item) => (
-          <ActionTile key={item.id} item={item} mobileHomeEffect={mobileHomeEffect} />
+          <div
+            key={item.id}
+            className={cn(
+              layout === 'hierarchy' && (item.priority ?? (item.emphasize ? 'primary' : 'secondary')) === 'primary' && 'col-span-2',
+            )}
+          >
+            <ActionTile item={item} mobileHomeEffect={mobileHomeEffect} layout={layout} />
+          </div>
         ))}
       </div>
     </section>

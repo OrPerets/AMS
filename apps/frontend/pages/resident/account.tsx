@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { Bell, Building2, ClipboardList, CreditCard, FileText, MessageCircle, Ticket } from 'lucide-react';
 import { authFetch } from '../../lib/auth';
 import { useLocale } from '../../lib/providers';
-import { formatCurrency, formatDate, getPriorityLabel, getStatusLabel, getTicketStatusTone } from '../../lib/utils';
+import { formatCurrency, formatDate, getStatusLabel, getTicketStatusTone } from '../../lib/utils';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
@@ -14,7 +14,6 @@ import { MobileActionHub } from '../../components/ui/mobile-action-hub';
 import { MobilePriorityInbox, type MobilePriorityInboxItem } from '../../components/ui/mobile-priority-inbox';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
-import { StatusBadge } from '../../components/ui/status-badge';
 
 type AccountContext = {
   user: { id: number; email: string; role: string };
@@ -121,54 +120,34 @@ export default function ResidentAccountPage() {
   const openTickets = useMemo(() => (context?.tickets ?? []).filter((ticket) => ticket.status !== 'RESOLVED'), [context?.tickets]);
   const unreadNotifications = useMemo(() => (context?.notifications ?? []).filter((item) => !item.read), [context?.notifications]);
   const recentDocuments = useMemo(() => [...(context?.documents ?? [])].slice(0, 2), [context?.documents]);
+  const newestDocument = recentDocuments[0] ?? null;
+  const newestNotification = unreadNotifications[0] ?? null;
   const labels = locale === 'en'
     ? {
         home: 'My account',
-        quickState: 'Quick account view',
-        quickStateSubtitle: 'Due now, active requests, and recent updates in one place.',
-        openTickets: 'Open requests',
-        dueNow: 'Due now',
-        documents: 'Documents',
         activeNow: 'Needs attention now',
         activeNowSubtitle: 'The next item to pay, track, or open.',
         actions: 'Quick actions',
-        actionsSubtitle: 'Short, clear, touch-friendly actions.',
         recentDocs: 'Recent documents',
         allDocs: 'All documents',
-        trackedTickets: 'Tracked requests',
-        track: 'Track requests',
         noUrgent: 'Nothing urgent right now',
         noUrgentDesc: 'When a charge, request, or new update appears, it will show here first.',
         docsEmpty: 'No recent documents',
         docsEmptyDesc: 'New committee files and updates will appear here.',
-        noTickets: 'No open requests',
-        noTicketsDesc: 'If something breaks, you can open a new service call in one tap.',
-        createCall: 'Open service call',
         updatesReady: '{{count}} new updates are waiting',
         updatesClear: 'You are up to date',
       }
     : {
         home: 'האזור האישי',
-        quickState: 'תמונת חשבון מהירה',
-        quickStateSubtitle: 'לתשלום עכשיו, קריאות פתוחות ועדכונים חדשים במבט אחד.',
-        openTickets: 'קריאות פתוחות',
-        dueNow: 'לתשלום',
-        documents: 'מסמכים',
         activeNow: 'פעיל עכשיו',
         activeNowSubtitle: 'הפריט הבא שכדאי לשלם, לעקוב אחריו או לפתוח.',
         actions: 'פעולות מהירות',
-        actionsSubtitle: 'הכול קצר, ברור ולחיץ.',
         recentDocs: 'מסמכים אחרונים',
         allDocs: 'לכל המסמכים',
-        trackedTickets: 'קריאות במעקב',
-        track: 'למעקב',
         noUrgent: 'אין משהו דחוף כרגע',
         noUrgentDesc: 'כשתיפתח קריאה, יופיע חיוב או ייכנס עדכון חדש, נראה אותו כאן.',
         docsEmpty: 'אין מסמכים חדשים',
         docsEmptyDesc: 'כשהצוות יעלה מסמך חדש, הוא יופיע כאן.',
-        noTickets: 'אין קריאות פתוחות',
-        noTicketsDesc: 'אם יש תקלה, אפשר לפתוח קריאה חדשה בלחיצה אחת.',
-        createCall: 'פתח קריאה',
         updatesReady: '{{count}} עדכונים חדשים מחכים לך',
         updatesClear: 'כל העדכונים האחרונים נקראו',
       };
@@ -180,6 +159,61 @@ export default function ResidentAccountPage() {
     [finance?.invoices],
   );
 
+  const residentPrimaryAction = (() => {
+    if (nextPaymentDue) {
+      return {
+        eyebrow: nextPaymentDue.status === 'OVERDUE' ? 'לתשלום מיידי' : 'חיוב קרוב',
+        title: formatCurrency(nextPaymentDue.amount, 'ILS', locale),
+        description: `${nextPaymentDue.description} · עד ${formatDate(nextPaymentDue.dueDate, locale)}`,
+        ctaLabel: 'שלם עכשיו',
+        href: '/payments/resident',
+        tone: nextPaymentDue.status === 'OVERDUE' ? ('danger' as const) : ('warning' as const),
+      };
+    }
+
+    if (openTickets[0]) {
+      return {
+        eyebrow: 'מעקב קריאה',
+        title: `קריאה #${openTickets[0].id}`,
+        description: openTickets[0].description?.trim() || `${openTickets[0].unit.building.name} · דירה ${openTickets[0].unit.number}`,
+        ctaLabel: 'עקוב אחרי הקריאה',
+        href: '/resident/requests?view=history',
+        tone: getTicketStatusTone(openTickets[0].status) === 'danger' ? ('danger' as const) : ('default' as const),
+      };
+    }
+
+    if (newestDocument) {
+      return {
+        eyebrow: 'מסמך חדש',
+        title: newestDocument.name,
+        description: `עלה ב-${formatDate(newestDocument.uploadedAt, locale)} ונמצא במסמכים שלך.`,
+        ctaLabel: 'פתח מסמכים',
+        href: '/documents',
+        tone: 'default' as const,
+      };
+    }
+
+    if (newestNotification) {
+      return {
+        eyebrow: 'עדכון חדש',
+        title: newestNotification.title,
+        description: newestNotification.message,
+        ctaLabel: 'פתח עדכונים',
+        href: '/notifications',
+        tone: 'default' as const,
+      };
+    }
+
+    return {
+      eyebrow: 'הכול בשליטה',
+      title: 'אין משהו דחוף כרגע',
+      description: 'אפשר לפתוח בקשה חדשה, לדווח על תקלה או לבדוק מסמכים ועדכונים אחרונים.',
+      ctaLabel: 'בקשה חדשה',
+      href: '/resident/requests?view=new',
+      tone: 'success' as const,
+    };
+  })();
+
   const actionItems = [
     {
       id: 'pay',
@@ -190,6 +224,7 @@ export default function ResidentAccountPage() {
       badge: finance?.summary.unpaidInvoices ? finance.summary.unpaidInvoices : undefined,
       accent: nextPaymentDue ? ('warning' as const) : ('primary' as const),
       emphasize: Boolean(nextPaymentDue),
+      priority: 'primary' as const,
     },
     {
       id: 'request',
@@ -199,15 +234,17 @@ export default function ResidentAccountPage() {
       icon: ClipboardList,
       accent: 'primary' as const,
       emphasize: !nextPaymentDue,
+      priority: 'secondary' as const,
     },
     {
       id: 'call',
-      label: 'קריאה / תקלה',
-      description: 'דיווח עם צילום',
-      href: '/create-call',
+      label: openTickets.length ? 'מעקב קריאות' : 'קריאה / תקלה',
+      description: openTickets.length ? 'בדוק סטטוס קיים' : 'דיווח עם צילום',
+      href: openTickets.length ? '/resident/requests?view=history' : '/create-call',
       icon: Ticket,
       badge: openTickets.length || undefined,
       accent: openTickets.length ? ('warning' as const) : ('neutral' as const),
+      priority: 'secondary' as const,
     },
     {
       id: 'documents',
@@ -217,22 +254,16 @@ export default function ResidentAccountPage() {
       icon: FileText,
       badge: recentDocuments.length || undefined,
       accent: 'info' as const,
-    },
-    {
-      id: 'building',
-      label: 'הבניין שלי',
-      description: primaryBuilding?.name || 'פרטים ואנשי קשר',
-      href: '/resident/building',
-      icon: Building2,
-      accent: 'neutral' as const,
+      priority: 'utility' as const,
     },
     {
       id: 'contact',
-      label: 'צור קשר',
-      description: 'תמיכה וניהול',
-      href: '/support',
-      icon: MessageCircle,
+      label: primaryBuilding ? 'הבניין שלי' : 'צור קשר',
+      description: primaryBuilding?.name || 'תמיכה וניהול',
+      href: primaryBuilding ? '/resident/building' : '/support',
+      icon: primaryBuilding ? Building2 : MessageCircle,
       accent: 'neutral' as const,
+      priority: 'utility' as const,
     },
   ];
 
@@ -277,6 +308,7 @@ export default function ResidentAccountPage() {
       <CompactStatusStrip
         roleLabel={primaryBuilding ? `${primaryBuilding.name} · דירה ${primaryUnit?.number}` : labels.home}
         icon={<Building2 className="h-4 w-4" strokeWidth={1.75} />}
+        tone="resident"
         metrics={[
           {
             id: 'tickets',
@@ -295,63 +327,30 @@ export default function ResidentAccountPage() {
         ]}
       />
 
-      <section className="space-y-3">
-        <div className="rounded-[24px] border border-subtle-border bg-[linear-gradient(180deg,rgba(37,99,235,0.07)_0%,rgba(255,255,255,0.96)_100%)] p-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary-foreground">שלום {residentName}</div>
-          <h1 className="mt-2 text-2xl font-black leading-tight text-foreground">{labels.quickState}</h1>
-          <p className="mt-1 text-sm text-secondary-foreground">
-            {primaryBuilding ? `${primaryBuilding.name} · ${primaryBuilding.address}` : 'כל הפעולות החשובות במקום אחד'}
-          </p>
-        </div>
-
-        <PrimaryActionCard
-          eyebrow={nextPaymentDue ? 'לתשלום עכשיו' : 'החשבון שלך'}
-          title={nextPaymentDue ? formatCurrency(nextPaymentDue.amount, 'ILS', locale) : 'הכול מעודכן'}
-          description={
-            nextPaymentDue
-              ? `${nextPaymentDue.description} · עד ${formatDate(nextPaymentDue.dueDate, locale)}`
-              : openTickets.length
-                ? `${openTickets.length} קריאות פתוחות למעקב`
-                : 'אין כרגע חיוב פתוח. אפשר לפתוח בקשה או קריאה חדשה.'
-          }
-          ctaLabel={nextPaymentDue ? 'שלם עכשיו' : 'בקשה חדשה'}
-          href={nextPaymentDue ? '/payments/resident' : '/resident/requests?view=new'}
-          tone={nextPaymentDue?.status === 'OVERDUE' ? 'danger' : nextPaymentDue ? 'warning' : 'success'}
-          secondaryAction={
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/resident/building">הבניין שלי</Link>
-            </Button>
-          }
-        />
-      </section>
+      <PrimaryActionCard
+        eyebrow={`${residentName} · ${residentPrimaryAction.eyebrow}`}
+        title={residentPrimaryAction.title}
+        description={residentPrimaryAction.description}
+        ctaLabel={residentPrimaryAction.ctaLabel}
+        href={residentPrimaryAction.href}
+        tone={residentPrimaryAction.tone}
+        visualStyle="resident"
+        secondaryAction={
+          <Button variant="outline" size="sm" asChild>
+            <Link href={primaryBuilding ? '/resident/building' : '/support'}>
+              {primaryBuilding ? 'פרטי בניין' : 'צור קשר'}
+            </Link>
+          </Button>
+        }
+      />
 
       <MobileActionHub
         mobileHomeEffect
         title={labels.actions}
-        subtitle={labels.actionsSubtitle}
+        subtitle="הפעולה הראשית למעלה, שתי פעולות מהירות, ושני קיצורי שירות."
         items={actionItems}
+        layout="hierarchy"
       />
-
-      <Card variant="elevated" className="overflow-hidden rounded-[28px] border-0 bg-[linear-gradient(180deg,rgba(248,250,252,0.96)_0%,rgba(255,255,255,1)_100%)]">
-        <CardContent className="space-y-4 p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">{labels.quickState}</h2>
-              <p className="text-sm text-secondary-foreground">{labels.quickStateSubtitle}</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-secondary-foreground">
-              <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">{openTickets.length} {labels.openTickets}</span>
-              <span className="rounded-full bg-muted px-2.5 py-1 font-semibold">{unreadNotifications.length} עדכונים</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <QuickMetric label={labels.openTickets} value={openTickets.length} href="/resident/requests?view=history" />
-            <QuickMetric label={labels.dueNow} value={finance?.summary.unpaidInvoices ?? 0} href="/payments/resident" />
-            <QuickMetric label={labels.documents} value={context.documents.length} href="/documents" />
-          </div>
-        </CardContent>
-      </Card>
 
       <MobilePriorityInbox
         title={labels.activeNow}
@@ -362,7 +361,7 @@ export default function ResidentAccountPage() {
       />
 
       <section className="grid gap-3 md:grid-cols-2">
-        <Card variant="muted" className="rounded-[24px] border-subtle-border/80">
+        <Card variant="muted" className="rounded-[24px] border-subtle-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(249,245,238,0.94)_100%)]">
           <CardContent className="space-y-3 p-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold text-foreground">{labels.recentDocs}</h3>
@@ -391,41 +390,41 @@ export default function ResidentAccountPage() {
           </CardContent>
         </Card>
 
-        <Card variant="muted" className="rounded-[24px] border-subtle-border/80">
+        <Card variant="muted" className="rounded-[24px] border-subtle-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(250,248,244,0.94)_100%)]">
           <CardContent className="space-y-3 p-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-foreground">{labels.trackedTickets}</h3>
+              <h3 className="text-base font-semibold text-foreground">קשר ומידע</h3>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/resident/requests?view=history">{labels.track}</Link>
+                <Link href={primaryBuilding ? '/resident/building' : '/support'}>{primaryBuilding ? 'לבניין' : 'לתמיכה'}</Link>
               </Button>
             </div>
 
-            {openTickets.slice(0, 2).length ? (
-              openTickets.slice(0, 2).map((ticket) => (
-                <Link
-                  key={ticket.id}
-                  href="/resident/requests?view=history"
-                  className="block rounded-[20px] border border-subtle-border bg-background p-3 transition hover:border-primary/25"
-                >
+            {primaryBuilding ? (
+              <>
+                <Link href="/resident/building" className="block rounded-[20px] border border-subtle-border bg-background/88 p-3 transition hover:border-primary/25">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <StatusBadge label={getStatusLabel(ticket.status, 'he')} tone={getTicketStatusTone(ticket.status)} />
-                        {ticket.severity ? (
-                          <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-secondary-foreground">{getPriorityLabel(ticket.severity)}</span>
-                        ) : null}
-                      </div>
-                      <div className="mt-2 text-sm font-semibold text-foreground">קריאה #{ticket.id}</div>
-                      <div className="mt-1 line-clamp-2 text-xs text-secondary-foreground">
-                        {ticket.description?.trim() || `${ticket.unit.building.name} · דירה ${ticket.unit.number}`}
-                      </div>
+                      <div className="text-sm font-semibold text-foreground">{primaryBuilding.name}</div>
+                      <div className="mt-1 text-xs leading-5 text-secondary-foreground">{primaryBuilding.address}</div>
                     </div>
-                    <Ticket className="h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
+                    <Building2 className="h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
                   </div>
                 </Link>
-              ))
+
+                <Link href="/support" className="block rounded-[20px] border border-subtle-border bg-background/88 p-3 transition hover:border-primary/25">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-foreground">תמיכה וניהול</div>
+                      <div className="mt-1 text-xs leading-5 text-secondary-foreground">
+                        {newestNotification?.title || 'שאלות, עדכונים ופנייה לצוות הניהול.'}
+                      </div>
+                    </div>
+                    <MessageCircle className="h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
+                  </div>
+                </Link>
+              </>
             ) : (
-              <EmptyState type="action" size="sm" title={labels.noTickets} description={labels.noTicketsDesc} action={{ label: labels.createCall, onClick: () => void router.push('/create-call') }} />
+              <EmptyState type="action" size="sm" title="אין מידע משלים" description="כשהבניין או פרטי התמיכה ייטענו, נראה אותם כאן." action={{ label: 'רענן', onClick: () => void loadAccount() }} />
             )}
           </CardContent>
         </Card>
@@ -438,16 +437,5 @@ export default function ResidentAccountPage() {
           : labels.updatesClear}
       </div>
     </div>
-  );
-}
-
-function QuickMetric({ label, value, href }: { label: string; value: string | number; href: string }) {
-  return (
-    <Link href={href} className="rounded-[20px] border border-subtle-border bg-background px-3 py-3 transition hover:border-primary/25">
-      <div className="text-lg font-black text-foreground">
-        <bdi>{value}</bdi>
-      </div>
-      <div className="mt-1 text-xs font-medium text-secondary-foreground">{label}</div>
-    </Link>
   );
 }

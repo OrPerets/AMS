@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowUpRight, Bell, Building2, CalendarClock, CreditCard, FileText, Home, ShieldCheck, Ticket, Wrench, type LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { CompactStatusStrip } from '../ui/compact-status-strip';
+import { MobileActionHub } from '../ui/mobile-action-hub';
 import { MobilePriorityInbox, type MobilePriorityInboxItem } from '../ui/mobile-priority-inbox';
 import { PrimaryActionCard } from '../ui/primary-action-card';
 import { cn } from '../../lib/utils';
@@ -67,6 +68,8 @@ export function RoleHomeShell({
   prioritizeInbox = false,
 }: HomeBlueprintShellProps) {
   const icon = getRoleStatusIcon(roleKey);
+  const tone = roleKey === 'ADMIN' ? 'admin' : roleKey === 'PM' ? 'pm' : roleKey === 'RESIDENT' ? 'resident' : 'default';
+  const shellMode = roleKey === 'ADMIN' ? 'admin' : roleKey === 'PM' ? 'pm' : 'default';
   const inbox = (
     <MobilePriorityInbox
       title={inboxTitle}
@@ -74,15 +77,17 @@ export function RoleHomeShell({
       items={inboxItems}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}
+      emphasizeFirst={roleKey !== 'ACCOUNTANT'}
     />
   );
-  const quickActionsGrid = <HomeQuickActionsGrid items={quickActions} />;
+  const quickActionsGrid = <HomeQuickActionsGrid items={quickActions} roleKey={roleKey} />;
 
   return (
     <div className="space-y-2.5">
       <CompactStatusStrip
         roleLabel={roleLabel}
         icon={icon}
+        tone={tone}
         metrics={statusMetrics.map((metric) => ({
           ...metric,
           onClick: metric.href
@@ -93,6 +98,10 @@ export function RoleHomeShell({
         }))}
       />
 
+      {(roleKey === 'ADMIN' || roleKey === 'PM') && statusMetrics.length ? (
+        <RoleCommandBand roleKey={roleKey} metrics={statusMetrics} />
+      ) : null}
+
       <PrimaryActionCard
         eyebrow={primaryAction.eyebrow}
         title={primaryAction.title}
@@ -100,12 +109,18 @@ export function RoleHomeShell({
         ctaLabel={primaryAction.ctaLabel}
         href={primaryAction.href}
         tone={primaryAction.tone}
+        visualStyle={tone}
         mobileHomeEffect
         secondaryAction={
           primaryAction.secondaryAction ? (
             <Link
               href={primaryAction.secondaryAction.href}
-              className="inline-flex min-h-[40px] items-center rounded-xl border border-subtle-border px-3 py-2 text-xs font-semibold text-foreground"
+              className={cn(
+                'inline-flex min-h-[40px] items-center rounded-xl border px-3 py-2 text-xs font-semibold',
+                shellMode === 'admin'
+                  ? 'border-white/10 text-inverse-text'
+                  : 'border-subtle-border text-foreground',
+              )}
             >
               {primaryAction.secondaryAction.label}
             </Link>
@@ -119,7 +134,85 @@ export function RoleHomeShell({
   );
 }
 
-export function HomeQuickActionsGrid({ items }: { items: HomeQuickAction[] }) {
+function RoleCommandBand({
+  roleKey,
+  metrics,
+}: {
+  roleKey: RoleKey;
+  metrics: HomeStatusMetric[];
+}) {
+  const primaryMetric = metrics[0];
+  const secondaryMetric = metrics[1];
+
+  if (!primaryMetric) return null;
+
+  const shellTone = roleKey === 'ADMIN'
+    ? 'border-primary/16 bg-[linear-gradient(180deg,rgba(42,31,18,0.98)_0%,rgba(24,18,12,0.98)_100%)] text-inverse-text'
+    : 'border-[hsl(var(--subtle-border))] bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(247,243,234,0.94)_100%)] text-foreground';
+
+  const chipTone = roleKey === 'ADMIN'
+    ? 'border-white/8 bg-white/6 text-white/74'
+    : 'border-subtle-border/80 bg-background/75 text-secondary-foreground';
+
+  return (
+    <div className={cn('rounded-[24px] border p-3 shadow-[0_16px_34px_rgba(44,28,9,0.08)]', shellTone)}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className={cn('text-[10px] font-semibold uppercase tracking-[0.18em]', roleKey === 'ADMIN' ? 'text-white/56' : 'text-secondary-foreground')}>
+            {roleKey === 'ADMIN' ? 'Control Zone' : 'Dispatch Lane'}
+          </div>
+          <div className={cn('mt-1 text-[15px] font-semibold leading-5', roleKey === 'ADMIN' ? 'text-inverse-text' : 'text-foreground')}>
+            {primaryMetric.label}
+          </div>
+          <div className={cn('mt-1 text-[28px] font-black leading-none tabular-nums', roleKey === 'ADMIN' ? 'text-primary' : 'text-foreground')}>
+            <bdi>{primaryMetric.value}</bdi>
+          </div>
+        </div>
+
+        {secondaryMetric ? (
+          <div className={cn('rounded-[18px] border px-3 py-2 text-start', chipTone)}>
+            <div className="text-[10px] font-semibold">{secondaryMetric.label}</div>
+            <div className={cn('mt-1 text-[16px] font-black tabular-nums', roleKey === 'ADMIN' ? 'text-inverse-text' : 'text-foreground')}>
+              <bdi>{secondaryMetric.value}</bdi>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: HomeQuickAction[]; roleKey?: RoleKey }) {
+  if (roleKey === 'PM' || roleKey === 'ADMIN') {
+    return (
+      <MobileActionHub
+        title={roleKey === 'ADMIN' ? 'פעולות בקרה' : 'פעולות ניהול'}
+        subtitle={roleKey === 'ADMIN' ? 'סיכון, בקרה ויומן בלי לרדת למסכים משניים.' : 'תיעדוף קריאות, בניינים ויומן התפעול בתצוגה אחת.'}
+        layout="hierarchy"
+        items={items.slice(0, 4).map((item, index) => ({
+          id: item.id,
+          label: item.title,
+          description: `${item.subtitle} · ${item.value}`,
+          href: item.href,
+          icon: item.icon,
+          accent:
+            item.tone === 'danger'
+              ? 'warning'
+              : item.tone === 'warning'
+                ? 'warning'
+                : item.tone === 'success'
+                  ? 'success'
+                  : index === 0
+                    ? 'primary'
+                    : 'neutral',
+          badge: typeof item.value === 'number' && item.value > 0 ? item.value : undefined,
+          emphasize: index === 0,
+          priority: index === 0 ? 'primary' : index < 3 ? 'secondary' : 'utility',
+        }))}
+      />
+    );
+  }
+
   return (
     <div className="grid grid-cols-2 gap-2.5">
       {items.slice(0, 4).map((item) => {
@@ -130,6 +223,7 @@ export function HomeQuickActionsGrid({ items }: { items: HomeQuickAction[] }) {
               variant="elevated"
               className={cn(
                 'h-full min-h-[104px] rounded-[20px] border transition duration-200 hover:-translate-y-0.5 hover:shadow-card',
+                'bg-[linear-gradient(180deg,rgba(255,255,255,0.97)_0%,rgba(248,244,236,0.92)_100%)]',
                 item.tone === 'warning' && 'border-warning/30 bg-warning/5',
                 item.tone === 'danger' && 'border-destructive/30 bg-destructive/5',
                 item.tone === 'success' && 'border-success/30 bg-success/5',

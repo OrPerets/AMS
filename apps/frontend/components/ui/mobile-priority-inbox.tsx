@@ -207,6 +207,7 @@ export function MobilePriorityInbox({
   emptyTitle,
   emptyDescription,
   className,
+  emphasizeFirst = true,
 }: {
   title?: string;
   subtitle?: string;
@@ -214,6 +215,7 @@ export function MobilePriorityInbox({
   emptyTitle?: string;
   emptyDescription?: string;
   className?: string;
+  emphasizeFirst?: boolean;
 }) {
   const { t } = useLocale();
   const { isRTL } = useDirection();
@@ -249,7 +251,14 @@ export function MobilePriorityInbox({
         {visibleItems.length ? (
           <AnimatePresence initial={false} mode="popLayout">
             {visibleItems.map((item, index) => (
-              <PriorityInboxItemCard key={item.id} item={item} index={index} swipeDirection={swipeDirection} roleHint={roleHint} />
+              <div
+                key={item.id}
+                className={cn(
+                  index === 0 && emphasizeFirst && 'rounded-[22px] bg-[linear-gradient(180deg,rgba(255,250,244,0.75)_0%,rgba(255,255,255,0)_100%)] p-[1px]',
+                )}
+              >
+                <PriorityInboxItemCard item={item} index={index} swipeDirection={swipeDirection} roleHint={roleHint} />
+              </div>
             ))}
           </AnimatePresence>
         ) : (

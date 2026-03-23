@@ -16,8 +16,8 @@ export function AdminMobileHome({ data }: { data: AdminMobileHomeData }) {
       statusMetrics={data.statusMetrics}
       primaryAction={data.primaryAction}
       quickActions={data.quickActions}
-      inboxTitle="תיבת עדיפויות"
-      inboxSubtitle="חריגות SLA, אישורים ותחזוקה לא מאומתת לפני שהעומס מסלים."
+      inboxTitle="חריגים פתוחים"
+      inboxSubtitle="SLA, אישורים וחריגות תחזוקה לפני שהמערכת עוברת לעומס."
       inboxItems={data.priorityItems}
       emptyTitle="אין חריגות פתוחות"
       emptyDescription="הכול טופל. אפשר לעבור לבקרה, יומן או דוח שבועי."
@@ -32,18 +32,19 @@ export function buildAdminFallback(): AdminMobileHomeData {
       { id: 'sla', label: 'SLA', value: 0, tone: 'success', href: '/admin/dashboard' },
     ],
     primaryAction: {
-      eyebrow: 'Primary Action',
-      title: 'פתח מוקד קריאות',
-      description: 'החיבור לנתונים אינו זמין כרגע, אבל מוקד הקריאות והבקרה נשארו זמינים.',
-      ctaLabel: 'פתח מוקד',
+      eyebrow: 'מוקד בקרה',
+      title: 'פתח מוקד שליטה',
+      description: 'החיבור לנתונים אינו זמין כרגע, אבל מוקד הקריאות, האישור והבקרה נשארו זמינים.',
+      ctaLabel: 'פתח מוקד בקרה',
       href: '/tickets',
       tone: 'warning',
+      secondaryAction: { label: 'מערכת ובקרה', href: '/admin/dashboard' },
     },
     quickActions: [
-      { id: 'tickets', title: 'קריאות', value: 0, subtitle: 'פתוחות', href: '/tickets', icon: homeIcons.ticket },
-      { id: 'control', title: 'בקרה', value: '—', subtitle: 'תפוסה', href: '/admin/dashboard', icon: homeIcons.dashboard },
-      { id: 'maintenance', title: 'תחזוקה', value: 0, subtitle: 'לאימות', href: '/maintenance', icon: homeIcons.maintenance },
-      { id: 'calendar', title: 'יומן', value: 0, subtitle: 'אירועים', href: '/operations/calendar', icon: homeIcons.calendar },
+      { id: 'tickets', title: 'מוקד קריאות', value: 0, subtitle: 'פתוחות עכשיו', href: '/tickets', icon: homeIcons.ticket },
+      { id: 'control', title: 'בקרה מערכתית', value: '—', subtitle: 'תפוסה פעילה', href: '/admin/dashboard', icon: homeIcons.dashboard },
+      { id: 'approvals', title: 'אישורים', value: 0, subtitle: 'ממתינים', href: '/communications', icon: homeIcons.notifications },
+      { id: 'maintenance', title: 'תחזוקה', value: 0, subtitle: 'חריגים לבדיקה', href: '/maintenance', icon: homeIcons.maintenance },
     ],
     priorityItems: [],
   };
