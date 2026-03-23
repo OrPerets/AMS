@@ -196,31 +196,37 @@ Create a clearer, shorter, and more pleasant entry path into the product.
 
 ## Tasks
 ### 2.1 Create or upgrade the landing page
-- Add a clear landing page with a central CTA: "Enter the system".
-- If a landing page already exists, update it so it focuses on entry instead of heavy text.
-- On mobile, the CTA must appear above the fold.
-- Add a short message explaining that the system supports residents, management, operations, and gardens.
+- [x] Add a clear landing page with a central CTA: "Enter the system".
+- [x] If a landing page already exists, update it so it focuses on entry instead of heavy text.
+- [x] On mobile, the CTA must appear above the fold.
+- [x] Add a short message explaining that the system supports residents, management, operations, and gardens.
 
 ### 2.2 Refine the transition to login
-- The main CTA should route to `/login`.
-- Preserve relevant query params if they exist.
-- Make sure there is no dead-end between landing and login.
+- [x] The main CTA should route to `/login`.
+- [x] Preserve relevant query params if they exist.
+- [x] Make sure there is no dead-end between landing and login.
 
 ### 2.3 Improve the login UI
-- Improve hierarchy on the login screen so the form is the focal point.
-- Reduce visual noise on mobile.
-- Ensure fields are large, clear, touch-friendly, and show readable validation states.
-- Confirm there is one clear primary CTA for sign-in.
+- [x] Improve hierarchy on the login screen so the form is the focal point.
+- [x] Reduce visual noise on mobile.
+- [x] Ensure fields are large, clear, touch-friendly, and show readable validation states.
+- [x] Confirm there is one clear primary CTA for sign-in.
 
 ### 2.4 Improve microcopy
-- Update text so it is shorter and clearer.
-- Add a short hint telling users what happens after login.
-- Consider a concise trust/security note only, without overloading the screen.
+- [x] Update text so it is shorter and clearer.
+- [x] Add a short hint telling users what happens after login.
+- [x] Consider a concise trust/security note only, without overloading the screen.
 
 ### 2.5 Sprint success metrics
-- Shorter time from landing page to login.
-- Less scrolling before the first action on mobile.
-- Less confusion between the landing page and the login page.
+- [x] Shorter time from landing page to login.
+- [x] Less scrolling before the first action on mobile.
+- [x] Less confusion between the landing page and the login page.
+
+#### Sprint 2 implementation notes
+- Replaced the previous heavy marketing-style landing page with a focused entry surface built around a single primary "Enter the system" CTA, supporting copy, and a quick-start panel.
+- Preserved incoming query parameters when routing from `/` to `/login`, so deep-link and portal context can continue into the authentication flow.
+- Refined the login screen into a tighter two-column layout on desktop and a single focused card on mobile, with larger fields, one main submit action, a post-login hint, and a concise security/help note.
+- Updated both Hebrew and English copy to better match the Sprint 2 goal of shorter, clearer entry messaging.
 
 ---
 
