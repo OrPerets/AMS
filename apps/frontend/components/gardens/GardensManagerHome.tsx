@@ -106,6 +106,7 @@ export function GardensManagerHome() {
       />
 
       <MobileActionHub
+        mobileHomeEffect
         title="מרכז עבודה"
         subtitle="קיצורים ישירים לפי סדר העבודה בפועל."
         items={[

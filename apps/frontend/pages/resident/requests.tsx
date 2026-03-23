@@ -248,6 +248,7 @@ export default function ResidentRequestsPage() {
           ]}
         />
         <PrimaryActionCard
+          mobileHomeEffect
           eyebrow="שירות עצמי"
           title="בקשה חדשה"
           description="בחירת מסלול קצר וברור עם מעקב מסודר מאותו מסך."
@@ -338,6 +339,7 @@ export default function ResidentRequestsPage() {
       {view === 'new' ? (
       <>
       <MobileActionHub
+        mobileHomeEffect
         title="בחר סוג בקשה"
         subtitle="מסלולים קצרים וברורים לפי מה שצריך עכשיו."
         items={requestTypes.map((type) => ({
