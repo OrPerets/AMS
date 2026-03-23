@@ -815,7 +815,7 @@ function getRoleQuickLinks(role: RoleKey, metrics: HomeMetric[], nextActions: Ho
       { title: 'בקשה חדשה', description: 'פניות, מסמכים וחניה.', href: '/resident/requests', icon: ClipboardList, badge: String(metricByLabel('התראות לא נקראו') ?? '') },
       { title: 'קריאת שירות', description: 'פתח קריאת תחזוקה.', href: '/create-call', icon: Ticket },
       { title: 'מסמכים', description: 'מסמכים חדשים ועדכוני ועד.', href: '/documents', icon: FileText },
-      { title: 'הבניין שלי', description: 'מידע ואנשי קשר.', href: '/resident/account?section=building', icon: Building2 },
+      { title: 'הבניין שלי', description: 'מידע ואנשי קשר.', href: '/resident/building', icon: Building2 },
     ],
     TECH: [
       { title: 'עבודות', description: 'המשימות שלך להיום.', href: '/tech/jobs', icon: Wrench, badge: String(metricByLabel('קריאות פעילות') ?? '') },
