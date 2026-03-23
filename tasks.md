@@ -236,47 +236,42 @@ Implement clear post-login routing by role.
 
 ## Tasks
 ### 3.1 Update post-login routing logic
-- Update the logic so Residents are routed directly to the Resident screen.
-- Route every other role to a dedicated selection screen.
-- Make sure the logic works for both normal login and refresh on a protected page.
+- [x] Updated the default post-login routing so Residents still land directly on `/resident/account`.
+- [x] Routed every non-Resident role through `/role-selection` instead of sending them straight to `/home`.
+- [x] Preserved direct protected-route handling by keeping `next`-based login redirects intact while changing the default role-based route.
 
 ### 3.2 Upgrade `/role-selection`
-Turn the page from an automatic redirect screen into a real decision screen that includes:
-- A clear title.
-- A short explanation: "Choose which interface to enter".
-- 3 action cards:
-  1. AMS management system.
-  2. Supervision report.
-  3. Garden management.
-- An indication of the recommended or last-used destination.
+- [x] Replaced the automatic redirect screen with a real workspace selection page.
+- [x] Added a clear title, explanation, and 3 workspace cards for AMS, supervision, and gardens.
+- [x] Added last-used / recommended state so returning users can see their previous destination immediately.
 
 ### 3.3 UX for the selection screen
-- Each card should include a title, description, icon, and a clear CTA.
-- Mobile-first: stacked cards with large tap targets.
-- Desktop: clean, organized grid.
-- Show the last-used destination when possible.
-- Consider a "remember this choice for next time" option for non-Resident users.
+- [x] Built each card with an icon, title, description, and strong CTA.
+- [x] Used a stacked mobile-first layout that expands into a clean 3-column grid on larger screens.
+- [x] Added a persisted “remember this choice” toggle and a quick-return shortcut for the saved destination.
 
 ### 3.4 Redirect to the supervision report
-- Clicking the supervision report should perform a correct redirect to `https://amit-form.vercel.app`.
-- Decide whether it opens in the same tab or a new tab.
-- If it opens in a new tab, make it clear to the user that this is an external system.
+- [x] Pointed the supervision flow to `https://amit-form.vercel.app`.
+- [x] Chose to open the supervision report in a new tab from the selection screen.
+- [x] Added explicit external-system messaging on the card and a dedicated fallback redirect page for `/supervision-report`.
 
 ### 3.5 Entry into the main AMS system
-- Define exactly which route the user enters when choosing "AMS management system", based on role.
-- Make sure each role lands in the right home screen and not in an overly generic one.
+- [x] Defined AMS entry routing per role through auth helpers instead of treating every role as the same default.
+- [x] Kept supported management roles on `/home` while preventing unsupported roles from silently entering the wrong shell.
 
 ### 3.6 Persistence and reduced repeat friction
-- Save the last choice locally (for example, with local storage) only for relevant users.
-- Show a shortcut to the last-used destination on the next visit to improve engagement and speed.
+- [x] Saved the last workspace choice in local storage per user + effective role.
+- [x] Surfaced a “continue to last destination” shortcut on future visits to the selection screen.
 
 ### 3.7 QA and edge cases
-- Login with Resident.
-- Login with Admin / PM / Tech / Accountant.
-- Logout and login again.
-- Direct entry using a protected URL.
-- Expired token.
-- Missing role / unsupported role.
+- [x] Implemented Resident short-circuiting, unsupported-role messaging, and login fallback to `/login` when no token exists.
+- [x] Added routing support for logout/login repeat flows and protected-route login continuation through the existing `next` query behavior.
+- [ ] Remaining manual QA to run in-browser: Resident login, each non-Resident role path, expired-token flow, and protected deep-link verification.
+
+#### Sprint 3 implementation notes
+- Added reusable auth helpers for AMS routing, role-selection detection, and persisted workspace-choice storage.
+- Implemented a new non-Resident selection screen with mobile-first cards, last-used shortcut, and remember-choice UX.
+- Replaced the internal `/supervision-report` page re-export with an external redirect fallback page so existing links follow the new product flow.
 
 ---
 
