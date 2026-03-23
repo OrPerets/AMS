@@ -324,9 +324,6 @@ export function routeForRole(role?: string | null): string {
   }
 }
 
-export function shouldRouteToWorkerHub(role?: string | null): boolean {
-  return false;
-}
 
 export function getDefaultRoute(role?: string | null): string {
   const effectiveRole = normalizeRole(role) || getEffectiveRole();
