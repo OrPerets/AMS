@@ -12,6 +12,13 @@ type StatusMetric = {
   onClick?: () => void;
 };
 
+const metricPriority: Record<NonNullable<StatusMetric['tone']>, number> = {
+  danger: 4,
+  warning: 3,
+  success: 2,
+  default: 1,
+};
+
 function AnimatedMetricValue({ value }: { value: string | number }) {
   if (typeof value !== 'number') {
     return <bdi>{value}</bdi>;
@@ -33,6 +40,33 @@ export function CompactStatusStrip({
   className?: string;
 }) {
   const reducedMotion = useReducedMotion();
+  const [pulsingMetricId, setPulsingMetricId] = React.useState<string | null>(null);
+
+  const highlightedMetricId = React.useMemo(() => {
+    const visibleMetrics = metrics.slice(0, 2);
+    if (!visibleMetrics.length) return null;
+
+    return [...visibleMetrics]
+      .sort((left, right) => {
+        const rightPriority = metricPriority[right.tone ?? 'default'];
+        const leftPriority = metricPriority[left.tone ?? 'default'];
+        return rightPriority - leftPriority;
+      })[0]?.id ?? null;
+  }, [metrics]);
+
+  React.useEffect(() => {
+    if (reducedMotion || !highlightedMetricId) {
+      setPulsingMetricId(null);
+      return;
+    }
+
+    setPulsingMetricId(highlightedMetricId);
+    const timeout = window.setTimeout(() => {
+      setPulsingMetricId((current) => (current === highlightedMetricId ? null : current));
+    }, 3600);
+
+    return () => window.clearTimeout(timeout);
+  }, [highlightedMetricId, reducedMotion]);
 
   return (
     <section
@@ -52,12 +86,13 @@ export function CompactStatusStrip({
       <div className="ms-3 flex min-w-0 items-center justify-end gap-1.5">
         {metrics.slice(0, 2).map((metric, index) => {
           const interactive = typeof metric.onClick === 'function';
+          const shouldPulse = pulsingMetricId === metric.id;
           const content = (
             <>
               <span className="text-[10px] font-semibold text-secondary-foreground">{metric.label}</span>
-              <span
+              <motion.span
                 className={cn(
-                  'text-sm font-extrabold tabular-nums text-start',
+                  'relative text-sm font-extrabold tabular-nums text-start',
                   metric.tone === 'danger' && 'text-destructive',
                   metric.tone === 'warning' && 'text-warning',
                   metric.tone === 'success' && 'text-success',
@@ -65,15 +100,50 @@ export function CompactStatusStrip({
                 )}
                 role="status"
                 aria-live="polite"
+                animate={
+                  shouldPulse && !reducedMotion
+                    ? {
+                        scale: [1, 1.06, 1],
+                        opacity: [1, 0.92, 1],
+                      }
+                    : { scale: 1, opacity: 1 }
+                }
+                transition={
+                  shouldPulse && !reducedMotion
+                    ? {
+                        duration: 0.9,
+                        repeat: 3,
+                        ease: 'easeInOut',
+                      }
+                    : { duration: 0.2 }
+                }
               >
-                <AnimatedMetricValue value={metric.value} />
-              </span>
+                {shouldPulse && !reducedMotion ? (
+                  <motion.span
+                    className={cn(
+                      'pointer-events-none absolute inset-[-5px] rounded-full',
+                      metric.tone === 'danger' && 'bg-destructive/12',
+                      metric.tone === 'warning' && 'bg-warning/14',
+                      metric.tone === 'success' && 'bg-success/14',
+                      (!metric.tone || metric.tone === 'default') && 'bg-primary/10',
+                    )}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: [0.12, 0.28, 0], scale: [0.92, 1.18, 1.28] }}
+                    transition={{ duration: 0.9, repeat: 3, ease: 'easeOut' }}
+                    aria-hidden="true"
+                  />
+                ) : null}
+                <span className="relative z-[1]">
+                  <AnimatedMetricValue value={metric.value} />
+                </span>
+              </motion.span>
               {interactive ? <ChevronLeft className="icon-directional h-4 w-4 text-muted-foreground" strokeWidth={1.75} /> : null}
             </>
           );
 
           const wrapperClass = cn(
-            'inline-flex min-w-0 items-center gap-1 rounded-full px-2 py-1 text-center',
+            'inline-flex min-w-0 items-center gap-1 rounded-full px-2 py-1 text-center transition-colors',
+            shouldPulse && !reducedMotion && 'bg-background/90 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]',
             interactive ? 'min-h-[44px] cursor-pointer hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2' : '',
             index > 0 && 'border-s border-primary/8 ps-3',
           );

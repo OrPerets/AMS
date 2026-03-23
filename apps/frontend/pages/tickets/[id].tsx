@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../../components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
+import { StatusTimelineDots } from '../../components/ui/status-timeline-dots';
 import { getStatusLabel } from '../../lib/utils';
 import { toast } from '../../components/ui/use-toast';
 import { MessageSquare, Send, Edit, Trash2 } from 'lucide-react';
@@ -23,6 +24,8 @@ interface TicketComment {
     role: string;
   };
 }
+
+const ticketProgress = ['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED'] as const;
 
 interface Ticket {
   id: number;
@@ -172,7 +175,10 @@ export default function TicketDetails() {
           </p>
         )}
         <p>{ticket.description ?? ticket.comments?.[0]?.content ?? 'לא סופק תיאור לקריאה זו.'}</p>
-        <div>סטטוס נוכחי: {getStatusLabel(ticket.status)}</div>
+        <div className="space-y-2 rounded-[22px] border border-subtle-border bg-background/92 px-4 py-4">
+          <div className="text-sm font-medium text-foreground">סטטוס נוכחי: {getStatusLabel(ticket.status)}</div>
+          <StatusTimelineDots currentStatus={ticket.status} steps={ticketProgress} />
+        </div>
         {ticket.assignedTo && (
           <div className="text-sm text-muted-foreground">
             מוקצה ל: {ticket.assignedTo.email} ({ticket.assignedTo.role})

@@ -257,11 +257,13 @@ export default function HomePage() {
             ctaLabel="פתח"
             href={mobilePrimaryAction.href}
             tone={snapshot.metrics.some((metric) => metric.tone === 'warning') ? 'warning' : 'default'}
+            mobileHomeEffect
           />
         ) : null}
 
         <MobileActionHub
           title={<span className="sr-only">פעולות מהירות</span>}
+          mobileHomeEffect
           items={mobileQuickActions.map((item, index) => ({
             id: `${item.href}-${index}`,
             label: item.title,

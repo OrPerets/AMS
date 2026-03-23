@@ -31,6 +31,7 @@ import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 import { SectionHeader } from '../../components/ui/section-header';
 import { Switch } from '../../components/ui/switch';
 import { StatusBadge } from '../../components/ui/status-badge';
+import { StatusTimelineDots } from '../../components/ui/status-timeline-dots';
 import { toast } from '../../components/ui/use-toast';
 import { cn, formatCurrency, formatDate, getPriorityLabel, getStatusLabel, getTicketStatusTone, getUserRoleLabel, humanizeEnum } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
@@ -226,12 +227,6 @@ function downloadCsv(filename: string, rows: Array<Array<string | number | null 
 function scrollToSection(id: string) {
   if (typeof document === 'undefined') return;
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function getTicketProgressIndex(status: string) {
-  const normalized = status.toUpperCase();
-  const index = ticketProgress.indexOf(normalized as (typeof ticketProgress)[number]);
-  return index === -1 ? 0 : index;
 }
 
 function getTicketTimeline(ticket: AccountContext['tickets'][number]): TicketTimelineEvent[] {
@@ -1087,21 +1082,8 @@ export default function ResidentAccountPage() {
 
                     <div className="space-y-2 sm:space-y-3">
                       <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] text-tertiary">שלבי טיפול</div>
-                      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
-                        {ticketProgress.map((step, index) => {
-                          const isActive = index <= getTicketProgressIndex(ticket.status);
-                          return (
-                            <div
-                              key={`${ticket.id}-${step}`}
-                              className={`rounded-xl sm:rounded-[18px] border px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm ${
-                                isActive ? 'border-primary/25 bg-primary/10 text-foreground' : 'border-subtle-border bg-muted/20 text-muted-foreground'
-                              }`}
-                            >
-                              <div className="text-[10px] sm:text-xs uppercase tracking-[0.16em] text-tertiary">שלב {index + 1}</div>
-                              <div className="mt-0.5 sm:mt-1 font-semibold">{getStatusLabel(step, 'he')}</div>
-                            </div>
-                          );
-                        })}
+                      <div className="rounded-[22px] border border-subtle-border bg-background/92 px-3 py-3 sm:px-4 sm:py-4">
+                        <StatusTimelineDots currentStatus={ticket.status} steps={ticketProgress} locale={locale} />
                       </div>
                     </div>
 

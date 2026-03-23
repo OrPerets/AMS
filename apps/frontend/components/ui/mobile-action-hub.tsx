@@ -1,7 +1,9 @@
 import * as React from 'react';
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useMobileDepthEffect, useTouchHoldLift } from './mobile-card-effects';
 
 type IconType = React.ComponentType<{ className?: string; strokeWidth?: number }>;
 
@@ -58,16 +60,84 @@ function TileShell({
   );
 }
 
+function ActionTile({
+  item,
+  mobileHomeEffect,
+}: {
+  item: MobileActionHubItem;
+  mobileHomeEffect: boolean;
+}) {
+  const reducedMotion = useReducedMotion();
+  const depthRef = useMobileDepthEffect(mobileHomeEffect);
+  const hold = useTouchHoldLift(true);
+  const Icon = item.icon;
+
+  return (
+    <motion.div
+      ref={depthRef as React.Ref<HTMLDivElement>}
+      animate={hold.isHolding && !reducedMotion ? { y: -3, scale: 1.01 } : { y: 0, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+      className={cn(
+        mobileHomeEffect &&
+          '[box-shadow:0_calc(10px*var(--mobile-card-depth,0))_24px_rgba(15,23,42,0.10)] [filter:saturate(calc(1+var(--mobile-card-depth,0)*0.06))] [transform:translateY(calc(var(--mobile-card-depth,0)*-2px))]',
+        hold.isHolding && 'rounded-2xl shadow-[0_16px_32px_rgba(15,23,42,0.14)] ring-1 ring-primary/10',
+      )}
+      {...hold.holdProps}
+    >
+      <TileShell
+        href={item.href}
+        onClick={item.onClick}
+        className={cn(
+          'group block min-h-[88px] rounded-2xl border bg-card/96 p-3 text-start shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target',
+          !item.href && !item.onClick && 'pointer-events-none',
+        )}
+      >
+        <div className="flex h-full flex-col">
+          <div className="flex items-start justify-between gap-2">
+            <span
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-xl border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]',
+                toneClasses(item.accent),
+              )}
+            >
+              <Icon className="h-5 w-5" strokeWidth={1.75} />
+            </span>
+            {item.badge !== undefined && item.badge !== '' ? (
+              <span className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                {item.badge}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-3 flex-1">
+            <div className="text-sm font-semibold text-foreground">{item.label}</div>
+            {item.description ? <div className="mt-1 line-clamp-2 text-[12px] leading-5 text-secondary-foreground">{item.description}</div> : null}
+          </div>
+
+          {item.href || item.onClick ? (
+            <div className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+              פתח
+              <ArrowUpRight className="icon-directional h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} />
+            </div>
+          ) : null}
+        </div>
+      </TileShell>
+    </motion.div>
+  );
+}
+
 export function MobileActionHub({
   title,
   subtitle,
   items,
   className,
+  mobileHomeEffect = false,
 }: {
   title: React.ReactNode;
   subtitle?: React.ReactNode;
   items: MobileActionHubItem[];
   className?: string;
+  mobileHomeEffect?: boolean;
 }) {
   return (
     <section className={cn('space-y-3', className)} aria-label={typeof title === 'string' ? title : undefined}>
@@ -81,52 +151,9 @@ export function MobileActionHub({
       ) : null}
 
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((item) => {
-          const Icon = item.icon;
-          return (
-            <TileShell
-              key={item.id}
-              href={item.href}
-              onClick={item.onClick}
-              className={cn(
-                'group min-h-[88px] rounded-2xl border bg-card/96 p-3 text-start shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target',
-                !item.href && !item.onClick && 'pointer-events-none',
-              )}
-            >
-              <div className="flex h-full flex-col">
-                <div className="flex items-start justify-between gap-2">
-                  <span
-                    className={cn(
-                      'flex h-10 w-10 items-center justify-center rounded-xl border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]',
-                      toneClasses(item.accent),
-                    )}
-                  >
-                    <Icon className="h-5 w-5" strokeWidth={1.75} />
-                  </span>
-                  {item.badge !== undefined && item.badge !== '' ? (
-                    <span className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                      {item.badge}
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="mt-3 flex-1">
-                  <div className="text-sm font-semibold text-foreground">{item.label}</div>
-                  {item.description ? (
-                    <div className="mt-1 line-clamp-2 text-[12px] leading-5 text-secondary-foreground">{item.description}</div>
-                  ) : null}
-                </div>
-
-                {(item.href || item.onClick) ? (
-                  <div className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
-                    פתח
-                    <ArrowUpRight className="icon-directional h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} />
-                  </div>
-                ) : null}
-              </div>
-            </TileShell>
-          );
-        })}
+        {items.map((item) => (
+          <ActionTile key={item.id} item={item} mobileHomeEffect={mobileHomeEffect} />
+        ))}
       </div>
     </section>
   );

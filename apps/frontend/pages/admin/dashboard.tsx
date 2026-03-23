@@ -111,6 +111,7 @@ export default function AdminDashboardPage() {
         />
 
         <PrimaryActionCard
+          mobileHomeEffect
           eyebrow="פעולה ראשית"
           title={
             data.portfolioKpis.slaBreaches
