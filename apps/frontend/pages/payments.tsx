@@ -202,7 +202,7 @@ export default function PaymentsPage() {
       return;
     }
 
-    if (!['ADMIN', 'PM', 'ACCOUNTANT'].includes(role)) {
+    if (!['ADMIN', 'PM', 'ACCOUNTANT', 'MASTER'].includes(role)) {
       router.replace('/home');
       return;
     }
@@ -456,7 +456,7 @@ export default function PaymentsPage() {
     return `${resident.user.email} · ${unitText}`;
   }
 
-  if (role === null || role === 'RESIDENT' || !['ADMIN', 'PM', 'ACCOUNTANT'].includes(role)) {
+  if (role === null || role === 'RESIDENT' || !['ADMIN', 'PM', 'ACCOUNTANT', 'MASTER'].includes(role)) {
     return <div className="p-6 text-sm text-muted-foreground">{t('payments.loading')}</div>;
   }
 

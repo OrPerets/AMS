@@ -136,7 +136,7 @@ export default function CommunicationsPage() {
   }, [currentUserId, scope]);
 
   useEffect(() => {
-    if (effectiveRole === 'ADMIN' || effectiveRole === 'PM') {
+    if (effectiveRole === 'ADMIN' || effectiveRole === 'PM' || effectiveRole === 'MASTER') {
       void loadResidentRequests();
     }
   }, [effectiveRole]);
@@ -451,7 +451,7 @@ export default function CommunicationsPage() {
         </Card>
       )}
 
-      {(effectiveRole === 'ADMIN' || effectiveRole === 'PM') && (
+      {(effectiveRole === 'ADMIN' || effectiveRole === 'PM' || effectiveRole === 'MASTER') && (
         <Card>
           <CardHeader>
             <CardTitle>בקשות דייר בטיפול</CardTitle>
