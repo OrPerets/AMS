@@ -299,6 +299,20 @@ export function logout() {
 }
 
 // Role helpers and routing
+export const ROLE_SELECTION_ROUTE = '/role-selection';
+export const EXTERNAL_SUPERVISION_REPORT_URL = 'https://amit-form.vercel.app';
+const LAST_WORKSPACE_CHOICE_KEY = 'ams:last-workspace-choice';
+
+export type WorkspaceChoice = 'ams' | 'supervision' | 'gardens';
+
+type StoredWorkspaceChoice = {
+  choice: WorkspaceChoice;
+  remember: boolean;
+  role: string;
+  userId: number | null;
+  savedAt: string;
+};
+
 export function getEffectiveRole(): string | null {
   const payload = getTokenPayload();
   if (!payload) return null;
@@ -309,28 +323,36 @@ export function isAuthenticated(): boolean {
   return !!getAccessToken();
 }
 
-export function routeForRole(role?: string | null): string {
+export function getAmsRouteForRole(role?: string | null): string | null {
   switch (normalizeRole(role)) {
     case 'ADMIN':
     case 'MASTER':
-      return '/home';
     case 'PM':
-      return '/home';
     case 'TECH':
-      return '/home';
     case 'ACCOUNTANT':
       return '/home';
     case 'RESIDENT':
       return '/resident/account';
     default:
-      return '/home';
+      return null;
   }
 }
 
+export function isResidentRole(role?: string | null): boolean {
+  return normalizeRole(role) === 'RESIDENT';
+}
+
+export function requiresRoleSelection(role?: string | null): boolean {
+  return !isResidentRole(role);
+}
 
 export function getDefaultRoute(role?: string | null): string {
   const effectiveRole = normalizeRole(role) || getEffectiveRole();
-  return routeForRole(effectiveRole);
+  if (isResidentRole(effectiveRole)) {
+    return '/resident/account';
+  }
+
+  return ROLE_SELECTION_ROUTE;
 }
 
 export function getPortalEntryRoute(
@@ -339,15 +361,66 @@ export function getPortalEntryRoute(
 ): string {
   const effectiveRole = normalizeRole(role) || getEffectiveRole();
 
-  if (portal === 'resident') {
-    if (effectiveRole === 'RESIDENT' || isMasterPendingRoleSelection()) {
-      return '/resident/account';
-    }
-
-    return getDefaultRoute(effectiveRole);
+  if (portal === 'resident' && (effectiveRole === 'RESIDENT' || isMasterPendingRoleSelection())) {
+    return '/resident/account';
   }
 
   return getDefaultRoute(effectiveRole);
+}
+
+export function getWorkspaceChoiceRoute(choice: WorkspaceChoice, role?: string | null): string | null {
+  switch (choice) {
+    case 'ams':
+      return getAmsRouteForRole(role);
+    case 'gardens':
+      return '/gardens';
+    case 'supervision':
+      return EXTERNAL_SUPERVISION_REPORT_URL;
+    default:
+      return null;
+  }
+}
+
+function getWorkspaceStorageScope(role?: string | null, userId?: number | null): string {
+  const normalizedRole = normalizeRole(role) || 'UNKNOWN';
+  const normalizedUserId = typeof userId === 'number' ? userId : 'guest';
+  return `${normalizedUserId}:${normalizedRole}`;
+}
+
+export function getStoredWorkspaceChoice(role?: string | null, userId?: number | null): StoredWorkspaceChoice | null {
+  if (!isBrowser()) return null;
+
+  const rawValue = window.localStorage.getItem(`${LAST_WORKSPACE_CHOICE_KEY}:${getWorkspaceStorageScope(role, userId)}`);
+  if (!rawValue) return null;
+
+  try {
+    const parsed = JSON.parse(rawValue) as StoredWorkspaceChoice;
+    if (!parsed?.choice || !parsed?.role) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredWorkspaceChoice(
+  choice: WorkspaceChoice,
+  options: { role?: string | null; userId?: number | null; remember?: boolean } = {},
+) {
+  if (!isBrowser()) return;
+
+  const normalizedRole = normalizeRole(options.role) || getEffectiveRole() || 'UNKNOWN';
+  const storedValue: StoredWorkspaceChoice = {
+    choice,
+    remember: Boolean(options.remember),
+    role: normalizedRole,
+    userId: typeof options.userId === 'number' ? options.userId : getCurrentUserId(),
+    savedAt: new Date().toISOString(),
+  };
+
+  window.localStorage.setItem(
+    `${LAST_WORKSPACE_CHOICE_KEY}:${getWorkspaceStorageScope(normalizedRole, storedValue.userId)}`,
+    JSON.stringify(storedValue),
+  );
 }
 
 function isTokenExpired(token: string) {
