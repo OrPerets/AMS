@@ -108,7 +108,7 @@ const getNavigationGroups = (role: string, t: (key: string) => string): Navigati
           },
           {
             title: 'הבניין שלי',
-            href: '/resident/account?section=building',
+            href: '/resident/building',
             icon: Building,
             roles: ['RESIDENT'],
           },

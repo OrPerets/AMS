@@ -142,8 +142,8 @@ function createRoleNavigation(role: string, t: (key: string) => string): { prima
         groups: [
           { title: 'חשבון', items: [
             { label: 'מסמכים', hint: 'ועד וקבצים', href: '/documents', icon: Folder },
-            { label: 'הבניין שלי', hint: 'מידע ואנשי קשר', href: '/resident/account?section=building', icon: Building },
-            { label: 'שיטות תשלום', hint: 'כרטיסים', href: '/payments/resident?section=methods', icon: CreditCard },
+            { label: 'הבניין שלי', hint: 'מידע ואנשי קשר', href: '/resident/building', icon: Building },
+            { label: 'שיטות תשלום', hint: 'כרטיסים', href: '/payments/resident', icon: CreditCard },
           ] },
           { title: 'תמיכה', items: [
             { label: 'צור קשר', hint: 'ניהול ותמיכה', href: '/support', icon: MessageCircle },

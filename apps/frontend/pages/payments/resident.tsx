@@ -93,6 +93,15 @@ export default function ResidentPaymentsPage() {
     void loadPage();
   }, []);
 
+  useEffect(() => {
+    if (!router.isReady) return;
+
+    const section = typeof router.query.section === 'string' ? router.query.section : '';
+    if (section === 'methods') {
+      void router.replace('/payments/resident');
+    }
+  }, [router.isReady, router.query.section]);
+
   async function loadPage() {
     try {
       setLoading(true);
