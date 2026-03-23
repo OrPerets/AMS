@@ -121,12 +121,11 @@ export default function MonthGrid({
 
   return (
     <div className="animate-fade-in">
-      {/* Month header with premium styling */}
-      <div className="mb-4 text-center">
-        <h2 className="text-xl font-semibold text-foreground text-hebrew">
+      <div className="mb-3 text-center sm:mb-4">
+        <h2 className="text-lg font-semibold text-foreground text-hebrew sm:text-xl">
           {monthTitle}
         </h2>
-        <div className="mt-1 w-16 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto rounded-full" />
+        <div className="mt-1 w-12 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto rounded-full sm:w-16" />
       </div>
 
       <div

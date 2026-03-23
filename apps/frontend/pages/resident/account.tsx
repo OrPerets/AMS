@@ -304,7 +304,7 @@ export default function ResidentAccountPage() {
   }
 
   return (
-    <div dir="rtl" className="space-y-4 text-right sm:space-y-6">
+    <div dir="rtl" className="space-y-3 text-right sm:space-y-6">
       <CompactStatusStrip
         roleLabel={primaryBuilding ? `${primaryBuilding.name} · דירה ${primaryUnit?.number}` : labels.home}
         icon={<Building2 className="h-4 w-4" strokeWidth={1.75} />}
@@ -360,9 +360,9 @@ export default function ResidentAccountPage() {
         emptyDescription={labels.noUrgentDesc}
       />
 
-      <section className="grid gap-3 md:grid-cols-2">
-        <Card variant="muted" className="rounded-[24px] border-subtle-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(249,245,238,0.94)_100%)]">
-          <CardContent className="space-y-3 p-4">
+      <section className="grid gap-2.5 md:grid-cols-2 md:gap-3">
+        <Card variant="muted" className="rounded-2xl border-subtle-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(249,245,238,0.94)_100%)] sm:rounded-[24px]">
+          <CardContent className="space-y-2.5 p-3 sm:space-y-3 sm:p-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold text-foreground">{labels.recentDocs}</h3>
               <Button variant="ghost" size="sm" asChild>
@@ -375,7 +375,7 @@ export default function ResidentAccountPage() {
                 <Link
                   key={document.id}
                   href="/documents"
-                  className="flex items-center justify-between rounded-[20px] border border-subtle-border bg-background px-3 py-3 transition hover:border-primary/25"
+                  className="flex items-center justify-between rounded-2xl border border-subtle-border bg-background px-3 py-2.5 transition hover:border-primary/25"
                 >
                   <div className="min-w-0">
                     <div className="truncate text-sm font-semibold text-foreground">{document.name}</div>
@@ -390,8 +390,8 @@ export default function ResidentAccountPage() {
           </CardContent>
         </Card>
 
-        <Card variant="muted" className="rounded-[24px] border-subtle-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(250,248,244,0.94)_100%)]">
-          <CardContent className="space-y-3 p-4">
+        <Card variant="muted" className="rounded-2xl border-subtle-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(250,248,244,0.94)_100%)] sm:rounded-[24px]">
+          <CardContent className="space-y-2.5 p-3 sm:space-y-3 sm:p-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold text-foreground">קשר ומידע</h3>
               <Button variant="ghost" size="sm" asChild>
@@ -401,7 +401,7 @@ export default function ResidentAccountPage() {
 
             {primaryBuilding ? (
               <>
-                <Link href="/resident/building" className="block rounded-[20px] border border-subtle-border bg-background/88 p-3 transition hover:border-primary/25">
+                <Link href="/resident/building" className="block rounded-2xl border border-subtle-border bg-background/88 p-3 transition hover:border-primary/25">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-foreground">{primaryBuilding.name}</div>
@@ -411,7 +411,7 @@ export default function ResidentAccountPage() {
                   </div>
                 </Link>
 
-                <Link href="/support" className="block rounded-[20px] border border-subtle-border bg-background/88 p-3 transition hover:border-primary/25">
+                <Link href="/support" className="block rounded-2xl border border-subtle-border bg-background/88 p-3 transition hover:border-primary/25">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-foreground">תמיכה וניהול</div>

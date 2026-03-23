@@ -68,32 +68,31 @@ export function GardensModuleShell({
   const navItems = role === 'TECH' ? workerItems : managerItems;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card variant="featured" className="overflow-hidden border-primary/15 bg-[radial-gradient(circle_at_top,_rgba(74,124,67,0.18),_transparent_42%),linear-gradient(180deg,_rgba(250,247,240,0.98),_rgba(244,239,230,0.95))]">
-        <CardContent className="space-y-5 p-5 sm:p-6">
-          <div className="flex flex-wrap items-center gap-2">
+        <CardContent className="space-y-3 p-3.5 sm:space-y-5 sm:p-6">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <Badge variant="success">Garden module</Badge>
             <Badge variant="outline">{role === 'TECH' ? 'עובד שטח' : 'ניהול ותיאום'}</Badge>
-            <Badge variant="secondary">Standalone workspace</Badge>
           </div>
 
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-2">
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Leaf className="h-6 w-6" />
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-1.5 sm:space-y-2">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-12 sm:w-12 sm:rounded-2xl">
+                <Leaf className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
-              <div className="space-y-2">
-                <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">{title}</h1>
-                <p className="max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">{description}</p>
+              <div className="space-y-1 sm:space-y-2">
+                <h1 className="text-xl font-black tracking-tight text-foreground sm:text-3xl">{title}</h1>
+                <p className="max-w-3xl text-[13px] leading-5 text-muted-foreground sm:text-base sm:leading-7">{description}</p>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-2">{actions}</div>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="rounded-[22px] border border-border/70 bg-background/85 p-3 sm:p-4">
-              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-tertiary">ניווט המודול</div>
+          <div className="grid gap-2.5 lg:grid-cols-[1.2fr_0.8fr] lg:gap-3">
+            <div className="rounded-2xl border border-border/70 bg-background/85 p-3 sm:rounded-[22px] sm:p-4">
+              <div className="mb-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-tertiary sm:mb-3">ניווט המודול</div>
               <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                 {navItems.map((item) => {
                   const Icon = item.icon;
@@ -122,10 +121,10 @@ export function GardensModuleShell({
               </div>
             </div>
 
-            <div className="rounded-[22px] border border-border/70 bg-background/85 p-4">
+            <div className="rounded-2xl border border-border/70 bg-background/85 p-3 sm:rounded-[22px] sm:p-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-tertiary">המשך מהנקודה האחרונה</div>
-              <div className="mt-2 text-base font-semibold text-foreground">{resume?.label || 'עדיין לא נשמר מסלול קודם'}</div>
-              <div className="mt-1 text-sm leading-6 text-muted-foreground">
+              <div className="mt-1.5 text-[15px] font-semibold text-foreground sm:mt-2 sm:text-base">{resume?.label || 'עדיין לא נשמר מסלול קודם'}</div>
+              <div className="mt-1 text-[13px] leading-5 text-muted-foreground sm:text-sm sm:leading-6">
                 {resume?.href && resume.href !== router.asPath
                   ? 'המערכת זוכרת את המסך האחרון שביקרת בו בתוך מודול הגינון.'
                   : 'הניווט במודול מופרד מ-AMS כדי לשמור על הקשר עבודה ברור.'}

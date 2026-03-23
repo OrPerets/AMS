@@ -82,38 +82,38 @@ export default function LoginPage() {
     >
       <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center justify-center sm:min-h-[calc(100vh-3rem)]">
         <div className="grid w-full items-center gap-5 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
-          <section className="order-2 space-y-4 lg:order-1 lg:space-y-5">
+          <section className="order-2 hidden space-y-3 sm:block lg:order-1 lg:space-y-5">
             <div className="inline-flex w-fit items-center rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary sm:text-sm">
               {t('login.eyebrow')}
             </div>
             <div className="space-y-3">
-              <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-4xl">
                 {t('login.title')}
               </h1>
-              <p className="max-w-xl text-sm leading-7 text-muted-foreground sm:text-base sm:leading-8">
+              <p className="max-w-xl text-[13px] leading-6 text-muted-foreground sm:text-base sm:leading-8">
                 {t('login.description')}
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+            <div className="grid gap-2.5 md:grid-cols-3 lg:grid-cols-1 lg:gap-3">
               {trustPoints.map((point, index) => (
-                <div key={point} className="rounded-2xl border border-border/70 bg-card/85 p-4 shadow-sm">
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                    {index === 0 ? <ShieldCheck className="h-5 w-5" /> : index === 1 ? <Sparkles className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+                <div key={point} className="rounded-2xl border border-border/70 bg-card/85 p-3 shadow-sm sm:p-4">
+                  <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary sm:mb-3 sm:h-10 sm:w-10 sm:rounded-2xl">
+                    {index === 0 ? <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" /> : index === 1 ? <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" /> : <Lock className="h-4 w-4 sm:h-5 sm:w-5" />}
                   </div>
-                  <p className="text-sm leading-6 text-foreground">{point}</p>
+                  <p className="text-[13px] leading-5 text-foreground sm:text-sm sm:leading-6">{point}</p>
                 </div>
               ))}
             </div>
           </section>
 
           <Card variant="featured" className="order-1 mx-auto w-full max-w-xl border-primary/20 shadow-[0_35px_100px_-60px_rgba(0,0,0,0.45)] lg:order-2">
-            <CardHeader className="space-y-4 pb-4 text-center sm:space-y-5 sm:pb-6">
-              <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/12 text-primary sm:h-14 sm:w-14">
-                <LogIn className="h-5 w-5 sm:h-6 sm:w-6" />
+            <CardHeader className="space-y-3 pb-3 text-center sm:space-y-5 sm:pb-6">
+              <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/12 text-primary sm:h-14 sm:w-14">
+                <LogIn className="h-4 w-4 sm:h-6 sm:w-6" />
               </div>
               <div className="space-y-2">
-                <CardTitle className="text-2xl sm:text-[2rem]">{t('login.formTitle')}</CardTitle>
+                <CardTitle className="text-xl sm:text-[2rem]">{t('login.formTitle')}</CardTitle>
                 <CardDescription className="mx-auto max-w-md text-sm leading-7 text-muted-foreground">
                   {t('login.formDescription')}
                 </CardDescription>

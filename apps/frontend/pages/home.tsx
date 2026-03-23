@@ -279,7 +279,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="space-y-5 sm:space-y-8">
+    <div className="space-y-3 sm:space-y-8">
       {renderBlueprint(blueprint)}
 
       <Dialog open={onboardingOpen} onOpenChange={setOnboardingOpen}>

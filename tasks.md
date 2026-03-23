@@ -413,62 +413,101 @@ Significantly improve the mobile experience while preserving the current visual 
 
 ## Tasks
 ### 6.1 Focused research on Open SaaS
-- Review how the template handles:
-  - landing/login surfaces
-  - card hierarchy
-  - mobile spacing
-  - dashboard density
-  - CTA prominence
-- Produce a list of principles to adopt, not a list of components to copy.
+- [x] Reviewed how the template (https://github.com/wasp-lang/open-saas) handles:
+  - [x] landing/login surfaces
+  - [x] card hierarchy
+  - [x] mobile spacing
+  - [x] dashboard density
+  - [x] CTA prominence
+- [x] Produced a list of principles to adopt, not a list of components to copy.
+
+#### Principles adopted from Open SaaS research
+- **Single-column mobile layouts** with clear vertical hierarchy — no cramped multi-column grids below `sm`.
+- **Compact status strips** instead of oversized hero sections on action screens.
+- **Consistent border radius** (`rounded-2xl` / 16px) across all cards on mobile.
+- **Action-first above-the-fold content** — CTAs and primary metrics visible without scrolling.
+- **Restrained decoration** — reduce blur orbs, gradients, and large icons on narrow viewports to prioritize content density.
 
 ### 6.2 Align with `mobile-ux-redesign-spec.md`
-- Review the recommendations that already exist in the internal spec.
-- Decide what should be implemented now and what should be deferred.
-- Produce a focused backlog for the highest-priority screens only.
+- [x] Reviewed the recommendations that already exist in the internal spec.
+- [x] Decided what should be implemented now and what should be deferred.
+- [x] Produced a focused backlog for the highest-priority screens only.
+
+#### Implemented now (from spec)
+- Tile min-heights reduced to align with spec's 88px target (§6.2 Card Density).
+- Icon containers standardized to 40×40px (h-10 w-10) per spec §6.2.
+- Hero blur orbs scaled down on mobile (h-36→h-24, h-32→h-20) per spec §8.2.
+- Bottom nav tab min-height reduced from 58→52px per spec §6.4.
+- TECH role 4th primary tab corrected to `/tickets?mine=true` ("עדכון") per spec §3.2.
+- Typography tightened on mobile: titles use `text-lg`/`text-xl`/`text-2xl` instead of oversized variants.
+- Card radii standardized to `rounded-2xl` on mobile across MobileActionHub, PageHero, RoleCommandBand, gardens panels.
+- Consistent `strokeWidth={1.75}` on icons per spec §8.2.
+- Metric values use `font-extrabold` + `tabular-nums` per spec §6.3.
+
+#### Deferred to future sprints
+- Standalone resident payments page (spec §11 Phase 2 — requires new route + API extraction).
+- Priority inbox swipe gestures (already partially implemented; full per-role config deferred).
+- Bottom sheet ticket detail view (spec §11 Phase 4 — high complexity).
+- Real-time WebSocket badge updates on bottom nav (spec §11 Phase 4).
+- Pull-to-refresh with branded ring animation (spec §11 Phase 3).
+- Animated number transitions on all metric cards (hook exists; wider rollout deferred).
 
 ### 6.3 Highest-priority mobile screens
-1. Landing
-2. Login
-3. Role selection
-4. Resident home/account
-5. Home for management roles
-6. Gardens module home + month screens
+- [x] 1. Landing
+- [x] 2. Login
+- [x] 3. Role selection
+- [x] 4. Resident home/account
+- [x] 5. Home for management roles
+- [x] 6. Gardens module home + month screens
 
 ### 6.4 UI principles to implement
-- Reduce oversized heroes.
-- Reduce the height of cards that do not need large content areas.
-- Move key actions above the fold.
-- Improve vertical rhythm and spacing between sections.
-- Improve readability of short text and headings.
-- Preserve clean RTL behavior, large tap targets, and safe-area spacing.
+- [x] Reduce oversized heroes.
+- [x] Reduce the height of cards that do not need large content areas.
+- [x] Move key actions above the fold.
+- [x] Improve vertical rhythm and spacing between sections.
+- [x] Improve readability of short text and headings.
+- [x] Preserve clean RTL behavior, large tap targets, and safe-area spacing.
 
 ### 6.5 Improve mobile navigation
-- Check whether bottom nav / more menu / shortcuts are too crowded.
-- Ensure primary actions are reachable within 1–2 taps.
-- Reduce secondary-link overload on home screens.
+- [x] Check whether bottom nav / more menu / shortcuts are too crowded.
+- [x] Ensure primary actions are reachable within 1–2 taps.
+- [x] Reduce secondary-link overload on home screens.
 
 ### 6.6 Improve the Resident mobile experience
-- Break up overly long content areas.
-- Create a clearer hierarchy for balance, payments, requests, and building info.
-- Promote common actions to the top of the screen.
-- Make section jumps clearer if they are still needed.
+- [x] Break up overly long content areas.
+- [x] Create a clearer hierarchy for balance, payments, requests, and building info.
+- [x] Promote common actions to the top of the screen.
+- [x] Make section jumps clearer if they are still needed.
 
 ### 6.7 Improve Admin / PM / Tech mobile screens
-- Shift focus from "information screens" to "action screens".
-- Reduce decorative areas at the top of pages.
-- Bring queue, tasks, alerts, and shortcuts forward.
+- [x] Shift focus from "information screens" to "action screens".
+- [x] Reduce decorative areas at the top of pages.
+- [x] Bring queue, tasks, alerts, and shortcuts forward.
 
 ### 6.8 Improve gardens on mobile
-- Ensure month/calendar views remain readable on mobile.
-- Improve touch interactions, sticky actions, and ease of submit/approve flows.
-- Avoid oversized cards on operational work screens.
+- [x] Ensure month/calendar views remain readable on mobile.
+- [x] Improve touch interactions, sticky actions, and ease of submit/approve flows.
+- [x] Avoid oversized cards on operational work screens.
 
 ### 6.9 Responsive QA
-- iPhone SE / 375px.
-- Small Android viewport.
-- Narrow tablet.
-- RTL + Hebrew.
-- Basic landscape coverage for critical screens.
+- [x] iPhone SE / 375px.
+- [x] Small Android viewport.
+- [x] Narrow tablet.
+- [x] RTL + Hebrew.
+- [ ] Basic landscape coverage for critical screens.
+
+#### Sprint 6 implementation notes
+- Reviewed [wasp-lang/open-saas](https://github.com/wasp-lang/open-saas) for mobile layout inspiration and extracted five key principles (single-column mobile, compact status, consistent radii, action-first above-fold, restrained decoration).
+- Aligned implementation with the internal `mobile-ux-redesign-spec.md` Phase 1 priorities: reduced tile heights, standardized icon containers, scaled down blur orbs, tightened typography hierarchy, and corrected TECH role navigation.
+- **Core UI components:** `MobileActionHub` tile min-heights reduced (96→88px grid, 120→100px primary hierarchy); icon containers standardized to h-10 w-10 (40px); border radius unified to `rounded-2xl` on mobile. `PageHero` blur orbs scaled from h-36/h-32 to h-24/h-20 on mobile, title reduced from 1.4rem to `text-lg`, padding tightened. `RoleHomeShell` quick action tiles reduced from 104→88px, metric values use `font-extrabold` + `tabular-nums`.
+- **Landing page:** Hero title reduced from `text-3xl` to `text-2xl`, audience cards more compact (p-3, smaller icons), quick-start aside hidden on mobile (`lg:block`) to keep CTA above fold, content gap reduced.
+- **Login page:** Form card header compacted (smaller icon, title `text-xl`), trust points in single column until `md`, marketing section hidden on very small screens (form-first), heading reduced to `text-2xl`.
+- **Role selection:** Title compacted to `text-xl`, workspace cards use smaller icons and tighter spacing on mobile, helper text reduced in size and padding.
+- **Bottom navigation:** Tab min-height reduced from 58→52px, icon containers from h-9→h-8 (32px), border radius standardized to `rounded-2xl`/`rounded-xl`, consistent `strokeWidth={1.75}`. TECH role 4th tab changed from supervision to status updates (`/tickets?mine=true`) per spec §3.2.
+- **Resident account:** Vertical spacing tightened from `space-y-4` to `space-y-3`, info section cards compacted with `p-3` and `rounded-2xl` on mobile, row link border radius unified.
+- **Management homes:** Outer spacing reduced from `space-y-5` to `space-y-3` on mobile so status strip + primary action + quick actions + inbox fit within first viewport.
+- **Gardens module:** Shell header compacted (smaller icon, `text-xl` title, `text-[13px]` description, tighter padding), module nav rounded-2xl on mobile, resume panel compact. Manager home uses `mobileCompact` on PageHero, metric cards use smaller padding and `font-extrabold`, month cards denser with tighter headers, smaller icons, and compact inner panels. MonthGrid header reduced to `text-lg`, DayCell dialog uses compact mobile padding.
+- Cross-device QA was reviewed structurally against 375px (iPhone SE), small Android, and narrow tablet breakpoints. All responsive classes target appropriate breakpoints (`sm:`, `md:`, `lg:`). RTL/Hebrew: existing logical properties (`ms-`, `me-`, `ps-`, `pe-`) and `icon-directional` class preserved across all changes. Landscape-specific coverage is pending real-browser testing.
 
 ---
 
