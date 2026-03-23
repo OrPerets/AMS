@@ -7,7 +7,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { PasswordInput } from '../components/ui/password-input';
 import { useFormValidation } from '../hooks/use-form-validation';
-import { getDefaultRoute, getPortalEntryRoute, getTokenPayload, login, shouldRouteToWorkerHub } from '../lib/auth';
+import { getDefaultRoute, getPortalEntryRoute, getTokenPayload, login } from '../lib/auth';
 import { useDirection, useLocale } from '../lib/providers';
 
 export default function LoginPage() {

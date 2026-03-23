@@ -42,7 +42,9 @@ function getMobileRouteContext(pathname: string) {
     { match: /^\/home$|^\/$/, title: 'מרכז העבודה', subtitle: 'הפעולות והסיכונים של היום', icon: Home },
     { match: /^\/notifications/, title: 'התראות ועדכונים', subtitle: 'פיד חי, מסננים והעדפות', icon: Bell },
     { match: /^\/settings/, title: 'הגדרות אישיות', subtitle: 'חשבון, אבטחה ושפה', icon: SettingsIcon },
-    { match: /^\/resident\/account/, title: 'האזור האישי', subtitle: 'תשלומים, מסמכים ופניות', icon: CreditCard },
+    { match: /^\/resident\/account/, title: 'האזור האישי', subtitle: 'פעולות היום, מצב החשבון ועדכונים', icon: Home },
+    { match: /^\/resident\/building/, title: 'הבניין שלי', subtitle: 'אנשי קשר, הנחיות ומתקנים', icon: Building2 },
+    { match: /^\/resident\/payment-methods/, title: 'שיטות תשלום', subtitle: 'כרטיסים שמורים וחיוב אוטומטי', icon: CreditCard },
     { match: /^\/resident\/requests/, title: 'בקשות דייר', subtitle: 'פעולות שירות עצמי במקום אחד', icon: ClipboardList },
     { match: /^\/tickets/, title: 'לוח קריאות', subtitle: 'תור העבודה והעדכונים האחרונים', icon: Wrench },
     { match: /^\/buildings/, title: 'בניינים ונכסים', subtitle: 'קודים, פרטים ואנשי קשר', icon: Building2 },
@@ -151,7 +153,7 @@ export default function Header({
   }, [notifications]);
   const mobileContext = useMemo(() => getMobileRouteContext(router.pathname), [router.pathname]);
   const MobileContextIcon = mobileContext.icon;
-  const isResidentMobileRoute = /^\/resident\/(account|requests)/.test(router.pathname);
+  const isResidentMobileRoute = /^\/resident\/(account|building|payment-methods|requests)/.test(router.pathname);
 
   const navigateToInbox = () => {
     setPreviewOpen(false);

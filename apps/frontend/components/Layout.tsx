@@ -31,7 +31,7 @@ export default function Layout({ children }: Props) {
   const { t } = useLocale();
   const { totalOffset } = useBottomSurface();
   const router = useRouter();
-  const publicRoutes = new Set(['/', '/404', '/_error', '/login', '/privacy', '/terms', '/support', '/role-selection', '/worker-hub']);
+  const publicRoutes = new Set(['/', '/404', '/_error', '/login', '/privacy', '/terms', '/support', '/role-selection']);
   const isPublicRoute = publicRoutes.has(router.pathname);
 
   useEffect(() => {

@@ -90,8 +90,14 @@ export default function ResidentPaymentsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!router.isReady) return;
+    const section = typeof router.query.section === 'string' ? router.query.section : '';
+    if (section === 'methods') {
+      void router.replace('/resident/payment-methods');
+      return;
+    }
     void loadPage();
-  }, []);
+  }, [router.isReady, router.query.section]);
 
   useEffect(() => {
     if (!router.isReady) return;
