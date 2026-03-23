@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
 import { Bell, Building2, ClipboardList, Sparkles, Ticket } from 'lucide-react';
 import { authFetch, getCurrentUserId, getEffectiveRole } from '../lib/auth';
 import { formatCurrency, formatDate } from '../lib/utils';
@@ -192,6 +193,7 @@ type ResidentHomeData = {
 };
 
 export default function HomePage() {
+  const router = useRouter();
   const [role, setRole] = useState<RoleKey>('RESIDENT');
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -208,8 +210,12 @@ export default function HomePage() {
     if (!mounted) return;
     const effectiveRole = (getEffectiveRole() as RoleKey) || 'RESIDENT';
     setRole(effectiveRole);
+    if (effectiveRole === 'RESIDENT') {
+      void router.replace('/resident/account');
+      return;
+    }
     void loadBlueprint(effectiveRole);
-  }, [mounted]);
+  }, [mounted, router]);
 
   useEffect(() => {
     if (!mounted || !currentUserId) return;
@@ -250,6 +256,10 @@ export default function HomePage() {
   }
 
   if (!mounted || loading || !blueprint) {
+    return <MobileCardSkeleton cards={4} />;
+  }
+
+  if (role === 'RESIDENT') {
     return <MobileCardSkeleton cards={4} />;
   }
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { CreditCard, Download, Receipt, ShieldCheck } from 'lucide-react';
+import { ChevronDown, ChevronUp, CreditCard, Download, Receipt, ShieldCheck } from 'lucide-react';
 import { authFetch, downloadAuthenticatedFile } from '../../lib/auth';
 import { formatCurrency, formatDate, humanizeEnum } from '../../lib/utils';
 import { toast } from '../../components/ui/use-toast';
@@ -88,6 +88,8 @@ export default function ResidentPaymentsPage() {
   const [processingInvoiceId, setProcessingInvoiceId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showMethods, setShowMethods] = useState(false);
+  const [showLedger, setShowLedger] = useState(false);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -204,8 +206,8 @@ export default function ResidentPaymentsPage() {
   const primaryBuilding = context.units[0]?.building?.name;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="md:hidden space-y-3">
+    <div dir="rtl" className="space-y-4 text-right sm:space-y-6">
+      <div className="space-y-3">
         <CompactStatusStrip
           roleLabel={primaryBuilding ? `דייר · ${primaryBuilding}` : 'דייר'}
           icon={<CreditCard className="h-4 w-4" strokeWidth={1.75} />}
@@ -221,7 +223,7 @@ export default function ResidentPaymentsPage() {
           description={
             nextPaymentDue
               ? `${nextPaymentDue.description} · מועד ${formatDate(nextPaymentDue.dueDate, locale)}`
-              : 'החשבון שלך מעודכן. אפשר לעבור לכרטסת או למסמכים.'
+              : 'החשבון שלך מעודכן.'
           }
           ctaLabel={nextPaymentDue ? 'שלם עכשיו' : 'חזור לחשבון'}
           href={nextPaymentDue ? undefined : '/resident/account'}
@@ -230,77 +232,44 @@ export default function ResidentPaymentsPage() {
         />
       </div>
 
-      <div className="hidden md:block">
-        <Card variant="elevated">
-          <CardHeader>
-            <CardTitle>תשלומי דייר</CardTitle>
-            <CardDescription>מסך ייעודי לחיובים, קבלות וכרטיסים שמורים.</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-        <Card variant="elevated">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-primary" strokeWidth={1.75} />
-              חיוב אוטומטי ואמצעי תשלום
-            </CardTitle>
-            <CardDescription>הסבר ברור על איך הכרטיס נשמר ומתי המערכת תחייב אוטומטית.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-2xl border border-subtle-border bg-muted/30 p-3">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="font-semibold text-foreground">חיוב אוטומטי</div>
-                  <div className="text-sm leading-6 text-secondary-foreground">
-                    כשהאפשרות פעילה, חשבוניות עתידיות יחויבו דרך הכרטיס הראשי שנשמר אצל ספק הסליקה.
-                  </div>
-                </div>
-                <Switch checked={autopayEnabled} onCheckedChange={(checked) => void toggleAutopay(checked)} aria-label="הפעלת חיוב אוטומטי" />
-              </div>
+      <Card variant="elevated" className="rounded-[28px] border-0 bg-[linear-gradient(180deg,rgba(37,99,235,0.08)_0%,rgba(255,255,255,1)_100%)]">
+        <CardContent className="space-y-4 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-black text-foreground">תשלומים</h1>
+              <p className="text-sm text-secondary-foreground">מה פתוח ומה צריך לשלם עכשיו</p>
             </div>
+            <div className="rounded-full bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
+              {finance.summary.unpaidInvoices ? `${finance.summary.unpaidInvoices} פתוחים` : 'מעודכן'}
+            </div>
+          </div>
 
-            {paymentMethods.length ? (
-              paymentMethods.map((method) => (
-                <div key={method.id} className="rounded-2xl border border-subtle-border bg-background p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <div className="font-semibold text-foreground">
-                        {translateCardBrand(method.brand || method.provider)} •••• {method.last4 || '••••'}
-                      </div>
-                      <div className="text-sm text-secondary-foreground">
-                        תוקף {method.expMonth || '--'}/{method.expYear || '--'}{method.networkTokenized ? ' · נשמר בצורה מאובטחת' : ''}
-                      </div>
-                    </div>
-                    {method.isDefault ? <Badge variant="success">כרטיס ראשי</Badge> : null}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <EmptyState
-                type="action"
-                size="sm"
-                title="עדיין אין כרטיס שמור"
-                description="כדי להפעיל חיוב אוטומטי נדרש קודם להוסיף אמצעי תשלום דרך הטופס המאובטח."
-                action={{ label: 'פתח פנייה לצוות', onClick: () => router.push('/support'), variant: 'outline' }}
-              />
-            )}
-          </CardContent>
-        </Card>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <QuickMetric label="יתרה" value={formatCurrency(finance.summary.currentBalance)} />
+            <QuickMetric label="פתוחים" value={finance.summary.unpaidInvoices} />
+            <QuickMetric label="בפיגור" value={finance.summary.overdueInvoices} />
+          </div>
+        </CardContent>
+      </Card>
 
-        <Card variant="elevated">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+      <Card variant="elevated" className="rounded-[28px] border-subtle-border/70">
+        <CardContent className="space-y-3 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
               <Receipt className="h-5 w-5 text-primary" strokeWidth={1.75} />
-              חשבוניות וקבלות
-            </CardTitle>
-            <CardDescription>סטטוסים ברורים לכל תשלום, כולל גישה מהירה להורדות.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {finance.invoices.length ? (
-              finance.invoices.map((invoice) => (
-                <div key={invoice.id} className="rounded-2xl border border-subtle-border bg-background p-3">
+              <div className="text-lg font-semibold text-foreground">חיובים פתוחים</div>
+            </div>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/resident/payment-methods">שיטות תשלום</Link>
+            </Button>
+          </div>
+
+          {finance.invoices.length ? (
+            finance.invoices
+              .slice()
+              .sort((a, b) => Number(payableStatuses.has(b.status)) - Number(payableStatuses.has(a.status)) || new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+              .map((invoice) => (
+                <div key={invoice.id} className="rounded-[22px] border border-subtle-border bg-background p-3.5">
                   <div className="flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -330,35 +299,103 @@ export default function ResidentPaymentsPage() {
                   </div>
                 </div>
               ))
-            ) : (
-              <EmptyState type="empty" size="sm" title="אין כרגע חשבוניות להצגה" description="כאשר תופיע דרישת תשלום חדשה או קבלה, היא תופיע כאן." />
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card variant="muted">
-        <CardHeader>
-          <CardTitle>כרטסת אחרונה</CardTitle>
-          <CardDescription>תנועות אחרונות בחשבון, בשפה ברורה.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {finance.ledger.slice(0, 10).map((entry) => (
-            <div key={entry.id} className="flex items-center justify-between gap-3 rounded-2xl border border-subtle-border bg-background px-3 py-2.5">
-              <div>
-                <div className="text-sm font-medium text-foreground">{entry.summary}</div>
-                <div className="text-[12px] leading-5 text-secondary-foreground">{formatDate(entry.createdAt, locale)}</div>
-              </div>
-              <div className="text-sm font-semibold tabular-nums text-foreground">{formatCurrency(entry.amount)}</div>
-            </div>
-          ))}
-          <div className="pt-2">
-            <Button variant="outline" asChild>
-              <Link href="/resident/account">חזור לאזור האישי</Link>
-            </Button>
-          </div>
+          ) : (
+            <EmptyState type="empty" size="sm" title="אין כרגע חשבוניות להצגה" description="כאשר יופיע חיוב חדש, נראה אותו כאן." />
+          )}
         </CardContent>
       </Card>
+
+      <Card variant="muted" className="rounded-[24px] border-subtle-border/80">
+        <CardContent className="space-y-4 p-4">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between text-right"
+            onClick={() => setShowMethods((current) => !current)}
+          >
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-primary" strokeWidth={1.75} />
+              <span className="font-semibold text-foreground">חיוב אוטומטי וכרטיסים</span>
+            </div>
+            {showMethods ? <ChevronUp className="h-4 w-4 text-secondary-foreground" /> : <ChevronDown className="h-4 w-4 text-secondary-foreground" />}
+          </button>
+
+          {showMethods ? (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-4 rounded-[20px] border border-subtle-border bg-background p-3">
+                <div>
+                  <div className="font-semibold text-foreground">חיוב אוטומטי</div>
+                  <div className="text-sm text-secondary-foreground">תשלום עתידי דרך הכרטיס הראשי.</div>
+                </div>
+                <Switch checked={autopayEnabled} onCheckedChange={(checked) => void toggleAutopay(checked)} aria-label="הפעלת חיוב אוטומטי" />
+              </div>
+
+              {paymentMethods.length ? (
+                paymentMethods.map((method) => (
+                  <div key={method.id} className="rounded-[20px] border border-subtle-border bg-background p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="font-semibold text-foreground">
+                          {translateCardBrand(method.brand || method.provider)} •••• {method.last4 || '••••'}
+                        </div>
+                        <div className="text-sm text-secondary-foreground">
+                          תוקף {method.expMonth || '--'}/{method.expYear || '--'}
+                        </div>
+                      </div>
+                      {method.isDefault ? <Badge variant="success">ראשי</Badge> : null}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <EmptyState
+                  type="action"
+                  size="sm"
+                  title="אין כרטיס שמור"
+                  description="אפשר לפנות לתמיכה או להיכנס למסך שיטות תשלום."
+                  action={{ label: 'שיטות תשלום', onClick: () => void router.push('/resident/payment-methods'), variant: 'outline' }}
+                />
+              )}
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Card variant="muted" className="rounded-[24px] border-subtle-border/80">
+        <CardContent className="space-y-4 p-4">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between text-right"
+            onClick={() => setShowLedger((current) => !current)}
+          >
+            <span className="font-semibold text-foreground">היסטוריה אחרונה</span>
+            {showLedger ? <ChevronUp className="h-4 w-4 text-secondary-foreground" /> : <ChevronDown className="h-4 w-4 text-secondary-foreground" />}
+          </button>
+
+          {showLedger ? (
+            <div className="space-y-2">
+              {finance.ledger.slice(0, 10).map((entry) => (
+                <div key={entry.id} className="flex items-center justify-between gap-3 rounded-[18px] border border-subtle-border bg-background px-3 py-2.5">
+                  <div>
+                    <div className="text-sm font-medium text-foreground">{entry.summary}</div>
+                    <div className="text-[12px] leading-5 text-secondary-foreground">{formatDate(entry.createdAt, locale)}</div>
+                  </div>
+                  <div className="text-sm font-semibold tabular-nums text-foreground">{formatCurrency(entry.amount)}</div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function QuickMetric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-[18px] border border-subtle-border bg-background px-3 py-3">
+      <div className="text-sm font-bold text-foreground">
+        <bdi>{value}</bdi>
+      </div>
+      <div className="mt-1 text-xs text-secondary-foreground">{label}</div>
     </div>
   );
 }

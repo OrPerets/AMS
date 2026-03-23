@@ -102,10 +102,11 @@ function PriorityInboxItemCard({
     >
       <div
         className={cn(
-          'pointer-events-none absolute inset-y-0 flex items-center px-4 text-[11px] font-semibold',
+          'pointer-events-none absolute inset-y-0 flex items-center px-4 text-[11px] font-semibold transition-opacity duration-150',
           swipeDirection === 1 ? 'left-0 justify-start' : 'right-0 justify-end',
           actionToneClasses(action.tone),
         )}
+        style={{ opacity: Math.abs(offset) > 10 ? 1 : 0 }}
         aria-hidden="true"
       >
         {action.label}
@@ -113,7 +114,7 @@ function PriorityInboxItemCard({
 
       <motion.div
         className={cn(
-          'rounded-2xl border border-subtle-border bg-background/88 p-3 will-change-transform',
+          'rounded-2xl border border-subtle-border bg-background p-3 will-change-transform',
           hold.isHolding && 'shadow-raised ring-1 ring-primary/14',
         )}
         layout
@@ -177,7 +178,7 @@ function PriorityInboxItemCard({
               ) : null}
             </div>
             <div className="text-sm font-semibold text-foreground">{item.title}</div>
-            <div className="text-[13px] leading-5 text-secondary-foreground">{item.reason}</div>
+            <div className="line-clamp-2 text-[13px] leading-5 text-secondary-foreground">{item.reason}</div>
           </div>
           <CircleAlert className={cn('mt-0.5 h-4 w-4 shrink-0', item.tone === 'danger' ? 'text-destructive' : item.tone === 'warning' ? 'text-warning' : 'text-primary')} strokeWidth={1.75} />
         </div>

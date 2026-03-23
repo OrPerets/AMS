@@ -1,20 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { 
-  Phone, 
   Building, 
   MapPin, 
   AlertTriangle,
   Camera,
   Send,
-  ArrowLeft
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { authFetch } from '../lib/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
-import { Badge } from '../components/ui/badge';
 import { toast } from '../components/ui/use-toast';
 import { getTokenPayload } from '../lib/auth';
 import { triggerHaptic } from '../lib/mobile';
@@ -45,6 +45,7 @@ export default function CreateCall() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [showLocationEditor, setShowLocationEditor] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
@@ -86,6 +87,7 @@ export default function CreateCall() {
             const unit = userData.resident.units[0];
             setSelectedBuilding(unit.buildingId);
             setSelectedUnit(unit.id);
+            setShowLocationEditor(false);
           }
         }
       }
@@ -126,7 +128,7 @@ export default function CreateCall() {
   };
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
+    const files = Array.from(event.target.files || []) as File[];
     setPhotos(prev => [...prev, ...files]);
   };
 
@@ -196,9 +198,8 @@ export default function CreateCall() {
         setPhotos([]);
         setSeverity('HIGH');
         
-        // Redirect to tickets page or show success message
         setTimeout(() => {
-          router.push('/tickets');
+          router.push(userInfo?.role === 'RESIDENT' ? '/resident/account' : '/tickets');
         }, 2000);
       } else {
         const error = await response.json();
@@ -250,8 +251,7 @@ export default function CreateCall() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-24 md:pb-0">
-      {/* Header */}
+    <div dir="rtl" className="mx-auto max-w-2xl space-y-5 pb-32 text-right md:pb-20">
       <div className="flex items-center gap-4">
         <Button 
           variant="ghost" 
@@ -261,107 +261,74 @@ export default function CreateCall() {
           <ArrowLeft className="h-4 w-4 icon-directional" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">פתיחת קריאת שירות</h1>
-          <p className="text-muted-foreground">
-            דווח על בעיה שדורשת טיפול טכני
-          </p>
+          <h1 className="text-3xl font-black tracking-tight">קריאה / תקלה</h1>
+          <p className="text-sm text-muted-foreground">מצלמים, כותבים קצר, שולחים.</p>
         </div>
       </div>
 
-      {/* User Info */}
-      {userInfo && (
-        <Card className="bg-blue-50 border-blue-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Phone className="h-5 w-5 text-blue-600" />
-              מידע אישי
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-medium">{userInfo.email}</span>
-              <Badge variant="outline">{userInfo.role === 'RESIDENT' ? 'דייר' : userInfo.role}</Badge>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <PrimaryLocationCard
+        selectedBuilding={buildings.find((item) => item.id === selectedBuilding)}
+        selectedUnit={units.find((item) => item.id === selectedUnit)}
+        showLocationEditor={showLocationEditor}
+        onToggle={() => setShowLocationEditor((current) => !current)}
+      />
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Building Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building className="h-5 w-5" />
-              בחירת בניין
-            </CardTitle>
-            <CardDescription>
-              בחר את הבניין שבו נמצאת הבעיה
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Input
-              placeholder="חיפוש לפי כתובת או שם בניין"
-              value={buildingQuery}
-              onChange={(e) => setBuildingQuery(e.target.value)}
-              className="mb-3"
-            />
-            <select
-              value={selectedBuilding}
-              onChange={(e) => setSelectedBuilding(Number(e.target.value) || '')}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              required
-            >
-              <option value="">בחר בניין...</option>
-              {filteredBuildings.map((building) => (
-                <option key={building.id} value={building.id}>
-                  {building.address}
-                </option>
-              ))}
-            </select>
-          </CardContent>
-        </Card>
-
-        {/* Unit Selection */}
-        {selectedBuilding && (
+      <form id="create-call-form" onSubmit={handleSubmit} className="space-y-6">
+        {showLocationEditor ? (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                בחירת יחידה
+                <Building className="h-5 w-5" />
+                מיקום התקלה
               </CardTitle>
-              <CardDescription>
-                בחר את היחידה הספציפית
-              </CardDescription>
+              <CardDescription>אפשר לשנות בניין או דירה לפני השליחה.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
+              <Input
+                placeholder="חיפוש לפי כתובת או שם בניין"
+                value={buildingQuery}
+                onChange={(e) => setBuildingQuery(e.target.value)}
+              />
               <select
-                value={selectedUnit}
-                onChange={(e) => setSelectedUnit(Number(e.target.value) || '')}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={selectedBuilding}
+                onChange={(e) => setSelectedBuilding(Number(e.target.value) || '')}
+                className="flex h-12 w-full rounded-2xl border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 required
               >
-                <option value="">בחר יחידה...</option>
-                {units.map((unit) => (
-                  <option key={unit.id} value={unit.id}>
-                    יחידה {unit.number}
+                <option value="">בחר בניין...</option>
+                {filteredBuildings.map((building) => (
+                  <option key={building.id} value={building.id}>
+                    {building.address}
                   </option>
                 ))}
               </select>
+
+              {selectedBuilding ? (
+                <select
+                  value={selectedUnit}
+                  onChange={(e) => setSelectedUnit(Number(e.target.value) || '')}
+                  className="flex h-12 w-full rounded-2xl border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  required
+                >
+                  <option value="">בחר יחידה...</option>
+                  {units.map((unit) => (
+                    <option key={unit.id} value={unit.id}>
+                      יחידה {unit.number}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
             </CardContent>
           </Card>
-        )}
+        ) : null}
 
-        {/* Severity Selection */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
-              רמת חומרה
+              דחיפות
             </CardTitle>
-            <CardDescription>
-              בחר את רמת החומרה של הבעיה
-            </CardDescription>
+            <CardDescription>בחר מה הכי דחוף.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-4">
@@ -370,51 +337,43 @@ export default function CreateCall() {
                   key={level}
                   type="button"
                   onClick={() => setSeverity(level)}
-                  className={`p-4 border rounded-lg text-center transition-colors ${
+                  className={`min-h-[92px] rounded-[24px] border p-4 text-center transition-all ${
                     severity === level
-                      ? 'border-primary bg-primary/10 text-primary'
+                      ? 'border-primary bg-primary/10 text-primary shadow-[0_14px_28px_rgba(59,130,246,0.14)]'
                       : 'border-border hover:bg-muted'
                   }`}
                 >
                   <div className="font-medium">{getSeverityLabel(level)}</div>
-                  <Badge variant={getSeverityColor(level)} className="mt-2">
-                    {level}
-                  </Badge>
+                  <div className="mt-2 text-xs text-muted-foreground">{getSeverityHint(level)}</div>
                 </button>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* Description */}
         <Card>
           <CardHeader>
-            <CardTitle>פתיחת קריאה</CardTitle>
-            <CardDescription>
-              תאר בפירוט את הבעיה שדורשת טיפול
-            </CardDescription>
+            <CardTitle>מה קרה?</CardTitle>
+            <CardDescription>תיאור קצר וברור.</CardDescription>
           </CardHeader>
           <CardContent>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="תאר את הבעיה בפירוט... (למשל: ברז דולף, בעיית חשמל, בעיית מיזוג אוויר וכו')"
+              placeholder="למשל: יש נזילה מתחת לכיור במטבח."
               className="min-h-[120px]"
               required
             />
           </CardContent>
         </Card>
 
-        {/* Photo Upload */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Camera className="h-5 w-5" />
-              צירוף תמונות (אופציונלי)
+              תמונות
             </CardTitle>
-            <CardDescription>
-              בטלפון, צילום חדש הוא הדרך המהירה ביותר להסביר את התקלה. אפשר גם לבחור מהגלריה.
-            </CardDescription>
+            <CardDescription>צילום חדש הוא הדרך המהירה ביותר להסביר תקלה.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -437,17 +396,17 @@ export default function CreateCall() {
               />
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <Button type="button" onClick={openCameraPicker} className="min-h-14 w-full text-base">
+                <Button type="button" onClick={openCameraPicker} className="min-h-16 w-full rounded-[24px] text-base shadow-[0_14px_32px_rgba(59,130,246,0.18)]">
                   <Camera className="mr-2 h-4 w-4" />
                   צלם תקלה עכשיו
                 </Button>
-                <Button type="button" variant="outline" onClick={openGalleryPicker} className="min-h-14 w-full">
+                <Button type="button" variant="outline" onClick={openGalleryPicker} className="min-h-16 w-full rounded-[24px]">
                   בחר מהגלריה
                 </Button>
               </div>
 
-              <div className="rounded-lg border border-dashed border-primary/25 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
-                אם התקלה נראית לעין, צילום אחד או שניים בדרך כלל מקצרים את זמן הטיפול.
+              <div className="rounded-[20px] border border-dashed border-primary/25 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+                תמונה אחת או שתיים בדרך כלל מספיקות.
               </div>
               
               {photos.length > 0 && (
@@ -476,34 +435,83 @@ export default function CreateCall() {
           </CardContent>
         </Card>
 
-        {/* Submit Button */}
-        <Card>
-          <CardContent className="pt-6">
-            <Button 
-              type="submit" 
-              className="w-full" 
-              size="lg"
-              disabled={submitting}
-            >
-              {submitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                  שולח קריאה...
-                </>
-              ) : (
-                <>
-                  <Send className="mr-2 h-4 w-4" />
-                  פתח קריאת שירות
-                </>
-              )}
-            </Button>
-            
-            <p className="text-sm text-muted-foreground text-center mt-4">
-              הקריאה תועבר מיד לצוות הטכני ותופיע בלוח הקריאות של מאיה
-            </p>
-          </CardContent>
-        </Card>
       </form>
+
+      <div className="fixed inset-x-0 bottom-20 z-30 mx-auto max-w-2xl px-4 md:bottom-6">
+        <div className="rounded-[28px] border border-subtle-border bg-background/95 p-3 shadow-[0_20px_45px_rgba(15,23,42,0.16)] backdrop-blur">
+          <div className="mb-2 text-center text-xs text-muted-foreground">
+            {selectedUnit && description.trim() ? 'הכול מוכן לשליחה' : 'בחר מיקום וכתוב תיאור קצר'}
+          </div>
+          <Button 
+            type="submit"
+            form="create-call-form"
+            className="min-h-[56px] w-full rounded-[22px] text-base"
+            size="lg"
+            disabled={submitting}
+          >
+            {submitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                שולח...
+              </>
+            ) : (
+              <>
+                <Send className="mr-2 h-4 w-4" />
+                פתח קריאה
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
     </div>
   );
+}
+
+function PrimaryLocationCard({
+  selectedBuilding,
+  selectedUnit,
+  showLocationEditor,
+  onToggle,
+}: {
+  selectedBuilding?: Building;
+  selectedUnit?: Unit;
+  showLocationEditor: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <Card className="rounded-[28px] border-0 bg-[linear-gradient(180deg,rgba(37,99,235,0.08)_0%,rgba(255,255,255,1)_100%)]">
+      <CardContent className="space-y-3 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">מיקום</div>
+            <div className="mt-2 text-lg font-bold text-foreground">
+              {selectedBuilding ? selectedBuilding.name : 'בחר בניין'}
+            </div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              {selectedUnit ? `יחידה ${selectedUnit.number}` : 'צריך לבחור דירה לפני השליחה'}
+            </div>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={onToggle} className="rounded-full">
+            {showLocationEditor ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {showLocationEditor ? 'סגור' : 'שנה מיקום'}
+          </Button>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5 text-primary" />
+          אם זו תקלה בדירה אחרת, שנה כאן את המיקום.
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function getSeverityHint(level: string) {
+  switch (level) {
+    case 'URGENT':
+      return 'סיכון מיידי';
+    case 'HIGH':
+      return 'צריך טיפול היום';
+    default:
+      return 'אפשר גם בהמשך';
+  }
 }

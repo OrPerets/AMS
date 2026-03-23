@@ -1,20 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import {
-  AlertTriangle,
-  Building2,
-  Mail,
-  Phone,
-  Wrench,
-} from 'lucide-react';
+import { AlertTriangle, Building2, Mail, Phone, Wrench } from 'lucide-react';
 import { authFetch } from '../../lib/auth';
-import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
+import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
 import { EmptyState } from '../../components/ui/empty-state';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
-import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 
 type AccountContext = {
@@ -39,17 +32,14 @@ type AccountContext = {
 
 function getBuildingGuidance(notes?: string | null) {
   if (!notes?.trim()) {
-    return [
-      'במקרה חירום מחוץ לשעות הפעילות מומלץ ליצור קשר עם נציג הבניין או לפתוח קריאה דחופה.',
-      'מסמכי ועד, פרוטוקולים ועדכונים שוטפים זמינים באזור המסמכים.',
-    ];
+    return ['מוקד התמיכה זמין דרך צור קשר או פתיחת קריאה.', 'עדכונים ומסמכי ועד זמינים באזור המסמכים.'];
   }
 
   return notes
     .split(/\r?\n/)
-    .map((item) => item.trim())
+    .map((line) => line.trim())
     .filter(Boolean)
-    .slice(0, 4);
+    .slice(0, 2);
 }
 
 export default function ResidentBuildingPage() {
@@ -72,15 +62,15 @@ export default function ResidentBuildingPage() {
       setContext(await response.json());
     } catch (nextError) {
       console.error(nextError);
-      setError('לא ניתן לטעון כרגע את פרטי הבניין. נסו שוב בעוד רגע.');
+      setError('לא ניתן לטעון כרגע את פרטי הבניין.');
     } finally {
       setLoading(false);
     }
   }
 
   const primaryUnit = context?.units[0] ?? null;
-  const primaryBuilding = primaryUnit?.building ?? null;
-  const buildingGuidance = useMemo(() => getBuildingGuidance(primaryBuilding?.notes), [primaryBuilding?.notes]);
+  const building = primaryUnit?.building ?? null;
+  const guidance = useMemo(() => getBuildingGuidance(building?.notes), [building?.notes]);
 
   if (loading) return <DetailPanelSkeleton />;
   if (error || !context) {
@@ -88,134 +78,152 @@ export default function ResidentBuildingPage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="space-y-3 md:hidden">
-        <CompactStatusStrip
-          roleLabel={primaryBuilding?.name ? `דייר · ${primaryBuilding.name}` : 'דייר'}
-          icon={<Building2 className="h-4 w-4" strokeWidth={1.75} />}
-          metrics={[
-            { id: 'units', label: 'יחידות', value: Number(primaryBuilding?.totalUnits || 0), tone: 'default' },
-            { id: 'floors', label: 'קומות', value: Number(primaryBuilding?.floors || 0), tone: 'default' },
-          ]}
+    <div dir="rtl" className="space-y-4 pb-20 text-right sm:space-y-6 lg:pb-0">
+      <CompactStatusStrip
+        roleLabel={building?.name ? `${building.name} · דירה ${primaryUnit?.number}` : 'הבניין שלי'}
+        icon={<Building2 className="h-4 w-4" strokeWidth={1.75} />}
+        metrics={[
+          { id: 'units', label: 'יחידות', value: Number(building?.totalUnits || 0), tone: 'default' },
+          { id: 'floors', label: 'קומות', value: Number(building?.floors || 0), tone: 'default' },
+        ]}
+      />
+
+      <PrimaryActionCard
+        eyebrow="איש קשר"
+        title={building?.managerName || 'צוות הבניין'}
+        description={building?.contactPhone ? `זמין בטלפון ${building.contactPhone}` : 'צריך עזרה? אפשר לפתוח קריאה או לפנות לתמיכה.'}
+        ctaLabel={building?.contactPhone ? 'התקשר' : 'פתח קריאה'}
+        href={building?.contactPhone ? `tel:${building.contactPhone}` : '/create-call'}
+        tone={building?.contactPhone ? 'default' : 'warning'}
+        secondaryAction={
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/support">צור קשר</Link>
+          </Button>
+        }
+      />
+
+      <Card variant="elevated" className="rounded-[28px] border-0 bg-[linear-gradient(180deg,rgba(37,99,235,0.08)_0%,rgba(255,255,255,1)_100%)]">
+        <CardContent className="space-y-4 p-4">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary-foreground">המיקום שלך</div>
+            <h1 className="mt-2 text-2xl font-black text-foreground">{building?.name || 'הבניין שלך'}</h1>
+            <p className="mt-1 text-sm text-secondary-foreground">{building?.address || 'הכתובת תופיע כאן לאחר שיושלם השיוך ליחידה.'}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <MiniInfoCard label="דירה" value={primaryUnit?.number || '-'} />
+            <MiniInfoCard label="סטטוס" value={building?.isActive === false ? 'לא פעיל' : 'פעיל'} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <section className="grid gap-3 md:grid-cols-2">
+        <ContactTile
+          icon={<Phone className="h-4 w-4 text-primary" strokeWidth={1.75} />}
+          title="טלפון"
+          value={building?.contactPhone || 'לא עודכן'}
+          href={building?.contactPhone ? `tel:${building.contactPhone}` : undefined}
         />
-
-        <PrimaryActionCard
-          eyebrow="איש קשר ראשי"
-          title={primaryBuilding?.managerName || 'נציג הבניין יעודכן בקרוב'}
-          description={primaryBuilding?.contactPhone || primaryBuilding?.contactEmail || 'אפשר לעבור לתמיכה או לפתוח קריאה חדשה ישירות מהנייד.'}
-          ctaLabel={primaryBuilding?.contactPhone ? 'התקשר עכשיו' : 'פתח קריאה'}
-          href={primaryBuilding?.contactPhone ? `tel:${primaryBuilding.contactPhone}` : '/create-call'}
-          tone={primaryBuilding?.isActive === false ? 'warning' : 'default'}
+        <ContactTile
+          icon={<Mail className="h-4 w-4 text-primary" strokeWidth={1.75} />}
+          title="אימייל"
+          value={building?.contactEmail || 'לא עודכן'}
+          href={building?.contactEmail ? `mailto:${building.contactEmail}` : undefined}
         />
-      </div>
+      </section>
 
-      <div className="hidden md:block">
-        <Card variant="elevated">
-          <CardHeader>
-            <CardTitle>הבניין שלי</CardTitle>
-            <CardDescription>מסך ממוקד עם אנשי קשר, הנחיות חירום ושירותי הבניין.</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-        <Card variant="elevated">
-          <CardContent className="space-y-4 p-6">
-            <div className="rounded-[22px] border border-subtle-border bg-muted/20 p-4">
-              <div className="font-semibold text-foreground">{primaryBuilding?.name || 'הבניין הראשי שלך'}</div>
-              <div className="mt-1 text-sm leading-6 text-muted-foreground">{primaryBuilding?.address || 'כתובת תופיע כאן לאחר שיושלם שיוך ליחידה.'}</div>
-              {primaryBuilding ? (
-                <div className="mt-3 flex flex-wrap gap-2 text-sm text-muted-foreground">
-                  {primaryBuilding.totalUnits ? <Badge variant="outline">{primaryBuilding.totalUnits} יחידות</Badge> : null}
-                  {primaryBuilding.floors ? <Badge variant="outline">{primaryBuilding.floors} קומות</Badge> : null}
-                  <Badge variant={primaryBuilding.isActive === false ? 'warning' : 'success'}>{primaryBuilding.isActive === false ? 'לא פעיל' : 'פעיל'}</Badge>
-                  {primaryUnit ? <Badge variant="outline">דירה {primaryUnit.number}</Badge> : null}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="rounded-[22px] border border-subtle-border bg-background p-4">
-              <div className="text-sm font-semibold text-foreground">אנשי קשר</div>
-              <div className="mt-3 space-y-3 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-primary" />
-                  {primaryBuilding?.managerName || 'מנהל/ת בניין יעודכן בקרוב'}
-                </div>
-                {primaryBuilding?.contactPhone ? (
-                  <a href={`tel:${primaryBuilding.contactPhone}`} className="flex items-center gap-2 text-foreground hover:text-primary">
-                    <Phone className="h-4 w-4 text-primary" />
-                    {primaryBuilding.contactPhone}
-                  </a>
-                ) : null}
-                {primaryBuilding?.contactEmail ? (
-                  <a href={`mailto:${primaryBuilding.contactEmail}`} className="flex items-center gap-2 text-foreground hover:text-primary">
-                    <Mail className="h-4 w-4 text-primary" />
-                    {primaryBuilding.contactEmail}
-                  </a>
-                ) : null}
+      <Card variant="muted" className="rounded-[24px] border-subtle-border/80">
+        <CardContent className="space-y-3 p-4">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-warning" strokeWidth={1.75} />
+            <h2 className="text-base font-semibold text-foreground">חשוב לדעת</h2>
+          </div>
+          <div className="space-y-2">
+            {guidance.map((item, index) => (
+              <div key={`${item}-${index}`} className="rounded-[18px] border border-subtle-border bg-background px-3 py-3 text-sm text-secondary-foreground">
+                {item}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-        <div className="grid gap-4">
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-warning" />
-                הנחיות וחירום
-              </CardTitle>
-              <CardDescription>מה חשוב לדעת לפני שפונים או מזמינים שירות.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {buildingGuidance.map((item, index) => (
-                <div key={`${item}-${index}`} className="rounded-2xl border border-subtle-border/70 bg-muted/20 px-3 py-2 text-sm leading-6 text-muted-foreground">
-                  {item}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+      <Card variant="muted" className="rounded-[24px] border-subtle-border/80">
+        <CardContent className="space-y-3 p-4">
+          <div className="flex items-center gap-2">
+            <Wrench className="h-4 w-4 text-primary" strokeWidth={1.75} />
+            <h2 className="text-base font-semibold text-foreground">שירותים וקישורים</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <QuickLink href="/documents" label="מסמכים" />
+            <QuickLink href="/create-call" label="קריאה חדשה" />
+            <QuickLink href="/support" label="צור קשר" />
+            <QuickLink href="/resident/account" label="חזרה לבית" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {building?.amenities?.length ? (
+              building.amenities.slice(0, 6).map((amenity) => (
+                <span key={amenity} className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                  {amenity}
+                </span>
+              ))
+            ) : (
+              <EmptyState size="sm" type="empty" title="אין כרגע פירוט מתקנים" description="המתקנים והשירותים הזמינים יופיעו כאן." />
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Wrench className="h-5 w-5 text-primary" />
-                שירותים ומתקנים
-              </CardTitle>
-              <CardDescription>המתקנים והשירותים שרלוונטיים לבניין שלך.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {primaryBuilding?.amenities?.length ? (
-                <div className="flex flex-wrap gap-2">
-                  {primaryBuilding.amenities.map((amenity) => (
-                    <Badge key={amenity} variant="finance">{amenity}</Badge>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState type="empty" size="sm" title="עדיין לא הוגדרו מתקנים" description="כאשר צוות הניהול יעדכן מתקנים ושירותים, הם יופיעו כאן." />
-              )}
-            </CardContent>
-          </Card>
-
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle>פעולות מהירות</CardTitle>
-              <CardDescription>מעברים שימושיים בלי לחזור לדף ארוך.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-3">
-              <Button variant="outline" asChild>
-                <Link href="/documents">כל המסמכים</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/notifications">מרכז ההתראות</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/support">פנייה לתמיכה</Link>
-              </Button>
-            </CardContent>
-          </Card>
+function ContactTile({
+  icon,
+  title,
+  value,
+  href,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  value: string;
+  href?: string;
+}) {
+  const content = (
+    <Card variant="muted" className="rounded-[22px] border-subtle-border/80">
+      <CardContent className="space-y-2 p-4">
+        <div className="flex items-center gap-2">
+          {icon}
+          <div className="text-sm font-semibold text-foreground">{title}</div>
         </div>
+        <div className="text-sm text-secondary-foreground">{value}</div>
+      </CardContent>
+    </Card>
+  );
+
+  if (!href) return content;
+
+  return (
+    <a href={href} className="block transition hover:-translate-y-0.5">
+      {content}
+    </a>
+  );
+}
+
+function MiniInfoCard({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-[20px] border border-subtle-border bg-background px-3 py-3">
+      <div className="text-xs font-medium text-secondary-foreground">{label}</div>
+      <div className="mt-1 text-lg font-bold text-foreground">
+        <bdi>{value}</bdi>
       </div>
     </div>
+  );
+}
+
+function QuickLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link href={href} className="rounded-[18px] border border-subtle-border bg-background px-3 py-3 text-center text-sm font-semibold text-foreground transition hover:border-primary/25">
+      {label}
+    </Link>
   );
 }

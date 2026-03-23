@@ -34,11 +34,11 @@ import {
 import { useLocale } from '../../lib/providers';
 
 const requestTypes = [
-  { value: 'MOVING', label: 'הודעת מעבר', icon: Move, description: 'כניסה או יציאה, חלון זמן ותיאום מעלית שירות.' },
-  { value: 'PARKING', label: 'בקשת חניה', icon: ParkingCircle, description: 'שינוי הקצאה, אורח קבוע או תקלה בחניה.' },
-  { value: 'DOCUMENT', label: 'בקשת מסמך', icon: FileText, description: 'חשבונית, פרוטוקול, תקנון או אישור רשמי.' },
-  { value: 'CONTACT_UPDATE', label: 'עדכון פרטי קשר', icon: PhoneCall, description: 'טלפון, אימייל או איש קשר נוסף לחשבון.' },
-  { value: 'GENERAL', label: 'בקשה כללית', icon: Sparkles, description: 'פנייה תפעולית שאינה קריאת תחזוקה.' },
+  { value: 'MOVING', label: 'מעבר', icon: Move, description: 'תיאום מהיר' },
+  { value: 'PARKING', label: 'חניה', icon: ParkingCircle, description: 'שינוי או תקלה' },
+  { value: 'DOCUMENT', label: 'מסמך', icon: FileText, description: 'קבלה, פרוטוקול, אישור' },
+  { value: 'CONTACT_UPDATE', label: 'עדכון קשר', icon: PhoneCall, description: 'טלפון או אימייל' },
+  { value: 'GENERAL', label: 'כללי', icon: Sparkles, description: 'פנייה אחרת' },
 ] as const;
 
 type RequestHistoryItem = {
@@ -97,6 +97,12 @@ export default function ResidentRequestsPage() {
     void loadHistory();
   }, [historyFilter.status, historyFilter.requestType]);
 
+  useEffect(() => {
+    if (!router.isReady) return;
+    const nextView = router.query.view === 'history' ? 'history' : 'new';
+    setView(nextView);
+  }, [router.isReady, router.query.view]);
+
   async function loadHistory() {
     try {
       setLoading(true);
@@ -147,9 +153,9 @@ export default function ResidentRequestsPage() {
 
   const formErrors = useMemo(() => {
     return {
-      subject: form.subject.trim() ? '' : 'יש למלא נושא קצר וברור.',
-      message: form.message.trim().length >= 10 ? '' : 'יש להוסיף לפחות 10 תווים כדי שהצוות יבין מה נדרש.',
-      requestedDate: form.requestType === 'MOVING' && !form.requestedDate ? 'מומלץ לציין תאריך מעבר.' : '',
+      subject: form.subject.trim() ? '' : 'כתוב נושא קצר.',
+      message: form.message.trim().length >= 10 ? '' : 'כתוב כמה מילים על הבקשה.',
+      requestedDate: form.requestType === 'MOVING' && !form.requestedDate ? 'כדאי לבחור תאריך.' : '',
     };
   }, [form.message, form.requestType, form.requestedDate, form.subject]);
 
@@ -236,7 +242,7 @@ export default function ResidentRequestsPage() {
   const submittedTypeDescription = getRequestExpectations(submittedRequestType || form.requestType);
 
   return (
-    <div className="space-y-5 sm:space-y-8">
+    <div className="space-y-5 pb-4 sm:space-y-8">
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label="משוך כדי לרענן בקשות דייר" />
 
       <div className="space-y-3 md:hidden">
@@ -250,9 +256,9 @@ export default function ResidentRequestsPage() {
         <PrimaryActionCard
           mobileHomeEffect
           eyebrow="שירות עצמי"
-          title="בקשה חדשה"
-          description="בחירת מסלול קצר וברור עם מעקב מסודר מאותו מסך."
-          ctaLabel="פתח בקשה"
+          title={view === 'history' ? 'מעקב בקשות' : 'בקשה חדשה'}
+          description={view === 'history' ? 'כל העדכונים במקום אחד.' : 'בחר סוג, מלא קצר, שלח.'}
+          ctaLabel={view === 'history' ? 'פתח מעקב' : 'פתח בקשה'}
           onClick={() => setView('new')}
           tone={openRequests.length ? 'warning' : 'default'}
           secondaryAction={
@@ -298,15 +304,15 @@ export default function ResidentRequestsPage() {
       </div>
 
       <MobilePriorityInbox
-        title={t('residentRequests.queueTitle')}
-        subtitle={t('residentRequests.queueSubtitle')}
+        title="מה בטיפול"
+        subtitle="עד שני פריטים שחשוב לפתוח עכשיו"
         items={priorityItems}
       />
 
       <Tabs value={view} onValueChange={(value) => setView(value as 'new' | 'history')}>
-        <TabsList className="rounded-[20px] border border-subtle-border bg-background/92 p-1">
-          <TabsTrigger value="new" className="rounded-[16px]">בקשה חדשה</TabsTrigger>
-          <TabsTrigger value="history" className="rounded-[16px]">מעקב בקשות</TabsTrigger>
+        <TabsList className="grid grid-cols-2 rounded-[22px] border border-subtle-border bg-background/92 p-1">
+          <TabsTrigger value="new" className="min-h-[48px] rounded-[18px] text-[15px] font-semibold">בקשה חדשה</TabsTrigger>
+          <TabsTrigger value="history" className="min-h-[48px] rounded-[18px] text-[15px] font-semibold">מעקב</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -315,7 +321,7 @@ export default function ResidentRequestsPage() {
           <CardContent className="space-y-3 p-4 sm:p-5">
             <SectionHeader
               title="הבקשה התקבלה"
-              subtitle="מספר המעקב והשלב הבא ברורים כבר עכשיו, כדי שלא תצטרך לחפש מה קורה."
+              subtitle="השלב הבא ברור כבר עכשיו."
               meta={submittedRequestKey}
             />
             <div className="grid gap-3 sm:grid-cols-3">
@@ -341,13 +347,14 @@ export default function ResidentRequestsPage() {
       <MobileActionHub
         mobileHomeEffect
         title="בחר סוג בקשה"
-        subtitle="מסלולים קצרים וברורים לפי מה שצריך עכשיו."
+        subtitle="בחירה אחת וממשיכים"
         items={requestTypes.map((type) => ({
           id: type.value,
           label: type.label,
           description: type.description,
           icon: type.icon,
           accent: form.requestType === type.value ? 'primary' : 'neutral',
+          emphasize: form.requestType === type.value,
           onClick: () => {
             setForm((current) => ({ ...current, requestType: type.value }));
             setFormStep(2);
@@ -359,30 +366,30 @@ export default function ResidentRequestsPage() {
       <div className="grid gap-4 sm:gap-6">
         <Card variant="elevated">
           <CardHeader>
-            <CardTitle>{formStep === 1 ? 'שלב 2: מלא רק את הפרטים הנדרשים' : activeType.label}</CardTitle>
+            <CardTitle>{formStep === 1 ? 'ממלאים קצר' : activeType.label}</CardTitle>
             <CardDescription>{selectedTypeDescription.description}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-3">
               <div className={`rounded-[18px] border px-3 py-2.5 text-sm ${formStep >= 1 ? 'border-primary/25 bg-primary/8 text-foreground' : 'border-subtle-border bg-muted/15 text-muted-foreground'}`}>
-                1. בחרת סוג בקשה
+                1. בחרת
               </div>
               <div className={`rounded-[18px] border px-3 py-2.5 text-sm ${formStep >= 2 ? 'border-primary/25 bg-primary/8 text-foreground' : 'border-subtle-border bg-muted/15 text-muted-foreground'}`}>
-                2. ממלאים פרטים קצרים
+                2. ממלאים
               </div>
               <div className="rounded-[18px] border border-subtle-border bg-muted/15 px-3 py-2.5 text-sm text-muted-foreground">
-                3. עוקבים אחרי התקדמות ועדכונים
+                3. עוקבים
               </div>
             </div>
 
             <SectionHeader
               title="פרטי הפנייה"
-              subtitle="שדות חובה ברורים יותר, עם הסבר קצר על כל אזור כדי לקצר ניסוח ולצמצם פניות חסרות."
+              subtitle="רק מה שצריך עכשיו"
               meta={formStep === 1 ? 'בחר סוג בקשה כדי להמשיך' : 'טופס ממוקד'}
             />
 
             <div className="rounded-xl sm:rounded-[20px] border border-subtle-border bg-muted/25 p-3 sm:p-4 text-sm">
-              <div className="font-semibold text-foreground">מה קורה אחרי השליחה</div>
+              <div className="font-semibold text-foreground">אחרי השליחה</div>
               <div className="mt-1 text-muted-foreground">{selectedTypeDescription.afterSubmit}</div>
             </div>
 
@@ -391,7 +398,7 @@ export default function ResidentRequestsPage() {
                 type="action"
                 size="sm"
                 title="בחר סוג בקשה כדי להמשיך"
-                description="הטופס הבא יותאם אוטומטית למה שבחרת, כדי שתצטרך למלא רק את הפרטים הרלוונטיים."
+                description="אחר כך נציג רק את השדות הרלוונטיים."
               />
             ) : null}
 
@@ -414,14 +421,14 @@ export default function ResidentRequestsPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 label="נושא"
-                description="שורה אחת שמתארת את מה שנדרש מהצוות."
+                description="שורה קצרה"
                 error={shouldShowError('subject') ? formErrors.subject || undefined : undefined}
                 required
               >
                 <Input
                   id="subject"
                   name="subject"
-                  placeholder="לדוגמה: תיאום מעבר דירה ב-15/04"
+                  placeholder="למשל: תיאום מעבר"
                   value={form.subject}
                   onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))}
                   onBlur={() => setFormTouched((prev) => ({ ...prev, subject: true }))}
@@ -430,7 +437,7 @@ export default function ResidentRequestsPage() {
 
               <FormField
                 label="תאריך מבוקש"
-                description="אופציונלי ברוב הבקשות, מומלץ במיוחד במעבר או בבקשת מסמך דחופה."
+                description="אם יש תאריך יעד"
                 error={shouldShowError('requestedDate') ? formErrors.requestedDate || undefined : undefined}
               >
                 <Input
@@ -458,7 +465,7 @@ export default function ResidentRequestsPage() {
                   </Select>
                 </FormField>
 
-                <FormField label="חלון זמן משוער" description="לדוגמה: 08:00-11:00.">
+                <FormField label="שעה" description="למשל 08:00-11:00">
                   <Input
                     placeholder="08:00-11:00"
                     value={form.movingWindow}
@@ -466,7 +473,7 @@ export default function ResidentRequestsPage() {
                   />
                 </FormField>
 
-                <FormField label="מעלית שירות" description="כדי שניתן יהיה לחסום ולתאם מראש.">
+                <FormField label="מעלית שירות" description="כן או לא">
                   <Select value={form.elevatorNeeded} onValueChange={(value) => setForm((current) => ({ ...current, elevatorNeeded: value }))}>
                     <SelectTrigger>
                       <SelectValue />
@@ -482,7 +489,7 @@ export default function ResidentRequestsPage() {
 
             {form.requestType === 'PARKING' ? (
               <div className="grid gap-4 md:grid-cols-2">
-                <FormField label="סוג בקשת חניה" description="מה בדיוק נדרש לעדכן או לבדוק.">
+                <FormField label="סוג בקשה" description="מה צריך?">
                   <Select value={form.parkingRequestType} onValueChange={(value) => setForm((current) => ({ ...current, parkingRequestType: value }))}>
                     <SelectTrigger>
                       <SelectValue />
@@ -495,7 +502,7 @@ export default function ResidentRequestsPage() {
                   </Select>
                 </FormField>
 
-                <FormField label="מספר רכב" description="אופציונלי, אבל עוזר לזהות את החניה הרלוונטית.">
+                <FormField label="מספר רכב" description="אם רלוונטי">
                   <Input
                     placeholder="12-345-67"
                     value={form.plateNumber}
@@ -506,7 +513,7 @@ export default function ResidentRequestsPage() {
             ) : null}
 
             {form.requestType === 'DOCUMENT' ? (
-              <FormField label="סוג המסמך" description="בחר את המשפחה הקרובה ביותר למסמך המבוקש.">
+              <FormField label="סוג מסמך" description="בחר סוג אחד">
                 <Select value={form.documentCategory} onValueChange={(value) => setForm((current) => ({ ...current, documentCategory: value }))}>
                   <SelectTrigger>
                     <SelectValue />
@@ -541,7 +548,7 @@ export default function ResidentRequestsPage() {
                     onChange={(event) => setForm((current) => ({ ...current, nextEmail: event.target.value }))}
                   />
                 </FormField>
-                <FormField label="איש קשר נוסף" description="אם חשוב שנוכל לפנות גם למישהו נוסף.">
+                <FormField label="איש קשר נוסף" description="אם צריך">
                   <Input
                     placeholder="שם וטלפון"
                     value={form.extraContact}
@@ -551,17 +558,17 @@ export default function ResidentRequestsPage() {
               </div>
             ) : null}
 
-            <FormField
-              label="פירוט הבקשה"
-              description="הסבר חופשי: מה קרה, מה נדרש, ועד מתי חשוב לטפל."
-              error={shouldShowError('message') ? formErrors.message || undefined : undefined}
-              required
-            >
+              <FormField
+                label="פירוט הבקשה"
+                description="מה צריך שנעשה?"
+                error={shouldShowError('message') ? formErrors.message || undefined : undefined}
+                required
+              >
               <Textarea
                 id="message"
                 name="message"
                 rows={5}
-                placeholder="לדוגמה: אבקש לתאם את המעלית לשעתיים ביום המעבר, כולל חסימת לובי והודעה לדיירים."
+                placeholder="למשל: צריך לתאם מעלית שירות ליום המעבר."
                 value={form.message}
                 onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))}
                 onBlur={() => setFormTouched((prev) => ({ ...prev, message: true }))}
@@ -594,11 +601,7 @@ export default function ResidentRequestsPage() {
       {view === 'history' ? (
       <Card variant="elevated">
         <CardContent className="space-y-6 p-6">
-          <SectionHeader
-            title="סינון ומעקב"
-            subtitle="ההיסטוריה מחולקת בין בקשות שעדיין בטיפול לבין בקשות שהושלמו, כדי שסטטוס יהיה קריא גם בלי לפתוח כל פריט."
-            meta={`${history.length} פריטים`}
-          />
+          <SectionHeader title="מעקב" subtitle="סטטוס קצר וברור" meta={`${history.length} פריטים`} />
 
           <div className="grid gap-4 md:grid-cols-2">
             <FormField label="סטטוס">
@@ -663,7 +666,7 @@ export default function ResidentRequestsPage() {
           ) : (
             <div className="space-y-8">
               <section className="space-y-4">
-                <SectionHeader title="בטיפול כעת" subtitle="בקשות פתוחות שמחכות להמשך טיפול או לאישור." meta={`${openRequests.length} פתוחות`} />
+                <SectionHeader title="בטיפול" subtitle="הבקשות שעדיין פתוחות" meta={`${openRequests.length} פתוחות`} />
                 {openRequests.length === 0 ? (
                   <Card className="border-dashed">
                     <CardContent className="py-10">
@@ -680,7 +683,7 @@ export default function ResidentRequestsPage() {
               </section>
 
               <section className="space-y-4">
-                <SectionHeader title="הושלמו ונסגרו" subtitle="ארכיון קצר של בקשות שנענו או נסגרו." meta={`${closedRequests.length} הושלמו`} />
+                <SectionHeader title="הושלמו" subtitle="בקשות שנסגרו" meta={`${closedRequests.length} הושלמו`} />
                 {closedRequests.length === 0 ? (
                   <Card className="border-dashed">
                     <CardContent className="py-10">
@@ -753,43 +756,43 @@ function getRequestExpectations(requestType: string) {
   switch (requestType) {
     case 'MOVING':
       return {
-        description: 'מעבר דירה דורש תיאום מדויק, ולכן הטופס יתמקד בחלון זמן, מעלית שירות ופרטי לוגיסטיקה.',
+        description: 'מעבר עם תיאום קצר וברור.',
         responseWindow: 'עד יום עסקים אחד',
         owner: 'צוות ניהול הבניין',
-        nextStep: 'שמור את מספר הבקשה ועקוב אחרי אישור חלון המעבר.',
-        afterSubmit: 'הצוות בודק זמינות מעלית, גישה לבניין והאם נדרש עדכון לדיירים או לשומר.',
+        nextStep: 'נשלח לך אישור ותיאום.',
+        afterSubmit: 'הצוות יבדוק זמינות ויעדכן אותך.',
       };
     case 'PARKING':
       return {
-        description: 'בקשות חניה צריכות רק את סוג השינוי ואת פרטי הרכב אם יש, כדי שהבדיקה תהיה מהירה וברורה.',
+        description: 'חניה, הקצאה או תקלה.',
         responseWindow: 'עד 2 ימי עסקים',
         owner: 'צוות ניהול וחניה',
-        nextStep: 'אם יש שינוי בהקצאה, הוא יופיע כהודעה מעודכנת במסך זה.',
-        afterSubmit: 'הצוות בודק הקצאה, זמינות, או בעיה קיימת ומעדכן אם נדרש אישור נוסף.',
+        nextStep: 'נעדכן כאן את הסטטוס.',
+        afterSubmit: 'הצוות יבדוק ויחזור אליך.',
       };
     case 'DOCUMENT':
       return {
-        description: 'לבקשת מסמך מספיק לציין מה נדרש ועד מתי, בלי למלא פרטים תפעוליים לא רלוונטיים.',
+        description: 'בקשת מסמך בכמה שניות.',
         responseWindow: 'עד יום עסקים אחד',
         owner: 'צוות הנהלה או גבייה',
-        nextStep: 'המסמך יישלח או יועלה לאזור האישי כאשר הוא מוכן.',
-        afterSubmit: 'הצוות מאתר את המסמך המתאים, בודק אם נדרש אישור, ומחזיר אותו דרך המסמכים או בעדכון ישיר.',
+        nextStep: 'המסמך יישלח או יעלה לחשבון.',
+        afterSubmit: 'הצוות יאתר את המסמך ויעדכן אותך.',
       };
     case 'CONTACT_UPDATE':
       return {
-        description: 'עדכון פרטי קשר צריך להיות קצר ומדויק, כדי שהמערכת והצוות יעבדו תמיד עם הפרטים העדכניים ביותר.',
+        description: 'עדכון פרטי קשר במהירות.',
         responseWindow: 'עד יום עסקים אחד',
         owner: 'צוות שירות דיירים',
-        nextStep: 'בדוק בהמשך שהפרטים החדשים נקלטו בהצלחה.',
-        afterSubmit: 'הצוות מאשר את פרטי הקשר החדשים ומעדכן את החשבון אם נדרש אימות נוסף.',
+        nextStep: 'נעדכן כשהשינוי נקלט.',
+        afterSubmit: 'הצוות יעדכן את החשבון במידת הצורך.',
       };
     default:
       return {
-        description: 'הטופס יתמקד בנושא, תאריך מבוקש ותיאור ברור, כדי שהצוות ידע למי להעביר ומה בדיוק נדרש.',
+        description: 'פנייה קצרה לכל נושא אחר.',
         responseWindow: 'עד 2 ימי עסקים',
         owner: 'צוות שירות וניהול',
-        nextStep: 'עקוב אחר סטטוס הבקשה ותשובות הצוות מתוך היסטוריית הבקשות.',
-        afterSubmit: 'הבקשה תנותב לצוות המתאים, תקבל סטטוס ראשוני, ואם יידרש מידע נוסף תקבל על כך הודעה.',
+        nextStep: 'נעדכן כאן את הסטטוס.',
+        afterSubmit: 'הבקשה תועבר לצוות המתאים.',
       };
   }
 }

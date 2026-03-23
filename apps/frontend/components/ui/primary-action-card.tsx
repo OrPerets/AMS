@@ -42,7 +42,7 @@ export function PrimaryActionCard({
       animate={hold.isHolding && !reducedMotion ? { y: -3, scale: 1.01 } : { y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'max-h-[120px] overflow-hidden rounded-2xl border border-primary/12 border-s-4 border-s-primary bg-card p-3 shadow-raised transition-[transform,box-shadow,filter] duration-300',
+        'overflow-hidden rounded-[24px] border border-primary/12 border-s-4 border-s-primary bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(247,250,255,0.94)_100%)] p-3.5 text-right shadow-[0_18px_40px_rgba(15,23,42,0.10)] transition-[transform,box-shadow,filter] duration-300 sm:rounded-[28px] sm:p-4',
         tone === 'warning' && 'border-s-warning',
         tone === 'danger' && 'border-s-destructive',
         tone === 'success' && 'border-s-success',
@@ -53,10 +53,10 @@ export function PrimaryActionCard({
       )}
       {...hold.holdProps}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 space-y-1">
-          {eyebrow ? <div className="text-[10px] font-semibold uppercase text-secondary-foreground">{eyebrow}</div> : null}
-          <div className="flex items-start gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1 space-y-2">
+          {eyebrow ? <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground">{eyebrow}</div> : null}
+          <div className="flex items-start gap-2.5">
             <Icon
               className={cn(
                 'mt-0.5 h-4 w-4 shrink-0',
@@ -69,17 +69,17 @@ export function PrimaryActionCard({
               aria-hidden="true"
             />
             <div className="min-w-0">
-              <div className="text-sm font-semibold text-foreground">{title}</div>
-              <div className="line-clamp-2 text-[12px] leading-5 text-secondary-foreground">{description}</div>
+              <div className="text-[15px] font-semibold leading-6 text-foreground sm:text-base">{title}</div>
+              <div className="text-[13px] leading-5 text-secondary-foreground sm:line-clamp-2">{description}</div>
             </div>
           </div>
         </div>
 
-        <div className="shrink-0">
+        <div className="shrink-0 sm:self-end">
           {href ? (
             <Link
               href={href}
-              className="inline-flex min-h-[44px] items-center gap-1 rounded-xl bg-primary px-3 py-2 text-center text-sm font-semibold text-primary-foreground"
+              className="inline-flex min-h-[46px] w-full items-center justify-center gap-1 rounded-2xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground shadow-[0_10px_22px_rgba(59,130,246,0.24)] sm:min-h-[48px] sm:w-auto"
             >
               {ctaLabel}
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.75} />
@@ -88,7 +88,7 @@ export function PrimaryActionCard({
             <button
               type="button"
               onClick={onClick}
-              className="inline-flex min-h-[44px] items-center gap-1 rounded-xl bg-primary px-3 py-2 text-center text-sm font-semibold text-primary-foreground"
+              className="inline-flex min-h-[46px] w-full items-center justify-center gap-1 rounded-2xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground shadow-[0_10px_22px_rgba(59,130,246,0.24)] sm:min-h-[48px] sm:w-auto"
             >
               {ctaLabel}
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.75} />
@@ -96,7 +96,7 @@ export function PrimaryActionCard({
           )}
         </div>
       </div>
-      {secondaryAction ? <div className="mt-2">{secondaryAction}</div> : null}
+      {secondaryAction ? <div className="mt-3 flex justify-stretch sm:justify-end">{secondaryAction}</div> : null}
     </motion.div>
   );
 

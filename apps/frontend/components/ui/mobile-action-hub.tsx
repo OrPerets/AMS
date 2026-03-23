@@ -16,6 +16,7 @@ export type MobileActionHubItem = {
   icon: IconType;
   badge?: string | number;
   accent?: 'primary' | 'success' | 'warning' | 'info' | 'neutral';
+  emphasize?: boolean;
 };
 
 function toneClasses(accent: MobileActionHubItem['accent']) {
@@ -88,19 +89,20 @@ function ActionTile({
         href={item.href}
         onClick={item.onClick}
         className={cn(
-          'group block min-h-[88px] rounded-2xl border bg-card/96 p-3 text-start shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target',
+          'group block min-h-[96px] rounded-[22px] border bg-card/96 p-3 text-center shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target sm:min-h-[104px] sm:rounded-[26px] sm:p-3.5',
+          item.emphasize && 'border-primary/25 bg-primary/[0.06] shadow-[0_16px_36px_rgba(59,130,246,0.12)]',
           !item.href && !item.onClick && 'pointer-events-none',
         )}
       >
-        <div className="flex h-full flex-col">
-          <div className="flex items-start justify-between gap-2">
+        <div className="flex h-full flex-col items-center">
+          <div className="flex w-full items-start justify-between gap-2">
             <span
               className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-xl border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]',
+                'flex h-10 w-10 items-center justify-center rounded-full border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] sm:h-12 sm:w-12',
                 toneClasses(item.accent),
               )}
             >
-              <Icon className="h-5 w-5" strokeWidth={1.75} />
+              <Icon className="h-4.5 w-4.5 sm:h-5 sm:w-5" strokeWidth={1.9} />
             </span>
             {item.badge !== undefined && item.badge !== '' ? (
               <span className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
@@ -109,14 +111,13 @@ function ActionTile({
             ) : null}
           </div>
 
-          <div className="mt-3 flex-1">
-            <div className="text-sm font-semibold text-foreground">{item.label}</div>
-            {item.description ? <div className="mt-1 line-clamp-2 text-[12px] leading-5 text-secondary-foreground">{item.description}</div> : null}
+          <div className="mt-2.5 flex-1">
+            <div className="text-[15px] font-semibold leading-5 text-foreground sm:text-sm">{item.label}</div>
+            {item.description ? <div className="mt-1 line-clamp-2 text-[12px] leading-4.5 text-secondary-foreground sm:line-clamp-1 sm:leading-5">{item.description}</div> : null}
           </div>
 
-          {item.href || item.onClick ? (
-            <div className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
-              פתח
+          {(item.href || item.onClick) && item.description ? (
+            <div className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-primary sm:mt-2">
               <ArrowUpRight className="icon-directional h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} />
             </div>
           ) : null}
@@ -142,7 +143,7 @@ export function MobileActionHub({
   return (
     <section className={cn('space-y-3', className)} aria-label={typeof title === 'string' ? title : undefined}>
       {title || subtitle ? (
-        <div className="flex items-end justify-between gap-3">
+        <div className="flex items-end justify-between gap-3 text-right">
           <div>
             {title ? <h2 className="text-[15px] font-semibold text-foreground">{title}</h2> : null}
             {subtitle ? <p className="mt-1 text-[12px] leading-5 text-secondary-foreground">{subtitle}</p> : null}
@@ -150,7 +151,7 @@ export function MobileActionHub({
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 max-[350px]:grid-cols-1 sm:gap-2.5 lg:grid-cols-3">
         {items.map((item) => (
           <ActionTile key={item.id} item={item} mobileHomeEffect={mobileHomeEffect} />
         ))}

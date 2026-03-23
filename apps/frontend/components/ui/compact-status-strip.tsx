@@ -71,7 +71,7 @@ export function CompactStatusStrip({
   return (
     <section
       className={cn(
-        'flex h-12 items-center justify-between overflow-hidden rounded-2xl border border-subtle-border bg-card px-3 ps-3 pe-4 shadow-elevation-1',
+        'flex min-h-[52px] flex-col items-stretch gap-2 overflow-hidden rounded-[22px] border border-subtle-border bg-card px-3 py-3 ps-3 pe-3 shadow-elevation-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:py-2 sm:pe-4',
         className,
       )}
       aria-label={roleLabel}
@@ -83,7 +83,7 @@ export function CompactStatusStrip({
         <span className="truncate text-sm font-semibold text-foreground">{roleLabel}</span>
       </div>
 
-      <div className="ms-3 flex min-w-0 items-center justify-end gap-1.5">
+      <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 text-right sm:ms-3 sm:flex-nowrap">
         {metrics.slice(0, 2).map((metric, index) => {
           const interactive = typeof metric.onClick === 'function';
           const shouldPulse = pulsingMetricId === metric.id;
@@ -142,7 +142,7 @@ export function CompactStatusStrip({
           );
 
           const wrapperClass = cn(
-            'inline-flex min-w-0 items-center gap-1 rounded-full px-2 py-1 text-center transition-colors',
+            'inline-flex min-w-0 items-center gap-1 rounded-full px-2 py-1 text-right transition-colors',
             shouldPulse && !reducedMotion && 'bg-background/90 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]',
             interactive ? 'min-h-[44px] cursor-pointer hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2' : '',
             index > 0 && 'border-s border-primary/8 ps-3',

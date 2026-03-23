@@ -218,26 +218,6 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
-
-        {/* Mobile trust cards — below form on small screens */}
-        <div className="flex flex-col gap-3 lg:hidden">
-          {trustCards.map((card, index) => (
-            <div
-              key={index}
-              className="flex items-start gap-3 rounded-xl border border-primary/10 bg-background/80 p-4 shadow-sm"
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <card.icon className="h-4 w-4" />
-              </div>
-              <div className="space-y-0.5">
-                <div className="text-sm font-semibold text-foreground">{card.title}</div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {card.description}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
       <div className="mt-4 sm:mt-6 text-center text-[11px] sm:text-xs text-muted-foreground">
