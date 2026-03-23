@@ -78,7 +78,7 @@ const getNavigationGroups = (role: string, t: (key: string) => string): Navigati
           },
           {
             title: 'תשלומים',
-            href: '/resident/account#payments-section',
+            href: '/payments/resident',
             icon: CreditCard,
             roles: ['RESIDENT'],
           },
@@ -108,7 +108,7 @@ const getNavigationGroups = (role: string, t: (key: string) => string): Navigati
           },
           {
             title: 'הבניין שלי',
-            href: '/resident/account#building-section',
+            href: '/resident/account?section=building',
             icon: Building,
             roles: ['RESIDENT'],
           },

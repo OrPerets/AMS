@@ -195,7 +195,7 @@ export default function PaymentsPage() {
     if (role === null) return;
 
     if (role === 'RESIDENT') {
-      router.replace('/resident/account');
+      router.replace('/payments/resident');
       return;
     }
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -26,6 +27,8 @@ import { MobileActionHub } from '../components/ui/mobile-action-hub';
 import { MobilePriorityInbox, MobilePriorityInboxItem } from '../components/ui/mobile-priority-inbox';
 import { MobileCardSkeleton } from '../components/ui/page-states';
 import { PageHero } from '../components/ui/page-hero';
+import { CompactStatusStrip } from '../components/ui/compact-status-strip';
+import { PrimaryActionCard } from '../components/ui/primary-action-card';
 import { SectionHeader } from '../components/ui/section-header';
 import { StatusBadge } from '../components/ui/status-badge';
 import { toast } from '../components/ui/use-toast';
@@ -120,6 +123,7 @@ const heroVariants = {
 };
 
 export default function HomePage() {
+  const router = useRouter();
   const [role, setRole] = useState<RoleKey>('RESIDENT');
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -204,6 +208,21 @@ export default function HomePage() {
     () => (snapshot ? snapshot.metrics.slice(0, 2).map((metric) => `${metric.label}: ${metric.value}`) : []),
     [snapshot],
   );
+  const mobilePrimaryAction = snapshot?.nextActions[0];
+  const mobileQuickActions = quickLinks.slice(0, 4);
+  const mobileStatusMetrics = snapshot?.metrics.slice(0, 2).map((metric) => ({
+    id: metric.label,
+    label: metric.label,
+    value: typeof metric.value === 'number' ? metric.value : Number(String(metric.value).replace(/[^\d.-]/g, '')) || metric.value,
+    tone: metric.tone === 'warning' ? 'warning' as const : metric.tone === 'success' ? 'success' as const : 'default' as const,
+    onClick: () => {
+      if (role === 'ACCOUNTANT') router.push('/payments');
+      else if (role === 'ADMIN') router.push('/admin/dashboard');
+      else if (role === 'PM') router.push('/tickets');
+      else if (role === 'TECH') router.push('/tech/jobs');
+      else router.push('/resident/account');
+    },
+  })) ?? [];
 
   function completeOnboarding() {
     if (currentUserId && typeof window !== 'undefined') {
@@ -223,53 +242,92 @@ export default function HomePage() {
 
   return (
     <div className="space-y-5 sm:space-y-8">
-      <MobileContextBar
-        roleLabel={snapshot.roleTitle}
-        contextLabel={contextLabel}
-        syncLabel="סנכרון חי עם המערכת"
-        lastUpdated={formatDate(new Date())}
-        chips={contextChips}
-      />
-
-      <motion.div variants={heroVariants} initial="initial" animate="animate">
-        <PageHero
-          variant="operational"
-          eyebrow={
-            <>
-              <StatusBadge label={snapshot.eyebrowLabel} tone="finance" />
-              <Badge variant="outline" className="text-[11px] sm:text-xs">
-                {snapshot.roleTitle}
-              </Badge>
-            </>
-          }
-          kicker="מרכז עבודה"
-          title={snapshot.headline}
-          description={snapshot.description}
-          actions={
-            <>
-              {snapshot.nextActions[0] ? (
-                <Button asChild size="sm" className="sm:h-11 sm:px-5 sm:text-sm">
-                  <Link href={snapshot.nextActions[0].href}>{snapshot.nextActions[0].title}</Link>
-                </Button>
-              ) : null}
-              <Button
-                variant="outline"
-                size="sm"
-                className="sm:h-11 sm:px-5 sm:text-sm"
-                onClick={() => setOnboardingOpen(true)}
-              >
-                <Sparkles className="me-1.5 h-3.5 w-3.5" />
-                מסלול מהיר
-              </Button>
-            </>
-          }
+      <div className="space-y-3 md:hidden">
+        <CompactStatusStrip
+          roleLabel={snapshot.roleTitle}
+          icon={getRoleStatusIcon(role)}
+          metrics={mobileStatusMetrics}
         />
-      </motion.div>
 
-      <MobileActionHub
-        title="פעולות ראשיות"
-        subtitle="הדברים שכדאי לפתוח קודם, בלי לחפש בין תפריטים."
-        items={quickLinks.map((item, index) => ({
+        {mobilePrimaryAction ? (
+          <PrimaryActionCard
+            eyebrow={snapshot.eyebrowLabel}
+            title={mobilePrimaryAction.title}
+            description={mobilePrimaryAction.description}
+            ctaLabel="פתח"
+            href={mobilePrimaryAction.href}
+            tone={snapshot.metrics.some((metric) => metric.tone === 'warning') ? 'warning' : 'default'}
+          />
+        ) : null}
+
+        <MobileActionHub
+          title={<span className="sr-only">פעולות מהירות</span>}
+          items={mobileQuickActions.map((item, index) => ({
+            id: `${item.href}-${index}`,
+            label: item.title,
+            description: item.description,
+            href: item.href,
+            icon: item.icon,
+            badge: item.badge,
+            accent: index === 0 ? 'primary' : index === 1 ? 'info' : index === 2 ? 'warning' : 'neutral',
+          }))}
+        />
+
+        <MobilePriorityInbox
+          title="תיבת עדיפויות"
+          subtitle="מה דורש פעולה עכשיו."
+          items={priorityItems.slice(0, 3)}
+        />
+      </div>
+
+      <div className="hidden space-y-5 sm:space-y-8 md:block">
+        <MobileContextBar
+          roleLabel={snapshot.roleTitle}
+          contextLabel={contextLabel}
+          syncLabel="סנכרון חי עם המערכת"
+          lastUpdated={formatDate(new Date())}
+          chips={contextChips}
+        />
+
+        <motion.div variants={heroVariants} initial="initial" animate="animate">
+          <PageHero
+            variant="operational"
+            eyebrow={
+              <>
+                <StatusBadge label={snapshot.eyebrowLabel} tone="finance" />
+                <Badge variant="outline" className="text-[11px] sm:text-xs">
+                  {snapshot.roleTitle}
+                </Badge>
+              </>
+            }
+            kicker="מרכז עבודה"
+            title={snapshot.headline}
+            description={snapshot.description}
+            actions={
+              <>
+                {snapshot.nextActions[0] ? (
+                  <Button asChild size="sm" className="sm:h-11 sm:px-5 sm:text-sm">
+                    <Link href={snapshot.nextActions[0].href}>{snapshot.nextActions[0].title}</Link>
+                  </Button>
+                ) : null}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="sm:h-11 sm:px-5 sm:text-sm"
+                  onClick={() => setOnboardingOpen(true)}
+                >
+                  <Sparkles className="me-1.5 h-3.5 w-3.5" />
+                  מסלול מהיר
+                </Button>
+              </>
+            }
+          />
+        </motion.div>
+
+        <MobileActionHub
+          title="פעולות ראשיות"
+          subtitle="הדברים שכדאי לפתוח קודם, בלי לחפש בין תפריטים."
+          items={quickLinks.map((item, index) => ({
           id: `${item.href}-${index}`,
           label: item.title,
           description: item.description,
@@ -278,15 +336,15 @@ export default function HomePage() {
           badge: item.badge,
           accent: index === 0 ? 'primary' : index === 1 ? 'info' : 'neutral',
         }))}
-      />
+        />
 
-      <MobilePriorityInbox
-        title="תיבת עדיפויות"
-        subtitle="מה דורש פעולה עכשיו ומה עלול להפוך לחסם אם נשאיר אותו פתוח."
-        items={priorityItems}
-      />
+        <MobilePriorityInbox
+          title="תיבת עדיפויות"
+          subtitle="מה דורש פעולה עכשיו ומה עלול להפוך לחסם אם נשאיר אותו פתוח."
+          items={priorityItems}
+        />
 
-      <section className="space-y-3">
+        <section className="space-y-3">
         <SectionHeader
           title="מדדים מרכזיים"
           subtitle="שלושה מספרים מספיקים כדי להבין את העומס והסיכון ברגע זה."
@@ -304,9 +362,9 @@ export default function HomePage() {
             </motion.div>
           ))}
         </div>
-      </section>
+        </section>
 
-      <section className="grid gap-4 sm:gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <section className="grid gap-4 sm:gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <Card variant="elevated" className="overflow-hidden">
           <CardHeader>
             <SectionHeader
@@ -367,9 +425,9 @@ export default function HomePage() {
             )}
           </CardContent>
         </Card>
-      </section>
+        </section>
 
-      <section className="grid gap-4 sm:gap-6">
+        <section className="grid gap-4 sm:gap-6">
         <Card variant="elevated" className="overflow-hidden">
           <CardHeader>
             <SectionHeader
@@ -397,7 +455,8 @@ export default function HomePage() {
             </pre>
           </CardContent>
         </Card>
-      </section>
+        </section>
+      </div>
 
       <Dialog open={onboardingOpen} onOpenChange={setOnboardingOpen}>
         <DialogContent className="mx-3 max-w-lg border-white/10 bg-slate-950/95 text-white shadow-modal backdrop-blur-xl sm:mx-auto sm:max-w-2xl dark-surface">
@@ -454,7 +513,7 @@ async function buildSnapshot(role: RoleKey, currentUserId: number | null): Promi
         ? {
             title: 'סגור תשלום בפיגור',
             description: 'יש כרגע חיובים שדורשים טיפול מיידי כדי למנוע פנייה לשירות.',
-            href: '/resident/account#payments',
+            href: '/payments/resident',
             icon: CreditCard,
             accent: 'from-rose-500/18 to-orange-500/18',
           }
@@ -751,34 +810,36 @@ function getOnboardingSteps(role: RoleKey) {
 
 function getRoleQuickLinks(role: RoleKey, metrics: HomeMetric[], nextActions: HomeAction[]): HomeShortcut[] {
   const metricByLabel = (label: string) => metrics.find((metric) => metric.label === label)?.value;
-  const actionMap = nextActions.map(({ title, description, href, icon }) => ({ title, description, href, icon }));
-
-  const common: HomeShortcut[] = [
-    ...actionMap.slice(0, 2),
-    { title: 'התראות', description: 'כל מה שנכנס עכשיו לפי דחיפות וסוג טיפול.', href: '/notifications', icon: Bell },
-    { title: 'הגדרות', description: 'שפה, התראות, אבטחה והעדפות אישיות.', href: '/settings', icon: Command },
-  ];
-
   const byRole: Record<RoleKey, HomeShortcut[]> = {
     RESIDENT: [
-      { title: 'בקשות', description: 'פניות, מסמכים וחניה.', href: '/resident/requests', icon: ClipboardList, badge: String(metricByLabel('התראות לא נקראו') ?? '') },
-      { title: 'אזור אישי', description: 'תשלומים וסטטוס שירות.', href: '/resident/account', icon: CreditCard },
+      { title: 'בקשה חדשה', description: 'פניות, מסמכים וחניה.', href: '/resident/requests', icon: ClipboardList, badge: String(metricByLabel('התראות לא נקראו') ?? '') },
+      { title: 'קריאת שירות', description: 'פתח קריאת תחזוקה.', href: '/create-call', icon: Ticket },
+      { title: 'מסמכים', description: 'מסמכים חדשים ועדכוני ועד.', href: '/documents', icon: FileText },
+      { title: 'הבניין שלי', description: 'מידע ואנשי קשר.', href: '/resident/account?section=building', icon: Building2 },
     ],
     TECH: [
-      { title: 'עבודות שטח', description: 'המשימות שלך להיום.', href: '/tech/jobs', icon: Wrench },
+      { title: 'עבודות', description: 'המשימות שלך להיום.', href: '/tech/jobs', icon: Wrench, badge: String(metricByLabel('קריאות פעילות') ?? '') },
       { title: 'גינון', description: 'תוכנית חודשית ואישור.', href: '/gardens', icon: CalendarClock },
+      { title: 'עדכן סטטוס', description: 'מעבר מהיר לעדכונים שלי.', href: '/tickets?mine=true', icon: ClipboardList },
+      { title: 'התראות', description: 'שינויים ותיאומים.', href: '/notifications', icon: Bell },
     ],
     PM: [
+      { title: 'קריאות', description: 'טיפול ושיוך.', href: '/tickets', icon: Ticket, badge: String(metricByLabel('קריאות פתוחות') ?? '') },
       { title: 'בניינים', description: 'נכסים ויחידות פעילות.', href: '/buildings', icon: Building2 },
-      { title: 'יומן', description: 'אירועים קרובים וחוזים.', href: '/operations/calendar', icon: CalendarClock },
+      { title: 'לו"ז', description: 'אירועים קרובים וחוזים.', href: '/operations/calendar', icon: CalendarClock },
+      { title: 'ספקים', description: 'תקשורת וספקים.', href: '/communications', icon: Bell },
     ],
     ADMIN: [
-      { title: 'דשבורד', description: 'סיכונים ובקרה רוחבית.', href: '/admin/dashboard', icon: Building2 },
+      { title: 'קריאות', description: 'מוקד והסלמות.', href: '/tickets', icon: Ticket, badge: String(metricByLabel('סיכון SLA') ?? '') },
+      { title: 'בקרה', description: 'סיכונים ובקרה רוחבית.', href: '/admin/dashboard', icon: Building2 },
+      { title: 'תחזוקה', description: 'חריגות ואימותים.', href: '/maintenance', icon: Wrench },
       { title: 'יומן', description: 'לוח זמנים ותיאומים.', href: '/operations/calendar', icon: CalendarClock },
     ],
     ACCOUNTANT: [
-      { title: 'תשלומים', description: 'גבייה ופירעונות.', href: '/payments', icon: CreditCard },
+      { title: 'תשלומים', description: 'גבייה ופירעונות.', href: '/payments', icon: CreditCard, badge: String(metricByLabel('קריאות פתוחות') ?? '') },
       { title: 'תקציבים', description: 'הוצאות וחריגות.', href: '/finance/budgets', icon: FileText },
+      { title: 'דוחות', description: 'סיכומים וייצוא.', href: '/finance/reports', icon: Bell },
+      { title: 'יומן', description: 'אירועי פירעון.', href: '/operations/calendar', icon: CalendarClock },
     ],
     MASTER: [
       { title: 'דשבורד', description: 'סיכונים והזדמנויות.', href: '/admin/dashboard', icon: Building2 },
@@ -786,7 +847,7 @@ function getRoleQuickLinks(role: RoleKey, metrics: HomeMetric[], nextActions: Ho
     ],
   };
 
-  return [...byRole[role], ...common].slice(0, 6);
+  return byRole[role].slice(0, 4);
 }
 
 function MetricCard({ metric }: { metric: HomeMetric }) {
@@ -803,7 +864,7 @@ function MetricCard({ metric }: { metric: HomeMetric }) {
         <CardDescription className="text-xs">{metric.label}</CardDescription>
         <CardTitle className="text-xl sm:text-2xl">{metric.value}</CardTitle>
       </CardHeader>
-      <CardContent className="text-xs leading-5 text-muted-foreground sm:text-sm sm:leading-6">{metric.hint}</CardContent>
+      <CardContent className="text-xs leading-5 text-secondary-foreground sm:text-sm sm:leading-6">{metric.hint}</CardContent>
     </Card>
   );
 }
@@ -821,11 +882,28 @@ function ActionCard({ action }: { action: HomeAction }) {
       </div>
       <div className="min-w-0 flex-1 space-y-0.5 sm:space-y-1">
         <div className="flex items-center gap-2">
-          <div className="text-sm font-semibold text-foreground sm:text-base">{action.title}</div>
-          <ArrowLeft className="h-3.5 w-3.5 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-foreground sm:h-4 sm:w-4" />
+        <div className="text-sm font-semibold text-foreground sm:text-base">{action.title}</div>
+          <ArrowLeft className="icon-directional h-3.5 w-3.5 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-foreground sm:h-4 sm:w-4" />
         </div>
-        <div className="text-xs leading-5 text-muted-foreground sm:text-sm sm:leading-7">{action.description}</div>
+        <div className="text-xs leading-5 text-secondary-foreground sm:text-sm sm:leading-7">{action.description}</div>
       </div>
     </Link>
   );
+}
+
+function getRoleStatusIcon(role: RoleKey) {
+  switch (role) {
+    case 'ADMIN':
+      return <Building2 className="h-4 w-4" strokeWidth={1.75} />;
+    case 'PM':
+      return <Ticket className="h-4 w-4" strokeWidth={1.75} />;
+    case 'TECH':
+      return <Wrench className="h-4 w-4" strokeWidth={1.75} />;
+    case 'RESIDENT':
+      return <CreditCard className="h-4 w-4" strokeWidth={1.75} />;
+    case 'ACCOUNTANT':
+      return <FileText className="h-4 w-4" strokeWidth={1.75} />;
+    default:
+      return <Command className="h-4 w-4" strokeWidth={1.75} />;
+  }
 }

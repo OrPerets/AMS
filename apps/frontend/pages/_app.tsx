@@ -2,6 +2,8 @@
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { Fraunces, Heebo, Inter } from 'next/font/google';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { useRouter } from 'next/router';
 import '../styles/globals.css';
 import '../styles/gardens.css';
 import '../styles/premium-theme.css';
@@ -33,6 +35,8 @@ const fraunces = Fraunces({
 });
 
 export default function MyApp({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  const reducedMotion = useReducedMotion();
   return (
     <div className={cn(inter.variable, heebo.variable, fraunces.variable, "font-sans")}>
       <Head>
@@ -43,9 +47,19 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       </Head>
       <AppProviders>
         <BottomSurfaceProvider>
-          <Layout>
-            <Component {...pageProps} />
-          </Layout>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={router.asPath}
+              initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+              animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+              exit={reducedMotion ? { opacity: 0 } : { opacity: 0 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <Layout>
+                <Component {...pageProps} />
+              </Layout>
+            </motion.div>
+          </AnimatePresence>
           <PwaInstallPrompt />
           <SonnerToaster position="top-center" richColors />
         </BottomSurfaceProvider>

@@ -9,7 +9,7 @@ test.describe('sprint 10 resilience checks', () => {
 
     await expect(page.getByText('מוצגים הנתונים האחרונים שהצליחו להיטען')).toBeVisible();
     await page.getByRole('button', { name: 'נסה שוב' }).click();
-    await expect(page.getByRole('heading', { name: 'לוח בקרה ניהולי' })).toBeVisible();
+    await expect(page.getByText('פעולה ראשית').first()).toBeVisible();
   });
 
   test('finance reports remain stable under slow responses', async ({ page }) => {

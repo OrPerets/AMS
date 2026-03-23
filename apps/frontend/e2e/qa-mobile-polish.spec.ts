@@ -42,8 +42,8 @@ test.describe('mobile polish smoke', () => {
       await mockApi(page);
 
       await page.goto('/home', { waitUntil: 'domcontentloaded' });
-      await expect(page.getByText(/תיבת עדיפויות|Priority inbox/i).first()).toBeVisible();
-      await expect(page.getByText(/פעולות ראשיות|Primary actions/i).first()).toBeVisible();
+      await expect(page.getByRole('heading', { name: /תיבת עדיפויות|Priority inbox/i }).first()).toBeVisible();
+      await expect(page.getByText(/מה דורש פעולה עכשיו|דורש פעולה עכשיו|requires action now/i).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
       await captureToMobilePolish(page, testInfo, `home-${scenario.name}.png`);
 
@@ -59,9 +59,14 @@ test.describe('mobile polish smoke', () => {
       await expectNoHorizontalOverflow(page);
       await captureToMobilePolish(page, testInfo, `settings-${scenario.name}.png`);
 
-      await page.goto('/resident/account', { waitUntil: 'domcontentloaded' });
-      await expect(page.getByText(/חיוב אוטומטי|Autopay/i).first()).toBeVisible();
-      await expect(page.getByText(/פעולות ראשיות|Primary actions/i).first()).toBeVisible();
+      await page.goto(scenario.role === 'RESIDENT' ? '/resident/account' : '/buildings', { waitUntil: 'domcontentloaded' });
+      if (scenario.role === 'RESIDENT') {
+        await expect(page.getByRole('link', { name: /הבניין שלי/ }).first()).toBeVisible();
+        await expect(page.getByText(/החשבון מעודכן|לתשלום/).first()).toBeVisible();
+      } else {
+        await expect(page.getByRole('heading', { name: 'ניהול בניינים' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'צפה' }).first()).toBeVisible();
+      }
       await expectNoHorizontalOverflow(page);
       await captureToMobilePolish(page, testInfo, `resident-account-${scenario.name}.png`);
     });

@@ -310,13 +310,13 @@ export function routeForRole(role?: string | null): string {
   switch (normalizeRole(role)) {
     case 'ADMIN':
     case 'MASTER':
-      return '/admin/dashboard';
+      return '/home';
     case 'PM':
-      return '/tickets';
+      return '/home';
     case 'TECH':
-      return '/tech/jobs';
+      return '/home';
     case 'ACCOUNTANT':
-      return '/payments';
+      return '/home';
     case 'RESIDENT':
       return '/resident/account';
     default:
@@ -325,11 +325,7 @@ export function routeForRole(role?: string | null): string {
 }
 
 export function shouldRouteToWorkerHub(role?: string | null): boolean {
-  const effectiveRole = normalizeRole(role) || getEffectiveRole();
-  return Boolean(
-    effectiveRole &&
-      effectiveRole !== 'RESIDENT'
-  );
+  return false;
 }
 
 export function getDefaultRoute(role?: string | null): string {
@@ -351,7 +347,7 @@ export function getPortalEntryRoute(
     return getDefaultRoute(effectiveRole);
   }
 
-  return shouldRouteToWorkerHub(effectiveRole) ? '/worker-hub' : getDefaultRoute(effectiveRole);
+  return getDefaultRoute(effectiveRole);
 }
 
 function isTokenExpired(token: string) {

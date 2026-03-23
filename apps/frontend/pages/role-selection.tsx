@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { MobileCardSkeleton } from '../components/ui/page-states';
-import { getTokenPayload, shouldRouteToWorkerHub } from '../lib/auth';
+import { getDefaultRoute, getTokenPayload } from '../lib/auth';
 
 export default function RoleSelectionPage() {
   const router = useRouter();
@@ -14,7 +14,7 @@ export default function RoleSelectionPage() {
       return;
     }
     const next = typeof router.query.next === 'string' ? router.query.next : undefined;
-    router.replace(next || (shouldRouteToWorkerHub(role) ? '/worker-hub' : '/home'));
+    router.replace(next || getDefaultRoute(role));
   }, [router]);
 
   return <MobileCardSkeleton cards={3} />;

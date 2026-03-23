@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-type IconType = React.ComponentType<{ className?: string }>;
+type IconType = React.ComponentType<{ className?: string; strokeWidth?: number }>;
 
 export type MobileActionHubItem = {
   id: string;
@@ -71,14 +71,16 @@ export function MobileActionHub({
 }) {
   return (
     <section className={cn('space-y-3', className)} aria-label={typeof title === 'string' ? title : undefined}>
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-foreground">{title}</h2>
-          {subtitle ? <p className="mt-1 text-sm leading-6 text-muted-foreground">{subtitle}</p> : null}
+      {title || subtitle ? (
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            {title ? <h2 className="text-[15px] font-semibold text-foreground">{title}</h2> : null}
+            {subtitle ? <p className="mt-1 text-[12px] leading-5 text-secondary-foreground">{subtitle}</p> : null}
+          </div>
         </div>
-      </div>
+      ) : null}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => {
           const Icon = item.icon;
           return (
@@ -87,7 +89,7 @@ export function MobileActionHub({
               href={item.href}
               onClick={item.onClick}
               className={cn(
-                'group min-h-[132px] rounded-[26px] border bg-card/96 p-3 text-start shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0',
+                'group min-h-[88px] rounded-2xl border bg-card/96 p-3 text-start shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target',
                 !item.href && !item.onClick && 'pointer-events-none',
               )}
             >
@@ -95,11 +97,11 @@ export function MobileActionHub({
                 <div className="flex items-start justify-between gap-2">
                   <span
                     className={cn(
-                      'flex h-14 w-14 items-center justify-center rounded-[22px] border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]',
+                      'flex h-10 w-10 items-center justify-center rounded-xl border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]',
                       toneClasses(item.accent),
                     )}
                   >
-                    <Icon className="h-6 w-6" />
+                    <Icon className="h-5 w-5" strokeWidth={1.75} />
                   </span>
                   {item.badge !== undefined && item.badge !== '' ? (
                     <span className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
@@ -111,14 +113,14 @@ export function MobileActionHub({
                 <div className="mt-3 flex-1">
                   <div className="text-sm font-semibold text-foreground">{item.label}</div>
                   {item.description ? (
-                    <div className="mt-1 line-clamp-2 text-[12px] leading-5 text-muted-foreground">{item.description}</div>
+                    <div className="mt-1 line-clamp-2 text-[12px] leading-5 text-secondary-foreground">{item.description}</div>
                   ) : null}
                 </div>
 
                 {(item.href || item.onClick) ? (
                   <div className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
                     פתח
-                    <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                    <ArrowUpRight className="icon-directional h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} />
                   </div>
                 ) : null}
               </div>

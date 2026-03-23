@@ -12,6 +12,8 @@ import { RiskAndSystemGrid } from '../../components/admin/dashboard/RiskAndSyste
 import { DashboardResponse } from '../../components/admin/dashboard/types';
 import { MobileContextBar } from '../../components/ui/mobile-context-bar';
 import { MobilePriorityInbox } from '../../components/ui/mobile-priority-inbox';
+import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
+import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { SectionHeader } from '../../components/ui/section-header';
 import { Button } from '../../components/ui/button';
@@ -90,18 +92,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-5 sm:space-y-8">
-      <MobileContextBar
-        roleLabel={t('adminDashboard.mobile.roleLabel')}
-        contextLabel={buildingId === 'all' ? t('adminDashboard.mobile.allBuildings') : t('adminDashboard.mobile.buildingLabel', { id: buildingId })}
-        syncLabel={t('adminDashboard.mobile.windowLabel', { value: range })}
-        lastUpdated={formatDate(new Date())}
-        chips={[
-          `${data.filters.rangeLabel}`,
-          t('adminDashboard.mobile.openTickets', { count: data.portfolioKpis.openTickets }),
-          t('adminDashboard.mobile.approvalsWaiting', { count: data.systemAdmin.stats.pendingApprovals }),
-        ]}
-      />
-
       {error ? (
         <InlineErrorPanel
           className="border-warning/40 bg-warning/5 text-foreground"
@@ -111,17 +101,32 @@ export default function AdminDashboardPage() {
         />
       ) : null}
 
-      <DashboardHero
-        data={data}
-        buildingId={buildingId}
-        range={range}
-        setBuildingId={setBuildingId}
-        setRange={setRange}
-        exportHref={exportHref}
-        occupancyRate={occupancyRate}
-      />
+      <div className="space-y-3 md:hidden">
+        <CompactStatusStrip
+          roleLabel={t('adminDashboard.mobile.roleLabel')}
+          metrics={[
+            { id: 'tickets', label: 'קריאות', value: data.portfolioKpis.openTickets, tone: data.portfolioKpis.openTickets > 0 ? 'warning' : 'success' },
+            { id: 'sla', label: 'SLA', value: data.portfolioKpis.slaBreaches, tone: data.portfolioKpis.slaBreaches > 0 ? 'danger' : 'success' },
+          ]}
+        />
 
-      <div className="md:hidden">
+        <PrimaryActionCard
+          eyebrow="פעולה ראשית"
+          title={
+            data.portfolioKpis.slaBreaches
+              ? `${data.portfolioKpis.slaBreaches} חריגות SLA פתוחות`
+              : `${data.portfolioKpis.openTickets} קריאות פתוחות`
+          }
+          description={
+            data.portfolioKpis.slaBreaches
+              ? `${data.systemAdmin.stats.pendingApprovals} אישורים ממתינים ו-${data.portfolioKpis.openTickets} קריאות פעילות דורשים התערבות.`
+              : 'פתח את מוקד הקריאות כדי לשייך, להסלים או לסגור צווארי בקבוק.'
+          }
+          ctaLabel="פתח מוקד"
+          href="/tickets"
+          tone={data.portfolioKpis.slaBreaches > 0 ? 'danger' : 'warning'}
+        />
+
         <MobilePriorityInbox
           title={t('adminDashboard.mobile.triageTitle')}
           subtitle={t('adminDashboard.mobile.triageSubtitle')}
@@ -191,6 +196,31 @@ export default function AdminDashboardPage() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      <div className="hidden md:block">
+        <MobileContextBar
+          roleLabel={t('adminDashboard.mobile.roleLabel')}
+          contextLabel={buildingId === 'all' ? t('adminDashboard.mobile.allBuildings') : t('adminDashboard.mobile.buildingLabel', { id: buildingId })}
+          syncLabel={t('adminDashboard.mobile.windowLabel', { value: range })}
+          lastUpdated={formatDate(new Date())}
+          chips={[
+            `${data.filters.rangeLabel}`,
+            t('adminDashboard.mobile.openTickets', { count: data.portfolioKpis.openTickets }),
+            t('adminDashboard.mobile.approvalsWaiting', { count: data.systemAdmin.stats.pendingApprovals }),
+          ]}
+        />
+      </div>
+      <div className="hidden md:block">
+        <DashboardHero
+          data={data}
+          buildingId={buildingId}
+          range={range}
+          setBuildingId={setBuildingId}
+          setRange={setRange}
+          exportHref={exportHref}
+          occupancyRate={occupancyRate}
+        />
       </div>
 
       <div className="hidden md:block">

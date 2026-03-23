@@ -855,6 +855,7 @@ export async function captureEvidence(page: Page, testInfo: TestInfo, filename: 
   await fs.mkdir(evidenceDir, { recursive: true });
   await page.screenshot({
     path: path.join(evidenceDir, filename),
-    fullPage: true,
+    fullPage: false,
+    animations: 'disabled',
   });
 }

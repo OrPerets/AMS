@@ -55,11 +55,7 @@ export default function LoginPage() {
         ? router.query.portal
         : undefined;
       const role = payload?.actAsRole || payload?.role;
-      const defaultRoute = portal
-        ? getPortalEntryRoute(portal, role)
-        : shouldRouteToWorkerHub(role)
-          ? '/worker-hub'
-          : getDefaultRoute(role);
+      const defaultRoute = portal ? getPortalEntryRoute(portal, role) : getDefaultRoute(role);
       const destination = next || defaultRoute;
 
       router.replace(destination);

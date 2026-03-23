@@ -26,6 +26,8 @@ import { EmptyState } from '../../components/ui/empty-state';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
 import { PageHero } from '../../components/ui/page-hero';
+import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
+import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 import { SectionHeader } from '../../components/ui/section-header';
 import { Switch } from '../../components/ui/switch';
 import { StatusBadge } from '../../components/ui/status-badge';
@@ -309,6 +311,11 @@ export default function ResidentAccountPage() {
   useEffect(() => {
     if (!router.isReady) return;
 
+    if (router.asPath.includes('#payments-section')) {
+      void router.replace('/payments/resident');
+      return;
+    }
+
     const rawIntentId = router.query.intentId || router.query.paymentIntentId || router.query.payment_intent || router.query.paymentId;
     if (!rawIntentId) return;
 
@@ -317,6 +324,14 @@ export default function ResidentAccountPage() {
 
     void refreshIntentStatus(intentId, true);
   }, [router.isReady, router.query.intentId, router.query.paymentIntentId, router.query.payment_intent, router.query.paymentId]);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    const section = typeof router.query.section === 'string' ? router.query.section : '';
+    if (section === 'building') {
+      window.setTimeout(() => scrollToSection('building-section'), 120);
+    }
+  }, [router.isReady, router.query.section]);
 
   async function refreshIntentStatus(intentId: number, fromCallback = false) {
     try {
@@ -625,7 +640,7 @@ export default function ResidentAccountPage() {
       id: 'payments',
       label: 'תשלומים',
       description: nextPaymentDue ? `לתשלום ${formatCurrency(nextPaymentDue.amount)}` : 'חיובים, קבלות וכרטסת',
-      onClick: () => scrollToSection('payments-section'),
+      href: '/payments/resident',
       icon: CreditCard,
       badge: nextPaymentDue ? 'חדש' : undefined,
     },
@@ -647,13 +662,45 @@ export default function ResidentAccountPage() {
       id: 'building',
       label: 'הבניין שלי',
       description: primaryBuilding?.name || 'אנשי קשר, הנחיות ומתקנים',
-      onClick: () => scrollToSection('building-section'),
+      href: '/resident/account?section=building',
       icon: Building2,
     },
   ];
 
   return (
     <div className="space-y-6 pb-16 sm:space-y-8 lg:pb-0">
+      <div className="space-y-3 md:hidden">
+        <CompactStatusStrip
+          roleLabel={primaryBuilding?.name ? `דייר · ${primaryBuilding.name}` : 'דייר'}
+          icon={<Building2 className="h-4 w-4" strokeWidth={1.75} />}
+          metrics={[
+            { id: 'balance', label: 'יתרה', value: Math.round(summary?.currentBalance ?? 0), tone: summary?.currentBalance ? 'warning' : 'success' },
+            { id: 'tickets', label: 'קריאות', value: openTickets.length, tone: openTickets.length ? 'warning' : 'success' },
+          ]}
+        />
+
+        <PrimaryActionCard
+          eyebrow="פעולה ראשית"
+          title={nextPaymentDue ? `לתשלום ${formatCurrency(nextPaymentDue.amount)}` : 'החשבון מעודכן'}
+          description={
+            nextPaymentDue
+              ? `2 חיובים פתוחים · מועד ${formatDate(nextPaymentDue.dueDate, locale)}`
+              : 'אין יתרה לתשלום. אפשר לעקוב אחרי קריאות, מסמכים ופרטי הבניין.'
+          }
+          ctaLabel={nextPaymentDue ? 'שלם עכשיו' : 'פרטי חשבון'}
+          href={nextPaymentDue ? '/payments/resident' : '/resident/account?section=building'}
+          tone={nextPaymentDue?.status === 'OVERDUE' ? 'danger' : nextPaymentDue ? 'warning' : 'success'}
+          secondaryAction={
+            nextPaymentDue ? (
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/resident/account?section=building">פרטי חשבון</Link>
+              </Button>
+            ) : null
+          }
+        />
+      </div>
+
+      <div className="hidden md:block">
       <PageHero
         compact
         className="resident-landing-hero"
@@ -677,6 +724,7 @@ export default function ResidentAccountPage() {
           </>
         }
       />
+      </div>
 
       <section className="grid gap-3 sm:grid-cols-3" aria-label="מצב חשבון מהיר">
         {heroStatusItems.map((item) => (
@@ -803,7 +851,7 @@ export default function ResidentAccountPage() {
         </Card>
       </div>
 
-      <section id="payments-section" className="space-y-3 sm:space-y-4">
+      <section id="payments-section" className="hidden space-y-3 sm:space-y-4 md:block">
         <SectionHeader
           title="תשלומים"
           subtitle="מה לתשלום, מה שולם, ואיך נראית ההיסטוריה בלי מונחים טכניים מיותרים."

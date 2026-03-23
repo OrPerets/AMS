@@ -14,6 +14,8 @@ import { MobileActionHub } from '../../components/ui/mobile-action-hub';
 import { MobilePriorityInbox } from '../../components/ui/mobile-priority-inbox';
 import { MobileCardSkeleton } from '../../components/ui/page-states';
 import { PageHero } from '../../components/ui/page-hero';
+import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
+import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 import { PullToRefreshIndicator } from '../../components/ui/pull-to-refresh-indicator';
 import { SectionHeader } from '../../components/ui/section-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
@@ -237,35 +239,62 @@ export default function ResidentRequestsPage() {
     <div className="space-y-5 sm:space-y-8">
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label="משוך כדי לרענן בקשות דייר" />
 
-      <MobileContextBar
-        roleLabel={t('residentRequests.mobile.roleLabel')}
-        contextLabel={t('residentRequests.mobile.contextLabel')}
-        syncLabel={t('residentRequests.mobile.syncedLabel')}
-        lastUpdated={formatDate(new Date(), locale)}
-        chips={[
-          t('residentRequests.mobile.openRequests', { count: openRequests.length }),
-          t('residentRequests.mobile.closedRequests', { count: closedRequests.length }),
-        ]}
-      />
-
-      <PageHero
-        compact
-        variant="operational"
-        kicker="שירות עצמי לדייר"
-        eyebrow={<StatusBadge label="שירות דיירים" tone="finance" />}
-        title="בקשות דייר"
-        description="בחר את סוג הבקשה, מלא רק את מה שנדרש, ועקוב אחרי ההתקדמות מאותו מסך."
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => setView('new')}>
-              בקשה חדשה
-            </Button>
+      <div className="space-y-3 md:hidden">
+        <CompactStatusStrip
+          roleLabel={t('residentRequests.mobile.roleLabel')}
+          metrics={[
+            { id: 'open', label: 'פתוחות', value: openRequests.length, tone: openRequests.length ? 'warning' : 'success' },
+            { id: 'closed', label: 'נסגרו', value: closedRequests.length, tone: 'default' },
+          ]}
+        />
+        <PrimaryActionCard
+          eyebrow="שירות עצמי"
+          title="בקשה חדשה"
+          description="בחירת מסלול קצר וברור עם מעקב מסודר מאותו מסך."
+          ctaLabel="פתח בקשה"
+          onClick={() => setView('new')}
+          tone={openRequests.length ? 'warning' : 'default'}
+          secondaryAction={
             <Button asChild variant="outline" size="sm">
               <Link href="/create-call">קריאת תחזוקה</Link>
             </Button>
-          </div>
-        }
-      />
+          }
+        />
+      </div>
+
+      <div className="hidden md:block">
+        <MobileContextBar
+          roleLabel={t('residentRequests.mobile.roleLabel')}
+          contextLabel={t('residentRequests.mobile.contextLabel')}
+          syncLabel={t('residentRequests.mobile.syncedLabel')}
+          lastUpdated={formatDate(new Date(), locale)}
+          chips={[
+            t('residentRequests.mobile.openRequests', { count: openRequests.length }),
+            t('residentRequests.mobile.closedRequests', { count: closedRequests.length }),
+          ]}
+        />
+      </div>
+
+      <div className="hidden md:block">
+        <PageHero
+          compact
+          variant="operational"
+          kicker="שירות עצמי לדייר"
+          eyebrow={<StatusBadge label="שירות דיירים" tone="finance" />}
+          title="בקשות דייר"
+          description="בחר את סוג הבקשה, מלא רק את מה שנדרש, ועקוב אחרי ההתקדמות מאותו מסך."
+          actions={
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => setView('new')}>
+                בקשה חדשה
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/create-call">קריאת תחזוקה</Link>
+              </Button>
+            </div>
+          }
+        />
+      </div>
 
       <MobilePriorityInbox
         title={t('residentRequests.queueTitle')}

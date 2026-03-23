@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
+import { FilterBar } from '../../ui/filter-bar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { DashboardResponse } from './types';
 import { useLocale } from '../../../lib/providers';
@@ -64,7 +65,7 @@ export function DashboardHero({
             <Button asChild variant="outline" size="sm" className="border-white/20 bg-white/5 text-white hover:bg-white/10 sm:h-11 sm:px-5 sm:text-sm">
               <a href={exportHref} target="_blank" rel="noreferrer">
                 הפק דוח
-                <ArrowUpRight className="ms-1.5 h-3.5 w-3.5" />
+                <ArrowUpRight className="icon-directional ms-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
               </a>
             </Button>
             <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex border-white/20 bg-white/5 text-white hover:bg-white/10 sm:h-11 sm:px-5 sm:text-sm">
@@ -76,11 +77,11 @@ export function DashboardHero({
           </div>
         </div>
 
-        <div className="sticky top-16 space-y-3 self-start rounded-xl sm:rounded-[24px] border border-white/10 bg-black/15 p-3 backdrop-blur sm:static sm:p-4">
+        <div className="sticky top-16 space-y-3 self-start sm:static">
           <div className="rounded-2xl border border-white/10 bg-white/6 px-3 py-2 text-[11px] text-white/75">
             {buildingId === 'all' ? t('adminDashboard.mobile.allBuildings') : t('adminDashboard.mobile.buildingLabel', { id: buildingId })} · {data.filters.rangeLabel}
           </div>
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
+          <FilterBar className="border-white/10 bg-black/15 sm:border-white/10 sm:bg-black/15">
             <div className="space-y-1.5">
               <p className="text-[11px] font-medium uppercase tracking-wider text-white/60">בניין</p>
               <Select value={buildingId} onValueChange={setBuildingId}>
@@ -111,7 +112,7 @@ export function DashboardHero({
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          </FilterBar>
 
           <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
             <HeroMetric label="תפוסה" value={`${occupancyRate}%`} sublabel={`${data.portfolioKpis.occupiedUnits} מאוכלסות`} />

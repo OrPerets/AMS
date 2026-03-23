@@ -62,6 +62,15 @@ const staticCommands: CommandItem[] = [
     keywords: ['resident', 'account', 'payments', 'אזור אישי', 'תשלומים'],
   },
   {
+    id: 'resident-payments',
+    label: 'תשלומי דייר',
+    description: 'חיובים, קבלות, כרטיסים שמורים וחיוב אוטומטי במסך ייעודי.',
+    href: '/payments/resident',
+    icon: CreditCard,
+    roles: ['RESIDENT'],
+    keywords: ['resident payments', 'payments', 'billing', 'חשבוניות', 'תשלומי דייר'],
+  },
+  {
     id: 'tech-jobs',
     label: 'משימות שטח',
     description: 'מסך העבודה של הטכנאי עם המשימות הפעילות להיום.',

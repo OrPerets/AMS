@@ -9,6 +9,7 @@ type PageHeroProps = {
   actions?: React.ReactNode;
   aside?: React.ReactNode;
   compact?: boolean;
+  mobileCompact?: boolean;
   variant?: 'brand' | 'operational';
   className?: string;
 };
@@ -21,12 +22,13 @@ export function PageHero({
   actions,
   aside,
   compact,
+  mobileCompact,
   variant = 'brand',
   className,
 }: PageHeroProps) {
   const isOperational = variant === 'operational';
 
-  if (compact) {
+  if (compact || mobileCompact) {
     return (
       <section
         className={cn(
