@@ -1,5 +1,5 @@
 // /Users/orperetz/Documents/AMS/apps/frontend/pages/tech/jobs.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { 
   CheckCircle, 
   Clock, 
@@ -17,6 +17,9 @@ import {
 } from 'lucide-react';
 import { authFetch, getCurrentUserId } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
+import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
+import { PrimaryActionCard } from '../../components/ui/primary-action-card';
+import { MobilePriorityInbox } from '../../components/ui/mobile-priority-inbox';
 import { Badge } from '../../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
@@ -258,9 +261,95 @@ export default function Jobs() {
     inProgress: inProgressJobs.length,
     urgent: orders.filter(o => o.ticket.severity === 'URGENT').length
   };
+  const nextJob = useMemo(() => orders.slice().sort((left, right) => {
+    const leftRank = left.ticket.severity === 'URGENT' ? 3 : left.ticket.severity === 'HIGH' ? 2 : 1;
+    const rightRank = right.ticket.severity === 'URGENT' ? 3 : right.ticket.severity === 'HIGH' ? 2 : 1;
+    return rightRank - leftRank;
+  })[0], [orders]);
+  const queueItems = useMemo(() => orders.slice(0, 4).map((order) => ({
+    id: `job-${order.id}`,
+    status: order.ticket.severity === 'URGENT' ? 'דחוף' : order.ticket.severity === 'HIGH' ? 'גבוה' : 'רגיל',
+    tone: order.ticket.severity === 'URGENT' ? 'danger' as const : order.ticket.severity === 'HIGH' ? 'warning' as const : 'active' as const,
+    title: `#${order.ticket.id} ${order.ticket.title || 'משימת שטח'}`,
+    reason: `${order.location?.building || 'בניין'}${order.location?.floor ? ` · קומה ${order.location.floor}` : ''} · ${getTimeRemaining(order.dueTime) || 'ללא SLA'}`,
+    meta: order.status === 'IN_PROGRESS' ? 'בתהליך' : 'מוכן להתחלה',
+    href: `/work-orders/${order.id}`,
+    ctaLabel: 'פתח',
+  })), [orders]);
 
   return (
     <div className="space-y-6">
+      <div className="space-y-3 md:hidden">
+        <CompactStatusStrip
+          roleLabel="טכנאי"
+          metrics={[
+            { id: 'jobs', label: 'משימות', value: todayStats.total, tone: todayStats.total > 0 ? 'warning' : 'success' },
+            { id: 'urgent', label: 'דחוף', value: todayStats.urgent, tone: todayStats.urgent > 0 ? 'danger' : 'success' },
+          ]}
+        />
+
+        <PrimaryActionCard
+          eyebrow="Next Job"
+          title={
+            nextJob
+              ? `${nextJob.ticket.severity === 'URGENT' ? '🔴 דחוף' : nextJob.ticket.severity === 'HIGH' ? '🟡 גבוה' : '🔵 רגיל'} — ${nextJob.ticket.title || 'משימה לשטח'}`
+              : 'אין כרגע משימה דחופה'
+          }
+          description={
+            nextJob
+              ? `${nextJob.location?.building || 'בניין'}${nextJob.location?.floor ? ` · קומה ${nextJob.location.floor}` : ''} · ${getTimeRemaining(nextJob.dueTime) || 'ללא SLA'}`
+              : 'תור העבודות פתוח עבורך. אפשר לעדכן סטטוס, לעבור לגינון או לרענן שוב בהמשך.'
+          }
+          ctaLabel="התחל טיפול"
+          href={nextJob ? `/work-orders/${nextJob.id}` : '/tech/jobs'}
+          tone={todayStats.urgent > 0 ? 'danger' : 'warning'}
+          secondaryAction={
+            <Button asChild size="sm" variant="outline" className="w-full justify-between">
+              <a href="/tickets?mine=true">עדכן סטטוס</a>
+            </Button>
+          }
+        />
+
+        <div className="grid grid-cols-2 gap-3">
+          <Button asChild className="h-auto min-h-[96px] flex-col items-start justify-between rounded-[24px] p-4 text-right">
+            <a href="/tech/jobs">
+              <span className="text-sm">עבודות</span>
+              <span className="text-2xl font-black">{todayStats.total}</span>
+              <span className="text-xs">היום</span>
+            </a>
+          </Button>
+          <Button asChild variant="outline" className="h-auto min-h-[96px] flex-col items-start justify-between rounded-[24px] p-4 text-right">
+            <a href="/gardens">
+              <span className="text-sm">גינון</span>
+              <span className="text-2xl font-black">חודשי</span>
+              <span className="text-xs">🌿</span>
+            </a>
+          </Button>
+          <Button asChild variant="outline" className="h-auto min-h-[96px] flex-col items-start justify-between rounded-[24px] p-4 text-right">
+            <a href="/tickets?mine=true">
+              <span className="text-sm">עדכן</span>
+              <span className="text-2xl font-black">סטטוס</span>
+              <span className="text-xs">✏️</span>
+            </a>
+          </Button>
+          <Button asChild variant="outline" className="h-auto min-h-[96px] flex-col items-start justify-between rounded-[24px] p-4 text-right">
+            <a href="/notifications">
+              <span className="text-sm">התראות</span>
+              <span className="text-2xl font-black">{queueItems.length}</span>
+              <span className="text-xs">חדשות</span>
+            </a>
+          </Button>
+        </div>
+
+        <MobilePriorityInbox
+          title="תור העבודות להיום"
+          subtitle="המשימות מסודרות לפי חומרה ו-SLA כדי להיכנס ישר לעבודה הבאה."
+          items={queueItems}
+          emptyTitle="אין משימות שטח להיום"
+          emptyDescription="יום שקט. אפשר לעבור לתוכנית הגינון או לרענן שוב בהמשך."
+        />
+      </div>
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
