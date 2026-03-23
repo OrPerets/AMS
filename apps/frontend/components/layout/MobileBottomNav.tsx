@@ -4,192 +4,18 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import {
-  BarChart3,
-  Bell,
-  Box,
-  Building,
-  CalendarClock,
-  ClipboardList,
-  CreditCard,
-  FileText,
-  Folder,
-  Home,
-  Leaf,
-  MessageCircle,
-  MoreHorizontal,
-  Settings,
-  Ticket,
-  Wallet,
-  Wrench,
-  X,
-} from 'lucide-react';
+import { MoreHorizontal, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
 import { getTokenPayload, normalizeRole } from '../../lib/auth';
 import { useRegisterBottomSurface } from '../../lib/bottom-surface';
 import { lockAppScroll } from '../../lib/scroll-lock';
 import { useFocusTrap } from '../../hooks/use-focus-trap';
-
-type NavItem = {
-  label: string;
-  hint?: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-};
-
-type NavGroup = {
-  title: string;
-  items: NavItem[];
-};
+import { getNavigationModel, type NavigationGroup, type NavigationItem } from '../../lib/navigation';
 
 const RECENT_STORAGE_KEY = 'ams-mobile-nav-recent';
 const MAX_MORE_GROUPS = 3;
 const MAX_MORE_ITEMS_TOTAL = 12;
-
-function createRoleNavigation(role: string, t: (key: string) => string): { primary: NavItem[]; groups: NavGroup[] } {
-  switch (role) {
-    case 'ADMIN':
-      return {
-        primary: [
-          { label: 'בית', hint: 'עבודה', href: '/home', icon: Home },
-          { label: 'קריאות', hint: 'מוקד', href: '/tickets', icon: Ticket },
-          { label: 'בקרה', hint: 'KPI', href: '/admin/dashboard', icon: BarChart3 },
-          { label: 'פעולות', hint: 'יומן', href: '/operations/calendar', icon: CalendarClock },
-        ],
-        groups: [
-          { title: 'ניהול נכסים', items: [
-            { label: 'בניינים', hint: 'פורטפוליו', href: '/buildings', icon: Building },
-            { label: 'נכסים', hint: 'ציוד ומלאי', href: '/assets', icon: Box },
-            { label: 'ספקים', hint: 'אנשי קשר', href: '/vendors', icon: MessageCircle },
-            { label: 'חוזים', hint: 'הסכמים', href: '/contracts', icon: FileText },
-          ] },
-          { title: 'כספים', items: [
-            { label: 'תשלומים', hint: 'גבייה', href: '/payments', icon: CreditCard },
-            { label: 'תקציבים', hint: 'בקרה', href: '/finance/budgets', icon: Wallet },
-            { label: 'דוחות', hint: 'ניתוח', href: '/finance/reports', icon: BarChart3 },
-          ] },
-          { title: 'מערכת', items: [
-            { label: 'הגדרות', hint: 'תצורה', href: '/admin/configuration', icon: Settings },
-            { label: 'אבטחה', hint: 'סיכונים', href: '/admin/security', icon: Bell },
-            { label: 'אישורים', hint: 'ממתינים', href: '/admin/approvals', icon: ClipboardList },
-            { label: 'מסמכים', hint: 'מאגר', href: '/documents', icon: Folder },
-            { label: 'התראות', hint: 'מרכז עדכונים', href: '/notifications', icon: Bell },
-          ] },
-        ],
-      };
-    case 'PM':
-      return {
-        primary: [
-          { label: 'בית', hint: 'עבודה', href: '/home', icon: Home },
-          { label: 'קריאות', hint: 'שיוך', href: '/tickets', icon: Ticket },
-          { label: 'בניינים', hint: 'נכסים', href: '/buildings', icon: Building },
-          { label: 'לו"ז', hint: 'תפעול', href: '/operations/calendar', icon: CalendarClock },
-        ],
-        groups: [
-          { title: 'תפעול', items: [
-            { label: 'תחזוקה', hint: 'ביצוע', href: '/maintenance', icon: CalendarClock },
-            { label: 'תקשורת', hint: 'ספקים ודיירים', href: '/communications', icon: MessageCircle },
-            { label: 'גינון', hint: 'חודשי', href: '/gardens', icon: Leaf },
-            { label: 'סידורים', hint: 'יומנים', href: '/schedules', icon: ClipboardList },
-          ] },
-          { title: 'כספים', items: [
-            { label: 'תשלומים', hint: 'גבייה', href: '/payments', icon: CreditCard },
-            { label: 'תקציבים', hint: 'חריגות', href: '/finance/budgets', icon: Wallet },
-            { label: 'דוחות', hint: 'סיכומים', href: '/finance/reports', icon: BarChart3 },
-          ] },
-          { title: 'כלים', items: [
-            { label: 'מסמכים', hint: 'גישה מהירה', href: '/documents', icon: Folder },
-            { label: 'ספקים', hint: 'קשרים', href: '/vendors', icon: MessageCircle },
-            { label: 'חוזים', hint: 'מסמכי ספק', href: '/contracts', icon: FileText },
-            { label: 'התראות', hint: 'עדכונים', href: '/notifications', icon: Bell },
-            { label: 'הגדרות', hint: 'העדפות', href: '/settings', icon: Settings },
-          ] },
-        ],
-      };
-    case 'TECH':
-      return {
-        primary: [
-          { label: 'בית', hint: 'תדריך', href: '/home', icon: Home },
-          { label: 'עבודות', hint: 'תור', href: '/tech/jobs', icon: Wrench },
-          { label: 'גינון', hint: 'חודש', href: '/gardens', icon: Leaf },
-          { label: 'עדכון', hint: 'שלי', href: '/tickets?mine=true', icon: ClipboardList },
-        ],
-        groups: [
-          { title: 'תפעול', items: [
-            { label: 'תחזוקה', hint: 'רשימות', href: '/maintenance', icon: CalendarClock },
-            { label: 'יומנים', hint: 'ביצוע', href: '/schedules', icon: ClipboardList },
-            { label: 'נכסים', hint: 'ציוד', href: '/assets', icon: Box },
-          ] },
-          { title: 'מידע', items: [
-            { label: 'מסמכים', hint: 'הנחיות', href: '/documents', icon: Folder },
-            { label: 'תקשורת', hint: 'עדכונים', href: '/communications', icon: MessageCircle },
-          ] },
-          { title: 'כלים', items: [
-            { label: 'התראות', hint: 'חדשות', href: '/notifications', icon: Bell },
-            { label: 'הגדרות', hint: 'אישי', href: '/settings', icon: Settings },
-          ] },
-        ],
-      };
-    case 'RESIDENT':
-      return {
-        primary: [
-          { label: 'בית', hint: 'חשבון', href: '/resident/account', icon: Home },
-          { label: 'בקשות', hint: 'מעקב', href: '/resident/requests', icon: ClipboardList },
-          { label: 'תשלומים', hint: 'חיובים', href: '/payments/resident', icon: CreditCard },
-          { label: 'קריאה', hint: 'פתיחה', href: '/create-call', icon: Ticket },
-        ],
-        groups: [
-          { title: 'חשבון', items: [
-            { label: 'מסמכים', hint: 'ועד וקבצים', href: '/documents', icon: Folder },
-            { label: 'הבניין שלי', hint: 'מידע ואנשי קשר', href: '/resident/building', icon: Building },
-            { label: 'שיטות תשלום', hint: 'כרטיסים', href: '/resident/payment-methods', icon: CreditCard },
-          ] },
-          { title: 'תמיכה', items: [
-            { label: 'צור קשר', hint: 'ניהול ותמיכה', href: '/support', icon: MessageCircle },
-            { label: 'התראות', hint: 'הודעות חדשות', href: '/notifications', icon: Bell },
-          ] },
-          { title: 'הגדרות', items: [
-            { label: 'הגדרות', hint: 'העדפות', href: '/settings', icon: Settings },
-          ] },
-        ],
-      };
-    case 'ACCOUNTANT':
-      return {
-        primary: [
-          { label: 'בית', hint: 'סקירה', href: '/home', icon: Home },
-          { label: 'גבייה', hint: 'תשלומים', href: '/payments', icon: CreditCard },
-          { label: 'תקציבים', hint: 'מעקב', href: '/finance/budgets', icon: Wallet },
-          { label: 'דוחות', hint: 'פיננסים', href: '/finance/reports', icon: BarChart3 },
-        ],
-        groups: [
-          { title: 'תפעול', items: [
-            { label: 'יומן', hint: 'פירעונות', href: '/operations/calendar', icon: CalendarClock },
-            { label: 'קריאות', hint: 'הקשר תפעולי', href: '/tickets', icon: Ticket },
-            { label: 'ספקים', hint: 'תשלומים', href: '/vendors', icon: MessageCircle },
-            { label: 'חוזים', hint: 'חידושים', href: '/contracts', icon: FileText },
-          ] },
-          { title: 'מידע', items: [
-            { label: 'מסמכים', hint: 'מסמכי הנה"ח', href: '/documents', icon: Folder },
-          ] },
-          { title: 'כלים', items: [
-            { label: 'התראות', hint: 'מרכז עדכונים', href: '/notifications', icon: Bell },
-            { label: 'הגדרות', hint: 'העדפות', href: '/settings', icon: Settings },
-          ] },
-        ],
-      };
-    default:
-      return {
-        primary: [
-          { label: 'בית', hint: 'סקירה', href: '/home', icon: Home },
-          { label: 'קריאות', hint: 'מוקד', href: '/tickets', icon: Ticket },
-          { label: 'לו"ז', hint: 'תפעול', href: '/operations/calendar', icon: CalendarClock },
-          { label: 'דוחות', hint: 'בקרה', href: '/finance/reports', icon: BarChart3 },
-        ],
-        groups: [{ title: t('bottomNav.moreMenu'), items: [{ label: t('shell.settings'), href: '/settings', icon: Settings, hint: 'העדפות' }] }],
-      };
-  }
-}
 
 function loadRecentItems(): string[] {
   if (typeof window === 'undefined') return [];
@@ -208,12 +34,12 @@ function saveRecentItem(href: string) {
   window.localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(next));
 }
 
-function normalizeMoreGroups(groups: NavGroup[], primaryItems: NavItem[]): NavGroup[] {
+function normalizeMoreGroups(groups: NavigationGroup[], primaryItems: NavigationItem[]): NavigationGroup[] {
   const primaryHrefs = new Set(primaryItems.map((item) => item.href));
   const seen = new Set<string>();
   let remaining = MAX_MORE_ITEMS_TOTAL;
 
-  return groups.slice(0, MAX_MORE_GROUPS).reduce<NavGroup[]>((acc, group) => {
+  return groups.slice(0, MAX_MORE_GROUPS).reduce<NavigationGroup[]>((acc, group) => {
     if (remaining <= 0) return acc;
 
     const nextItems = group.items.filter((item) => {
@@ -276,9 +102,9 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
 
   if (!mounted) return null;
 
-  const roleConfig = createRoleNavigation(userRole, t);
-  const primaryItems = roleConfig.primary.slice(0, 4);
-  const moreGroups = normalizeMoreGroups(roleConfig.groups, primaryItems);
+  const roleConfig = getNavigationModel(userRole, t);
+  const primaryItems = roleConfig.mobilePrimary.slice(0, 4);
+  const moreGroups = normalizeMoreGroups(roleConfig.mobileMoreGroups, primaryItems);
   const recentNavItems = moreGroups.flatMap((group) => group.items).filter((item) => recentItems.includes(item.href));
   const isActive = (href: string) => {
     const [path, query] = href.split('?');
@@ -312,7 +138,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                   active ? 'text-primary' : 'text-muted-foreground',
                 )}
                 aria-current={active ? 'page' : undefined}
-                aria-label={item.hint ? `${item.label} · ${item.hint}` : item.label}
+                aria-label={item.hint ? `${item.title} · ${item.hint}` : item.title}
               >
                 {active ? (
                   <motion.span
@@ -325,7 +151,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                   <Icon className={cn('h-[18px] w-[18px]', active && 'scale-105')} strokeWidth={1.85} />
                 </span>
                 <span className="relative z-10 w-full text-center leading-tight">
-                  <span className={cn('block truncate text-[10px]', active && 'font-bold')}>{item.label}</span>
+                  <span className={cn('block truncate text-[10px]', active && 'font-bold')}>{item.title}</span>
                 </span>
               </Link>
             );
@@ -438,7 +264,7 @@ function MoreSheetLink({
   unreadNotifications,
   onNavigate,
 }: {
-  item: NavItem;
+  item: NavigationItem;
   active: boolean;
   unreadNotifications: number;
   onNavigate: () => void;
@@ -457,7 +283,7 @@ function MoreSheetLink({
         <Icon className="h-4 w-4" strokeWidth={1.75} />
       </span>
       <span className="flex-1">
-        <span className="block text-start">{item.label}</span>
+        <span className="block text-start">{item.title}</span>
         {item.hint ? <span className="mt-0.5 block text-[11px] font-normal text-secondary-foreground">{item.hint}</span> : null}
       </span>
       {item.href === '/notifications' && unreadNotifications > 0 ? (

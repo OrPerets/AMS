@@ -188,4 +188,5 @@ export const homeIcons = {
   payments: CreditCard,
   reports: FileText,
   notifications: Bell,
+  supervision: ShieldCheck,
 };

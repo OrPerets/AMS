@@ -109,7 +109,10 @@ export function normalizeRole(role?: string | null): string | null {
 }
 
 export function hasRoleAccess(allowedRoles: string[], role = getEffectiveRole()): boolean {
-  return !!role && allowedRoles.includes(role);
+  const normalizedRole = normalizeRole(role);
+  if (!normalizedRole) return false;
+  if (normalizedRole === 'MASTER') return true;
+  return allowedRoles.map((allowedRole) => normalizeRole(allowedRole)).includes(normalizedRole);
 }
 
 export function isMasterPendingRoleSelection(): boolean {

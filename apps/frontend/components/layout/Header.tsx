@@ -47,8 +47,10 @@ function getMobileRouteContext(pathname: string) {
     { match: /^\/resident\/payment-methods/, title: 'שיטות תשלום', subtitle: 'כרטיסים שמורים וחיוב אוטומטי', icon: CreditCard },
     { match: /^\/resident\/requests/, title: 'בקשות דייר', subtitle: 'פעולות שירות עצמי במקום אחד', icon: ClipboardList },
     { match: /^\/tickets/, title: 'לוח קריאות', subtitle: 'תור העבודה והעדכונים האחרונים', icon: Wrench },
+    { match: /^\/tech\/jobs/, title: 'משימות שטח', subtitle: 'תור עבודה, גינון ופיקוח', icon: Wrench },
     { match: /^\/buildings/, title: 'בניינים ונכסים', subtitle: 'קודים, פרטים ואנשי קשר', icon: Building2 },
     { match: /^\/payments/, title: 'גבייה ותשלומים', subtitle: 'יתרות, חיובים ופעולות גבייה', icon: CreditCard },
+    { match: /^\/supervision-report|^\/maintenance\/reports/, title: 'דוח פיקוח', subtitle: 'בקרה תפעולית ועדכוני תחזוקה', icon: ClipboardList },
   ];
 
   return contexts.find((item) => item.match.test(pathname)) ?? {

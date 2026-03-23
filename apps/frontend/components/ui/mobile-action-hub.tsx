@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useMobileDepthEffect, useTouchHoldLift } from './mobile-card-effects';
 
@@ -17,6 +17,7 @@ export type MobileActionHubItem = {
   badge?: string | number;
   accent?: 'primary' | 'success' | 'warning' | 'info' | 'neutral';
   emphasize?: boolean;
+  selected?: boolean;
 };
 
 function toneClasses(accent: MobileActionHubItem['accent']) {
@@ -40,22 +41,24 @@ function TileShell({
   href,
   onClick,
   className,
+  selected,
 }: {
   children: React.ReactNode;
   href?: string;
   onClick?: () => void;
   className?: string;
+  selected?: boolean;
 }) {
   if (href) {
     return (
-      <Link href={href} className={className}>
+      <Link href={href} className={className} aria-current={selected ? 'page' : undefined}>
         {children}
       </Link>
     );
   }
 
   return (
-    <button type="button" onClick={onClick} className={className}>
+    <button type="button" onClick={onClick} className={className} aria-pressed={selected}>
       {children}
     </button>
   );
@@ -72,6 +75,7 @@ function ActionTile({
   const depthRef = useMobileDepthEffect(mobileHomeEffect);
   const hold = useTouchHoldLift(true);
   const Icon = item.icon;
+  const isSelected = Boolean(item.selected || item.emphasize);
 
   return (
     <motion.div
@@ -88,9 +92,10 @@ function ActionTile({
       <TileShell
         href={item.href}
         onClick={item.onClick}
+        selected={isSelected}
         className={cn(
           'group block min-h-[96px] rounded-[22px] border bg-card/96 p-3 text-center shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target sm:min-h-[104px] sm:rounded-[26px] sm:p-3.5',
-          item.emphasize && 'border-primary/25 bg-primary/[0.06] shadow-[0_16px_36px_rgba(59,130,246,0.12)]',
+          isSelected && 'border-primary/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(239,246,255,0.96)_100%)] shadow-[0_16px_36px_rgba(59,130,246,0.14)] ring-1 ring-primary/10',
           !item.href && !item.onClick && 'pointer-events-none',
         )}
       >
@@ -108,11 +113,16 @@ function ActionTile({
               <span className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
                 {item.badge}
               </span>
+            ) : isSelected ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/18 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.9} />
+                נבחר
+              </span>
             ) : null}
           </div>
 
           <div className="mt-2.5 flex-1">
-            <div className="text-[15px] font-semibold leading-5 text-foreground sm:text-sm">{item.label}</div>
+            <div className={cn('text-[15px] font-semibold leading-5 text-foreground sm:text-sm', isSelected && 'text-primary')}>{item.label}</div>
             {item.description ? <div className="mt-1 line-clamp-2 text-[12px] leading-4.5 text-secondary-foreground sm:line-clamp-1 sm:leading-5">{item.description}</div> : null}
           </div>
 
@@ -133,12 +143,14 @@ export function MobileActionHub({
   items,
   className,
   mobileHomeEffect = false,
+  gridClassName,
 }: {
   title: React.ReactNode;
   subtitle?: React.ReactNode;
   items: MobileActionHubItem[];
   className?: string;
   mobileHomeEffect?: boolean;
+  gridClassName?: string;
 }) {
   return (
     <section className={cn('space-y-3', className)} aria-label={typeof title === 'string' ? title : undefined}>
@@ -151,7 +163,7 @@ export function MobileActionHub({
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2 max-[350px]:grid-cols-1 sm:gap-2.5 lg:grid-cols-3">
+      <div className={cn('grid grid-cols-2 gap-2 max-[350px]:grid-cols-1 sm:gap-2.5 lg:grid-cols-3', gridClassName)}>
         {items.map((item) => (
           <ActionTile key={item.id} item={item} mobileHomeEffect={mobileHomeEffect} />
         ))}

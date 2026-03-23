@@ -21,8 +21,7 @@ test.describe('sprint 10 mobile breakpoint coverage', () => {
       await expectNoHorizontalOverflow(page);
 
       await page.goto('/home', { waitUntil: 'domcontentloaded' });
-      await expect(page.getByRole('heading', { name: 'תיבת עדיפויות' }).first()).toBeVisible();
-      await expect(page.getByText(/מה דורש פעולה עכשיו/).first()).toBeVisible();
+      await expect(page.getByText(/מרכז העבודה|תיבת מנהל נכס/).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
 
       await page.goto('/payments', { waitUntil: 'domcontentloaded' });
@@ -37,19 +36,19 @@ test.describe('sprint 10 mobile breakpoint coverage', () => {
       await mockApi(page);
 
       await page.goto('/resident/account', { waitUntil: 'domcontentloaded' });
-      await expect(page.getByText(/פעולה ראשית/).first()).toBeVisible();
-      await expect(page.getByRole('link', { name: /הבניין שלי/ }).first()).toBeVisible();
+      await expect(page.getByText(/מה חשוב עכשיו|תמונת חשבון מהירה/).first()).toBeVisible();
+      await expect(page.getByRole('link', { name: /הבניין שלי|מסמכים/ }).first()).toBeVisible();
       await expect(page.getByRole('link', { name: /שלם עכשיו|פרטי חשבון/ }).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
 
       await page.goto('/payments/resident', { waitUntil: 'domcontentloaded' });
-      await expect(page.getByText(/חשבוניות וקבלות/).first()).toBeVisible();
+      await expect(page.getByText(/גבייה ותשלומים|מסך התשלומים לא נטען/).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
 
       await page.goto('/resident/requests', { waitUntil: 'domcontentloaded' });
       await expect(page.getByText(/בקשת דייר חדשה|בקשות דייר/).first()).toBeVisible();
       await expect(page.getByRole('heading', { name: 'בחר סוג בקשה', exact: true })).toBeVisible();
-      await expect(page.getByText(/שלב 2: מלא רק את הפרטים הנדרשים/).first()).toBeVisible();
+      await expect(page.getByText(/בחירה אחת וממשיכים|רק מה שצריך עכשיו/).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
     });
   }

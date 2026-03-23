@@ -70,17 +70,17 @@ function actionToneClasses(tone: SwipeAction['tone']) {
   }
 }
 
-function PriorityInboxItemCard({
-  item,
-  index,
-  swipeDirection,
-  roleHint,
-}: {
+const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
   item: MobilePriorityInboxItem;
   index: number;
   swipeDirection: 1 | -1;
   roleHint: 'resident' | 'admin' | 'operations';
-}) {
+}>(({
+  item,
+  index,
+  swipeDirection,
+  roleHint,
+}, ref) => {
   const reducedMotion = useReducedMotion();
   const [offset, setOffset] = React.useState(0);
   const touchStartXRef = React.useRef<number | null>(null);
@@ -91,6 +91,7 @@ function PriorityInboxItemCard({
 
   return (
     <motion.div
+      ref={ref}
       layout
       initial={reducedMotion ? false : { opacity: 0, y: 16, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -195,7 +196,9 @@ function PriorityInboxItemCard({
       </motion.div>
     </motion.div>
   );
-}
+});
+
+PriorityInboxItemCard.displayName = 'PriorityInboxItemCard';
 
 export function MobilePriorityInbox({
   title,

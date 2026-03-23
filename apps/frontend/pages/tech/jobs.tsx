@@ -1,5 +1,6 @@
 // /Users/orperetz/Documents/AMS/apps/frontend/pages/tech/jobs.tsx
 import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { 
   CheckCircle, 
   Clock, 
@@ -8,18 +9,21 @@ import {
   Calendar,
   Wrench, 
   Camera, 
-  MessageSquare,
   Phone,
-  Star,
   Plus,
   RefreshCw,
-  Navigation
+  Navigation,
+  Building2,
+  Leaf,
+  ShieldCheck,
+  ClipboardList,
 } from 'lucide-react';
 import { authFetch, getCurrentUserId } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
 import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 import { MobilePriorityInbox } from '../../components/ui/mobile-priority-inbox';
+import { MobileActionHub } from '../../components/ui/mobile-action-hub';
 import { Badge } from '../../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
@@ -237,22 +241,6 @@ export default function Jobs() {
     return `${diffHours}:${diffMinutes.toString().padStart(2, '0')} שעות`;
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-10 w-24" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-64" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   const assignedJobs = orders.filter(o => o.status === 'ASSIGNED');
   const inProgressJobs = orders.filter(o => o.status === 'IN_PROGRESS');
   const todayStats = {
@@ -276,6 +264,22 @@ export default function Jobs() {
     href: `/work-orders/${order.id}`,
     ctaLabel: 'פתח',
   })), [orders]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-10 w-24" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-64" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -305,41 +309,60 @@ export default function Jobs() {
           tone={todayStats.urgent > 0 ? 'danger' : 'warning'}
           secondaryAction={
             <Button asChild size="sm" variant="outline" className="w-full justify-between">
-              <a href="/tickets?mine=true">עדכן סטטוס</a>
+              <Link href="/tickets?mine=true">עדכן סטטוס</Link>
             </Button>
           }
         />
 
-        <div className="grid grid-cols-2 gap-3">
-          <Button asChild className="h-auto min-h-[96px] flex-col items-start justify-between rounded-[24px] p-4 text-right">
-            <a href="/tech/jobs">
-              <span className="text-sm">עבודות</span>
-              <span className="text-2xl font-black">{todayStats.total}</span>
-              <span className="text-xs">היום</span>
-            </a>
-          </Button>
-          <Button asChild variant="outline" className="h-auto min-h-[96px] flex-col items-start justify-between rounded-[24px] p-4 text-right">
-            <a href="/gardens">
-              <span className="text-sm">גינון</span>
-              <span className="text-2xl font-black">חודשי</span>
-              <span className="text-xs">🌿</span>
-            </a>
-          </Button>
-          <Button asChild variant="outline" className="h-auto min-h-[96px] flex-col items-start justify-between rounded-[24px] p-4 text-right">
-            <a href="/tickets?mine=true">
-              <span className="text-sm">עדכן</span>
-              <span className="text-2xl font-black">סטטוס</span>
-              <span className="text-xs">✏️</span>
-            </a>
-          </Button>
-          <Button asChild variant="outline" className="h-auto min-h-[96px] flex-col items-start justify-between rounded-[24px] p-4 text-right">
-            <a href="/notifications">
-              <span className="text-sm">התראות</span>
-              <span className="text-2xl font-black">{queueItems.length}</span>
-              <span className="text-xs">חדשות</span>
-            </a>
-          </Button>
-        </div>
+        <MobileActionHub
+          mobileHomeEffect
+          title="מעברים מהירים"
+          subtitle="כל היעדים החשובים בפעולה אחת."
+          items={[
+            {
+              id: 'jobs',
+              label: 'עבודות',
+              description: 'התור הפעיל שלי',
+              icon: Wrench,
+              href: '/tech/jobs',
+              badge: todayStats.total,
+              accent: todayStats.total > 0 ? 'warning' : 'success',
+              selected: true,
+            },
+            {
+              id: 'supervision',
+              label: 'דוח פיקוח',
+              description: 'בקרה וסיכום שטח',
+              icon: ShieldCheck,
+              href: '/supervision-report',
+              accent: todayStats.urgent > 0 ? 'warning' : 'primary',
+            },
+            {
+              id: 'gardens',
+              label: 'גינון',
+              description: 'תכנון וביצוע חודשי',
+              icon: Leaf,
+              href: '/gardens',
+              accent: 'neutral',
+            },
+            {
+              id: 'management',
+              label: 'מרכז ניהול',
+              description: 'מסך הבית הניהולי',
+              icon: Building2,
+              href: '/home',
+              accent: 'info',
+            },
+            {
+              id: 'status',
+              label: 'עדכון סטטוס',
+              description: 'קריאות שלי בלבד',
+              icon: ClipboardList,
+              href: '/tickets?mine=true',
+              accent: 'neutral',
+            },
+          ]}
+        />
 
         <MobilePriorityInbox
           title="תור העבודות להיום"

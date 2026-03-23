@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const futureExp = Math.floor(Date.now() / 1000) + 60 * 60;
 
-export type SessionRole = 'PM' | 'RESIDENT' | 'TECH' | 'ADMIN';
+export type SessionRole = 'PM' | 'RESIDENT' | 'TECH' | 'ADMIN' | 'MASTER';
 
 export type MockScenario = {
   dashboardFailures?: number;
@@ -26,6 +26,8 @@ export async function setSession(page: Page, role: SessionRole) {
         ? { sub: 9, email: 'tech@demo.com' }
         : role === 'ADMIN'
           ? { sub: 5, email: 'admin@demo.com' }
+          : role === 'MASTER'
+            ? { sub: 1, email: 'master@demo.com' }
           : { sub: 7, email: 'maya@demo.com' };
   const token = createToken({
     sub: identity.sub,

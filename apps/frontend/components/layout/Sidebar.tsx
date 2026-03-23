@@ -5,27 +5,9 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import {
-  Home,
-  Building,
-  Ticket,
-  CreditCard,
-  BarChart3,
-  Wrench,
   Settings,
-  Users,
-  FileText,
-  Bell,
-  CalendarClock,
-  Wallet,
-  Folder,
-  Box,
-  MessageCircle,
   X,
-  Vote,
-  ClipboardList,
-  ShieldCheck,
   Globe,
-  Leaf,
   Moon,
   Sun,
 } from 'lucide-react';
@@ -35,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 import { cn } from '../../lib/utils';
 import { useDirection, useLocale, useTheme } from '../../lib/providers';
 import { getTokenPayload, normalizeRole } from '../../lib/auth';
+import { getNavigationModel } from '../../lib/navigation';
 
 interface SidebarProps {
   className?: string;
@@ -42,302 +25,6 @@ interface SidebarProps {
   onClose?: () => void;
   collapsed?: boolean;
 }
-
-interface NavigationGroup {
-  title: string;
-  items: NavigationItem[];
-  roles: string[];
-}
-
-interface NavigationItem {
-  title: string;
-  href: string;
-  icon: any;
-  roles: string[];
-}
-
-// Navigation items configuration with logical grouping
-const getNavigationGroups = (role: string, t: (key: string) => string): NavigationGroup[] => {
-  if (role === 'RESIDENT') {
-    return [
-      {
-        title: 'גישה מהירה',
-        roles: ['RESIDENT'],
-        items: [
-          {
-            title: 'בית הדייר',
-            href: '/resident/account',
-            icon: Home,
-            roles: ['RESIDENT'],
-          },
-          {
-            title: t('nav.residentRequests'),
-            href: '/resident/requests',
-            icon: ClipboardList,
-            roles: ['RESIDENT'],
-          },
-          {
-            title: 'תשלומים',
-            href: '/payments/resident',
-            icon: CreditCard,
-            roles: ['RESIDENT'],
-          },
-          {
-            title: t('nav.documents'),
-            href: '/documents',
-            icon: Folder,
-            roles: ['RESIDENT'],
-          },
-        ],
-      },
-      {
-        title: 'שירות ותמיכה',
-        roles: ['RESIDENT'],
-        items: [
-          {
-            title: t('nav.newTicket'),
-            href: '/create-call',
-            icon: Ticket,
-            roles: ['RESIDENT'],
-          },
-          {
-            title: t('nav.notifications'),
-            href: '/notifications',
-            icon: Bell,
-            roles: ['RESIDENT'],
-          },
-          {
-            title: 'הבניין שלי',
-            href: '/resident/building',
-            icon: Building,
-            roles: ['RESIDENT'],
-          },
-          {
-            title: 'צור קשר',
-            href: '/support',
-            icon: MessageCircle,
-            roles: ['RESIDENT'],
-          },
-          {
-            title: t('shell.settings'),
-            href: '/settings',
-            icon: Settings,
-            roles: ['RESIDENT'],
-          },
-        ],
-      },
-    ];
-  }
-
-  const groups: NavigationGroup[] = [
-    {
-      title: t('nav.group.dashboard'),
-      roles: ['ADMIN', 'PM', 'TECH', 'RESIDENT', 'ACCOUNTANT'],
-      items: [
-        {
-          title: t('nav.homeOverview'),
-          href: '/home',
-          icon: Home,
-          roles: ['ADMIN', 'PM', 'TECH', 'RESIDENT', 'ACCOUNTANT'],
-        },
-        {
-          title: t('nav.dashboard'),
-          href: '/admin/dashboard',
-          icon: BarChart3,
-          roles: ['ADMIN', 'PM'],
-        },
-        {
-          title: t('nav.mayaDashboard'),
-          href: '/maya-dashboard',
-          icon: Ticket,
-          roles: ['PM'],
-        },
-      ]
-    },
-    {
-      title: t('nav.group.operations'),
-      roles: ['ADMIN', 'PM', 'TECH', 'RESIDENT'],
-      items: [
-        {
-          title: t('nav.tickets'),
-          href: '/tickets',
-          icon: Ticket,
-          roles: ['ADMIN', 'PM', 'TECH', 'RESIDENT'],
-        },
-        {
-          title: t('nav.newTicket'),
-          href: '/create-call',
-          icon: Ticket,
-          roles: ['RESIDENT'],
-        },
-        {
-          title: t('nav.maintenance'),
-          href: '/maintenance',
-          icon: CalendarClock,
-          roles: ['ADMIN', 'PM', 'TECH'],
-        },
-        {
-          title: t('nav.techJobs'),
-          href: '/tech/jobs',
-          icon: Wrench,
-          roles: ['TECH'],
-        },
-        {
-          title: t('nav.communications'),
-          href: '/communications',
-          icon: MessageCircle,
-          roles: ['ADMIN', 'PM', 'TECH'],
-        },
-        {
-          title: t('nav.announcements'),
-          href: '/communications/announcements',
-          icon: Bell,
-          roles: ['ADMIN', 'PM'],
-        },
-        {
-          title: t('nav.votes'),
-          href: '/votes',
-          icon: Vote,
-          roles: ['ADMIN', 'PM', 'RESIDENT'],
-        },
-        {
-          title: t('nav.residentRequests'),
-          href: '/resident/requests',
-          icon: ClipboardList,
-          roles: ['RESIDENT'],
-        },
-        {
-          title: t('nav.schedules'),
-          href: '/schedules',
-          icon: ClipboardList,
-          roles: ['ADMIN', 'PM', 'TECH'],
-        },
-        {
-          title: 'ניהול גננים',
-          href: '/gardens',
-          icon: Leaf,
-          roles: ['ADMIN', 'PM', 'TECH'],
-        },
-      ]
-    },
-    {
-      title: t('nav.group.properties'),
-      roles: ['ADMIN', 'PM', 'TECH'],
-      items: [
-        {
-          title: t('nav.buildings'),
-          href: '/buildings',
-          icon: Building,
-          roles: ['ADMIN', 'PM'],
-        },
-        {
-          title: t('nav.assets'),
-          href: '/assets',
-          icon: Box,
-          roles: ['ADMIN', 'PM', 'TECH'],
-        },
-        {
-          title: t('nav.documents'),
-          href: '/documents',
-          icon: Folder,
-          roles: ['ADMIN', 'PM', 'TECH', 'ACCOUNTANT'],
-        },
-        {
-          title: t('nav.vendors'),
-          href: '/vendors',
-          icon: Users,
-          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
-        },
-        {
-          title: t('nav.contracts'),
-          href: '/contracts',
-          icon: FileText,
-          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
-        },
-      ]
-    },
-    {
-      title: t('nav.group.finance'),
-      roles: ['ADMIN', 'PM', 'ACCOUNTANT', 'RESIDENT'],
-      items: [
-        {
-          title: t('nav.payments'),
-          href: '/payments',
-          icon: CreditCard,
-          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
-        },
-        {
-          title: t('nav.budgets'),
-          href: '/finance/budgets',
-          icon: Wallet,
-          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
-        },
-        {
-          title: t('nav.financeReports'),
-          href: '/finance/reports',
-          icon: BarChart3,
-          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
-        },
-        {
-          title: t('nav.unpaidInvoices'),
-          href: '/admin/unpaid-invoices',
-          icon: FileText,
-          roles: ['ADMIN', 'ACCOUNTANT'],
-        },
-        {
-          title: t('nav.operationsCalendar'),
-          href: '/operations/calendar',
-          icon: CalendarClock,
-          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
-        },
-      ]
-    },
-    {
-      title: t('nav.group.admin'),
-      roles: ['ADMIN', 'PM'],
-      items: [
-        {
-          title: t('nav.configuration'),
-          href: '/admin/configuration',
-          icon: Settings,
-          roles: ['ADMIN', 'PM'],
-        },
-        {
-          title: t('nav.notifications'),
-          href: '/admin/notifications',
-          icon: Bell,
-          roles: ['ADMIN', 'PM'],
-        },
-        {
-          title: t('nav.activity'),
-          href: '/admin/activity',
-          icon: ShieldCheck,
-          roles: ['ADMIN', 'PM'],
-        },
-        {
-          title: t('nav.approvals'),
-          href: '/admin/approvals',
-          icon: ShieldCheck,
-          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
-        },
-        {
-          title: t('nav.dataQuality'),
-          href: '/admin/data-quality',
-          icon: ShieldCheck,
-          roles: ['ADMIN', 'PM', 'ACCOUNTANT'],
-        },
-        {
-          title: t('nav.security'),
-          href: '/admin/security',
-          icon: ShieldCheck,
-          roles: ['ADMIN'],
-        },
-      ]
-    }
-  ];
-
-  return groups.filter(group => group.roles.includes(role));
-};
 
 export default function Sidebar({ className, open, onClose, collapsed }: SidebarProps) {
   const router = useRouter();
@@ -361,7 +48,7 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
     setUserRole(normalizeRole(payload?.actAsRole || payload?.role) || 'RESIDENT');
   }, [router.pathname]);
   
-  const navigationGroups = getNavigationGroups(userRole, t);
+  const navigationGroups = getNavigationModel(userRole, t).sidebarGroups;
   const tooltipSide = direction === 'rtl' ? 'left' : 'right';
 
   const isActive = (href: string) => {
@@ -457,54 +144,49 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
         
         <TooltipProvider delayDuration={150}>
           <nav className="scrollbar-hide flex-1 space-y-6 overflow-y-auto p-4">
-            {navigationGroups.map((group) => {
-              const filteredItems = group.items.filter(item => item.roles.includes(userRole));
-              if (filteredItems.length === 0) return null;
+            {navigationGroups.map((group) => (
+              <div key={group.title} className="space-y-2">
+                {!collapsed && (
+                  <h4 className="px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {group.title}
+                  </h4>
+                )}
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.href);
+                    const navLink = (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        aria-label={collapsed ? item.title : undefined}
+                        className={cn(
+                          "touch-target flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                          active
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-foreground/70 hover:bg-accent hover:text-accent-foreground",
+                          collapsed && "justify-center px-2"
+                        )}
+                      >
+                        <Icon className={cn("h-5 w-5 shrink-0", collapsed && "h-6 w-6")} />
+                        {!collapsed && <span>{item.title}</span>}
+                      </Link>
+                    );
 
-              return (
-                <div key={group.title} className="space-y-2">
-                  {!collapsed && (
-                    <h4 className="px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      {group.title}
-                    </h4>
-                  )}
-                  <div className="space-y-1">
-                    {filteredItems.map((item) => {
-                      const Icon = item.icon;
-                      const active = isActive(item.href);
-                      const navLink = (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          aria-label={collapsed ? item.title : undefined}
-                          className={cn(
-                            "touch-target flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                            active
-                              ? "bg-primary text-primary-foreground shadow-sm"
-                              : "text-foreground/70 hover:bg-accent hover:text-accent-foreground",
-                            collapsed && "justify-center px-2"
-                          )}
-                        >
-                          <Icon className={cn("h-5 w-5 shrink-0", collapsed && "h-6 w-6")} />
-                          {!collapsed && <span>{item.title}</span>}
-                        </Link>
-                      );
+                    if (!collapsed) {
+                      return navLink;
+                    }
 
-                      if (!collapsed) {
-                        return navLink;
-                      }
-
-                      return (
-                        <Tooltip key={item.href}>
-                          <TooltipTrigger asChild>{navLink}</TooltipTrigger>
-                          <TooltipContent side={tooltipSide}>{item.title}</TooltipContent>
-                        </Tooltip>
-                      );
-                    })}
-                  </div>
+                    return (
+                      <Tooltip key={item.href}>
+                        <TooltipTrigger asChild>{navLink}</TooltipTrigger>
+                        <TooltipContent side={tooltipSide}>{item.title}</TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </nav>
         </TooltipProvider>
 
@@ -554,16 +236,13 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
         
         <nav className="scrollbar-hide flex-1 space-y-4 overflow-y-auto px-3 py-3">
           {navigationGroups.map((group) => {
-            const filteredItems = group.items.filter(item => item.roles.includes(userRole));
-            if (filteredItems.length === 0) return null;
-
             return (
               <div key={group.title} className="space-y-1">
                 <h4 className="px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                   {group.title}
                 </h4>
                 <div className="space-y-0.5">
-                  {filteredItems.map((item) => {
+                  {group.items.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.href);
                     

@@ -43,8 +43,8 @@ export function buildTechFallback(): TechMobileHomeData {
     quickActions: [
       { id: 'jobs', title: 'עבודות', value: 0, subtitle: 'היום', href: '/tech/jobs', icon: homeIcons.maintenance },
       { id: 'gardens', title: 'גינון', value: 'חודשי', subtitle: 'תוכנית', href: '/gardens', icon: homeIcons.calendar },
+      { id: 'supervision', title: 'פיקוח', value: 'דוח', subtitle: 'שטח', href: '/supervision-report', icon: homeIcons.supervision },
       { id: 'status', title: 'עדכן', value: 'סטטוס', subtitle: 'שלי', href: '/tickets?mine=true', icon: homeIcons.ticket },
-      { id: 'alerts', title: 'התראות', value: 0, subtitle: 'חדשות', href: '/notifications', icon: homeIcons.notifications },
     ],
     queueItems: [],
   };

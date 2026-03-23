@@ -13,7 +13,7 @@ test.describe('mobile support smoke', () => {
     if (!(await sidebarDialog.isVisible().catch(() => false))) {
       await page.locator('header button').first().click({ force: true });
     }
-    const buildingsLink = sidebarDialog.getByRole('link', { name: /בניינים ויחידות/ }).first();
+    const buildingsLink = sidebarDialog.getByRole('link', { name: /בניינים/ }).first();
     await expect(buildingsLink).toBeVisible();
     await Promise.all([
       page.waitForURL(/\/buildings$/),
@@ -69,6 +69,35 @@ test.describe('mobile support smoke', () => {
     await page.goto('/gardens');
     await expect(page.getByText(/נדרשים תיקונים לפני אישור|המשך לעדכן את החודש הפעיל/).first()).toBeVisible();
     await expect(page.getByText(/המשך לערוך או הגש לאישור|החודש סגור לעריכה/).first()).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test('worker mobile navigation exposes jobs, gardens, supervision, and management', async ({ page }) => {
+    await mockApi(page);
+    await setSession(page, 'TECH');
+
+    await page.goto('/tech/jobs');
+    await expect(page.getByRole('heading', { name: 'מעברים מהירים' })).toBeVisible();
+    await expect(page.getByRole('link', { name: /דוח פיקוח/ }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /מרכז ניהול/ }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /^גינון/ }).last()).toBeVisible();
+    await expect(page.getByRole('link', { name: /^פיקוח/ }).first()).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test('master mobile shell is populated and routes are reachable', async ({ page }) => {
+    await mockApi(page);
+    await setSession(page, 'MASTER');
+
+    await page.goto('/home');
+    const sidebarDialog = page.getByRole('dialog').filter({ has: page.getByRole('navigation').first() });
+    if (!(await sidebarDialog.isVisible().catch(() => false))) {
+      await page.locator('header button').first().click({ force: true });
+    }
+
+    await expect(sidebarDialog.getByRole('link', { name: /בית/ }).first()).toBeVisible();
+    await expect(sidebarDialog.getByRole('link', { name: /בקשות/ }).first()).toBeVisible();
+    await expect(sidebarDialog.getByRole('link', { name: /דוח פיקוח/ }).first()).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 });

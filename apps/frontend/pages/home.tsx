@@ -536,8 +536,8 @@ async function buildTechHomeData(currentUserId: number | null): Promise<TechMobi
     quickActions: [
       { id: 'jobs', title: 'עבודות', value: activeOrders.length, subtitle: 'היום', href: '/tech/jobs', icon: homeIcons.maintenance, tone: activeOrders.length > 0 ? 'warning' : 'success' },
       { id: 'gardens', title: 'גינון', value: 'חודשי', subtitle: 'תוכנית', href: '/gardens', icon: homeIcons.calendar },
-      { id: 'status', title: 'עדכן', value: 'סטטוס', subtitle: 'שלי', href: '/tickets?mine=true', icon: homeIcons.ticket },
-      { id: 'alerts', title: 'התראות', value: unreadNotifications, subtitle: 'חדשות', href: '/notifications', icon: homeIcons.notifications, tone: unreadNotifications > 0 ? 'warning' : 'default' },
+      { id: 'supervision', title: 'פיקוח', value: urgentOrders.length > 0 ? 'חם' : 'שגרה', subtitle: 'דוח שטח', href: '/supervision-report', icon: homeIcons.supervision, tone: urgentOrders.length > 0 ? 'warning' : 'default' },
+      { id: 'status', title: 'עדכן', value: unreadNotifications > 0 ? `${unreadNotifications}+` : 'סטטוס', subtitle: 'שלי', href: '/tickets?mine=true', icon: homeIcons.ticket, tone: unreadNotifications > 0 ? 'warning' : 'default' },
     ],
     queueItems: activeOrders.slice(0, 4).map((order) => ({
       id: `job-${order.id}`,

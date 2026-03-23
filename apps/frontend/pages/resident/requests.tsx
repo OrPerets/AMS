@@ -41,6 +41,29 @@ const requestTypes = [
   { value: 'GENERAL', label: 'כללי', icon: Sparkles, description: 'פנייה אחרת' },
 ] as const;
 
+const movingDirectionOptions = [
+  { value: 'MOVE_IN', label: 'כניסה', description: 'מעבר לנכס' },
+  { value: 'MOVE_OUT', label: 'יציאה', description: 'פינוי מסודר' },
+] as const;
+
+const elevatorOptions = [
+  { value: 'YES', label: 'כן', description: 'לשמור מעלית' },
+  { value: 'NO', label: 'לא', description: 'אין צורך' },
+] as const;
+
+const parkingRequestOptions = [
+  { value: 'CHANGE_ASSIGNMENT', label: 'שינוי הקצאה', description: 'מקום או עדכון' },
+  { value: 'GUEST', label: 'אורח קבוע', description: 'הוספת גישה' },
+  { value: 'ISSUE', label: 'בעיה קיימת', description: 'תקלה או חסימה' },
+] as const;
+
+const documentCategoryOptions = [
+  { value: 'INVOICE', label: 'חשבונית / קבלה', description: 'מסמך תשלום' },
+  { value: 'PROTOCOL', label: 'פרוטוקול', description: 'ישיבה או החלטה' },
+  { value: 'REGULATION', label: 'תקנון', description: 'נהלים וחוקים' },
+  { value: 'CERTIFICATE', label: 'אישור', description: 'אישור רשמי' },
+] as const;
+
 type RequestHistoryItem = {
   requestKey: string;
   subject: string;
@@ -348,6 +371,7 @@ export default function ResidentRequestsPage() {
         mobileHomeEffect
         title="בחר סוג בקשה"
         subtitle="בחירה אחת וממשיכים"
+        gridClassName="grid-cols-1 min-[390px]:grid-cols-2 lg:grid-cols-3"
         items={requestTypes.map((type) => ({
           id: type.value,
           label: type.label,
@@ -355,6 +379,7 @@ export default function ResidentRequestsPage() {
           icon: type.icon,
           accent: form.requestType === type.value ? 'primary' : 'neutral',
           emphasize: form.requestType === type.value,
+          selected: form.requestType === type.value,
           onClick: () => {
             setForm((current) => ({ ...current, requestType: type.value }));
             setFormStep(2);
@@ -454,15 +479,11 @@ export default function ResidentRequestsPage() {
             {form.requestType === 'MOVING' ? (
               <div className="grid gap-4 md:grid-cols-3">
                 <FormField label="סוג מעבר" description="כניסה או יציאה מהנכס.">
-                  <Select value={form.movingDirection} onValueChange={(value) => setForm((current) => ({ ...current, movingDirection: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MOVE_IN">כניסה</SelectItem>
-                      <SelectItem value="MOVE_OUT">יציאה</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SegmentedChoices
+                    value={form.movingDirection}
+                    options={movingDirectionOptions}
+                    onChange={(value) => setForm((current) => ({ ...current, movingDirection: value }))}
+                  />
                 </FormField>
 
                 <FormField label="שעה" description="למשל 08:00-11:00">
@@ -474,15 +495,11 @@ export default function ResidentRequestsPage() {
                 </FormField>
 
                 <FormField label="מעלית שירות" description="כן או לא">
-                  <Select value={form.elevatorNeeded} onValueChange={(value) => setForm((current) => ({ ...current, elevatorNeeded: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="YES">נדרשת מעלית</SelectItem>
-                      <SelectItem value="NO">לא נדרשת מעלית</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SegmentedChoices
+                    value={form.elevatorNeeded}
+                    options={elevatorOptions}
+                    onChange={(value) => setForm((current) => ({ ...current, elevatorNeeded: value }))}
+                  />
                 </FormField>
               </div>
             ) : null}
@@ -490,16 +507,12 @@ export default function ResidentRequestsPage() {
             {form.requestType === 'PARKING' ? (
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField label="סוג בקשה" description="מה צריך?">
-                  <Select value={form.parkingRequestType} onValueChange={(value) => setForm((current) => ({ ...current, parkingRequestType: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CHANGE_ASSIGNMENT">שינוי הקצאה</SelectItem>
-                      <SelectItem value="GUEST">אורח קבוע</SelectItem>
-                      <SelectItem value="ISSUE">בעיה קיימת</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SegmentedChoices
+                    value={form.parkingRequestType}
+                    options={parkingRequestOptions}
+                    onChange={(value) => setForm((current) => ({ ...current, parkingRequestType: value }))}
+                    columns={1}
+                  />
                 </FormField>
 
                 <FormField label="מספר רכב" description="אם רלוונטי">
@@ -514,17 +527,11 @@ export default function ResidentRequestsPage() {
 
             {form.requestType === 'DOCUMENT' ? (
               <FormField label="סוג מסמך" description="בחר סוג אחד">
-                <Select value={form.documentCategory} onValueChange={(value) => setForm((current) => ({ ...current, documentCategory: value }))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="INVOICE">חשבונית / קבלה</SelectItem>
-                    <SelectItem value="PROTOCOL">פרוטוקול</SelectItem>
-                    <SelectItem value="REGULATION">תקנון</SelectItem>
-                    <SelectItem value="CERTIFICATE">אישור</SelectItem>
-                  </SelectContent>
-                </Select>
+                <SegmentedChoices
+                  value={form.documentCategory}
+                  options={documentCategoryOptions}
+                  onChange={(value) => setForm((current) => ({ ...current, documentCategory: value }))}
+                />
               </FormField>
             ) : null}
 
@@ -748,6 +755,45 @@ function RequestHistoryList({ items, locale }: { items: RequestHistoryItem[]; lo
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function SegmentedChoices({
+  value,
+  options,
+  onChange,
+  columns = 2,
+}: {
+  value: string;
+  options: ReadonlyArray<{ value: string; label: string; description?: string }>;
+  onChange: (value: string) => void;
+  columns?: 1 | 2;
+}) {
+  return (
+    <div className={`grid gap-2 ${columns === 1 ? 'grid-cols-1' : 'grid-cols-1 min-[390px]:grid-cols-2'}`}>
+      {options.map((option) => {
+        const selected = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            aria-pressed={selected}
+            className={`touch-target rounded-[18px] border px-4 py-3 text-start transition ${
+              selected
+                ? 'border-primary/35 bg-primary/10 text-foreground shadow-[0_10px_28px_rgba(59,130,246,0.12)]'
+                : 'border-subtle-border bg-background text-foreground/80 hover:border-primary/20 hover:bg-muted/40'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className={`text-sm font-semibold ${selected ? 'text-primary' : 'text-foreground'}`}>{option.label}</span>
+              {selected ? <span className="rounded-full bg-primary/12 px-2 py-0.5 text-[11px] font-semibold text-primary">נבחר</span> : null}
+            </div>
+            {option.description ? <div className="mt-1 text-xs leading-5 text-muted-foreground">{option.description}</div> : null}
+          </button>
+        );
+      })}
     </div>
   );
 }
