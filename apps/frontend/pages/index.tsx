@@ -54,17 +54,17 @@ export default function LandingPage() {
     >
       <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-6xl flex-col justify-center gap-6 sm:min-h-[calc(100vh-3rem)] sm:gap-8">
         <Card variant="featured" className="overflow-hidden border-primary/15 bg-background/95 shadow-[0_30px_120px_-60px_rgba(0,0,0,0.35)]">
-          <CardContent className="grid gap-8 p-5 sm:p-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:p-10">
-            <section className="space-y-5 sm:space-y-6">
+          <CardContent className="grid gap-5 p-4 sm:gap-8 sm:p-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:p-10">
+            <section className="space-y-4 sm:space-y-6">
               <div className="inline-flex w-fit items-center rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary sm:text-sm">
                 {t('landing.eyebrow')}
               </div>
 
               <div className="space-y-3">
-                <h1 className="max-w-3xl text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+                <h1 className="max-w-3xl text-2xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
                   {t('landing.title')}
                 </h1>
-                <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base sm:leading-8">
+                <p className="max-w-2xl text-[13px] leading-6 text-muted-foreground sm:text-base sm:leading-8">
                   {t('landing.description')}
                 </p>
               </div>
@@ -82,23 +82,23 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-2.5 sm:grid-cols-3 sm:gap-3">
                 {audienceCards.map((card) => (
                   <div
                     key={card.title}
-                    className="rounded-2xl border border-border/70 bg-card/80 p-4 shadow-sm"
+                    className="rounded-2xl border border-border/70 bg-card/80 p-3 shadow-sm sm:p-4"
                   >
-                    <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                      <card.icon className="h-5 w-5" />
+                    <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary sm:mb-3 sm:h-11 sm:w-11 sm:rounded-2xl">
+                      <card.icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.75} />
                     </div>
-                    <h2 className="text-sm font-semibold text-foreground sm:text-base">{card.title}</h2>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{card.description}</p>
+                    <h2 className="text-sm font-semibold text-foreground">{card.title}</h2>
+                    <p className="mt-1 text-[13px] leading-5 text-muted-foreground sm:text-sm sm:leading-6">{card.description}</p>
                   </div>
                 ))}
               </div>
             </section>
 
-            <aside className="rounded-[28px] border border-primary/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(250,245,235,0.98))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] sm:p-6">
+            <aside className="hidden rounded-2xl border border-primary/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(250,245,235,0.98))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] sm:p-6 lg:block lg:rounded-[28px]">
               <div className="space-y-4">
                 <div>
                   <p className="text-sm font-semibold text-primary">{t('landing.quickStart.eyebrow')}</p>

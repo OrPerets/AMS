@@ -140,18 +140,18 @@ export default function RoleSelectionPage() {
         <div className="w-full space-y-4 sm:space-y-5">
           <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6">
             <Card variant="featured" className="border-primary/18 shadow-[0_30px_90px_-60px_rgba(0,0,0,0.45)]">
-              <CardHeader className="space-y-4">
+              <CardHeader className="space-y-3 sm:space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="gold">{t('roleSelection.eyebrow')}</Badge>
                   {role ? <Badge variant="secondary">{t('roleSelection.activeRole', { role })}</Badge> : null}
                 </div>
-                <div className="space-y-3">
-                  <CardTitle className="text-2xl sm:text-[2rem]">{t('roleSelection.title')}</CardTitle>
-                  <CardDescription className="max-w-2xl text-sm leading-7 sm:text-base sm:leading-8">
+                <div className="space-y-2 sm:space-y-3">
+                  <CardTitle className="text-xl sm:text-[2rem]">{t('roleSelection.title')}</CardTitle>
+                  <CardDescription className="max-w-2xl text-[13px] leading-6 sm:text-base sm:leading-8">
                     {t('roleSelection.description')}
                   </CardDescription>
                 </div>
-                <div className="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 text-sm leading-6 text-muted-foreground">
+                <div className="rounded-2xl border border-primary/15 bg-primary/5 px-3 py-2.5 text-[13px] leading-5 text-muted-foreground sm:px-4 sm:py-3 sm:text-sm sm:leading-6">
                   {t('roleSelection.helper')}
                 </div>
               </CardHeader>
@@ -201,10 +201,10 @@ export default function RoleSelectionPage() {
 
               return (
                 <Card key={card.choice} variant="action" className="border-border/70 bg-card/95">
-                  <CardHeader className="space-y-4 pb-4">
+                  <CardHeader className="space-y-3 pb-3 sm:space-y-4 sm:pb-4">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                        <Icon className="h-6 w-6" />
+                      <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-12 sm:w-12 sm:rounded-2xl">
+                        <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
                       </div>
                       <div className="flex flex-wrap justify-end gap-2">
                         {card.external ? <Badge variant="outline">{t('roleSelection.externalBadge')}</Badge> : null}
@@ -220,7 +220,7 @@ export default function RoleSelectionPage() {
                       <CardDescription className="text-sm leading-6">{card.description}</CardDescription>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3 sm:space-y-4">
                     <Button
                       onClick={() => void handleSelection(card.choice)}
                       size="lg"
