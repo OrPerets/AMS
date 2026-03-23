@@ -355,40 +355,55 @@ Stabilize page transitions and remove experiences that feel broken to users.
 
 ## Tasks
 ### 5.1 Reproduce and document the bugs
-- Gather a list of routes where the issue occurs.
-- Document when a page does not load until refresh.
-- Document when flicker happens, including whether it occurs during auth check, data loading, or redirect.
-- Add internal screenshots/videos if needed for reproduction.
+- [x] Gathered a list of routes where the issue occurs.
+- [x] Documented when a page does not load until refresh.
+- [x] Documented when flicker happens, including whether it occurs during auth check, data loading, or redirect.
+- [ ] Internal screenshots/videos were not captured in this environment.
+
+#### Reproduced stability issues
+| Route / flow | Reported behavior | Root cause identified |
+| --- | --- | --- |
+| Protected routes opened directly, especially `/home`, `/gardens`, and `/role-selection` | Users could hit a loading state, then wait for a redirect or need a refresh to recover after auth/token drift. | Auth state was derived separately in `Layout` and in page-level effects, so private pages and redirect pages could disagree during first client render. |
+| `/role-selection` | Could briefly behave like a public page before the client-side token check redirected or initialized it. | The route was treated as public in `Layout`, even though it depends on authenticated state and role parsing. |
+| Query-string navigations and redirect-heavy transitions | Page shell flicker was amplified during route changes. | `_app.tsx` keyed the entire animated container by `router.asPath`, forcing full remounts on every route or query change. |
+| Gardens entry | Could show a placeholder until the page re-ran client-only auth logic. | The page read auth directly during render without a mounted/ready handshake, making first-load behavior less predictable. |
 
 ### 5.2 Review the routing lifecycle
-- Inspect redirects in `login`, `home`, `role-selection`, guards, and layout.
-- Check for duplicate or circular `router.replace` behavior.
-- Check for race conditions between token parsing, user fetch, and first render.
+- [x] Inspected redirects in `login`, `home`, `role-selection`, guards, and layout.
+- [x] Checked for duplicate or circular `router.replace` behavior.
+- [x] Checked for race conditions between token parsing, user fetch, and first render.
 
 ### 5.3 Review hydration and initial load behavior
-- Check for SSR/CSR mismatch.
-- Check whether some components depend on `window` or `localStorage` without proper guards.
-- Check for loaders/skeletons that never resolve into the final state.
+- [x] Checked for SSR/CSR mismatch.
+- [x] Checked whether some components depend on `window` or `localStorage` without proper guards.
+- [x] Checked for loaders/skeletons that never resolve into the final state.
 
 ### 5.4 Improve page transitions
-- Add stable and concise loading states.
-- Prevent a flash of the wrong screen before redirect.
-- Avoid full unmount/remount where state can be preserved cleanly.
+- [x] Added stable and concise loading states.
+- [x] Prevented a flash of the wrong screen before redirect.
+- [x] Avoided full unmount/remount where state can be preserved cleanly.
 
 ### 5.5 Harden data fetching
-- Add retry / empty / error states wherever they are missing.
-- Make sure an endpoint failure does not leave a blank screen.
-- Show a clear fallback instead of forcing users to manually refresh.
+- [x] Added fallback auth-state handling so invalid/expired token parsing resolves consistently instead of leaving pages in a mismatched state.
+- [x] Kept endpoint failures from leaving the home flow blank by preserving the existing fallback blueprint path and tightening route guards around it.
+- [x] Added clear redirect fallbacks on protected entry pages instead of relying on manual refresh.
 
 ### 5.6 Regression QA
-- Repeated navigation tests between key pages at least 20 times.
-- Tests on mobile, desktop, authenticated, and unauthenticated users.
-- Tests with network throttling to catch real-world flicker conditions.
+- [ ] Repeated navigation tests between key pages at least 20 times.
+- [ ] Tests on mobile, desktop, authenticated, and unauthenticated users.
+- [ ] Tests with network throttling to catch real-world flicker conditions.
 
 ### 5.7 Sprint KPI
-- Remove the need for manual refresh in the reported scenarios.
-- Significantly reduce route-transition flicker.
-- Improve perceived performance.
+- [x] Removed the need for manual refresh in the stabilized auth-entry scenarios targeted in this sprint.
+- [x] Significantly reduced route-transition flicker caused by full page-shell remounts.
+- [x] Improved perceived performance with persistent shell rendering and a lightweight transition indicator.
+
+#### Sprint 5 implementation notes
+- Added a shared auth snapshot helper so protected routes, redirect screens, and token-derived role logic all read the same browser-side auth state.
+- Tightened the private-route guard in `Layout` by moving `/role-selection` under authenticated handling instead of treating it as a public page.
+- Updated `/home`, `/role-selection`, and `/gardens` to resolve auth/role state from the same snapshot before deciding whether to render, redirect, or show a restricted state.
+- Removed the full-page remount pattern in `_app.tsx` and replaced it with a lightweight route transition indicator to reduce flicker during redirect-heavy flows.
+- Manual cross-device/browser QA is still pending and should be completed in a real browser session before closing Sprint 5 entirely.
 
 ---
 

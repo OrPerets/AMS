@@ -9,9 +9,9 @@ import { Switch } from '../components/ui/switch';
 import {
   EXTERNAL_SUPERVISION_REPORT_URL,
   getAmsRouteForRole,
+  getAuthSnapshot,
   getCurrentUserId,
   getStoredWorkspaceChoice,
-  getTokenPayload,
   getWorkspaceChoiceRoute,
   isResidentRole,
   normalizeRole,
@@ -41,11 +41,14 @@ export default function RoleSelectionPage() {
   const [lastChoice, setLastChoice] = useState<WorkspaceChoice | null>(null);
 
   useEffect(() => {
-    const payload = getTokenPayload();
-    const effectiveRole = normalizeRole(payload?.actAsRole || payload?.role || null);
+    if (!router.isReady) return;
 
-    if (!payload) {
-      void router.replace('/login');
+    const authSnapshot = getAuthSnapshot();
+    const effectiveRole = normalizeRole(authSnapshot.role);
+
+    if (!authSnapshot.isAuthenticated) {
+      const next = encodeURIComponent(router.asPath || '/role-selection');
+      void router.replace(`/login?next=${next}`);
       return;
     }
 
@@ -54,13 +57,12 @@ export default function RoleSelectionPage() {
       return;
     }
 
-    const userId = getCurrentUserId();
-    const storedChoice = getStoredWorkspaceChoice(effectiveRole, userId);
+    const storedChoice = getStoredWorkspaceChoice(effectiveRole, authSnapshot.userId);
     setRole(effectiveRole);
     setLastChoice(storedChoice?.choice ?? null);
     setRememberChoice(Boolean(storedChoice?.remember));
     setReady(true);
-  }, [router]);
+  }, [router, router.isReady]);
 
   const next = typeof router.query.next === 'string' ? router.query.next : undefined;
   const amsHref = next || getAmsRouteForRole(role);

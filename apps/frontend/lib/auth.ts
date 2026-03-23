@@ -6,6 +6,15 @@ export type LoginResponse = {
 const ACCESS_TOKEN_KEY = 'accessToken';
 const REFRESH_TOKEN_KEY = 'refreshToken';
 
+export type AuthSnapshot = {
+  accessToken: string | null;
+  refreshToken: string | null;
+  payload: any | null;
+  role: string | null;
+  userId: number | null;
+  isAuthenticated: boolean;
+};
+
 function isBrowser() {
   return typeof window !== 'undefined';
 }
@@ -20,26 +29,69 @@ function getUnixTime() {
   return Math.floor(Date.now() / 1000);
 }
 
-export function getAccessToken(): string | null {
+function removeStoredToken(key: string) {
+  if (!isBrowser()) return;
+  window.localStorage.removeItem(key);
+}
+
+function readStoredToken(key: string): string | null {
   if (!isBrowser()) return null;
-  const token = window.localStorage.getItem(ACCESS_TOKEN_KEY);
+  const token = window.localStorage.getItem(key);
   if (!token) return null;
   if (isTokenExpired(token)) {
-    window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+    removeStoredToken(key);
     return null;
   }
   return token;
 }
 
-export function getRefreshToken(): string | null {
-  if (!isBrowser()) return null;
-  const token = window.localStorage.getItem(REFRESH_TOKEN_KEY);
+function parseTokenPayload(token: string | null): any | null {
   if (!token) return null;
-  if (isTokenExpired(token)) {
-    window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+
+  try {
+    const [, payload] = token.split('.');
+    return JSON.parse(decodeBase64Url(payload));
+  } catch {
     return null;
   }
-  return token;
+}
+
+function parseUserId(payload: any | null): number | null {
+  const userId = payload?.sub;
+  if (typeof userId === 'number') return userId;
+  if (typeof userId === 'string') {
+    const parsed = Number(userId);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  return null;
+}
+
+export function getAccessToken(): string | null {
+  return readStoredToken(ACCESS_TOKEN_KEY);
+}
+
+export function getRefreshToken(): string | null {
+  return readStoredToken(REFRESH_TOKEN_KEY);
+}
+
+export function getAuthSnapshot(): AuthSnapshot {
+  const accessToken = getAccessToken();
+  const refreshToken = getRefreshToken();
+  const payload = parseTokenPayload(accessToken);
+
+  if (accessToken && !payload) {
+    removeStoredToken(ACCESS_TOKEN_KEY);
+  }
+
+  const safePayload = accessToken && payload ? payload : null;
+  return {
+    accessToken: accessToken && safePayload ? accessToken : null,
+    refreshToken,
+    payload: safePayload,
+    role: normalizeRole(safePayload?.actAsRole || safePayload?.role || null),
+    userId: parseUserId(safePayload),
+    isAuthenticated: Boolean(accessToken && safePayload),
+  };
 }
 
 export function setTokens(tokens: LoginResponse) {
@@ -55,25 +107,11 @@ export function clearTokens() {
 }
 
 export function getTokenPayload(): any | null {
-  const token = isBrowser() ? window.localStorage.getItem(ACCESS_TOKEN_KEY) : null;
-  if (!token) return null;
-  try {
-    const [, payload] = token.split('.');
-    return JSON.parse(decodeBase64Url(payload));
-  } catch {
-    return null;
-  }
+  return getAuthSnapshot().payload;
 }
 
 export function getCurrentUserId(): number | null {
-  const payload = getTokenPayload();
-  const userId = payload?.sub;
-  if (typeof userId === 'number') return userId;
-  if (typeof userId === 'string') {
-    const parsed = Number(userId);
-    return Number.isNaN(parsed) ? null : parsed;
-  }
-  return null;
+  return getAuthSnapshot().userId;
 }
 
 export function normalizeRole(role?: string | null): string | null {
@@ -116,7 +154,7 @@ export function hasRoleAccess(allowedRoles: string[], role = getEffectiveRole())
 }
 
 export function isMasterPendingRoleSelection(): boolean {
-  const payload = getTokenPayload();
+  const { payload } = getAuthSnapshot();
   return Boolean(payload?.role === 'MASTER' && !payload?.actAsRole);
 }
 
@@ -314,13 +352,11 @@ type StoredWorkspaceChoice = {
 };
 
 export function getEffectiveRole(): string | null {
-  const payload = getTokenPayload();
-  if (!payload) return null;
-  return normalizeRole(payload.actAsRole || payload.role || null);
+  return getAuthSnapshot().role;
 }
 
 export function isAuthenticated(): boolean {
-  return !!getAccessToken();
+  return getAuthSnapshot().isAuthenticated;
 }
 
 export function getAmsRouteForRole(role?: string | null): string | null {

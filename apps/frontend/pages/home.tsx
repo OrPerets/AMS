@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Bell, Building2, ClipboardList, Sparkles, Ticket } from 'lucide-react';
-import { authFetch, getCurrentUserId, getEffectiveRole } from '../lib/auth';
+import { ROLE_SELECTION_ROUTE, authFetch, getAuthSnapshot, getCurrentUserId, getEffectiveRole } from '../lib/auth';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
@@ -208,12 +208,27 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!mounted) return;
-    const effectiveRole = (getEffectiveRole() as RoleKey) || 'RESIDENT';
+
+    const authSnapshot = getAuthSnapshot();
+    const effectiveRole = (authSnapshot.role as RoleKey | null) || 'RESIDENT';
     setRole(effectiveRole);
+
+    if (!authSnapshot.isAuthenticated) {
+      const next = encodeURIComponent(router.asPath || '/home');
+      void router.replace(`/login?next=${next}`);
+      return;
+    }
+
     if (effectiveRole === 'RESIDENT') {
       void router.replace('/resident/account');
       return;
     }
+
+    if (!['ADMIN', 'MASTER', 'PM', 'TECH', 'ACCOUNTANT'].includes(effectiveRole)) {
+      void router.replace(ROLE_SELECTION_ROUTE);
+      return;
+    }
+
     void loadBlueprint(effectiveRole);
   }, [mounted, router]);
 
