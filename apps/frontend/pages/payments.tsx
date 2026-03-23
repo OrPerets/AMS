@@ -3,6 +3,9 @@ import { AlertCircle, Download, Plus, Receipt, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { authFetch, downloadAuthenticatedFile, getEffectiveRole, openAuthenticatedFile } from '../lib/auth';
 import { Button } from '../components/ui/button';
+import { CompactStatusStrip } from '../components/ui/compact-status-strip';
+import { PrimaryActionCard } from '../components/ui/primary-action-card';
+import { MobilePriorityInbox } from '../components/ui/mobile-priority-inbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
@@ -223,6 +226,23 @@ export default function PaymentsPage() {
       paidAmount: invoices.filter((invoice) => invoice.status === 'PAID').reduce((sum, invoice) => sum + invoice.amount, 0),
     };
   }, [invoices]);
+  const mobileAttentionItems = useMemo(() => {
+    const followUps = collectionsSummary?.followUps || [];
+    if (followUps.length) {
+      return followUps.slice(0, 2).map((followUp, index) => ({
+        id: `followup-${followUp.invoiceId}-${index}`,
+        status: followUp.collectionStatus === 'IN_COLLECTIONS' ? 'פיגור' : 'מעקב',
+        tone: followUp.collectionStatus === 'IN_COLLECTIONS' ? 'danger' as const : 'warning' as const,
+        title: `${followUp.residentName}${followUp.buildingName ? ` · ${followUp.buildingName}` : ''}`,
+        reason: followUp.collectionNotes || 'דורש יצירת קשר, תיעוד או בדיקת הבטחת תשלום.',
+        meta: followUp.promiseToPayDate ? `הבטיח עד ${formatDate(new Date(followUp.promiseToPayDate), locale)}` : followUp.lastReminderAt ? `תזכורת אחרונה ${formatDate(new Date(followUp.lastReminderAt), locale)}` : 'מעקב גבייה פתוח',
+        href: '/payments',
+        ctaLabel: 'טפל',
+      }));
+    }
+
+    return [];
+  }, [collectionsSummary, locale]);
 
   const filteredResidents = useMemo(() => {
     const query = residentQuery.trim().toLowerCase();
@@ -442,6 +462,40 @@ export default function PaymentsPage() {
 
   return (
     <div className="space-y-6">
+      <div className="space-y-3 md:hidden">
+        <CompactStatusStrip
+          roleLabel="כספים"
+          metrics={[
+            { id: 'collection', label: 'לגבייה', value: formatCurrency(collectionsSummary?.totals.outstandingBalance ?? stats.pendingAmount), tone: stats.overdueCount > 0 ? 'warning' : 'success' },
+            { id: 'overdue', label: 'פיגורים', value: collectionsSummary?.totals.overdueCount ?? stats.overdueCount, tone: stats.overdueCount > 0 ? 'danger' : 'success' },
+          ]}
+        />
+
+        <PrimaryActionCard
+          eyebrow="Collection Card"
+          title="גבייה שוטפת"
+          description={`${formatCurrency(collectionsSummary?.totals.outstandingBalance ?? stats.pendingAmount)} יתרת חוב כוללת · ${collectionsSummary?.totals.overdueCount ?? stats.overdueCount} חשבונות בפיגור · ${(collectionsSummary?.topDebtors.filter((item) => item.overdueCount >= 2).length) ?? 0} מעל 60 יום.`}
+          ctaLabel="פתח רשימת גבייה"
+          href="/payments"
+          tone={stats.overdueCount > 0 ? 'danger' : 'warning'}
+        />
+
+        <div className="grid grid-cols-2 gap-3">
+          <Button asChild className="h-auto min-h-[96px] flex-col items-start justify-between rounded-[24px] p-4 text-right"><a href="/payments"><span className="text-sm">תשלומים</span><span className="text-2xl font-black">{formatCurrency(collectionsSummary?.totals.collectedThisMonth ?? stats.paidAmount)}</span><span className="text-xs">היום</span></a></Button>
+          <Button asChild variant="outline" className="h-auto min-h-[96px] flex-col items-start justify-between rounded-[24px] p-4 text-right"><a href="/finance/budgets"><span className="text-sm">תקציבים</span><span className="text-2xl font-black">{collectionsSummary?.followUps.length ?? 0}</span><span className="text-xs">חריגות</span></a></Button>
+          <Button asChild variant="outline" className="h-auto min-h-[96px] flex-col items-start justify-between rounded-[24px] p-4 text-right"><a href="/finance/reports"><span className="text-sm">דוחות</span><span className="text-2xl font-black">חודשי</span><span className="text-xs">📊</span></a></Button>
+          <Button asChild variant="outline" className="h-auto min-h-[96px] flex-col items-start justify-between rounded-[24px] p-4 text-right"><a href="/operations/calendar"><span className="text-sm">יומן</span><span className="text-2xl font-black">{(collectionsSummary?.followUps.filter((item) => item.promiseToPayDate).length) ?? 0}</span><span className="text-xs">פירעון</span></a></Button>
+        </div>
+
+        <MobilePriorityInbox
+          title="פריטי תשומת לב"
+          subtitle="פיגורים, הבטחות תשלום ומעקבים שדורשים פעולה היום."
+          items={mobileAttentionItems}
+          emptyTitle="אין חשבונות בפיגור"
+          emptyDescription="הגבייה תקינה. אפשר להמשיך לתקציבים או לדוחות."
+        />
+      </div>
+
       <div className="page-header">
         <div>
           <h1 className="text-2xl font-semibold sm:text-3xl">{t('payments.title')}</h1>
