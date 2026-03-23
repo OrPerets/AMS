@@ -354,14 +354,14 @@ function techModel(t: Translator): NavigationModel {
       { id: 'home', title: 'בית', hint: 'מרכז ניהול', href: '/home', icon: Home },
       { id: 'tech-jobs', title: 'עבודות', hint: 'תור', href: '/tech/jobs', icon: Wrench },
       { id: 'gardens', title: 'גינון', hint: 'חודש', href: '/gardens', icon: Leaf },
-      { id: 'supervision', title: 'פיקוח', hint: 'דוח', href: '/supervision-report', icon: ShieldCheck },
+      { id: 'status', title: 'עדכון', hint: 'קריאות שלי', href: '/tickets?mine=true', icon: ClipboardList },
     ],
     mobileMoreGroups: [
       {
         id: 'field',
         title: 'שדה',
         items: [
-          { id: 'status', title: 'עדכון סטטוס', hint: 'קריאות שלי', href: '/tickets?mine=true', icon: ClipboardList },
+          { id: 'supervision', title: 'פיקוח', hint: 'דוח חיצוני', href: '/supervision-report', icon: ShieldCheck },
           { id: 'maintenance', title: 'תחזוקה', hint: 'רשימות', href: '/maintenance', icon: CalendarClock },
           { id: 'schedules', title: 'יומנים', hint: 'ביצוע', href: '/schedules', icon: ClipboardList },
           { id: 'management', title: 'מרכז ניהול', hint: 'חזרה לבית', href: '/home', icon: Home },
