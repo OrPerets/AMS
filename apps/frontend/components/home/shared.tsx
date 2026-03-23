@@ -88,6 +88,7 @@ export function RoleHomeShell({
         ctaLabel={primaryAction.ctaLabel}
         href={primaryAction.href}
         tone={primaryAction.tone}
+        mobileHomeEffect
         secondaryAction={
           primaryAction.secondaryAction ? (
             <Link
