@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Bell, Building2, ClipboardList, Sparkles, Ticket } from 'lucide-react';
-import { authFetch, getCurrentUserId, getEffectiveRole } from '../lib/auth';
+import { ROLE_SELECTION_ROUTE, authFetch, getAuthSnapshot, getCurrentUserId, getEffectiveRole } from '../lib/auth';
+import { trackEvent } from '../lib/analytics';
+import { setLastModule, addRecentAction } from '../lib/engagement';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
@@ -208,12 +210,29 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!mounted) return;
-    const effectiveRole = (getEffectiveRole() as RoleKey) || 'RESIDENT';
+
+    const authSnapshot = getAuthSnapshot();
+    const effectiveRole = (authSnapshot.role as RoleKey | null) || 'RESIDENT';
     setRole(effectiveRole);
+
+    if (!authSnapshot.isAuthenticated) {
+      const next = encodeURIComponent(router.asPath || '/home');
+      void router.replace(`/login?next=${next}`);
+      return;
+    }
+
     if (effectiveRole === 'RESIDENT') {
       void router.replace('/resident/account');
       return;
     }
+
+    if (!['ADMIN', 'MASTER', 'PM', 'TECH', 'ACCOUNTANT'].includes(effectiveRole)) {
+      void router.replace(ROLE_SELECTION_ROUTE);
+      return;
+    }
+
+    setLastModule('ams', authSnapshot.userId, effectiveRole);
+    addRecentAction({ id: 'home-visit', label: 'דף הבית', href: '/home', screen: 'home', role: effectiveRole }, authSnapshot.userId);
     void loadBlueprint(effectiveRole);
   }, [mounted, router]);
 
@@ -248,6 +267,7 @@ export default function HomePage() {
       window.localStorage.setItem(`amit-onboarding:v8:${currentUserId}:${role}`, new Date().toISOString());
     }
     setOnboardingOpen(false);
+    trackEvent('onboarding_complete', { role });
     toast({
       title: 'מסלול הפתיחה נשמר',
       description: 'המסך הראשי ימשיך לפתוח עבורך את הבלופרינט המתאים לכל תפקיד.',
@@ -264,7 +284,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="space-y-5 sm:space-y-8">
+    <div className="space-y-3 sm:space-y-8">
       {renderBlueprint(blueprint)}
 
       <Dialog open={onboardingOpen} onOpenChange={setOnboardingOpen}>
@@ -337,6 +357,7 @@ function ResidentMobileHome({ data }: { data: ResidentHomeData }) {
       inboxItems={data.inboxItems}
       emptyTitle="אין קריאות פתוחות"
       emptyDescription="צריך משהו? אפשר לפתוח קריאת תחזוקה חדשה או לעבור למסמכים."
+      emptyAction={{ label: 'פתח קריאה חדשה', href: '/create-call' }}
     />
   );
 }

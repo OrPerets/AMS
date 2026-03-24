@@ -6,6 +6,9 @@ import { MobileActionHub } from '../ui/mobile-action-hub';
 import { MobilePriorityInbox, type MobilePriorityInboxItem } from '../ui/mobile-priority-inbox';
 import { PrimaryActionCard } from '../ui/primary-action-card';
 import { cn } from '../../lib/utils';
+import { trackQuickActionClick } from '../../lib/analytics';
+import { addRecentAction, getRecentActions } from '../../lib/engagement';
+import { getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 
 export type RoleKey = 'ADMIN' | 'PM' | 'TECH' | 'RESIDENT' | 'ACCOUNTANT' | 'MASTER';
 
@@ -51,6 +54,7 @@ export type HomeBlueprintShellProps = {
   inboxItems: MobilePriorityInboxItem[];
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyAction?: { label: string; href: string };
   prioritizeInbox?: boolean;
 };
 
@@ -65,6 +69,7 @@ export function RoleHomeShell({
   inboxItems,
   emptyTitle,
   emptyDescription,
+  emptyAction,
   prioritizeInbox = false,
 }: HomeBlueprintShellProps) {
   const icon = getRoleStatusIcon(roleKey);
@@ -77,6 +82,7 @@ export function RoleHomeShell({
       items={inboxItems}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}
+      emptyAction={emptyAction}
       emphasizeFirst={roleKey !== 'ACCOUNTANT'}
     />
   );
@@ -155,7 +161,7 @@ function RoleCommandBand({
     : 'border-subtle-border/80 bg-background/75 text-secondary-foreground';
 
   return (
-    <div className={cn('rounded-[24px] border p-3 shadow-[0_16px_34px_rgba(44,28,9,0.08)]', shellTone)}>
+    <div className={cn('rounded-2xl border p-3 shadow-[0_16px_34px_rgba(44,28,9,0.08)] sm:rounded-[24px]', shellTone)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className={cn('text-[10px] font-semibold uppercase tracking-[0.18em]', roleKey === 'ADMIN' ? 'text-white/56' : 'text-secondary-foreground')}>
@@ -170,7 +176,7 @@ function RoleCommandBand({
         </div>
 
         {secondaryMetric ? (
-          <div className={cn('rounded-[18px] border px-3 py-2 text-start', chipTone)}>
+          <div className={cn('rounded-2xl border px-3 py-2 text-start', chipTone)}>
             <div className="text-[10px] font-semibold">{secondaryMetric.label}</div>
             <div className={cn('mt-1 text-[16px] font-black tabular-nums', roleKey === 'ADMIN' ? 'text-inverse-text' : 'text-foreground')}>
               <bdi>{secondaryMetric.value}</bdi>
@@ -182,14 +188,39 @@ function RoleCommandBand({
   );
 }
 
+function handleQuickActionClick(item: HomeQuickAction, roleKey: RoleKey) {
+  trackQuickActionClick(item.id, 'home', roleKey);
+  addRecentAction(
+    { id: `qa-${item.id}`, label: item.title, href: item.href, screen: 'home', role: roleKey },
+    getCurrentUserId(),
+  );
+}
+
+function sortByRecentUsage(items: HomeQuickAction[], roleKey: RoleKey): HomeQuickAction[] {
+  const recent = getRecentActions(getCurrentUserId(), getEffectiveRole());
+  if (!recent.length) return items;
+
+  const recentIds = new Set(recent.map((r) => r.id.replace('qa-', '')));
+  const hasWarning = items.some((i) => i.tone === 'warning' || i.tone === 'danger');
+  if (hasWarning) return items;
+
+  return [...items].sort((a, b) => {
+    const aRecent = recentIds.has(a.id) ? 1 : 0;
+    const bRecent = recentIds.has(b.id) ? 1 : 0;
+    return bRecent - aRecent;
+  });
+}
+
 export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: HomeQuickAction[]; roleKey?: RoleKey }) {
+  const sorted = sortByRecentUsage(items, roleKey);
+
   if (roleKey === 'PM' || roleKey === 'ADMIN') {
     return (
       <MobileActionHub
         title={roleKey === 'ADMIN' ? 'פעולות בקרה' : 'פעולות ניהול'}
         subtitle={roleKey === 'ADMIN' ? 'סיכון, בקרה ויומן בלי לרדת למסכים משניים.' : 'תיעדוף קריאות, בניינים ויומן התפעול בתצוגה אחת.'}
         layout="hierarchy"
-        items={items.slice(0, 4).map((item, index) => ({
+        items={sorted.slice(0, 4).map((item, index) => ({
           id: item.id,
           label: item.title,
           description: `${item.subtitle} · ${item.value}`,
@@ -208,6 +239,7 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
           badge: typeof item.value === 'number' && item.value > 0 ? item.value : undefined,
           emphasize: index === 0,
           priority: index === 0 ? 'primary' : index < 3 ? 'secondary' : 'utility',
+          onClick: () => handleQuickActionClick(item, roleKey),
         }))}
       />
     );
@@ -215,29 +247,36 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
 
   return (
     <div className="grid grid-cols-2 gap-2.5">
-      {items.slice(0, 4).map((item) => {
+      {sorted.slice(0, 4).map((item, index) => {
         const Icon = item.icon;
+        const isLeading = index === 0 && (item.tone === 'warning' || item.tone === 'danger');
         return (
-          <Link key={item.id} href={item.href} className="block">
+          <Link
+            key={item.id}
+            href={item.href}
+            className="block"
+            onClick={() => handleQuickActionClick(item, roleKey)}
+          >
             <Card
               variant="elevated"
               className={cn(
-                'h-full min-h-[104px] rounded-[20px] border transition duration-200 hover:-translate-y-0.5 hover:shadow-card',
+                'h-full min-h-[88px] rounded-2xl border transition duration-200 hover:-translate-y-0.5 hover:shadow-card',
                 'bg-[linear-gradient(180deg,rgba(255,255,255,0.97)_0%,rgba(248,244,236,0.92)_100%)]',
                 item.tone === 'warning' && 'border-warning/30 bg-warning/5',
                 item.tone === 'danger' && 'border-destructive/30 bg-destructive/5',
                 item.tone === 'success' && 'border-success/30 bg-success/5',
+                isLeading && 'ring-2 ring-primary/20',
               )}
             >
               <CardContent className="flex h-full flex-col justify-between p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="text-[13px] font-semibold leading-5 text-foreground">{item.title}</div>
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[16px] bg-primary/10 text-primary">
-                    <Icon className="h-3.5 w-3.5" strokeWidth={1.8} />
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
                   </span>
                 </div>
                 <div>
-                  <div className="text-[1.35rem] font-black leading-none text-foreground">
+                  <div className="text-xl font-extrabold leading-none tabular-nums text-foreground">
                     <bdi>{item.value}</bdi>
                   </div>
                   <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] leading-4 text-secondary-foreground">

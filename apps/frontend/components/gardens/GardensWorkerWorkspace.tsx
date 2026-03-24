@@ -22,9 +22,12 @@ import {
   getGardensWorkerMonth,
   saveGardensWorkerMonth,
   submitGardensWorkerMonth,
+  type GardensStatus,
   type GardensWorkerDashboard,
   type GardensWorkerMonth,
 } from '../../lib/gardens';
+import { getEffectiveRole } from '../../lib/auth';
+import { GardensModuleShell } from './GardensModuleShell';
 import { GardensStatusBadge } from './GardensStatusBadge';
 
 function toEntryMap(assignments: GardensWorkerMonth['assignments']) {
@@ -47,7 +50,7 @@ function entryMapToAssignments(entries: Record<string, DayEntry>) {
     .filter((entry) => entry.location);
 }
 
-function getWorkerStateCopy(status: GardensWorkerMonth['month']['status'], assignmentCount: number, reviewNote?: string | null) {
+function getWorkerStateCopy(status: GardensStatus, assignmentCount: number, reviewNote?: string | null) {
   switch (status) {
     case 'NEEDS_CHANGES':
       return {
@@ -92,6 +95,7 @@ export function GardensWorkerWorkspace() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const role = getEffectiveRole();
 
   const loadDashboard = async () => {
     setLoading(true);
@@ -247,44 +251,75 @@ export function GardensWorkerWorkspace() {
   }
 
   return (
-    <div className="space-y-8">
-      <PageHero
-        variant="operational"
-        compact
-        eyebrow={
-          <>
-            <GardensStatusBadge status={activeMonth.month.status} />
-            <Badge variant="outline">{workerState.badge}</Badge>
-          </>
-        }
-        kicker="WORKSPACE"
-        title={workerState.title}
-        description={workerState.description}
-        actions={
-          <Button asChild size="sm">
-            <a href="#gardens-worker-month-grid">{editable ? 'המשך לעריכה' : 'צפה בחודש'}</a>
-          </Button>
-        }
-      />
+    <GardensModuleShell
+      role={role}
+      activePlan={activeMonth.month.plan}
+      moduleLabel={`מרחב עבודה לעובד עבור ${formatPlanLabel(activeMonth.month.plan)}`}
+      title="מרחב העבודה האישי בגינון"
+      description="המודול שומר עבורך מסלול עבודה נפרד: חודש פעיל, סטטוס ההגשה, הנחיות, ושמירה מהירה בלי לחזור למסכי AMS הכלליים."
+      actions={
+        <Button asChild size="sm">
+          <a href="#gardens-worker-month-grid">{editable ? 'המשך לעריכה' : 'צפה בחודש'}</a>
+        </Button>
+      }
+    >
+      <div className="space-y-8">
+        <PageHero
+          variant="operational"
+          compact
+          eyebrow={
+            <>
+              <GardensStatusBadge status={activeMonth.month.status} />
+              <Badge variant="outline">{workerState.badge}</Badge>
+            </>
+          }
+          kicker="WORKSPACE"
+          title={workerState.title}
+          description={workerState.description}
+        />
 
-      <Card variant="featured" className="overflow-hidden rounded-[22px]">
-        <CardContent className="grid gap-3 p-4 sm:grid-cols-[1.2fr_0.8fr_0.8fr] sm:p-5">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-tertiary">פעולה ראשית</div>
-            <div className="mt-1 text-base font-semibold text-foreground">{workerState.actionTitle}</div>
-            <div className="mt-1 text-sm leading-6 text-secondary-foreground">{workerState.actionDescription}</div>
-          </div>
-          <div className="rounded-[18px] border border-subtle-border bg-background/82 p-3">
-            <div className="text-xs uppercase tracking-[0.16em] text-tertiary">חודש פעיל</div>
-            <div className="mt-2 text-lg font-black">{formatPlanLabel(activeMonth.month.plan)}</div>
-          </div>
-          <div className="rounded-[18px] border border-subtle-border bg-background/82 p-3">
-            <div className="text-xs uppercase tracking-[0.16em] text-tertiary">יעד הגשה</div>
-            <div className="mt-2 text-sm font-semibold">{formatDateLabel(activeMonth.month.submissionDeadline)}</div>
-            <div className="mt-1 text-xs text-secondary-foreground">{assignmentCount} ימים מולאו</div>
-          </div>
-        </CardContent>
-      </Card>
+        <section className="grid gap-4 lg:grid-cols-3">
+          <Card variant="metric">
+            <CardContent className="p-5">
+              <div className="text-xs text-muted-foreground">חודש פעיל</div>
+              <div className="mt-2 text-xl font-black">{formatPlanLabel(activeMonth.month.plan)}</div>
+              <div className="mt-2 text-sm text-muted-foreground">כל הפעולות שלך מרוכזות במסך אחד.</div>
+            </CardContent>
+          </Card>
+          <Card variant="metric">
+            <CardContent className="p-5">
+              <div className="text-xs text-muted-foreground">ימים שמולאו</div>
+              <div className="mt-2 text-3xl font-black">{assignmentCount}</div>
+              <div className="mt-2 text-sm text-muted-foreground">שמור טיוטה תוך כדי כדי לא לאבד התקדמות.</div>
+            </CardContent>
+          </Card>
+          <Card variant="metric">
+            <CardContent className="p-5">
+              <div className="text-xs text-muted-foreground">הפעולה הבאה</div>
+              <div className="mt-2 text-lg font-black">{editable ? 'המשך מילוי או שלח' : 'מעקב אחרי ההגשה'}</div>
+              <div className="mt-2 text-sm text-muted-foreground">{workerState.actionDescription}</div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <Card variant="featured" className="overflow-hidden rounded-[22px]">
+          <CardContent className="grid gap-3 p-4 sm:grid-cols-[1.2fr_0.8fr_0.8fr] sm:p-5">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-tertiary">פעולה ראשית</div>
+              <div className="mt-1 text-base font-semibold text-foreground">{workerState.actionTitle}</div>
+              <div className="mt-1 text-sm leading-6 text-secondary-foreground">{workerState.actionDescription}</div>
+            </div>
+            <div className="rounded-[18px] border border-subtle-border bg-background/82 p-3">
+              <div className="text-xs uppercase tracking-[0.16em] text-tertiary">חודש פעיל</div>
+              <div className="mt-2 text-lg font-black">{formatPlanLabel(activeMonth.month.plan)}</div>
+            </div>
+            <div className="rounded-[18px] border border-subtle-border bg-background/82 p-3">
+              <div className="text-xs uppercase tracking-[0.16em] text-tertiary">יעד הגשה</div>
+              <div className="mt-2 text-sm font-semibold">{formatDateLabel(activeMonth.month.submissionDeadline)}</div>
+              <div className="mt-1 text-xs text-secondary-foreground">{assignmentCount} ימים מולאו</div>
+            </div>
+          </CardContent>
+        </Card>
 
       {activeMonth.month.status === 'NEEDS_CHANGES' && activeMonth.month.reviewNote ? (
         <Alert variant="warning">
@@ -302,7 +337,7 @@ export function GardensWorkerWorkspace() {
         </Alert>
       ) : null}
 
-      <section className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+        <section className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
         <Card variant="featured">
           <CardHeader>
             <CardTitle>בקרה חודשית</CardTitle>
@@ -363,6 +398,11 @@ export function GardensWorkerWorkspace() {
               entries={entries}
               readOnly={!editable}
               onChange={(date, value, bulk) => {
+                const activePlan = activeMonth.month?.plan;
+                if (!activePlan) {
+                  return;
+                }
+
                 setEntries((current) => {
                   const next = { ...current };
                   if (value) {
@@ -372,7 +412,7 @@ export function GardensWorkerWorkspace() {
                   }
 
                   if (value && bulk) {
-                    const start = parseISO(`${activeMonth.month.plan}-01`);
+                    const start = parseISO(`${activePlan}-01`);
                     const daysInMonth = getDaysInMonth(start);
                     for (let index = 1; index <= daysInMonth; index += 1) {
                       const currentDate = addDays(start, index - 1);
@@ -400,49 +440,50 @@ export function GardensWorkerWorkspace() {
             ) : null}
           </CardContent>
         </Card>
-      </section>
+        </section>
 
-      <section className="space-y-4">
-        <SectionHeader
-          title="קווים מנחים להגשה"
-          subtitle="מלא רק ימים שבהם יש עבודה בפועל. כל יום מקבל מיקום אחד והערות אופציונליות."
-        />
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            'שמור טיוטה בכל שלב. אין צורך להמתין לסיום כל החודש.',
-            'אם המנהל החזיר את התוכנית, העדכן את הימים הרלוונטיים והגש מחדש.',
-            'אחרי אישור סופי החודש הופך לקריאה בלבד כדי לשמור על גרסה מוסכמת אחת.',
-          ].map((line) => (
-            <Card key={line} variant="listRow">
-              <CardContent className="p-5 text-sm leading-6 text-muted-foreground">
-                {line}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+        <section id="gardens-guidelines" className="space-y-4">
+          <SectionHeader
+            title="קווים מנחים להגשה"
+            subtitle="מלא רק ימים שבהם יש עבודה בפועל. כל יום מקבל מיקום אחד והערות אופציונליות."
+          />
+          <div className="grid gap-4 md:grid-cols-3">
+            {[
+              'שמור טיוטה בכל שלב. אין צורך להמתין לסיום כל החודש.',
+              'אם המנהל החזיר את התוכנית, העדכן את הימים הרלוונטיים והגש מחדש.',
+              'אחרי אישור סופי החודש הופך לקריאה בלבד כדי לשמור על גרסה מוסכמת אחת.',
+            ].map((line) => (
+              <Card key={line} variant="listRow">
+                <CardContent className="p-5 text-sm leading-6 text-muted-foreground">
+                  {line}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
 
-      <MobileActionBar
-        title={editable ? 'המשך לערוך או הגש לאישור' : 'החודש סגור לעריכה'}
-        description={workerState.actionDescription}
-      >
-        <div className="grid gap-2">
-          <Button variant="outline" onClick={() => void save()} loading={saving} disabled={!editable} className="w-full justify-between">
-            <span className="inline-flex items-center gap-2">
-              <Save className="h-4 w-4" />
-              שמור טיוטה
-            </span>
-            <span>{assignmentCount} ימים</span>
-          </Button>
-          <Button onClick={() => void submit()} loading={submitting} disabled={!editable} className="w-full justify-between">
-            <span className="inline-flex items-center gap-2">
-              <Send className="h-4 w-4" />
-              הגש לאישור
-            </span>
-            <GardensStatusBadge status={activeMonth.month.status} />
-          </Button>
-        </div>
-      </MobileActionBar>
-    </div>
+        <MobileActionBar
+          title={editable ? 'המשך לערוך או הגש לאישור' : 'החודש סגור לעריכה'}
+          description={workerState.actionDescription}
+        >
+          <div className="grid gap-2">
+            <Button variant="outline" onClick={() => void save()} loading={saving} disabled={!editable} className="w-full justify-between">
+              <span className="inline-flex items-center gap-2">
+                <Save className="h-4 w-4" />
+                שמור טיוטה
+              </span>
+              <span>{assignmentCount} ימים</span>
+            </Button>
+            <Button onClick={() => void submit()} loading={submitting} disabled={!editable} className="w-full justify-between">
+              <span className="inline-flex items-center gap-2">
+                <Send className="h-4 w-4" />
+                הגש לאישור
+              </span>
+              <GardensStatusBadge status={activeMonth.month.status} />
+            </Button>
+          </div>
+        </MobileActionBar>
+      </div>
+    </GardensModuleShell>
   );
 }

@@ -98,11 +98,11 @@ function ActionTile({
         onClick={item.onClick}
         selected={isSelected}
         className={cn(
-          'group block rounded-[22px] border bg-card/96 p-3 text-center shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target sm:rounded-[26px] sm:p-3.5',
-          layout === 'grid' && 'min-h-[96px] sm:min-h-[104px]',
-          layout === 'hierarchy' && priority === 'primary' && 'min-h-[120px] text-start sm:min-h-[132px]',
-          layout === 'hierarchy' && priority === 'secondary' && 'min-h-[100px]',
-          layout === 'hierarchy' && priority === 'utility' && 'min-h-[84px] bg-muted-surface/85 shadow-elevation-1',
+          'group block rounded-2xl border bg-card/96 p-2.5 text-center shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target sm:rounded-[24px] sm:p-3.5',
+          layout === 'grid' && 'min-h-[88px] sm:min-h-[96px]',
+          layout === 'hierarchy' && priority === 'primary' && 'min-h-[100px] text-start sm:min-h-[120px]',
+          layout === 'hierarchy' && priority === 'secondary' && 'min-h-[88px]',
+          layout === 'hierarchy' && priority === 'utility' && 'min-h-[76px] bg-muted-surface/85 shadow-elevation-1',
           isSelected && 'border-primary/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(239,246,255,0.96)_100%)] shadow-[0_16px_36px_rgba(59,130,246,0.14)] ring-1 ring-primary/10',
           !item.href && !item.onClick && 'pointer-events-none',
         )}
@@ -111,12 +111,12 @@ function ActionTile({
           <div className="flex w-full items-start justify-between gap-2">
             <span
               className={cn(
-                'flex items-center justify-center rounded-full border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]',
-                layout === 'hierarchy' && priority === 'utility' ? 'h-9 w-9' : 'h-10 w-10 sm:h-12 sm:w-12',
+                'flex items-center justify-center rounded-xl border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]',
+                layout === 'hierarchy' && priority === 'utility' ? 'h-8 w-8' : 'h-10 w-10',
                 toneClasses(item.accent),
               )}
             >
-              <Icon className="h-4.5 w-4.5 sm:h-5 sm:w-5" strokeWidth={1.9} />
+              <Icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.75} />
             </span>
             {item.badge !== undefined && item.badge !== '' ? (
               <span className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
@@ -130,7 +130,7 @@ function ActionTile({
             ) : null}
           </div>
 
-          <div className={cn('mt-2.5 flex-1', layout === 'hierarchy' && priority === 'primary' && 'w-full')}>
+          <div className={cn('mt-2 flex-1', layout === 'hierarchy' && priority === 'primary' && 'w-full')}>
             <div className={cn(priority === 'primary' ? 'text-[16px]' : 'text-[15px] sm:text-sm', 'font-semibold leading-5 text-foreground', isSelected && 'text-primary')}>
               {item.label}
             </div>

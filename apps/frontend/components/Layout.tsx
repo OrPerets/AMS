@@ -14,7 +14,7 @@ import { ErrorBoundary, CompactErrorFallback } from './ui/error-boundary';
 import { cn } from '../lib/utils';
 import { websocketService } from '../lib/websocket';
 import { toast } from './ui/use-toast';
-import { authFetch, getAccessToken, getCurrentUserId, isAuthenticated, isMasterPendingRoleSelection } from '../lib/auth';
+import { authFetch, getAccessToken, getAuthSnapshot, getCurrentUserId, isMasterPendingRoleSelection } from '../lib/auth';
 import { useBottomSurface } from '../lib/bottom-surface';
 
 interface Props {
@@ -31,21 +31,22 @@ export default function Layout({ children }: Props) {
   const { t } = useLocale();
   const { totalOffset } = useBottomSurface();
   const router = useRouter();
-  const publicRoutes = new Set(['/', '/404', '/_error', '/login', '/privacy', '/terms', '/support', '/role-selection']);
+  const publicRoutes = new Set(['/', '/404', '/_error', '/login', '/privacy', '/terms', '/support']);
   const isPublicRoute = publicRoutes.has(router.pathname);
+  const authSnapshot = mounted ? getAuthSnapshot() : null;
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!mounted || isPublicRoute || isAuthenticated()) {
+    if (!mounted || isPublicRoute || authSnapshot?.isAuthenticated) {
       return;
     }
 
     const next = encodeURIComponent(router.asPath);
-    router.replace(`/login?next=${next}`);
-  }, [isPublicRoute, mounted, router]);
+    void router.replace(`/login?next=${next}`);
+  }, [authSnapshot?.isAuthenticated, isPublicRoute, mounted, router]);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -136,7 +137,7 @@ export default function Layout({ children }: Props) {
     );
   }
 
-  if (!mounted || !isAuthenticated()) {
+  if (!mounted || !authSnapshot?.isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
         <div className="text-center">

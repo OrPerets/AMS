@@ -222,17 +222,14 @@ const DayCell: FC<DayCellProps> = ({
               className="w-full sm:max-w-md bg-white text-hebrew rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[85dvh] overflow-hidden flex flex-col animate-slide-up sm:animate-scale-in"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header */}
-              <div className="px-6 py-4 border-b bg-blue-50 text-center">
-                <h2 id={`day-${date}-title`} className="text-xl font-bold text-blue-900">
+              <div className="px-4 py-3 border-b bg-blue-50 text-center sm:px-6 sm:py-4">
+                <h2 id={`day-${date}-title`} className="text-lg font-bold text-blue-900 sm:text-xl">
                   יום {format(parseISO(date), 'dd/MM')}
                 </h2>
               </div>
 
-              {/* Scrollable content */}
-              <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5" id={`day-${date}-desc`}>
-                {/* Inputs */}
-                <div className="space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5" id={`day-${date}-desc`}>
+                <div className="space-y-3 sm:space-y-4">
                   <div>
                     <label className="label text-right">כתובת</label>
                     <input

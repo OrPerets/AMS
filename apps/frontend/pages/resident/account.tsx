@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Bell, Building2, ClipboardList, CreditCard, FileText, MessageCircle, Ticket } from 'lucide-react';
-import { authFetch } from '../../lib/auth';
+import { ArrowLeft, Bell, Building2, ClipboardList, CreditCard, FileText, MessageCircle, Ticket } from 'lucide-react';
+import { authFetch, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { useLocale } from '../../lib/providers';
 import { formatCurrency, formatDate, getStatusLabel, getTicketStatusTone } from '../../lib/utils';
 import { Button } from '../../components/ui/button';
@@ -14,6 +14,8 @@ import { MobileActionHub } from '../../components/ui/mobile-action-hub';
 import { MobilePriorityInbox, type MobilePriorityInboxItem } from '../../components/ui/mobile-priority-inbox';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
+import { getResumeState, setResumeState } from '../../lib/engagement';
+import { trackResumeClick } from '../../lib/analytics';
 
 type AccountContext = {
   user: { id: number; email: string; role: string };
@@ -292,6 +294,17 @@ export default function ResidentAccountPage() {
     });
   }
 
+  const userId = getCurrentUserId();
+  const role = getEffectiveRole();
+  const resumeState = useMemo(() => getResumeState('resident', userId, role), [userId, role]);
+  const showResume = resumeState && resumeState.href !== '/resident/account' && resumeState.href !== router.asPath;
+
+  useEffect(() => {
+    if (!loading && context) {
+      setResumeState({ screen: 'resident', href: '/resident/account', label: 'האזור האישי', role: role || 'RESIDENT', userId });
+    }
+  }, [loading, context, role, userId]);
+
   if (loading) return <DetailPanelSkeleton />;
   if (error || !context) {
     return (
@@ -304,7 +317,29 @@ export default function ResidentAccountPage() {
   }
 
   return (
-    <div dir="rtl" className="space-y-4 text-right sm:space-y-6">
+    <div dir="rtl" className="space-y-3 text-right sm:space-y-6">
+      {showResume ? (
+        <Card variant="muted" className="rounded-2xl border-primary/15 bg-primary/5">
+          <CardContent className="flex items-center justify-between gap-3 p-3">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-foreground">המשך מאיפה שעצרת</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">{resumeState.label}</div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              onClick={() => trackResumeClick('resident', resumeState.href)}
+            >
+              <Link href={resumeState.href}>
+                המשך
+                <ArrowLeft className="ms-1.5 h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <CompactStatusStrip
         roleLabel={primaryBuilding ? `${primaryBuilding.name} · דירה ${primaryUnit?.number}` : labels.home}
         icon={<Building2 className="h-4 w-4" strokeWidth={1.75} />}
@@ -360,9 +395,9 @@ export default function ResidentAccountPage() {
         emptyDescription={labels.noUrgentDesc}
       />
 
-      <section className="grid gap-3 md:grid-cols-2">
-        <Card variant="muted" className="rounded-[24px] border-subtle-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(249,245,238,0.94)_100%)]">
-          <CardContent className="space-y-3 p-4">
+      <section className="grid gap-2.5 md:grid-cols-2 md:gap-3">
+        <Card variant="muted" className="rounded-2xl border-subtle-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(249,245,238,0.94)_100%)] sm:rounded-[24px]">
+          <CardContent className="space-y-2.5 p-3 sm:space-y-3 sm:p-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold text-foreground">{labels.recentDocs}</h3>
               <Button variant="ghost" size="sm" asChild>
@@ -375,7 +410,7 @@ export default function ResidentAccountPage() {
                 <Link
                   key={document.id}
                   href="/documents"
-                  className="flex items-center justify-between rounded-[20px] border border-subtle-border bg-background px-3 py-3 transition hover:border-primary/25"
+                  className="flex items-center justify-between rounded-2xl border border-subtle-border bg-background px-3 py-2.5 transition hover:border-primary/25"
                 >
                   <div className="min-w-0">
                     <div className="truncate text-sm font-semibold text-foreground">{document.name}</div>
@@ -390,8 +425,8 @@ export default function ResidentAccountPage() {
           </CardContent>
         </Card>
 
-        <Card variant="muted" className="rounded-[24px] border-subtle-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(250,248,244,0.94)_100%)]">
-          <CardContent className="space-y-3 p-4">
+        <Card variant="muted" className="rounded-2xl border-subtle-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(250,248,244,0.94)_100%)] sm:rounded-[24px]">
+          <CardContent className="space-y-2.5 p-3 sm:space-y-3 sm:p-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold text-foreground">קשר ומידע</h3>
               <Button variant="ghost" size="sm" asChild>
@@ -401,7 +436,7 @@ export default function ResidentAccountPage() {
 
             {primaryBuilding ? (
               <>
-                <Link href="/resident/building" className="block rounded-[20px] border border-subtle-border bg-background/88 p-3 transition hover:border-primary/25">
+                <Link href="/resident/building" className="block rounded-2xl border border-subtle-border bg-background/88 p-3 transition hover:border-primary/25">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-foreground">{primaryBuilding.name}</div>
@@ -411,7 +446,7 @@ export default function ResidentAccountPage() {
                   </div>
                 </Link>
 
-                <Link href="/support" className="block rounded-[20px] border border-subtle-border bg-background/88 p-3 transition hover:border-primary/25">
+                <Link href="/support" className="block rounded-2xl border border-subtle-border bg-background/88 p-3 transition hover:border-primary/25">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-foreground">תמיכה וניהול</div>

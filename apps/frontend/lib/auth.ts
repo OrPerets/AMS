@@ -6,6 +6,15 @@ export type LoginResponse = {
 const ACCESS_TOKEN_KEY = 'accessToken';
 const REFRESH_TOKEN_KEY = 'refreshToken';
 
+export type AuthSnapshot = {
+  accessToken: string | null;
+  refreshToken: string | null;
+  payload: any | null;
+  role: string | null;
+  userId: number | null;
+  isAuthenticated: boolean;
+};
+
 function isBrowser() {
   return typeof window !== 'undefined';
 }
@@ -20,26 +29,69 @@ function getUnixTime() {
   return Math.floor(Date.now() / 1000);
 }
 
-export function getAccessToken(): string | null {
+function removeStoredToken(key: string) {
+  if (!isBrowser()) return;
+  window.localStorage.removeItem(key);
+}
+
+function readStoredToken(key: string): string | null {
   if (!isBrowser()) return null;
-  const token = window.localStorage.getItem(ACCESS_TOKEN_KEY);
+  const token = window.localStorage.getItem(key);
   if (!token) return null;
   if (isTokenExpired(token)) {
-    window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+    removeStoredToken(key);
     return null;
   }
   return token;
 }
 
-export function getRefreshToken(): string | null {
-  if (!isBrowser()) return null;
-  const token = window.localStorage.getItem(REFRESH_TOKEN_KEY);
+function parseTokenPayload(token: string | null): any | null {
   if (!token) return null;
-  if (isTokenExpired(token)) {
-    window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+
+  try {
+    const [, payload] = token.split('.');
+    return JSON.parse(decodeBase64Url(payload));
+  } catch {
     return null;
   }
-  return token;
+}
+
+function parseUserId(payload: any | null): number | null {
+  const userId = payload?.sub;
+  if (typeof userId === 'number') return userId;
+  if (typeof userId === 'string') {
+    const parsed = Number(userId);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  return null;
+}
+
+export function getAccessToken(): string | null {
+  return readStoredToken(ACCESS_TOKEN_KEY);
+}
+
+export function getRefreshToken(): string | null {
+  return readStoredToken(REFRESH_TOKEN_KEY);
+}
+
+export function getAuthSnapshot(): AuthSnapshot {
+  const accessToken = getAccessToken();
+  const refreshToken = getRefreshToken();
+  const payload = parseTokenPayload(accessToken);
+
+  if (accessToken && !payload) {
+    removeStoredToken(ACCESS_TOKEN_KEY);
+  }
+
+  const safePayload = accessToken && payload ? payload : null;
+  return {
+    accessToken: accessToken && safePayload ? accessToken : null,
+    refreshToken,
+    payload: safePayload,
+    role: normalizeRole(safePayload?.actAsRole || safePayload?.role || null),
+    userId: parseUserId(safePayload),
+    isAuthenticated: Boolean(accessToken && safePayload),
+  };
 }
 
 export function setTokens(tokens: LoginResponse) {
@@ -55,25 +107,11 @@ export function clearTokens() {
 }
 
 export function getTokenPayload(): any | null {
-  const token = isBrowser() ? window.localStorage.getItem(ACCESS_TOKEN_KEY) : null;
-  if (!token) return null;
-  try {
-    const [, payload] = token.split('.');
-    return JSON.parse(decodeBase64Url(payload));
-  } catch {
-    return null;
-  }
+  return getAuthSnapshot().payload;
 }
 
 export function getCurrentUserId(): number | null {
-  const payload = getTokenPayload();
-  const userId = payload?.sub;
-  if (typeof userId === 'number') return userId;
-  if (typeof userId === 'string') {
-    const parsed = Number(userId);
-    return Number.isNaN(parsed) ? null : parsed;
-  }
-  return null;
+  return getAuthSnapshot().userId;
 }
 
 export function normalizeRole(role?: string | null): string | null {
@@ -116,7 +154,7 @@ export function hasRoleAccess(allowedRoles: string[], role = getEffectiveRole())
 }
 
 export function isMasterPendingRoleSelection(): boolean {
-  const payload = getTokenPayload();
+  const { payload } = getAuthSnapshot();
   return Boolean(payload?.role === 'MASTER' && !payload?.actAsRole);
 }
 
@@ -299,38 +337,58 @@ export function logout() {
 }
 
 // Role helpers and routing
+export const ROLE_SELECTION_ROUTE = '/role-selection';
+export const EXTERNAL_SUPERVISION_REPORT_URL = 'https://amit-form.vercel.app';
+const LAST_WORKSPACE_CHOICE_KEY = 'ams:last-workspace-choice';
+
+export type WorkspaceChoice = 'ams' | 'supervision' | 'gardens';
+
+type StoredWorkspaceChoice = {
+  choice: WorkspaceChoice;
+  remember: boolean;
+  role: string;
+  userId: number | null;
+  savedAt: string;
+};
+
 export function getEffectiveRole(): string | null {
-  const payload = getTokenPayload();
-  if (!payload) return null;
-  return normalizeRole(payload.actAsRole || payload.role || null);
+  return getAuthSnapshot().role;
 }
 
 export function isAuthenticated(): boolean {
-  return !!getAccessToken();
+  return getAuthSnapshot().isAuthenticated;
 }
 
-export function routeForRole(role?: string | null): string {
+export function getAmsRouteForRole(role?: string | null): string | null {
   switch (normalizeRole(role)) {
     case 'ADMIN':
     case 'MASTER':
-      return '/home';
     case 'PM':
-      return '/home';
     case 'TECH':
-      return '/home';
     case 'ACCOUNTANT':
       return '/home';
     case 'RESIDENT':
       return '/resident/account';
     default:
-      return '/home';
+      return null;
   }
 }
 
+export function isResidentRole(role?: string | null): boolean {
+  return normalizeRole(role) === 'RESIDENT';
+}
+
+export function requiresRoleSelection(role?: string | null): boolean {
+  return !isResidentRole(role);
+}
 
 export function getDefaultRoute(role?: string | null): string {
   const effectiveRole = normalizeRole(role) || getEffectiveRole();
-  return routeForRole(effectiveRole);
+  if (isResidentRole(effectiveRole)) {
+    return '/resident/account';
+  }
+
+  return ROLE_SELECTION_ROUTE;
 }
 
 export function getPortalEntryRoute(
@@ -339,15 +397,66 @@ export function getPortalEntryRoute(
 ): string {
   const effectiveRole = normalizeRole(role) || getEffectiveRole();
 
-  if (portal === 'resident') {
-    if (effectiveRole === 'RESIDENT' || isMasterPendingRoleSelection()) {
-      return '/resident/account';
-    }
-
-    return getDefaultRoute(effectiveRole);
+  if (portal === 'resident' && (effectiveRole === 'RESIDENT' || isMasterPendingRoleSelection())) {
+    return '/resident/account';
   }
 
   return getDefaultRoute(effectiveRole);
+}
+
+export function getWorkspaceChoiceRoute(choice: WorkspaceChoice, role?: string | null): string | null {
+  switch (choice) {
+    case 'ams':
+      return getAmsRouteForRole(role);
+    case 'gardens':
+      return '/gardens';
+    case 'supervision':
+      return EXTERNAL_SUPERVISION_REPORT_URL;
+    default:
+      return null;
+  }
+}
+
+function getWorkspaceStorageScope(role?: string | null, userId?: number | null): string {
+  const normalizedRole = normalizeRole(role) || 'UNKNOWN';
+  const normalizedUserId = typeof userId === 'number' ? userId : 'guest';
+  return `${normalizedUserId}:${normalizedRole}`;
+}
+
+export function getStoredWorkspaceChoice(role?: string | null, userId?: number | null): StoredWorkspaceChoice | null {
+  if (!isBrowser()) return null;
+
+  const rawValue = window.localStorage.getItem(`${LAST_WORKSPACE_CHOICE_KEY}:${getWorkspaceStorageScope(role, userId)}`);
+  if (!rawValue) return null;
+
+  try {
+    const parsed = JSON.parse(rawValue) as StoredWorkspaceChoice;
+    if (!parsed?.choice || !parsed?.role) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredWorkspaceChoice(
+  choice: WorkspaceChoice,
+  options: { role?: string | null; userId?: number | null; remember?: boolean } = {},
+) {
+  if (!isBrowser()) return;
+
+  const normalizedRole = normalizeRole(options.role) || getEffectiveRole() || 'UNKNOWN';
+  const storedValue: StoredWorkspaceChoice = {
+    choice,
+    remember: Boolean(options.remember),
+    role: normalizedRole,
+    userId: typeof options.userId === 'number' ? options.userId : getCurrentUserId(),
+    savedAt: new Date().toISOString(),
+  };
+
+  window.localStorage.setItem(
+    `${LAST_WORKSPACE_CHOICE_KEY}:${getWorkspaceStorageScope(normalizedRole, storedValue.userId)}`,
+    JSON.stringify(storedValue),
+  );
 }
 
 function isTokenExpired(token: string) {

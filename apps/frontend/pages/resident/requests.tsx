@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { CalendarDays, FileText, Move, ParkingCircle, PhoneCall, Sparkles } from 'lucide-react';
-import { authFetch } from '../../lib/auth';
+import { authFetch, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { EmptyState } from '../../components/ui/empty-state';
@@ -25,6 +25,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { toast } from '../../components/ui/use-toast';
 import { usePullToRefresh } from '../../hooks/use-pull-to-refresh';
 import { triggerHaptic } from '../../lib/mobile';
+import { showRequestSubmitted } from '../../lib/success-feedback';
 import {
   formatDate,
   getRequestTypeLabel,
@@ -32,6 +33,7 @@ import {
   getResidentRequestStatusTone,
 } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
+import { setResumeState } from '../../lib/engagement';
 
 const requestTypes = [
   { value: 'MOVING', label: 'מעבר', icon: Move, description: 'תיאום מהיר' },
@@ -115,6 +117,10 @@ export default function ResidentRequestsPage() {
       await loadHistory();
     },
   });
+
+  useEffect(() => {
+    setResumeState({ screen: 'resident', href: '/resident/requests', label: 'בקשות דייר', role: getEffectiveRole() || 'RESIDENT', userId: getCurrentUserId() });
+  }, []);
 
   useEffect(() => {
     void loadHistory();
@@ -221,7 +227,7 @@ export default function ResidentRequestsPage() {
       });
       if (!response.ok) throw new Error(await response.text());
       const payload = await response.json().catch(() => ({}));
-      toast({ title: 'הבקשה נשלחה לצוות הניהול', variant: 'success' });
+      showRequestSubmitted(form.requestType);
       triggerHaptic('success');
       setSubmittedRequestKey(payload?.requestKey || `REQ-${new Date().getTime().toString().slice(-6)}`);
       setSubmittedRequestType(form.requestType);

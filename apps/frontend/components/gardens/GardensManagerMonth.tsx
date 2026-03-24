@@ -10,6 +10,7 @@ import { TableListSkeleton } from '../ui/page-states';
 import { PageHero } from '../ui/page-hero';
 import { SectionHeader } from '../ui/section-header';
 import { toast } from '../ui/use-toast';
+import { GardensModuleShell } from './GardensModuleShell';
 import {
   formatDateLabel,
   formatPlanLabel,
@@ -17,6 +18,7 @@ import {
   sendGardensReminders,
   type GardensManagerDashboard,
 } from '../../lib/gardens';
+import { getEffectiveRole } from '../../lib/auth';
 import { GardensStatusBadge } from './GardensStatusBadge';
 
 export function GardensManagerMonth({ plan }: { plan: string }) {
@@ -24,6 +26,7 @@ export function GardensManagerMonth({ plan }: { plan: string }) {
   const [dashboard, setDashboard] = useState<GardensManagerDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [reminding, setReminding] = useState(false);
+  const role = getEffectiveRole();
 
   const load = async () => {
     setLoading(true);
@@ -92,66 +95,73 @@ export function GardensManagerMonth({ plan }: { plan: string }) {
   }
 
   return (
-    <div className="space-y-8">
-      <PageHero
-        variant="operational"
-        eyebrow={<Badge variant={dashboard.month.isLocked ? 'warning' : 'success'}>{dashboard.month.isLocked ? 'נעול' : 'פתוח לעריכה'}</Badge>}
-        kicker="Gardens Month"
-        title={formatPlanLabel(plan)}
-        description="עקוב אחר מי הגיש, מי צריך תזכורת, ואיפה נדרש אישור או שינוי."
-        actions={
-          <>
-            <Button variant="outline" onClick={() => void router.push('/gardens')}>
-              <Undo2 className="me-2 h-4 w-4" />
-              חזרה לכל החודשים
-            </Button>
-            <Button onClick={remindPending} loading={reminding}>
-              <BellRing className="me-2 h-4 w-4" />
-              שלח תזכורת לממתינים
-            </Button>
-          </>
-        }
-        aside={
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-tertiary">עובדים בחודש</div>
-              <div className="mt-2 text-2xl font-black">{dashboard.stats.workers}</div>
-            </div>
-            <div className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-tertiary">יעד הגשה</div>
-              <div className="mt-2 text-lg font-black">{formatDateLabel(dashboard.month.submissionDeadline)}</div>
-            </div>
-          </div>
-        }
-      />
-
-      <section className="grid gap-4 lg:grid-cols-4">
-        {[
-          { label: 'הוגשו', value: dashboard.stats.submitted, icon: FileCheck2 },
-          { label: 'אושרו', value: dashboard.stats.approved, icon: CalendarDays },
-          { label: 'נדרש עדכון', value: dashboard.stats.needsChanges, icon: BellRing },
-          { label: 'ימי שיבוץ', value: dashboard.stats.assignments, icon: Users },
-        ].map((item) => (
-          <Card key={item.label} variant="metric">
-            <CardContent className="flex items-center justify-between gap-4 p-5">
-              <div>
-                <div className="text-xs text-muted-foreground">{item.label}</div>
-                <div className="mt-2 text-3xl font-black">{item.value}</div>
+    <GardensModuleShell
+      role={role}
+      activePlan={plan}
+      moduleLabel={`חודש גינון ${formatPlanLabel(plan)}`}
+      title={`חודש הגינון ${formatPlanLabel(plan)}`}
+      description="כל בדיקות המנהל מרוכזות כאן: מי הגיש, מה דורש אישור, אילו כתובות שובצו, ומתי צריך לשלוח תזכורת."
+      actions={
+        <>
+          <Button variant="outline" onClick={() => void router.push('/gardens')}>
+            <Undo2 className="me-2 h-4 w-4" />
+            חזרה לכל החודשים
+          </Button>
+          <Button onClick={remindPending} loading={reminding}>
+            <BellRing className="me-2 h-4 w-4" />
+            שלח תזכורת לממתינים
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-8">
+        <PageHero
+          variant="operational"
+          eyebrow={<Badge variant={dashboard.month.isLocked ? 'warning' : 'success'}>{dashboard.month.isLocked ? 'נעול' : 'פתוח לעריכה'}</Badge>}
+          kicker="Gardens Month"
+          title={formatPlanLabel(plan)}
+          description="עקוב אחר מי הגיש, מי צריך תזכורת, ואיפה נדרש אישור או שינוי."
+          aside={
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-tertiary">עובדים בחודש</div>
+                <div className="mt-2 text-2xl font-black">{dashboard.stats.workers}</div>
               </div>
-              <div className="rounded-[18px] border border-primary/12 bg-primary/8 p-3 text-primary">
-                <item.icon className="h-5 w-5" />
+              <div className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
+                <div className="text-xs uppercase tracking-[0.2em] text-tertiary">יעד הגשה</div>
+                <div className="mt-2 text-lg font-black">{formatDateLabel(dashboard.month.submissionDeadline)}</div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
-
-      <section className="space-y-4">
-        <SectionHeader
-          title="סטטוס עובדים"
-          subtitle="כל עובד מקבל תוכנית AMS משלו. אפשר להיכנס לבדיקת פרטים מלאה או להפיק דו״ח חודשי."
-          meta={`${dashboard.workers.length} כרטיסי עובדים`}
+            </div>
+          }
         />
+
+        <section className="grid gap-4 lg:grid-cols-4">
+          {[
+            { label: 'הוגשו', value: dashboard.stats.submitted, icon: FileCheck2 },
+            { label: 'אושרו', value: dashboard.stats.approved, icon: CalendarDays },
+            { label: 'נדרש עדכון', value: dashboard.stats.needsChanges, icon: BellRing },
+            { label: 'ימי שיבוץ', value: dashboard.stats.assignments, icon: Users },
+          ].map((item) => (
+            <Card key={item.label} variant="metric">
+              <CardContent className="flex items-center justify-between gap-4 p-5">
+                <div>
+                  <div className="text-xs text-muted-foreground">{item.label}</div>
+                  <div className="mt-2 text-3xl font-black">{item.value}</div>
+                </div>
+                <div className="rounded-[18px] border border-primary/12 bg-primary/8 p-3 text-primary">
+                  <item.icon className="h-5 w-5" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </section>
+
+        <section id="gardens-approvals" className="space-y-4">
+          <SectionHeader
+            title="סטטוס עובדים"
+            subtitle="כל עובד מקבל תוכנית AMS משלו. אפשר להיכנס לבדיקת פרטים מלאה או להפיק דו״ח חודשי."
+            meta={`${dashboard.workers.length} כרטיסי עובדים`}
+          />
 
         {!dashboard.workers.length ? (
           <EmptyState
@@ -231,14 +241,14 @@ export function GardensManagerMonth({ plan }: { plan: string }) {
             ))}
           </div>
         )}
-      </section>
+        </section>
 
-      <section className="space-y-4">
-        <SectionHeader
-          title="שיבוצים מרוכזים"
-          subtitle="רשימת כל הכתובות ששובצו בחודש, לצורך בקרת עומסים וחפיפה בין עובדים."
-          meta={`${dashboard.assignments.length} שורות`}
-        />
+        <section id="gardens-reports" className="space-y-4">
+          <SectionHeader
+            title="שיבוצים מרוכזים"
+            subtitle="רשימת כל הכתובות ששובצו בחודש, לצורך בקרת עומסים וחפיפה בין עובדים."
+            meta={`${dashboard.assignments.length} שורות`}
+          />
 
         {!dashboard.assignments.length ? (
           <EmptyState
@@ -272,7 +282,8 @@ export function GardensManagerMonth({ plan }: { plan: string }) {
             </CardContent>
           </Card>
         )}
-      </section>
-    </div>
+        </section>
+      </div>
+    </GardensModuleShell>
   );
 }

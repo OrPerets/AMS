@@ -126,9 +126,69 @@ const EmptyRestricted = (props: Omit<EmptyStateProps, "title" | "type">) => (
   />
 );
 
+const EmptyNotifications = (props: Omit<EmptyStateProps, "title" | "type">) => (
+  <EmptyState
+    title="אין התראות חדשות"
+    description="כשיתקבל עדכון, קריאת שירות או תזכורת — נראה אותם כאן מיד."
+    type="empty"
+    {...props}
+  />
+);
+
+const EmptyPayments = (props: Omit<EmptyStateProps, "title" | "type">) => (
+  <EmptyState
+    title="אין חשבוניות לתשלום"
+    description="כל החיובים שולמו. חשבוניות חדשות יופיעו כאן כשיווצרו."
+    type="empty"
+    {...props}
+  />
+);
+
+const EmptyDocuments = (props: Omit<EmptyStateProps, "title" | "type">) => (
+  <EmptyState
+    title="אין מסמכים חדשים"
+    description="מסמכי ועד, פרוטוקולים וקבצים אחרים יופיעו כאן כשצוות הניהול יעלה אותם."
+    type="empty"
+    {...props}
+  />
+);
+
+const EmptyRequests = (props: Omit<EmptyStateProps, "title" | "type">) => (
+  <EmptyState
+    title="לא הוגשו בקשות עדיין"
+    description="אפשר להגיש בקשת מעבר, חניה, מסמך או עדכון קשר בכל עת."
+    type="create"
+    {...props}
+  />
+);
+
+const EmptyGardenMonths = (props: Omit<EmptyStateProps, "title" | "type">) => (
+  <EmptyState
+    title="עדיין לא נוצר חודש גינון"
+    description="ברגע שייווצר חודש ראשון, העובדים יראו אותו במסך האישי שלהם ויוכלו להגיש תוכנית לאישור."
+    type="create"
+    {...props}
+  />
+);
+
+const EmptyMaintenanceQueue = (props: Omit<EmptyStateProps, "title" | "type">) => (
+  <EmptyState
+    title="אין משימות תחזוקה ממתינות"
+    description="ברגע שתפתח משימה חדשה או שתוקצה אליך עבודת שטח, היא תופיע כאן."
+    type="empty"
+    {...props}
+  />
+);
+
 export {
   EmptyActionRequired,
   EmptyBuildings,
+  EmptyDocuments,
+  EmptyGardenMonths,
+  EmptyMaintenanceQueue,
+  EmptyNotifications,
+  EmptyPayments,
+  EmptyRequests,
   EmptyRestricted,
   EmptySearchResults,
   EmptyState,
