@@ -10,6 +10,7 @@ import { PasswordInput } from '../components/ui/password-input';
 import { useFormValidation } from '../hooks/use-form-validation';
 import { getDefaultRoute, getPortalEntryRoute, getTokenPayload, login } from '../lib/auth';
 import { useDirection, useLocale } from '../lib/providers';
+import { trackLoginSuccess, trackLoginFailed } from '../lib/analytics';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -59,9 +60,11 @@ export default function LoginPage() {
       const defaultRoute = portal ? getPortalEntryRoute(portal, role) : getDefaultRoute(role);
       const destination = next || defaultRoute;
 
+      trackLoginSuccess(role);
       router.replace(destination);
     } catch (err: any) {
       const msg = err?.message || t('login.error.generic');
+      trackLoginFailed(msg);
       setServerError(msg);
       emailRef.current?.focus();
     } finally {

@@ -4,6 +4,7 @@ import { ArrowLeft, Building2, Flower2, ShieldCheck, Users } from 'lucide-react'
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { useDirection, useLocale } from '../lib/providers';
+import { trackLandingCtaClick } from '../lib/analytics';
 
 function buildLoginHref(query: Record<string, string | string[] | undefined>) {
   const params = new URLSearchParams();
@@ -70,7 +71,7 @@ export default function LandingPage() {
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                <Button asChild size="xl" className="w-full sm:w-auto">
+                <Button asChild size="xl" className="w-full sm:w-auto" onClick={() => trackLandingCtaClick()}>
                   <Link href={loginHref}>
                     {t('landing.cta.enterSystem')}
                     <ArrowLeft className="ms-2 h-4 w-4" />
