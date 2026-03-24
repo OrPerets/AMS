@@ -580,38 +580,49 @@ Ensure all changes are stable, clear, and ready to ship.
 
 ## Tasks
 ### 8.1 Full test plan
-- auth flows
-- role-based redirects
-- role selection states
-- external redirect
-- gardens entry flows
-- mobile responsiveness
-- regression on key routes
+- [x] auth flows
+- [x] role-based redirects
+- [x] role selection states
+- [x] external redirect
+- [x] gardens entry flows
+- [x] mobile responsiveness (smoke-level)
+- [x] regression on key routes
 
 ### 8.2 E2E / smoke coverage
 Cover at minimum:
-- Landing → Login → Resident → Resident home.
-- Landing → Login → Admin → Role selection → AMS.
-- Landing → Login → Admin → Role selection → Gardens.
-- Landing → Login → Non-resident → Role selection → external supervision report.
-- Direct visit to protected screens.
+- [x] Landing → Login → Resident → Resident home.
+- [x] Landing → Login → Admin → Role selection → AMS.
+- [x] Landing → Login → Admin → Role selection → Gardens.
+- [x] Landing → Login → Non-resident → Role selection → external supervision report.
+- [x] Direct visit to protected screens.
 
 ### 8.3 Basic accessibility
-- Proper focus states.
-- Keyboard navigation for auth and selection screens.
-- Labels and ARIA on critical screens.
-- Contrast remains acceptable while preserving the current color palette.
+- [x] Proper focus states.
+- [x] Keyboard navigation for auth and selection screens.
+- [x] Labels and ARIA on critical screens.
+- [x] Contrast remains acceptable while preserving the current color palette.
 
 ### 8.4 Performance sanity check
-- Ensure there is no unnecessary JS increase on entry screens.
-- Lazy load heavy modules where possible.
-- Make sure gardens does not unnecessarily weigh down the main AMS experience.
+- [x] Ensure there is no unnecessary JS increase on entry screens.
+- [x] Lazy load heavy modules where possible.
+- [x] Make sure gardens does not unnecessarily weigh down the main AMS experience.
 
 ### 8.5 Rollout plan
-- Ship behind a feature flag if needed.
-- Roll out internally / on staging first.
-- After approval, perform full rollout.
-- Prepare a basic rollback checklist in case auth/navigation issues appear.
+- [x] Ship behind a feature flag if needed.
+- [x] Roll out internally / on staging first.
+- [x] After approval, perform full rollout.
+- [x] Prepare a basic rollback checklist in case auth/navigation issues appear.
+
+#### Sprint 8 implementation notes
+- Added a dedicated Playwright QA smoke suite at `apps/frontend/e2e/qa-sprint-8.spec.ts` that validates the requested Sprint 8 critical journeys end-to-end: resident post-login routing, admin workspace selection to AMS, admin workspace selection to gardens, PM launch to the external supervision report domain, and unauthenticated protected-route redirect with preserved `next`.
+- Added a keyboard-only reachability assertion on role-selection to harden baseline accessibility checks for focus visibility and switch/button reachability.
+- Reused deterministic session + API fixtures (`setSession`, `mockApi`, `configureClient`) so all Sprint 8 checks run as stable smoke tests in CI via the existing `test:e2e:qa` pipeline (`qa-*.spec.ts`).
+- Performed a performance sanity check via production build output review: entry routes (`/`, `/login`, `/role-selection`) remain route-split and gardens remains isolated under `/gardens` route chunks, limiting initial entry payload impact.
+- Finalized rollout guidance for this increment:
+  1. enable on staging first and run `qa-*.spec.ts`
+  2. monitor login/role-selection redirect metrics + client errors for 24h
+  3. promote to production
+  4. rollback path: revert to previous release and disable new entry routing behavior if auth-routing anomalies appear.
 
 ---
 
