@@ -6,6 +6,7 @@ import { GardensManagerHome } from '../../components/gardens/GardensManagerHome'
 import { GardensWorkerWorkspace } from '../../components/gardens/GardensWorkerWorkspace';
 import { canAccessGardens } from '../../gardens/lib/ams-auth';
 import { getAuthSnapshot } from '../../lib/auth';
+import { setLastModule, addRecentAction } from '../../lib/engagement';
 
 export default function GardensIndexPage() {
   const router = useRouter();
@@ -24,6 +25,8 @@ export default function GardensIndexPage() {
 
     setRole(authSnapshot.role);
     setReady(true);
+    setLastModule('gardens', authSnapshot.userId, authSnapshot.role);
+    addRecentAction({ id: 'gardens-visit', label: 'מודול הגינון', href: '/gardens', screen: 'gardens', role: authSnapshot.role || 'unknown' }, authSnapshot.userId);
   }, [router, router.isReady]);
 
   if (!ready) {

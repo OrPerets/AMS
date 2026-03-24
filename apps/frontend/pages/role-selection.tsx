@@ -27,7 +27,7 @@ import {
   trackWorkspaceEnter,
   trackRememberChoiceToggle,
 } from '../lib/analytics';
-import { trackDestinationUsage, setLastModule, addRecentAction } from '../lib/engagement';
+import { trackDestinationUsage, setLastModule, addRecentAction, getPreferredDestination } from '../lib/engagement';
 import { showWorkspaceEntrySuccess } from '../lib/success-feedback';
 
 type WorkspaceCard = {
@@ -67,6 +67,27 @@ export default function RoleSelectionPage() {
     }
 
     const storedChoice = getStoredWorkspaceChoice(effectiveRole, authSnapshot.userId);
+
+    if (storedChoice?.remember && storedChoice?.choice) {
+      const preferredDest = getPreferredDestination(authSnapshot.userId, effectiveRole);
+      if (preferredDest && preferredDest === storedChoice.choice) {
+        const destination = getWorkspaceChoiceRoute(storedChoice.choice as WorkspaceChoice, effectiveRole);
+        if (destination) {
+          trackRoleSelectionChoice(storedChoice.choice, effectiveRole);
+          trackWorkspaceEnter(storedChoice.choice as 'ams' | 'supervision' | 'gardens', effectiveRole);
+          trackDestinationUsage(storedChoice.choice, authSnapshot.userId, effectiveRole);
+          showWorkspaceEntrySuccess(storedChoice.choice as 'ams' | 'supervision' | 'gardens');
+
+          if (storedChoice.choice === 'supervision') {
+            window.open(destination, '_blank', 'noopener,noreferrer');
+          } else {
+            void router.replace(destination);
+          }
+          return;
+        }
+      }
+    }
+
     setRole(effectiveRole);
     setLastChoice(storedChoice?.choice ?? null);
     setRememberChoice(Boolean(storedChoice?.remember));
