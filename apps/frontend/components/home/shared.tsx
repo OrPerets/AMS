@@ -6,6 +6,7 @@ import { MobileActionHub } from '../ui/mobile-action-hub';
 import { MobileMetricStrip } from '../ui/mobile-metric-strip';
 import { MobilePriorityInbox, type MobilePriorityInboxItem } from '../ui/mobile-priority-inbox';
 import { PrimaryActionCard } from '../ui/primary-action-card';
+import { MiniSparkline } from '../ui/mobile-insight-widget';
 import { cn } from '../../lib/utils';
 import { trackQuickActionClick } from '../../lib/analytics';
 import { addRecentAction, getRecentActions } from '../../lib/engagement';
@@ -21,6 +22,9 @@ export type HomeStatusMetric = {
   href?: string;
   progress?: number;
   hint?: string;
+  trendLabel?: string;
+  sparkline?: number[];
+  emphasis?: boolean;
 };
 
 export type HomePrimaryAction = {
@@ -44,6 +48,9 @@ export type HomeQuickAction = {
   href: string;
   icon: LucideIcon;
   tone?: 'default' | 'warning' | 'danger' | 'success';
+  previewValue?: string | number;
+  microViz?: number[];
+  fullCardTap?: boolean;
 };
 
 export type HomeBlueprintShellProps = {
@@ -181,6 +188,9 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
           description: `${item.subtitle} · ${item.value}`,
           href: item.href,
           icon: item.icon,
+          previewValue: item.previewValue,
+          microViz: item.microViz,
+          fullCardTap: item.fullCardTap,
           accent:
             item.tone === 'danger'
               ? 'warning'
@@ -232,8 +242,11 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
                 </div>
                 <div>
                   <div className="text-xl font-extrabold leading-none tabular-nums text-foreground">
-                    <bdi>{item.value}</bdi>
+                    <bdi>{item.previewValue ?? item.value}</bdi>
                   </div>
+                  {item.microViz?.length ? (
+                    <MiniSparkline data={item.microViz} tone={item.tone} className="mt-2 h-7" />
+                  ) : null}
                   <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] leading-4 text-secondary-foreground">
                     <span>{item.subtitle}</span>
                     <span className="inline-flex items-center gap-1 font-semibold text-primary">

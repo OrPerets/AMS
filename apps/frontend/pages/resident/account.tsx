@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowUpRight, Bell, Building2, ClipboardList, CreditCard, FileText, MapPinned, MessageCircle, Sparkles, Ticket, UserRound, WalletCards } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Bell, Building2, ClipboardList, CreditCard, FileText, MapPinned, MessageCircle, ShieldCheck, Sparkles, Ticket, UserRound } from 'lucide-react';
 import { authFetch, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { cn, formatCurrency, formatDate, getTicketStatusTone } from '../../lib/utils';
 import { Button } from '../../components/ui/button';
 import { EmptyState } from '../../components/ui/empty-state';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
+import { MobileInsightWidget } from '../../components/ui/mobile-insight-widget';
 import { getResumeState, setResumeState } from '../../lib/engagement';
 import { trackResumeClick } from '../../lib/analytics';
 
@@ -193,6 +194,39 @@ export default function ResidentAccountPage() {
     ? `דירה ${primaryUnit.number}${primaryBuilding?.name ? ` · ${primaryBuilding.name}` : ''}`
     : 'חשבון דייר פעיל';
   const heroSupportLine = primaryBuilding?.address || 'גישה מהירה לתשלומים, קריאות, מסמכים ועדכונים.';
+  const spotlight = nextPaymentDue
+    ? {
+        label: nextPaymentDue.status === 'OVERDUE' ? 'לתשלום מיידי' : 'חיוב קרוב',
+        value: formatCurrency(nextPaymentDue.amount, 'ILS', locale),
+        description: `${nextPaymentDue.description} · עד ${formatDate(nextPaymentDue.dueDate, locale)}`,
+        progress: finance?.summary.currentBalance
+          ? Math.min(100, Math.round((nextPaymentDue.amount / Math.max(finance.summary.currentBalance, 1)) * 100))
+          : 72,
+        tone: nextPaymentDue.status === 'OVERDUE' ? ('danger' as const) : ('warning' as const),
+      }
+    : finance?.summary.currentBalance
+      ? {
+          label: finance.summary.currentBalance > 0 ? 'יתרה פתוחה' : 'מצב חשבון',
+          value: formatCurrency(finance.summary.currentBalance, 'ILS', locale),
+          description: finance.summary.currentBalance > 0 ? 'אפשר לעבור לתשלום או לפירוט החשבון.' : 'כל החיובים כרגע סגורים.',
+          progress: finance.summary.currentBalance > 0 ? 58 : 100,
+          tone: finance.summary.currentBalance > 0 ? ('warning' as const) : ('success' as const),
+        }
+      : openTickets.length
+        ? {
+            label: 'קריאות פתוחות',
+            value: openTickets.length,
+            description: 'מעקב חי אחרי סטטוס הטיפול והעדכונים האחרונים.',
+            progress: Math.min(openTickets.length * 22, 100),
+            tone: openTickets.length > 1 ? ('warning' as const) : ('default' as const),
+          }
+        : {
+            label: 'הכול בשליטה',
+            value: unreadNotifications.length,
+            description: unreadNotifications.length ? 'עדכונים חדשים מחכים לעיון.' : 'אין כרגע משהו דחוף לטפל בו.',
+            progress: unreadNotifications.length ? 44 : 100,
+            tone: unreadNotifications.length ? ('default' as const) : ('success' as const),
+          };
 
   const actionItems = [
     {
@@ -227,16 +261,6 @@ export default function ResidentAccountPage() {
       priority: 'secondary' as const,
     },
     {
-      id: 'documents',
-      label: 'מסמכים',
-      description: 'קבצים ועדכונים',
-      href: '/documents',
-      icon: FileText,
-      badge: recentDocuments.length || undefined,
-      accent: 'info' as const,
-      priority: 'utility' as const,
-    },
-    {
       id: 'contact',
       label: primaryBuilding ? 'הבניין שלי' : 'צור קשר',
       description: primaryBuilding?.name || 'תמיכה וניהול',
@@ -254,34 +278,84 @@ export default function ResidentAccountPage() {
   const unreadNotificationsSummary = unreadNotifications.length
     ? `${unreadNotifications.length} עדכונים חדשים`
     : 'הכול נקרא';
-  const heroShortcuts = [
+  const residentSignals = [
     {
-      id: 'hero-pay',
-      label: 'תשלום',
+      id: 'signal-balance',
+      label: 'יתרה',
+      value: finance ? formatCurrency(finance.summary.currentBalance, 'ILS', locale) : '—',
       href: '/payments/resident',
-      icon: WalletCards,
-      badge: finance?.summary.unpaidInvoices ? String(finance.summary.unpaidInvoices) : undefined,
+      tone: nextPaymentDue ? ('warning' as const) : ('success' as const),
+      hint: nextPaymentDue ? 'למסך תשלומים' : 'צפייה בחיובים',
     },
     {
-      id: 'hero-request',
-      label: 'בקשה',
-      href: '/resident/requests?view=new',
-      icon: ClipboardList,
-    },
-    {
-      id: 'hero-ticket',
+      id: 'signal-requests',
       label: 'קריאות',
+      value: openTickets.length,
       href: openTickets.length ? '/resident/requests?view=history' : '/create-call',
-      icon: Ticket,
-      badge: openTickets.length ? String(openTickets.length) : undefined,
+      tone: openTickets.length ? ('warning' as const) : ('success' as const),
+      hint: openTickets.length ? 'למעקב עכשיו' : 'פתח קריאה',
     },
     {
-      id: 'hero-docs',
-      label: 'מסמכים',
-      href: '/documents',
-      icon: FileText,
-      badge: recentDocuments.length ? String(recentDocuments.length) : undefined,
+      id: 'signal-updates',
+      label: 'עדכונים',
+      value: unreadNotifications.length,
+      href: '/notifications',
+      tone: unreadNotifications.length ? ('info' as const) : ('default' as const),
+      hint: unreadNotifications.length ? 'פתח מרכז עדכונים' : 'כל ההתראות נקראו',
     },
+  ];
+  const attentionItems: Array<{
+    id: string;
+    status: string;
+    tone: 'danger' | 'warning' | 'success' | 'default' | 'neutral' | 'active';
+    title: string;
+    reason: string;
+    meta?: string;
+    href?: string;
+    ctaLabel?: string;
+  }> = [
+    {
+      id: 'attention-primary',
+      status: spotlight.label,
+      tone: spotlight.tone === 'danger' ? 'danger' : spotlight.tone === 'warning' ? 'warning' : spotlight.tone === 'success' ? 'success' : 'active',
+      title: typeof residentPrimaryAction.title === 'string' ? residentPrimaryAction.title : String(residentPrimaryAction.title),
+      reason: residentPrimaryAction.description,
+      meta: residentPrimaryAction.eyebrow,
+      href: residentPrimaryAction.href,
+      ctaLabel: residentPrimaryAction.ctaLabel,
+    },
+    newestNotification
+      ? {
+          id: 'attention-notification',
+          status: 'עדכון חדש',
+          tone: 'active' as const,
+          title: newestNotification.title,
+          reason: newestNotification.message,
+          meta: unreadNotificationsSummary,
+          href: '/notifications',
+          ctaLabel: 'פתח',
+        }
+      : newestDocument
+        ? {
+            id: 'attention-document',
+            status: 'מסמך זמין',
+            tone: 'default' as const,
+            title: newestDocument.name,
+            reason: `עלה ב-${formatDate(newestDocument.uploadedAt, locale)} ונמצא במסמכים שלך.`,
+            meta: 'מסמכים',
+            href: '/documents',
+            ctaLabel: 'צפה',
+          }
+        : {
+            id: 'attention-support',
+            status: 'תמיכה',
+            tone: 'success' as const,
+            title: primaryBuilding ? primaryBuilding.name : 'החשבון מעודכן',
+            reason: primaryBuilding?.address || 'אפשר לעבור לבקשה חדשה, למסמכים או למסך התשלומים.',
+            meta: 'גישה מהירה',
+            href: primaryBuilding ? '/resident/building' : '/resident/requests?view=new',
+            ctaLabel: primaryBuilding ? 'בניין' : 'בקשה',
+          },
   ];
 
   useEffect(() => {
@@ -352,9 +426,6 @@ export default function ResidentAccountPage() {
 
             <div className="relative rounded-[30px] border border-white/55 bg-[linear-gradient(180deg,rgba(255,251,245,0.98)_0%,rgba(255,255,255,0.94)_100%)] p-4 shadow-[0_22px_48px_rgba(44,28,9,0.12)] backdrop-blur-sm">
               <div className="flex items-center gap-4">
-                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-4 border-white bg-[radial-gradient(circle_at_30%_30%,rgba(255,244,220,0.96),rgba(221,174,80,0.94)_38%,rgba(101,70,28,1)_100%)] text-white shadow-[0_18px_34px_rgba(207,146,50,0.28)]">
-                  <UserRound className="h-10 w-10" strokeWidth={1.8} />
-                </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/72">
                     {primaryBuilding?.name || labels.home}
@@ -362,41 +433,51 @@ export default function ResidentAccountPage() {
                   <h1 className="mt-1 text-[30px] font-black leading-[1.02] tracking-[-0.02em] text-foreground">{residentName}</h1>
                   <p className="mt-1 text-[14px] leading-6 text-secondary-foreground">{heroSubline}</p>
                   <p className="mt-1 text-[13px] leading-5 text-secondary-foreground/90">{heroSupportLine}</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <MiniHeroPill icon={<Bell className="h-3.5 w-3.5" strokeWidth={1.8} />} text={`${unreadNotifications.length} עדכונים`} />
-                    <MiniHeroPill icon={<Ticket className="h-3.5 w-3.5" strokeWidth={1.8} />} text={`${openTickets.length} קריאות פתוחות`} />
-                  </div>
+                </div>
+                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-4 border-white bg-[radial-gradient(circle_at_30%_30%,rgba(255,244,220,0.96),rgba(221,174,80,0.94)_38%,rgba(101,70,28,1)_100%)] text-white shadow-[0_18px_34px_rgba(207,146,50,0.28)]">
+                  <UserRound className="h-10 w-10" strokeWidth={1.8} />
                 </div>
               </div>
-            </div>
 
-            <div className="grid gap-3">
-              <div className="gold-sheen-surface rounded-[26px] p-4" data-accent-sheen="true">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-[11px] font-semibold tracking-[0.16em] text-secondary-foreground">{residentPrimaryAction.eyebrow}</div>
-                    <div className="mt-2 text-[38px] font-black leading-none text-foreground">
-                      <bdi>
-                        {nextPaymentDue
-                          ? formatCurrency(nextPaymentDue.amount, 'ILS', locale)
-                          : finance?.summary.currentBalance
-                            ? formatCurrency(finance.summary.currentBalance, 'ILS', locale)
-                            : 'שולם'}
-                      </bdi>
+              <div className="mt-4 grid gap-3 sm:grid-cols-[1.1fr_0.9fr]">
+                <div className="gold-sheen-surface rounded-[26px] p-4" data-accent-sheen="true">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-[11px] font-semibold tracking-[0.16em] text-secondary-foreground">{spotlight.label}</div>
+                      <div className="mt-2 text-[38px] font-black leading-none text-foreground">
+                        <bdi>{spotlight.value}</bdi>
+                      </div>
                     </div>
+                    <HeroStatusBadge
+                      icon={nextPaymentDue ? <CreditCard className="h-4 w-4" strokeWidth={1.8} /> : <ShieldCheck className="h-4 w-4" strokeWidth={1.8} />}
+                      label={nextPaymentDue ? 'לתשלום' : 'מבט מהיר'}
+                    />
                   </div>
-                  <HeroStatusBadge
-                    icon={nextPaymentDue ? <CreditCard className="h-4 w-4" strokeWidth={1.8} /> : <Sparkles className="h-4 w-4" strokeWidth={1.8} />}
-                    label={nextPaymentDue ? 'לתשלום' : 'מצב חשבון'}
-                  />
+                  <div className="mt-2 text-[15px] leading-6 text-secondary-foreground">{spotlight.description}</div>
                 </div>
-                <div className="mt-2 text-[15px] leading-6 text-secondary-foreground">{residentPrimaryAction.description}</div>
+
+                <MobileInsightWidget
+                  title="קצב חשבון"
+                  value={finance?.summary.unpaidInvoices ?? 0}
+                  hint={finance?.summary.overdueInvoices ? `${finance.summary.overdueInvoices} בפיגור` : 'ללא פיגור'}
+                  tone={spotlight.tone}
+                  ringProgress={spotlight.progress}
+                  sparkline={[
+                    finance?.summary.currentBalance ?? 0,
+                    finance?.summary.unpaidInvoices ?? 0,
+                    finance?.summary.overdueInvoices ?? 0,
+                    openTickets.length,
+                    unreadNotifications.length,
+                  ]}
+                  href="/payments/resident"
+                  className="min-h-[132px]"
+                />
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <HeroSignalChip label="קריאות" value={openTickets.length} />
-                <HeroSignalChip label="עדכונים" value={unreadNotifications.length} />
-                <HeroSignalChip label="חיובים" value={finance?.summary.unpaidInvoices ?? 0} />
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {residentSignals.map((signal) => (
+                  <HeroSignalChip key={signal.id} label={signal.label} value={signal.value} href={signal.href} hint={signal.hint} tone={signal.tone} />
+                ))}
               </div>
             </div>
 
@@ -423,19 +504,24 @@ export default function ResidentAccountPage() {
                 </Link>
               </Button>
             </div>
-
-            {/* <div className="grid grid-cols-4 gap-2">
-              {heroShortcuts.map((item) => (
-                <HeroShortcut
-                  key={item.id}
-                  href={item.href}
-                  label={item.label}
-                  badge={item.badge}
-                  icon={<item.icon className="h-4 w-4" strokeWidth={1.85} />}
-                />
-              ))}
-            </div> */}
           </div>
+        </div>
+      </motion.section>
+
+      <motion.section
+        initial={reducedMotion ? false : { opacity: 0, y: 18 }}
+        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+        transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.04, ease: 'easeOut' }}
+        className="grid gap-3"
+      >
+        <div className="flex items-center justify-between gap-3 px-1">
+          <div className="text-[16px] font-semibold text-foreground">מה צריך עכשיו</div>
+          <div className="text-[12px] text-secondary-foreground">מסלולי המשך מיידיים</div>
+        </div>
+        <div className="grid gap-3">
+          {attentionItems.map((item) => (
+            <ResidentLiveItem key={item.id} item={item} />
+          ))}
         </div>
       </motion.section>
 
@@ -448,7 +534,8 @@ export default function ResidentAccountPage() {
             className="rounded-[30px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-4 pb-4 pt-4 shadow-[0_18px_40px_rgba(44,28,9,0.06)]"
           >
             <div className="mb-3">
-              <h2 className="text-[18px] font-semibold text-foreground">{labels.actions}</h2>
+              <h2 className="text-[18px] font-semibold text-foreground">פעולות שממשיכים מהן</h2>
+              <div className="mt-1 text-[12px] text-secondary-foreground">ארבעה מסלולים קצרים, כולם בלחיצה על כל הכרטיס.</div>
             </div>
             <ResidentActionConstellation items={actionItems} />
           </motion.section>
@@ -538,14 +625,42 @@ function AccountHeroPattern() {
   );
 }
 
-function HeroSignalChip({ label, value }: { label: string; value: string | number }) {
+function HeroSignalChip({
+  label,
+  value,
+  href,
+  hint,
+  tone = 'default',
+}: {
+  label: string;
+  value: string | number;
+  href: string;
+  hint: string;
+  tone?: 'default' | 'warning' | 'success' | 'info';
+}) {
+  const toneClass =
+    tone === 'warning'
+      ? 'border-warning/18 bg-warning/10'
+      : tone === 'success'
+        ? 'border-success/18 bg-success/10'
+        : tone === 'info'
+          ? 'border-info/18 bg-info/10'
+          : 'border-white/12 bg-white/8';
+
   return (
-    <div className="rounded-[20px] border border-white/12 bg-white/8 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-sm">
+    <Link
+      href={href}
+      className={cn(
+        'rounded-[20px] border px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-sm transition hover:-translate-y-0.5',
+        toneClass,
+      )}
+    >
       <div className="text-[11px] font-semibold text-white/68">{label}</div>
       <div className="mt-1.5 text-[22px] font-black tabular-nums text-white">
         <bdi>{value}</bdi>
       </div>
-    </div>
+      <div className="mt-1 text-[11px] text-white/70">{hint}</div>
+    </Link>
   );
 }
 
@@ -555,42 +670,6 @@ function HeroStatusBadge({ icon, label }: { icon: React.ReactNode; label: string
       {icon}
       <span>{label}</span>
     </div>
-  );
-}
-
-function MiniHeroPill({ icon, text }: { icon: React.ReactNode; text: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/12 bg-foreground/[0.04] px-3 py-1.5 text-[12px] font-semibold text-foreground">
-      <span className="text-primary">{icon}</span>
-      <span>{text}</span>
-    </span>
-  );
-}
-
-function HeroShortcut({
-  href,
-  label,
-  icon,
-  badge,
-}: {
-  href: string;
-  label: string;
-  icon: React.ReactNode;
-  badge?: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="relative flex min-h-[76px] flex-col items-center justify-center rounded-[22px] border border-primary/10 bg-white/78 px-2 py-3 text-center shadow-[0_10px_24px_rgba(44,28,9,0.04)] transition hover:-translate-y-0.5 hover:border-primary/18"
-    >
-      {badge ? (
-        <span className="absolute end-2 top-2 rounded-full border border-primary/10 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-          {badge}
-        </span>
-      ) : null}
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/8 text-primary">{icon}</span>
-      <span className="mt-2 text-[12px] font-semibold leading-4 text-foreground">{label}</span>
-    </Link>
   );
 }
 
@@ -640,16 +719,10 @@ function ResidentActionConstellation({
     emphasize?: boolean;
   }>;
 }) {
-  const primary = items.find((item) => item.emphasize) ?? items[0];
-  const secondary = items.filter((item) => item.id !== primary.id);
-
   return (
     <div className="rounded-[28px] border border-primary/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.96)_100%)] p-3.5">
-      <div className="flex justify-center">
-        <ResidentActionBubble item={primary} primary />
-      </div>
-      <div className="mt-3.5 grid grid-cols-2 gap-2.5">
-        {secondary.map((item) => (
+      <div className="grid grid-cols-2 gap-2.5">
+        {items.slice(0, 4).map((item) => (
           <ResidentActionBubble key={item.id} item={item} />
         ))}
       </div>
@@ -659,7 +732,6 @@ function ResidentActionConstellation({
 
 function ResidentActionBubble({
   item,
-  primary = false,
 }: {
   item: {
     id: string;
@@ -670,7 +742,6 @@ function ResidentActionBubble({
     badge?: string | number;
     accent: 'warning' | 'primary' | 'neutral' | 'info';
   };
-  primary?: boolean;
 }) {
   const reducedMotion = useReducedMotion();
   const Icon = item.icon;
@@ -686,25 +757,27 @@ function ResidentActionBubble({
   return (
     <motion.div
       whileTap={reducedMotion ? undefined : { scale: 0.97 }}
-      className={cn(primary ? 'w-full max-w-[240px]' : 'w-full')}
+      className="w-full"
     >
       <Link
         href={item.href}
         className={cn(
-          'group block rounded-[24px] border p-3 text-center shadow-[0_12px_24px_rgba(44,28,9,0.05)] transition hover:-translate-y-1 hover:shadow-[0_18px_32px_rgba(44,28,9,0.08)]',
+          'group block h-full rounded-[24px] border p-3 text-center shadow-[0_12px_24px_rgba(44,28,9,0.05)] transition hover:-translate-y-1 hover:shadow-[0_18px_32px_rgba(44,28,9,0.08)]',
           accentClasses,
-          primary && 'gold-sheen-surface relative py-4',
+          item.accent === 'primary' && 'gold-sheen-surface relative',
         )}
-        data-accent-sheen={primary ? 'true' : undefined}
+        data-accent-sheen={item.accent === 'primary' ? 'true' : undefined}
       >
-        {primary ? <span className="absolute inset-x-6 top-0 h-px bg-white/70" /> : null}
+        {item.accent === 'primary' ? <span className="absolute inset-x-6 top-0 h-px bg-white/70" /> : null}
         <div
           className={cn(
             'mx-auto flex items-center justify-center rounded-full border',
-            primary ? 'h-24 w-24 border-primary/12 bg-[radial-gradient(circle_at_30%_30%,rgba(255,244,220,0.98),rgba(218,171,77,0.96)_40%,rgba(101,70,28,1)_100%)] text-white shadow-[0_18px_34px_rgba(80,61,24,0.18)]' : 'h-16 w-16 border-current/10 bg-white/78',
+            item.accent === 'primary'
+              ? 'h-18 w-18 border-primary/12 bg-[radial-gradient(circle_at_30%_30%,rgba(255,244,220,0.98),rgba(218,171,77,0.96)_40%,rgba(101,70,28,1)_100%)] text-white shadow-[0_18px_34px_rgba(80,61,24,0.18)]'
+              : 'h-16 w-16 border-current/10 bg-white/78',
           )}
         >
-          <Icon className={cn(primary ? 'h-8 w-8' : 'h-6 w-6')} strokeWidth={1.85} />
+          <Icon className={cn(item.accent === 'primary' ? 'h-7 w-7' : 'h-6 w-6')} strokeWidth={1.85} />
         </div>
         <div className="mt-3 text-[15px] font-semibold leading-5 text-foreground">{item.label}</div>
         <div className="mt-1 text-[12px] leading-5 text-secondary-foreground">{item.description}</div>

@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { Progress } from '@heroui/react';
 import { ArrowUpRight, TrendingDown, TrendingUp } from 'lucide-react';
-import { Card, CardContent } from './card';
 import { cn } from '../../lib/utils';
+import { MiniSparkline } from './mobile-insight-widget';
 
 type MetricTone = 'default' | 'warning' | 'danger' | 'success';
 
@@ -15,6 +15,9 @@ type StripMetric = {
   href?: string;
   hint?: string;
   tone?: MetricTone;
+  trendLabel?: string;
+  sparkline?: number[];
+  emphasis?: boolean;
 };
 
 type StripQuickAction = {
@@ -24,6 +27,8 @@ type StripQuickAction = {
   subtitle: string;
   href: string;
   tone?: MetricTone;
+  previewValue?: string | number;
+  microViz?: number[];
 };
 
 function progressFromMetric(metric: StripMetric) {
@@ -116,13 +121,14 @@ export function MobileMetricStrip({
               <div className="mt-2 text-[2rem] font-black leading-none text-foreground tabular-nums">
                 <bdi>{featuredMetric.value}</bdi>
               </div>
-              <div className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold">
+                  <div className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold">
                 <FeaturedTrendIcon className={cn('h-3.5 w-3.5', featuredTone.badge)} strokeWidth={1.85} />
-                <span className={featuredTone.badge}>{featuredMetric.hint ?? 'עדכון חי למסך הניהול'}</span>
+                <span className={featuredTone.badge}>{featuredMetric.trendLabel ?? featuredMetric.hint ?? 'עדכון חי למסך הניהול'}</span>
               </div>
             </div>
             {featuredMetric.href ? <ArrowUpRight className="h-4 w-4 shrink-0 text-primary opacity-70 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} /> : null}
           </div>
+          {featuredMetric.sparkline?.length ? <MiniSparkline data={featuredMetric.sparkline} tone={featuredMetric.tone} className="mt-3 h-8" /> : null}
           <Progress
             aria-label={`${featuredMetric.label} progress`}
             value={progressFromMetric(featuredMetric)}
@@ -149,11 +155,12 @@ export function MobileMetricStrip({
                   </div>
                   <div className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold">
                     {SecondaryTrendIcon ? <SecondaryTrendIcon className={cn('h-3.5 w-3.5', secondaryTone?.badge)} strokeWidth={1.85} /> : null}
-                    <span className={secondaryTone?.badge}>{secondaryMetric.hint ?? 'תנועה עדכנית במסלול הפעולה'}</span>
+                    <span className={secondaryTone?.badge}>{secondaryMetric.trendLabel ?? secondaryMetric.hint ?? 'תנועה עדכנית במסלול הפעולה'}</span>
                   </div>
                 </div>
                 {secondaryMetric.href ? <ArrowUpRight className="h-4 w-4 shrink-0 text-primary opacity-70 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} /> : null}
               </div>
+              {secondaryMetric.sparkline?.length ? <MiniSparkline data={secondaryMetric.sparkline} tone={secondaryMetric.tone} className="mt-3 h-7" /> : null}
             </MetricSurface>
           ) : null}
 
@@ -167,8 +174,9 @@ export function MobileMetricStrip({
                 >
                   <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary-foreground">{action.title}</div>
                   <div className="mt-1 text-xl font-black leading-none text-foreground tabular-nums">
-                    <bdi>{action.value}</bdi>
+                    <bdi>{action.previewValue ?? action.value}</bdi>
                   </div>
+                  {action.microViz?.length ? <MiniSparkline data={action.microViz} tone={action.tone} className="mt-2 h-6" /> : null}
                   <div className="mt-1 text-[12px] leading-5 text-secondary-foreground">{action.subtitle}</div>
                 </Link>
               ))}
