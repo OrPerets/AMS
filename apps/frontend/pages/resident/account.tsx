@@ -560,8 +560,8 @@ function HeroStatusBadge({ icon, label }: { icon: React.ReactNode; label: string
 
 function MiniHeroPill({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[12px] font-semibold text-white/86">
-      <span className="text-white">{icon}</span>
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/12 bg-foreground/[0.04] px-3 py-1.5 text-[12px] font-semibold text-foreground">
+      <span className="text-primary">{icon}</span>
       <span>{text}</span>
     </span>
   );
