@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { expectNoHorizontalOverflow, mockApi, setSession } from './support/app-fixtures';
 
 test.describe('mobile support smoke', () => {
-  test.describe.configure({ timeout: 60_000 });
+  test.describe.configure({ timeout: 60_000, mode: 'serial' });
 
   test('mobile shell drawer opens and navigates to buildings', async ({ page }) => {
     await mockApi(page);
@@ -51,8 +51,23 @@ test.describe('mobile support smoke', () => {
     await setSession(page, 'RESIDENT');
 
     await page.goto('/resident/account');
-    await expect(page.getByRole('heading', { name: /תמונת חשבון מהירה|Quick account view/i }).first()).toBeVisible();
+    await expect(page.getByText(/פעיל עכשיו|Needs attention now/i).first()).toBeVisible();
     await expect(page.getByText(/שלם עכשיו|Pay now/i).first()).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test('resident bottom navigation more drawer opens and routes to building details', async ({ page }) => {
+    await mockApi(page);
+    await setSession(page, 'RESIDENT');
+
+    await page.goto('/resident/account');
+    await page.getByRole('button', { name: /עוד|more/i }).click({ force: true });
+    await expect(page.getByRole('link', { name: /הבניין שלי/ })).toBeVisible();
+    await Promise.all([
+      page.waitForURL(/\/resident\/building$/),
+      page.getByRole('link', { name: /הבניין שלי/ }).click(),
+    ]);
+    await expect(page).toHaveURL(/\/resident\/building$/);
     await expectNoHorizontalOverflow(page);
   });
 
@@ -61,7 +76,7 @@ test.describe('mobile support smoke', () => {
     await setSession(page, 'PM');
 
     await page.goto('/gardens');
-    await expect(page.getByRole('heading', { name: 'ניהול גננים' })).toBeVisible();
+    await expect(page.getByText('מודול הגינון').first()).toBeVisible();
     await expect(page.getByText('מרכז עבודה').first()).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
@@ -81,7 +96,7 @@ test.describe('mobile support smoke', () => {
     await expect(page.getByRole('link', { name: /דוח פיקוח/ }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /מרכז ניהול/ }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /^גינון/ }).last()).toBeVisible();
-    await expect(page.getByRole('link', { name: /^פיקוח/ }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /דוח פיקוח/ }).first()).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 

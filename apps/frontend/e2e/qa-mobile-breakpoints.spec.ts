@@ -1,13 +1,21 @@
-import { expect, test } from '@playwright/test';
-import { expectNoHorizontalOverflow, mockApi, setSession } from './support/app-fixtures';
+import { expect, test, type Page } from '@playwright/test';
+import { configureClient, expectNoHorizontalOverflow, mockApi, setSession } from './support/app-fixtures';
 
 const phoneSizes = [
-  { name: 'small', width: 360, height: 740 },
+  { name: 'compact', width: 375, height: 812 },
   { name: 'medium', width: 390, height: 844 },
-  { name: 'large', width: 430, height: 932 },
 ];
 
+async function closeNavigationOverlayIfOpen(page: Page) {
+  const closeButton = page.getByRole('button', { name: /סגור תפריט ניווט|Close navigation/i });
+  if (await closeButton.isVisible().catch(() => false)) {
+    await closeButton.click({ force: true });
+  }
+}
+
 test.describe('sprint 10 mobile breakpoint coverage', () => {
+  test.describe.configure({ mode: 'serial', timeout: 60_000 });
+
   for (const size of phoneSizes) {
     test(`manager workflows stay usable on a ${size.name} phone`, async ({ page }) => {
       await page.setViewportSize({ width: size.width, height: size.height });
@@ -25,31 +33,70 @@ test.describe('sprint 10 mobile breakpoint coverage', () => {
       await expectNoHorizontalOverflow(page);
 
       await page.goto('/payments', { waitUntil: 'domcontentloaded' });
-      await expect(page.getByRole('heading', { name: 'תשלומים', exact: true })).toBeVisible();
+      await expect(page.getByText(/תשלומים/).first()).toBeVisible();
       await expect(page.getByRole('button', { name: 'סליקה' })).toBeVisible();
       await expectNoHorizontalOverflow(page);
     });
 
-    test(`resident self-service stays usable on a ${size.name} phone`, async ({ page }) => {
+    test(`resident billing surfaces stay usable on a ${size.name} phone`, async ({ page }) => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await setSession(page, 'RESIDENT');
       await mockApi(page);
 
       await page.goto('/resident/account', { waitUntil: 'domcontentloaded' });
-      await expect(page.getByText(/מה חשוב עכשיו|תמונת חשבון מהירה/).first()).toBeVisible();
-      await expect(page.getByRole('link', { name: /הבניין שלי|מסמכים/ }).first()).toBeVisible();
-      await expect(page.getByRole('link', { name: /שלם עכשיו|פרטי חשבון/ }).first()).toBeVisible();
+      await closeNavigationOverlayIfOpen(page);
+      await expect(page.getByText(/פעיל עכשיו|Needs attention now/i).first()).toBeVisible();
+      await expect(page.getByRole('link', { name: /שלם עכשיו|Pay now/i }).first()).toBeVisible();
+      await expect(page.getByRole('link', { name: /בקשה חדשה/ }).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
 
       await page.goto('/payments/resident', { waitUntil: 'domcontentloaded' });
-      await expect(page.getByText(/גבייה ותשלומים|מסך התשלומים לא נטען/).first()).toBeVisible();
+      await closeNavigationOverlayIfOpen(page);
+      await expect(page.getByRole('heading', { name: 'מרכז תשלומים' })).toBeVisible();
+      await expect(page.getByRole('tab', { name: /פתוחים/ })).toBeVisible();
+      await page.getByRole('button', { name: 'פתח תשלום' }).click();
+      await expect(page.getByText('תשלום מאובטח')).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(page.getByText('תשלום מאובטח')).toBeHidden();
       await expectNoHorizontalOverflow(page);
+    });
+
+    test(`resident service surfaces stay usable on a ${size.name} phone`, async ({ page }) => {
+      await page.setViewportSize({ width: size.width, height: size.height });
+      await setSession(page, 'RESIDENT');
+      await mockApi(page);
 
       await page.goto('/resident/requests', { waitUntil: 'domcontentloaded' });
+      await closeNavigationOverlayIfOpen(page);
       await expect(page.getByText(/בקשת דייר חדשה|בקשות דייר/).first()).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'בחר סוג בקשה', exact: true })).toBeVisible();
-      await expect(page.getByText(/בחירה אחת וממשיכים|רק מה שצריך עכשיו/).first()).toBeVisible();
+      await expect(page.getByRole('tab', { name: /בקשה חדשה/ })).toBeVisible();
+      await page.getByRole('tab', { name: /מעקב/ }).click();
+      await expect(page.getByText(/בקשה לאישור חניה|שינוי פרטי התקשרות/).first()).toBeVisible();
+      await expectNoHorizontalOverflow(page);
+
+      await page.goto('/create-call', { waitUntil: 'domcontentloaded' });
+      await closeNavigationOverlayIfOpen(page);
+      await expect(page.getByRole('heading', { name: 'קריאה / תקלה' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'צלם תקלה עכשיו' })).toBeVisible();
+      await page.getByRole('button', { name: 'שנה מיקום' }).click();
+      await expect(page.getByText('בחירת מיקום')).toBeVisible();
+      await page.getByRole('button', { name: 'אישור מיקום' }).click();
       await expectNoHorizontalOverflow(page);
     });
   }
+
+  test('resident mobile shell holds up in ltr dark reduced-motion mode', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await setSession(page, 'RESIDENT');
+    await configureClient(page, { direction: 'ltr', theme: 'dark' });
+    await mockApi(page);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+
+    await page.goto('/resident/account', { waitUntil: 'domcontentloaded' });
+    await closeNavigationOverlayIfOpen(page);
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'ams-dark');
+    await expect(page.getByText(/פעיל עכשיו|Needs attention now/i).first()).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
 });

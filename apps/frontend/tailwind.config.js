@@ -1,3 +1,216 @@
 // /Users/orperetz/Documents/AMS/apps/frontend/tailwind.config.js
-// Tailwind v4 uses CSS-first configuration. This legacy file is intentionally empty.
-module.exports = {}
+const { heroui } = require('@heroui/theme');
+
+const goldScale = {
+  50: '#fff8ea',
+  100: '#fdeecb',
+  200: '#f7df9f',
+  300: '#efcb71',
+  400: '#e2b55b',
+  500: '#c99c48',
+  600: '#a67b31',
+  700: '#7f5c20',
+  800: '#573e14',
+  900: '#2f220b',
+  DEFAULT: '#c99c48',
+  foreground: '#15110c',
+};
+
+const neutralLight = {
+  50: '#fdfaf4',
+  100: '#f7f1e6',
+  200: '#e9dfd0',
+  300: '#d4c2aa',
+  400: '#b89d7f',
+  500: '#8e735a',
+  600: '#6e5440',
+  700: '#4e392b',
+  800: '#33241c',
+  900: '#15110c',
+  DEFAULT: '#f7f1e6',
+  foreground: '#15110c',
+};
+
+const neutralDark = {
+  50: '#f8f4ed',
+  100: '#e8e0d2',
+  200: '#d2c1ac',
+  300: '#b39b82',
+  400: '#8f7761',
+  500: '#6a5647',
+  600: '#4c3f34',
+  700: '#322a24',
+  800: '#211b18',
+  900: '#120f0d',
+  DEFAULT: '#211b18',
+  foreground: '#f8f4ed',
+};
+
+module.exports = {
+  content: [
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './hooks/**/*.{js,ts,jsx,tsx,mdx}',
+    './lib/**/*.{js,ts,jsx,tsx,mdx}',
+    '../../node_modules/@heroui/*/dist/**/*.{js,mjs}',
+  ],
+  plugins: [
+    heroui({
+      defaultTheme: 'ams-light',
+      addCommonColors: false,
+      layout: {
+        radius: {
+          small: '16px',
+          medium: '20px',
+          large: '28px',
+        },
+        borderWidth: {
+          small: '1px',
+          medium: '1px',
+          large: '2px',
+        },
+        boxShadow: {
+          small: '0 14px 32px -22px rgba(44, 28, 9, 0.16)',
+          medium: '0 22px 52px -28px rgba(44, 28, 9, 0.2)',
+          large: '0 36px 84px -40px rgba(20, 12, 6, 0.32)',
+        },
+      },
+      themes: {
+        'ams-light': {
+          extend: 'light',
+          colors: {
+            background: '#fcfaf5',
+            foreground: '#15110c',
+            focus: '#e2b55b',
+            divider: 'rgba(44, 28, 9, 0.12)',
+            overlay: '#000000',
+            content1: {
+              DEFAULT: '#fffdf9',
+              foreground: '#15110c',
+            },
+            content2: {
+              DEFAULT: '#f7f1e6',
+              foreground: '#33241c',
+            },
+            content3: {
+              DEFAULT: '#ece3d5',
+              foreground: '#4e392b',
+            },
+            content4: {
+              DEFAULT: '#d9cab6',
+              foreground: '#6e5440',
+            },
+            default: neutralLight,
+            primary: goldScale,
+            secondary: neutralLight,
+            success: {
+              50: '#edf8f1',
+              100: '#d6efdf',
+              200: '#addfbf',
+              300: '#84d0a0',
+              400: '#5bc080',
+              500: '#2e8b57',
+              600: '#236d45',
+              700: '#194f32',
+              800: '#0f321f',
+              900: '#06190f',
+              DEFAULT: '#2e8b57',
+              foreground: '#f8f4ed',
+            },
+            warning: goldScale,
+            danger: {
+              50: '#fff0f1',
+              100: '#ffd6d9',
+              200: '#ffadb3',
+              300: '#ff8490',
+              400: '#f95d71',
+              500: '#dc4c64',
+              600: '#b23c50',
+              700: '#862d3c',
+              800: '#5b1d28',
+              900: '#310f14',
+              DEFAULT: '#dc4c64',
+              foreground: '#fffdf9',
+            },
+          },
+        },
+        'ams-dark': {
+          extend: 'dark',
+          colors: {
+            background: '#16110d',
+            foreground: '#f8f4ed',
+            focus: '#efcb71',
+            divider: 'rgba(255, 244, 229, 0.14)',
+            overlay: '#000000',
+            content1: {
+              DEFAULT: '#211b18',
+              foreground: '#f8f4ed',
+            },
+            content2: {
+              DEFAULT: '#2b241f',
+              foreground: '#f2e9da',
+            },
+            content3: {
+              DEFAULT: '#362d26',
+              foreground: '#e7d7c0',
+            },
+            content4: {
+              DEFAULT: '#46392f',
+              foreground: '#d5bea3',
+            },
+            default: neutralDark,
+            primary: {
+              ...goldScale,
+              50: '#fff8ea',
+              100: '#fdeecb',
+              200: '#f7df9f',
+              300: '#efcb71',
+              400: '#e9bf66',
+              500: '#ddb055',
+              600: '#c99c48',
+              700: '#a67b31',
+              800: '#7f5c20',
+              900: '#573e14',
+              DEFAULT: '#ddb055',
+              foreground: '#15110c',
+            },
+            secondary: neutralDark,
+            success: {
+              50: '#edf8f1',
+              100: '#d6efdf',
+              200: '#addfbf',
+              300: '#84d0a0',
+              400: '#5bc080',
+              500: '#49a36f',
+              600: '#2e8b57',
+              700: '#236d45',
+              800: '#194f32',
+              900: '#0f321f',
+              DEFAULT: '#49a36f',
+              foreground: '#f8f4ed',
+            },
+            warning: {
+              ...goldScale,
+              DEFAULT: '#efcb71',
+              foreground: '#15110c',
+            },
+            danger: {
+              50: '#fff0f1',
+              100: '#ffd6d9',
+              200: '#ffadb3',
+              300: '#ff8490',
+              400: '#f95d71',
+              500: '#eb6a7f',
+              600: '#dc4c64',
+              700: '#b23c50',
+              800: '#862d3c',
+              900: '#5b1d28',
+              DEFAULT: '#eb6a7f',
+              foreground: '#fffdf9',
+            },
+          },
+        },
+      },
+    }),
+  ],
+};

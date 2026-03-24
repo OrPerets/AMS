@@ -20,7 +20,9 @@ import { PullToRefreshIndicator } from '../../components/ui/pull-to-refresh-indi
 import { SectionHeader } from '../../components/ui/section-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { StatusBadge } from '../../components/ui/status-badge';
-import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { AmsDisclosure } from '../../components/ui/ams-disclosure';
+import { AmsSegmentedChoice } from '../../components/ui/ams-segmented-choice';
+import { AmsTabs } from '../../components/ui/ams-tabs';
 import { Textarea } from '../../components/ui/textarea';
 import { toast } from '../../components/ui/use-toast';
 import { usePullToRefresh } from '../../hooks/use-pull-to-refresh';
@@ -338,12 +340,15 @@ export default function ResidentRequestsPage() {
         items={priorityItems}
       />
 
-      <Tabs value={view} onValueChange={(value) => setView(value as 'new' | 'history')}>
-        <TabsList className="grid grid-cols-2 rounded-[22px] border border-subtle-border bg-background/92 p-1">
-          <TabsTrigger value="new" className="min-h-[48px] rounded-[18px] text-[15px] font-semibold">בקשה חדשה</TabsTrigger>
-          <TabsTrigger value="history" className="min-h-[48px] rounded-[18px] text-[15px] font-semibold">מעקב</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <AmsTabs
+        ariaLabel="Resident requests"
+        selectedKey={view}
+        onSelectionChange={(key) => setView(key as 'new' | 'history')}
+        items={[
+          { key: 'new', title: 'בקשה חדשה' },
+          { key: 'history', title: 'מעקב', badge: openRequests.length || null },
+        ]}
+      />
 
       {view === 'new' && submittedRequestKey ? (
         <Card variant="featured">
@@ -419,10 +424,22 @@ export default function ResidentRequestsPage() {
               meta={formStep === 1 ? 'בחר סוג בקשה כדי להמשיך' : 'טופס ממוקד'}
             />
 
-            <div className="rounded-xl sm:rounded-[20px] border border-subtle-border bg-muted/25 p-3 sm:p-4 text-sm">
-              <div className="font-semibold text-foreground">אחרי השליחה</div>
-              <div className="mt-1 text-muted-foreground">{selectedTypeDescription.afterSubmit}</div>
-            </div>
+            <AmsDisclosure
+              selectionMode="single"
+              defaultExpandedKeys={['after-submit']}
+              items={[
+                {
+                  key: 'after-submit',
+                  title: 'אחרי השליחה',
+                  subtitle: selectedTypeDescription.nextStep,
+                  content: (
+                    <div className="rounded-[18px] border border-subtle-border bg-background/88 px-3 py-3 text-sm text-secondary-foreground">
+                      {selectedTypeDescription.afterSubmit}
+                    </div>
+                  ),
+                },
+              ]}
+            />
 
             {formStep === 1 ? (
               <EmptyState
@@ -483,92 +500,144 @@ export default function ResidentRequestsPage() {
             </div>
 
             {form.requestType === 'MOVING' ? (
-              <div className="grid gap-4 md:grid-cols-3">
-                <FormField label="סוג מעבר" description="כניסה או יציאה מהנכס.">
-                  <SegmentedChoices
-                    value={form.movingDirection}
-                    options={movingDirectionOptions}
-                    onChange={(value) => setForm((current) => ({ ...current, movingDirection: value }))}
-                  />
-                </FormField>
+              <AmsDisclosure
+                selectionMode="single"
+                defaultExpandedKeys={['moving']}
+                items={[
+                  {
+                    key: 'moving',
+                    title: 'פרטי מעבר',
+                    subtitle: 'כניסה, חלון זמן ומעלית שירות.',
+                    content: (
+                      <div className="grid gap-4 md:grid-cols-3">
+                        <FormField label="סוג מעבר" description="כניסה או יציאה מהנכס.">
+                          <AmsSegmentedChoice
+                            value={form.movingDirection}
+                            options={movingDirectionOptions}
+                            onChange={(value) => setForm((current) => ({ ...current, movingDirection: value }))}
+                          />
+                        </FormField>
 
-                <FormField label="שעה" description="למשל 08:00-11:00">
-                  <Input
-                    placeholder="08:00-11:00"
-                    value={form.movingWindow}
-                    onChange={(event) => setForm((current) => ({ ...current, movingWindow: event.target.value }))}
-                  />
-                </FormField>
+                        <FormField label="שעה" description="למשל 08:00-11:00">
+                          <Input
+                            placeholder="08:00-11:00"
+                            value={form.movingWindow}
+                            onChange={(event) => setForm((current) => ({ ...current, movingWindow: event.target.value }))}
+                          />
+                        </FormField>
 
-                <FormField label="מעלית שירות" description="כן או לא">
-                  <SegmentedChoices
-                    value={form.elevatorNeeded}
-                    options={elevatorOptions}
-                    onChange={(value) => setForm((current) => ({ ...current, elevatorNeeded: value }))}
-                  />
-                </FormField>
-              </div>
+                        <FormField label="מעלית שירות" description="כן או לא">
+                          <AmsSegmentedChoice
+                            value={form.elevatorNeeded}
+                            options={elevatorOptions}
+                            onChange={(value) => setForm((current) => ({ ...current, elevatorNeeded: value }))}
+                          />
+                        </FormField>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
             ) : null}
 
             {form.requestType === 'PARKING' ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField label="סוג בקשה" description="מה צריך?">
-                  <SegmentedChoices
-                    value={form.parkingRequestType}
-                    options={parkingRequestOptions}
-                    onChange={(value) => setForm((current) => ({ ...current, parkingRequestType: value }))}
-                    columns={1}
-                  />
-                </FormField>
+              <AmsDisclosure
+                selectionMode="single"
+                defaultExpandedKeys={['parking']}
+                items={[
+                  {
+                    key: 'parking',
+                    title: 'פרטי חניה',
+                    subtitle: 'סוג הבקשה ומספר רכב אם צריך.',
+                    content: (
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <FormField label="סוג בקשה" description="מה צריך?">
+                          <AmsSegmentedChoice
+                            value={form.parkingRequestType}
+                            options={parkingRequestOptions}
+                            onChange={(value) => setForm((current) => ({ ...current, parkingRequestType: value }))}
+                            columns={1}
+                          />
+                        </FormField>
 
-                <FormField label="מספר רכב" description="אם רלוונטי">
-                  <Input
-                    placeholder="12-345-67"
-                    value={form.plateNumber}
-                    onChange={(event) => setForm((current) => ({ ...current, plateNumber: event.target.value }))}
-                  />
-                </FormField>
-              </div>
+                        <FormField label="מספר רכב" description="אם רלוונטי">
+                          <Input
+                            placeholder="12-345-67"
+                            value={form.plateNumber}
+                            onChange={(event) => setForm((current) => ({ ...current, plateNumber: event.target.value }))}
+                          />
+                        </FormField>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
             ) : null}
 
             {form.requestType === 'DOCUMENT' ? (
-              <FormField label="סוג מסמך" description="בחר סוג אחד">
-                <SegmentedChoices
-                  value={form.documentCategory}
-                  options={documentCategoryOptions}
-                  onChange={(value) => setForm((current) => ({ ...current, documentCategory: value }))}
-                />
-              </FormField>
+              <AmsDisclosure
+                selectionMode="single"
+                defaultExpandedKeys={['document']}
+                items={[
+                  {
+                    key: 'document',
+                    title: 'סוג מסמך',
+                    subtitle: 'בחירה אחת וממשיכים.',
+                    content: (
+                      <FormField label="סוג מסמך" description="בחר סוג אחד">
+                        <AmsSegmentedChoice
+                          value={form.documentCategory}
+                          options={documentCategoryOptions}
+                          onChange={(value) => setForm((current) => ({ ...current, documentCategory: value }))}
+                        />
+                      </FormField>
+                    ),
+                  },
+                ]}
+              />
             ) : null}
 
             {form.requestType === 'CONTACT_UPDATE' ? (
-              <div className="grid gap-4 md:grid-cols-3">
-                <FormField label="טלפון חדש">
-                  <Input
-                    type="tel"
-                    inputMode="tel"
-                    placeholder="05X-XXXXXXX"
-                    value={form.nextPhone}
-                    onChange={(event) => setForm((current) => ({ ...current, nextPhone: event.target.value }))}
-                  />
-                </FormField>
-                <FormField label="אימייל חדש">
-                  <Input
-                    type="email"
-                    inputMode="email"
-                    placeholder="name@example.com"
-                    value={form.nextEmail}
-                    onChange={(event) => setForm((current) => ({ ...current, nextEmail: event.target.value }))}
-                  />
-                </FormField>
-                <FormField label="איש קשר נוסף" description="אם צריך">
-                  <Input
-                    placeholder="שם וטלפון"
-                    value={form.extraContact}
-                    onChange={(event) => setForm((current) => ({ ...current, extraContact: event.target.value }))}
-                  />
-                </FormField>
-              </div>
+              <AmsDisclosure
+                selectionMode="single"
+                defaultExpandedKeys={['contact']}
+                items={[
+                  {
+                    key: 'contact',
+                    title: 'פרטי קשר',
+                    subtitle: 'עדכון טלפון, אימייל או איש קשר נוסף.',
+                    content: (
+                      <div className="grid gap-4 md:grid-cols-3">
+                        <FormField label="טלפון חדש">
+                          <Input
+                            type="tel"
+                            inputMode="tel"
+                            placeholder="05X-XXXXXXX"
+                            value={form.nextPhone}
+                            onChange={(event) => setForm((current) => ({ ...current, nextPhone: event.target.value }))}
+                          />
+                        </FormField>
+                        <FormField label="אימייל חדש">
+                          <Input
+                            type="email"
+                            inputMode="email"
+                            placeholder="name@example.com"
+                            value={form.nextEmail}
+                            onChange={(event) => setForm((current) => ({ ...current, nextEmail: event.target.value }))}
+                          />
+                        </FormField>
+                        <FormField label="איש קשר נוסף" description="אם צריך">
+                          <Input
+                            placeholder="שם וטלפון"
+                            value={form.extraContact}
+                            onChange={(event) => setForm((current) => ({ ...current, extraContact: event.target.value }))}
+                          />
+                        </FormField>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
             ) : null}
 
               <FormField
@@ -595,7 +664,7 @@ export default function ResidentRequestsPage() {
                 <div className="text-xs sm:text-sm text-muted-foreground">{selectedTypeDescription.nextStep}</div>
               </div>
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                <Button variant="outline" onClick={() => setFormStep(1)} className="w-full sm:w-auto">
+                <Button variant="outline" onClick={() => setFormStep(1)} className="w-full rounded-full sm:w-auto">
                   חזרה לבחירה
                 </Button>
                 <Button onClick={submitRequest} disabled={submitting || Boolean(formErrors.subject || formErrors.message)} className="w-full sm:w-auto">
@@ -761,45 +830,6 @@ function RequestHistoryList({ items, locale }: { items: RequestHistoryItem[]; lo
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function SegmentedChoices({
-  value,
-  options,
-  onChange,
-  columns = 2,
-}: {
-  value: string;
-  options: ReadonlyArray<{ value: string; label: string; description?: string }>;
-  onChange: (value: string) => void;
-  columns?: 1 | 2;
-}) {
-  return (
-    <div className={`grid gap-2 ${columns === 1 ? 'grid-cols-1' : 'grid-cols-1 min-[390px]:grid-cols-2'}`}>
-      {options.map((option) => {
-        const selected = option.value === value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            aria-pressed={selected}
-            className={`touch-target rounded-[18px] border px-4 py-3 text-start transition ${
-              selected
-                ? 'border-primary/35 bg-primary/10 text-foreground shadow-[0_10px_28px_rgba(59,130,246,0.12)]'
-                : 'border-subtle-border bg-background text-foreground/80 hover:border-primary/20 hover:bg-muted/40'
-            }`}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <span className={`text-sm font-semibold ${selected ? 'text-primary' : 'text-foreground'}`}>{option.label}</span>
-              {selected ? <span className="rounded-full bg-primary/12 px-2 py-0.5 text-[11px] font-semibold text-primary">נבחר</span> : null}
-            </div>
-            {option.description ? <div className="mt-1 text-xs leading-5 text-muted-foreground">{option.description}</div> : null}
-          </button>
-        );
-      })}
     </div>
   );
 }

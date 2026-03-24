@@ -2,6 +2,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import { HeroUIProvider } from '@heroui/react';
 import { Toaster } from '../components/ui/toaster';
 import { toast } from '../components/ui/use-toast';
 import {
@@ -30,13 +32,24 @@ type ThemeProviderProps = {
 
 type ThemeProviderState = {
   theme: Theme;
+  resolvedTheme: "light" | "dark";
   setTheme: (theme: Theme) => void;
 };
 
 const initialState: ThemeProviderState = {
   theme: "system",
+  resolvedTheme: "light",
   setTheme: () => null,
 };
+
+function resolveThemeValue(theme: Theme): "light" | "dark" {
+  if (theme === "dark") return "dark";
+  if (theme === "light") return "light";
+  if (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    return "dark";
+  }
+  return "light";
+}
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
@@ -47,6 +60,7 @@ export function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
 
   // Only run on client side
@@ -62,23 +76,28 @@ export function ThemeProvider({
     if (!mounted) return;
     
     const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
+    const nextResolvedTheme = resolveThemeValue(theme);
+    setResolvedTheme(nextResolvedTheme);
 
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
-
-      root.classList.add(systemTheme);
-      return;
-    }
-
-    root.classList.add(theme);
+    root.classList.remove("light", "dark", "ams-light", "ams-dark");
+    root.classList.add(nextResolvedTheme, `ams-${nextResolvedTheme}`);
+    root.setAttribute("data-theme", `ams-${nextResolvedTheme}`);
   }, [theme, mounted]);
+
+  useEffect(() => {
+    if (!mounted || theme !== "system") return;
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = () => setResolvedTheme(resolveThemeValue("system"));
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, [mounted, theme]);
 
   const value = {
     theme,
+    resolvedTheme,
     setTheme: (newTheme: Theme) => {
       if (mounted) {
         localStorage.setItem(storageKey, newTheme);
@@ -111,6 +130,22 @@ export const useTheme = () => {
 
   return context;
 };
+
+function HeroUIBridgeProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const { regionalFormat } = useLocale();
+
+  return (
+    <HeroUIProvider
+      navigate={(path) => router.push(String(path))}
+      useHref={(href) => String(href)}
+      locale={regionalFormat}
+      reducedMotion="user"
+    >
+      {children}
+    </HeroUIProvider>
+  );
+}
 
 // Direction Provider
 
@@ -293,7 +328,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     <ThemeProvider defaultTheme="light" storageKey="amit-theme">
       <DirectionProvider defaultDirection={getLocaleDirection('he')} storageKey="amit-direction">
         <LocaleProvider defaultLocale="he" storageKey="amit-locale">
-          {children}
+          <HeroUIBridgeProvider>{children}</HeroUIBridgeProvider>
           <Toaster />
         </LocaleProvider>
       </DirectionProvider>

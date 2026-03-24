@@ -12,6 +12,7 @@ import { EmptyState } from '../../components/ui/empty-state';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { MobileActionHub } from '../../components/ui/mobile-action-hub';
 import { MobilePriorityInbox, type MobilePriorityInboxItem } from '../../components/ui/mobile-priority-inbox';
+import { AmsDisclosure } from '../../components/ui/ams-disclosure';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 import { getResumeState, setResumeState } from '../../lib/engagement';
@@ -298,6 +299,9 @@ export default function ResidentAccountPage() {
   const role = getEffectiveRole();
   const resumeState = useMemo(() => getResumeState('resident', userId, role), [userId, role]);
   const showResume = resumeState && resumeState.href !== '/resident/account' && resumeState.href !== router.asPath;
+  const unreadNotificationsSummary = unreadNotifications.length
+    ? `${unreadNotifications.length} עדכונים חדשים`
+    : 'הכול נקרא';
 
   useEffect(() => {
     if (!loading && context) {
@@ -370,8 +374,9 @@ export default function ResidentAccountPage() {
         href={residentPrimaryAction.href}
         tone={residentPrimaryAction.tone}
         visualStyle="resident"
+        className="border-s-[5px] shadow-[0_24px_58px_rgba(84,58,15,0.16)]"
         secondaryAction={
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" className="rounded-full px-4" asChild>
             <Link href={primaryBuilding ? '/resident/building' : '/support'}>
               {primaryBuilding ? 'פרטי בניין' : 'צור קשר'}
             </Link>
@@ -382,7 +387,7 @@ export default function ResidentAccountPage() {
       <MobileActionHub
         mobileHomeEffect
         title={labels.actions}
-        subtitle="הפעולה הראשית למעלה, שתי פעולות מהירות, ושני קיצורי שירות."
+        subtitle="תשלום, בקשה, קריאה ומסמכים."
         items={actionItems}
         layout="hierarchy"
       />
@@ -395,82 +400,78 @@ export default function ResidentAccountPage() {
         emptyDescription={labels.noUrgentDesc}
       />
 
-      <section className="grid gap-2.5 md:grid-cols-2 md:gap-3">
-        <Card variant="muted" className="rounded-2xl border-subtle-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(249,245,238,0.94)_100%)] sm:rounded-[24px]">
-          <CardContent className="space-y-2.5 p-3 sm:space-y-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-foreground">{labels.recentDocs}</h3>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/documents">{labels.allDocs}</Link>
-              </Button>
-            </div>
-
-            {recentDocuments.length ? (
-              recentDocuments.map((document) => (
-                <Link
-                  key={document.id}
-                  href="/documents"
-                  className="flex items-center justify-between rounded-2xl border border-subtle-border bg-background px-3 py-2.5 transition hover:border-primary/25"
-                >
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-foreground">{document.name}</div>
-                    <div className="text-xs text-secondary-foreground">{formatDate(document.uploadedAt, locale)}</div>
-                  </div>
-                  <FileText className="h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
-                </Link>
-              ))
+      <AmsDisclosure
+        items={[
+          {
+            key: 'documents',
+            title: labels.recentDocs,
+            subtitle: recentDocuments.length ? `${recentDocuments.length} מסמכים זמינים` : labels.docsEmpty,
+            startContent: <FileText className="h-4 w-4 text-primary" strokeWidth={1.75} />,
+            content: recentDocuments.length ? (
+              <div className="space-y-2">
+                {recentDocuments.map((document) => (
+                  <Link
+                    key={document.id}
+                    href="/documents"
+                    className="flex items-center justify-between rounded-2xl border border-subtle-border bg-background/88 px-3 py-2.5 transition hover:border-primary/20"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-foreground">{document.name}</div>
+                      <div className="text-xs text-secondary-foreground">{formatDate(document.uploadedAt, locale)}</div>
+                    </div>
+                    <span className="text-xs font-semibold text-primary">{labels.allDocs}</span>
+                  </Link>
+                ))}
+              </div>
             ) : (
               <EmptyState type="empty" size="sm" title={labels.docsEmpty} description={labels.docsEmptyDesc} />
-            )}
-          </CardContent>
-        </Card>
-
-        <Card variant="muted" className="rounded-2xl border-subtle-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(250,248,244,0.94)_100%)] sm:rounded-[24px]">
-          <CardContent className="space-y-2.5 p-3 sm:space-y-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-foreground">קשר ומידע</h3>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href={primaryBuilding ? '/resident/building' : '/support'}>{primaryBuilding ? 'לבניין' : 'לתמיכה'}</Link>
-              </Button>
-            </div>
-
-            {primaryBuilding ? (
-              <>
-                <Link href="/resident/building" className="block rounded-2xl border border-subtle-border bg-background/88 p-3 transition hover:border-primary/25">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-foreground">{primaryBuilding.name}</div>
-                      <div className="mt-1 text-xs leading-5 text-secondary-foreground">{primaryBuilding.address}</div>
-                    </div>
-                    <Building2 className="h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
+            ),
+          },
+          {
+            key: 'updates',
+            title: 'עדכונים',
+            subtitle: unreadNotificationsSummary,
+            startContent: <Bell className="h-4 w-4 text-primary" strokeWidth={1.75} />,
+            content: (
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-subtle-border bg-background/88 p-3">
+                  <div className="text-sm font-semibold text-foreground">
+                    {newestNotification?.title || (unreadNotifications.length ? labels.updatesReady.replace('{{count}}', String(unreadNotifications.length)) : labels.updatesClear)}
+                  </div>
+                  <div className="mt-1 text-xs leading-5 text-secondary-foreground">
+                    {newestNotification?.message || 'כל ההתראות, האישורים והעדכונים האחרונים מרוכזים במסך אחד.'}
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" className="rounded-full px-4" asChild>
+                  <Link href="/notifications">פתח עדכונים</Link>
+                </Button>
+              </div>
+            ),
+          },
+          {
+            key: 'building',
+            title: primaryBuilding ? 'הבניין שלי' : 'קשר ומידע',
+            subtitle: primaryBuilding?.name || 'תמיכה וניהול',
+            startContent: <Building2 className="h-4 w-4 text-primary" strokeWidth={1.75} />,
+            content: primaryBuilding ? (
+              <div className="space-y-2">
+                <Link href="/resident/building" className="block rounded-2xl border border-subtle-border bg-background/88 p-3 transition hover:border-primary/20">
+                  <div className="text-sm font-semibold text-foreground">{primaryBuilding.name}</div>
+                  <div className="mt-1 text-xs leading-5 text-secondary-foreground">{primaryBuilding.address}</div>
+                </Link>
+                <Link href="/support" className="block rounded-2xl border border-subtle-border bg-background/88 p-3 transition hover:border-primary/20">
+                  <div className="text-sm font-semibold text-foreground">תמיכה וניהול</div>
+                  <div className="mt-1 text-xs leading-5 text-secondary-foreground">
+                    {newestNotification?.title || 'שאלות, עדכונים ופנייה לצוות הניהול.'}
                   </div>
                 </Link>
-
-                <Link href="/support" className="block rounded-2xl border border-subtle-border bg-background/88 p-3 transition hover:border-primary/25">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-foreground">תמיכה וניהול</div>
-                      <div className="mt-1 text-xs leading-5 text-secondary-foreground">
-                        {newestNotification?.title || 'שאלות, עדכונים ופנייה לצוות הניהול.'}
-                      </div>
-                    </div>
-                    <MessageCircle className="h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
-                  </div>
-                </Link>
-              </>
+              </div>
             ) : (
               <EmptyState type="action" size="sm" title="אין מידע משלים" description="כשהבניין או פרטי התמיכה ייטענו, נראה אותם כאן." action={{ label: 'רענן', onClick: () => void loadAccount() }} />
-            )}
-          </CardContent>
-        </Card>
-      </section>
-
-      <div className="flex items-center justify-center gap-2 text-center text-xs text-secondary-foreground">
-        <Bell className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
-        {unreadNotifications.length
-          ? labels.updatesReady.replace('{{count}}', String(unreadNotifications.length))
-          : labels.updatesClear}
-      </div>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

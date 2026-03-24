@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
@@ -9,9 +9,8 @@ import { cn } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
 import { getTokenPayload, normalizeRole } from '../../lib/auth';
 import { useRegisterBottomSurface } from '../../lib/bottom-surface';
-import { lockAppScroll } from '../../lib/scroll-lock';
-import { useFocusTrap } from '../../hooks/use-focus-trap';
 import { getNavigationModel, type NavigationGroup, type NavigationItem } from '../../lib/navigation';
+import { AmsDrawer } from '../ui/ams-drawer';
 
 const RECENT_STORAGE_KEY = 'ams-mobile-nav-recent';
 const MAX_MORE_GROUPS = 3;
@@ -65,10 +64,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   const [moreOpen, setMoreOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [recentItems, setRecentItems] = useState<string[]>([]);
-  const [moreScrollTop, setMoreScrollTop] = useState(0);
-  const moreSheetRef = useRef<HTMLDivElement>(null);
   const { refCallback: navRef } = useRegisterBottomSurface('mobile-bottom-nav', 'essential');
-  useFocusTrap(moreSheetRef, moreOpen);
 
   useEffect(() => {
     setMounted(true);
@@ -81,24 +77,6 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
     const payload = getTokenPayload();
     setUserRole(normalizeRole(payload?.actAsRole || payload?.role) || 'RESIDENT');
   }, [router.pathname]);
-
-  useEffect(() => {
-    if (!moreOpen) return;
-    const unlock = lockAppScroll();
-    const node = moreSheetRef.current;
-    if (node) node.scrollTop = moreScrollTop;
-
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMoreOpen(false);
-    };
-    document.addEventListener('keydown', handleKey);
-
-    return () => {
-      unlock();
-      document.removeEventListener('keydown', handleKey);
-      setMoreScrollTop(node?.scrollTop ?? 0);
-    };
-  }, [moreOpen, moreScrollTop]);
 
   if (!mounted) return null;
 
@@ -194,69 +172,57 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
         </div>
       </nav>
 
-      {moreOpen ? (
-        <div className="fixed inset-0 z-50 bg-black/50 md:hidden" aria-hidden="true" onClick={() => setMoreOpen(false)} />
-      ) : null}
-
-      <div
-        id="mobile-more-sheet"
-        ref={moreSheetRef}
-        className={cn(
-          'fixed inset-x-0 bottom-0 z-50 max-h-[70vh] overflow-y-auto overscroll-contain rounded-t-[28px] border-t bg-background shadow-modal md:hidden',
-          'transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
-          moreOpen ? 'translate-y-0' : 'translate-y-full',
-        )}
-        style={{ WebkitOverflowScrolling: 'touch' }}
-        role="dialog"
-        aria-modal="true"
-        aria-label={t('bottomNav.moreMenu')}
-        aria-describedby="mobile-more-sheet-description"
-        aria-hidden={!moreOpen}
+      <AmsDrawer
+        isOpen={moreOpen}
+        onOpenChange={setMoreOpen}
+        title={t('bottomNav.moreMenu')}
+        description="קיצורי דרך משלימים, בלי כפילויות מהסרגל התחתון."
+        className="md:hidden"
       >
-        <div className="sticky top-0 z-10 border-b bg-background/92 px-4 pb-3 pt-3 backdrop-blur-xl">
-          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted-foreground/25" />
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold">{t('bottomNav.moreMenu')}</h2>
-              <p id="mobile-more-sheet-description" className="text-xs text-secondary-foreground">
-                פעולות משלימות לפי משימה. בלי כפילויות מהסרגל התחתון.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setMoreOpen(false)}
-              className="touch-target rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
-              aria-label={t('shell.closeNavigation')}
-            >
-              <X className="h-4 w-4" strokeWidth={1.75} />
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-4 px-3 py-3 safe-pb">
+        <div className="space-y-4 py-2">
           {recentNavItems.length ? (
-            <div className="mobile-shell-panel space-y-2 px-2 py-2.5">
-              <h3 className="px-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Recently Used</h3>
+            <div className="space-y-2">
+              <h3 className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/56">Recently used</h3>
               <div className="space-y-1">
                 {recentNavItems.map((item) => (
-                  <MoreSheetLink key={`recent-${item.href}`} item={item} active={isActive(item.href)} unreadNotifications={unreadNotifications} onNavigate={() => { saveRecentItem(item.href); setMoreOpen(false); }} />
+                  <MoreSheetLink
+                    key={`recent-${item.href}`}
+                    item={item}
+                    active={isActive(item.href)}
+                    unreadNotifications={unreadNotifications}
+                    onNavigate={() => {
+                      saveRecentItem(item.href);
+                      setMoreOpen(false);
+                    }}
+                    tone="dark"
+                  />
                 ))}
               </div>
             </div>
           ) : null}
 
           {moreGroups.map((group) => (
-            <div key={group.title} className="mobile-shell-panel space-y-2 px-2 py-2.5">
-              <h3 className="px-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{group.title}</h3>
+            <div key={group.title} className="space-y-2">
+              <h3 className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/56">{group.title}</h3>
               <div className="space-y-1">
                 {group.items.map((item) => (
-                  <MoreSheetLink key={item.href} item={item} active={isActive(item.href)} unreadNotifications={unreadNotifications} onNavigate={() => { saveRecentItem(item.href); setMoreOpen(false); }} />
+                  <MoreSheetLink
+                    key={item.href}
+                    item={item}
+                    active={isActive(item.href)}
+                    unreadNotifications={unreadNotifications}
+                    onNavigate={() => {
+                      saveRecentItem(item.href);
+                      setMoreOpen(false);
+                    }}
+                    tone="dark"
+                  />
                 ))}
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </AmsDrawer>
     </>
   );
 }
@@ -266,32 +232,59 @@ function MoreSheetLink({
   active,
   unreadNotifications,
   onNavigate,
+  tone = 'light',
 }: {
   item: NavigationItem;
   active: boolean;
   unreadNotifications: number;
   onNavigate: () => void;
+  tone?: 'light' | 'dark';
 }) {
   const Icon = item.icon;
+  const isDark = tone === 'dark';
+
   return (
     <Link
       href={item.href}
       onClick={onNavigate}
       className={cn(
-        'flex min-h-[48px] items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium transition-colors',
-        active ? 'surface-action text-foreground' : 'text-foreground/80 hover:bg-muted/60 active:bg-muted/80',
+        'flex min-h-[48px] items-center gap-3 rounded-2xl border px-3 py-2.5 text-[13px] font-medium transition-colors',
+        isDark
+          ? active
+            ? 'border-primary/18 bg-primary/12 text-inverse-text shadow-[0_14px_34px_rgba(0,0,0,0.22)]'
+            : 'border-white/10 bg-white/6 text-white/82 hover:bg-white/9 active:bg-white/12'
+          : active
+            ? 'surface-action text-foreground'
+            : 'border-subtle-border text-foreground/80 hover:bg-muted/60 active:bg-muted/80',
       )}
     >
-      <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', active ? 'bg-primary/12 text-primary' : 'bg-muted/60 text-muted-foreground')}>
+      <span
+        className={cn(
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+          isDark
+            ? active
+              ? 'bg-primary/12 text-primary'
+              : 'bg-white/8 text-white/62'
+            : active
+              ? 'bg-primary/12 text-primary'
+              : 'bg-muted/60 text-muted-foreground',
+        )}
+      >
         <Icon className="h-4 w-4" strokeWidth={1.75} />
       </span>
       <span className="flex-1">
         <span className="block text-start">{item.title}</span>
-        {item.hint ? <span className="mt-0.5 block text-[11px] font-normal text-secondary-foreground">{item.hint}</span> : null}
+        {item.hint ? (
+          <span className={cn('mt-0.5 block text-[11px] font-normal', isDark ? 'text-white/56' : 'text-secondary-foreground')}>
+            {item.hint}
+          </span>
+        ) : null}
       </span>
       {item.href === '/notifications' && unreadNotifications > 0 ? (
         <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">{unreadNotifications}</span>
-      ) : null}
+      ) : (
+        <X className={cn('h-4 w-4 rotate-45', isDark ? 'text-white/35' : 'text-muted-foreground')} strokeWidth={1.75} />
+      )}
     </Link>
   );
 }

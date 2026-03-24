@@ -1,6 +1,7 @@
 /* /Users/orperetz/Documents/AMS/apps/frontend/styles/globals.css */
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
+@source "../../../node_modules/@heroui/*/dist/**/*.{js,mjs}";
 
 /* Tailwind v4 theme tokens (migrated from tailwind.config.js) */
 @theme {

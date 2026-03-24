@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { ChevronDown, ChevronUp, CreditCard, Download, Receipt, ShieldCheck } from 'lucide-react';
+import { CreditCard, Download, Receipt, ShieldCheck, Wallet } from 'lucide-react';
 import { authFetch, downloadAuthenticatedFile, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { formatCurrency, formatDate, humanizeEnum } from '../../lib/utils';
 import { toast } from '../../components/ui/use-toast';
@@ -14,6 +14,9 @@ import { Badge } from '../../components/ui/badge';
 import { Switch } from '../../components/ui/switch';
 import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
+import { AmsDisclosure } from '../../components/ui/ams-disclosure';
+import { AmsDrawer } from '../../components/ui/ams-drawer';
+import { AmsTabs } from '../../components/ui/ams-tabs';
 import { useLocale } from '../../lib/providers';
 import { triggerHaptic } from '../../lib/mobile';
 import { setResumeState } from '../../lib/engagement';
@@ -89,8 +92,8 @@ export default function ResidentPaymentsPage() {
   const [processingInvoiceId, setProcessingInvoiceId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showMethods, setShowMethods] = useState(false);
-  const [showLedger, setShowLedger] = useState(false);
+  const [activeTab, setActiveTab] = useState<'open' | 'history' | 'methods'>('open');
+  const [paymentDrawerInvoiceId, setPaymentDrawerInvoiceId] = useState<number | null>(null);
 
   useEffect(() => {
     setResumeState({ screen: 'resident', href: '/payments/resident', label: 'מרכז תשלומים', role: getEffectiveRole() || 'RESIDENT', userId: getCurrentUserId() });
@@ -100,19 +103,11 @@ export default function ResidentPaymentsPage() {
     if (!router.isReady) return;
     const section = typeof router.query.section === 'string' ? router.query.section : '';
     if (section === 'methods') {
-      void router.replace('/resident/payment-methods');
+      setActiveTab('methods');
+      void router.replace('/payments/resident', undefined, { shallow: true });
       return;
     }
     void loadPage();
-  }, [router.isReady, router.query.section]);
-
-  useEffect(() => {
-    if (!router.isReady) return;
-
-    const section = typeof router.query.section === 'string' ? router.query.section : '';
-    if (section === 'methods') {
-      void router.replace('/payments/resident');
-    }
   }, [router.isReady, router.query.section]);
 
   async function loadPage() {
@@ -202,6 +197,17 @@ export default function ResidentPaymentsPage() {
         .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime())[0],
     [finance],
   );
+  const sortedInvoices = useMemo(
+    () =>
+      [...(finance?.invoices ?? [])].sort(
+        (left, right) =>
+          Number(payableStatuses.has(right.status)) - Number(payableStatuses.has(left.status)) ||
+          new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime(),
+      ),
+    [finance?.invoices],
+  );
+  const primaryMethod = paymentMethods.find((method) => method.isDefault) ?? paymentMethods[0] ?? null;
+  const selectedInvoice = sortedInvoices.find((invoice) => invoice.id === paymentDrawerInvoiceId) ?? nextPaymentDue ?? null;
 
   if (loading) return <DetailPanelSkeleton />;
   if (error || !context || !finance) {
@@ -232,8 +238,9 @@ export default function ResidentPaymentsPage() {
           }
           ctaLabel={nextPaymentDue ? 'שלם עכשיו' : 'חזור לחשבון'}
           href={nextPaymentDue ? undefined : '/resident/account'}
-          onClick={nextPaymentDue ? () => void initiatePayment(nextPaymentDue.id) : undefined}
+          onClick={nextPaymentDue ? () => setPaymentDrawerInvoiceId(nextPaymentDue.id) : undefined}
           tone={nextPaymentDue?.status === 'OVERDUE' ? 'danger' : nextPaymentDue ? 'warning' : 'success'}
+          className="border-s-[5px] shadow-[0_24px_58px_rgba(84,58,15,0.16)]"
         />
       </div>
 
@@ -241,8 +248,8 @@ export default function ResidentPaymentsPage() {
         <CardContent className="space-y-4 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-black text-foreground">תשלומים</h1>
-              <p className="text-sm text-secondary-foreground">מה פתוח ומה צריך לשלם עכשיו</p>
+              <h1 className="text-2xl font-black text-foreground">מרכז תשלומים</h1>
+              <p className="text-sm text-secondary-foreground">פתוחים, היסטוריה וכרטיסים במסך אחד.</p>
             </div>
             <div className="rounded-full bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
               {finance.summary.unpaidInvoices ? `${finance.summary.unpaidInvoices} פתוחים` : 'מעודכן'}
@@ -257,139 +264,189 @@ export default function ResidentPaymentsPage() {
         </CardContent>
       </Card>
 
-      <Card variant="elevated" className="rounded-[28px] border-subtle-border/70">
-        <CardContent className="space-y-3 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-primary" strokeWidth={1.75} />
-              <div className="text-lg font-semibold text-foreground">חיובים פתוחים</div>
-            </div>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/resident/payment-methods">שיטות תשלום</Link>
+      <AmsTabs
+        ariaLabel="Resident payments"
+        selectedKey={activeTab}
+        onSelectionChange={(key) => setActiveTab(key as 'open' | 'history' | 'methods')}
+        items={[
+          {
+            key: 'open',
+            title: 'פתוחים',
+            badge: finance.summary.unpaidInvoices || null,
+            icon: <Receipt className="h-4 w-4" strokeWidth={1.75} />,
+            content: (
+              <div className="space-y-3">
+                {sortedInvoices.length ? (
+                  <AmsDisclosure
+                    defaultExpandedKeys={nextPaymentDue ? [`invoice-${nextPaymentDue.id}`] : []}
+                    items={sortedInvoices.map((invoice) => ({
+                      key: `invoice-${invoice.id}`,
+                      title: (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span>{invoice.description}</span>
+                          <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'outline'}>
+                            {translateInvoiceStatus(invoice.status)}
+                          </Badge>
+                        </div>
+                      ),
+                      subtitle: `${formatCurrency(invoice.amount)} · פירעון ${formatDate(invoice.dueDate, locale)}`,
+                      startContent: <Wallet className="h-4 w-4 text-primary" strokeWidth={1.75} />,
+                      content: (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-2">
+                            <QuickMetric label="סטטוס" value={translateInvoiceStatus(invoice.status)} />
+                            <QuickMetric label="סכום" value={formatCurrency(invoice.amount)} />
+                          </div>
+                          <div className="rounded-[18px] border border-subtle-border bg-background px-3 py-3 text-sm text-secondary-foreground">
+                            {invoice.issueDate ? `הונפק ב-${formatDate(invoice.issueDate, locale)}.` : 'חיוב זמין לתשלום.'} {invoice.receiptNumber ? `קבלה #${invoice.receiptNumber}.` : ''}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {payableStatuses.has(invoice.status) ? (
+                              <Button size="sm" onClick={() => setPaymentDrawerInvoiceId(invoice.id)} disabled={processingInvoiceId === invoice.id}>
+                                {processingInvoiceId === invoice.id ? 'מעבד...' : 'פתח תשלום'}
+                              </Button>
+                            ) : null}
+                            {invoice.receiptNumber ? (
+                              <Button size="sm" variant="outline" onClick={() => downloadAuthenticatedFile(`/api/v1/invoices/${invoice.id}/receipt`, `receipt-${invoice.receiptNumber}.pdf`)}>
+                                <Download className="me-2 h-4 w-4" strokeWidth={1.75} />
+                                קבלה
+                              </Button>
+                            ) : null}
+                          </div>
+                        </div>
+                      ),
+                    }))}
+                  />
+                ) : (
+                  <EmptyState type="empty" size="sm" title="אין כרגע חשבוניות להצגה" description="כאשר יופיע חיוב חדש, נראה אותו כאן." />
+                )}
+              </div>
+            ),
+          },
+          {
+            key: 'history',
+            title: 'היסטוריה',
+            icon: <Receipt className="h-4 w-4" strokeWidth={1.75} />,
+            content: (
+              <div className="space-y-2">
+                {finance.ledger.length ? (
+                  finance.ledger.slice(0, 10).map((entry) => (
+                    <div key={entry.id} className="flex items-center justify-between gap-3 rounded-[20px] border border-subtle-border bg-background px-3 py-3">
+                      <div>
+                        <div className="text-sm font-medium text-foreground">{entry.summary}</div>
+                        <div className="text-[12px] leading-5 text-secondary-foreground">{formatDate(entry.createdAt, locale)}</div>
+                      </div>
+                      <div className="text-sm font-semibold tabular-nums text-foreground">{formatCurrency(entry.amount)}</div>
+                    </div>
+                  ))
+                ) : (
+                  <EmptyState type="empty" size="sm" title="עדיין אין היסטוריית תשלומים" description="לאחר תשלום ראשון נציג כאן קבלות וחיובים קודמים." />
+                )}
+              </div>
+            ),
+          },
+          {
+            key: 'methods',
+            title: 'כרטיסים',
+            badge: primaryMethod ? 'ראשי' : null,
+            icon: <CreditCard className="h-4 w-4" strokeWidth={1.75} />,
+            content: (
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-4 rounded-[22px] border border-subtle-border bg-background p-3.5">
+                  <div>
+                    <div className="font-semibold text-foreground">חיוב אוטומטי</div>
+                    <div className="text-sm text-secondary-foreground">תשלום עתידי דרך הכרטיס הראשי.</div>
+                  </div>
+                  <Switch checked={autopayEnabled} onCheckedChange={(checked) => void toggleAutopay(checked)} aria-label="הפעלת חיוב אוטומטי" />
+                </div>
+
+                {paymentMethods.length ? (
+                  paymentMethods.map((method) => (
+                    <div key={method.id} className="rounded-[22px] border border-subtle-border bg-background p-3.5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="font-semibold text-foreground">
+                            {translateCardBrand(method.brand || method.provider)} •••• {method.last4 || '••••'}
+                          </div>
+                          <div className="text-sm text-secondary-foreground">
+                            תוקף {method.expMonth || '--'}/{method.expYear || '--'}
+                          </div>
+                        </div>
+                        {method.isDefault ? <Badge variant="success">ראשי</Badge> : null}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <EmptyState
+                    type="action"
+                    size="sm"
+                    title="אין כרטיס שמור"
+                    description="אפשר לפנות לתמיכה או להיכנס למסך שיטות תשלום."
+                    action={{ label: 'שיטות תשלום', onClick: () => void router.push('/resident/payment-methods'), variant: 'outline' }}
+                  />
+                )}
+              </div>
+            ),
+          },
+        ]}
+      />
+
+      <AmsDrawer
+        isOpen={Boolean(paymentDrawerInvoiceId)}
+        onOpenChange={(open) => {
+          if (!open) setPaymentDrawerInvoiceId(null);
+        }}
+        title="תשלום מאובטח"
+        description={selectedInvoice ? `${selectedInvoice.description} · ${formatCurrency(selectedInvoice.amount)}` : 'אישור ותשלום בכרטיס הראשי.'}
+        footer={(onClose) => (
+          <div className="w-full space-y-2">
+            <Button
+              size="lg"
+              className="min-h-[52px] w-full"
+              disabled={!selectedInvoice || processingInvoiceId === selectedInvoice.id}
+              onClick={() => {
+                if (!selectedInvoice) return;
+                void initiatePayment(selectedInvoice.id);
+              }}
+            >
+              {selectedInvoice && processingInvoiceId === selectedInvoice.id ? 'מעבד...' : 'אישור ותשלום'}
+            </Button>
+            <Button variant="outline" size="sm" className="w-full rounded-full" onClick={onClose}>
+              בטל
             </Button>
           </div>
-
-          {finance.invoices.length ? (
-            finance.invoices
-              .slice()
-              .sort((a, b) => Number(payableStatuses.has(b.status)) - Number(payableStatuses.has(a.status)) || new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-              .map((invoice) => (
-                <div key={invoice.id} className="rounded-[22px] border border-subtle-border bg-background p-3.5">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="font-semibold text-foreground">{invoice.description}</div>
-                        <div className="text-sm text-secondary-foreground">
-                          {formatCurrency(invoice.amount)} · פירעון {formatDate(invoice.dueDate, locale)}
-                        </div>
-                      </div>
-                      <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'outline'}>
-                        {translateInvoiceStatus(invoice.status)}
-                      </Badge>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {payableStatuses.has(invoice.status) ? (
-                        <Button size="sm" onClick={() => void initiatePayment(invoice.id)} disabled={processingInvoiceId === invoice.id}>
-                          {processingInvoiceId === invoice.id ? 'מעבד...' : 'שלם עכשיו'}
-                        </Button>
-                      ) : null}
-                      {invoice.receiptNumber ? (
-                        <Button size="sm" variant="outline" onClick={() => downloadAuthenticatedFile(`/api/v1/invoices/${invoice.id}/receipt`, `receipt-${invoice.receiptNumber}.pdf`)}>
-                          <Download className="me-2 h-4 w-4" strokeWidth={1.75} />
-                          קבלה
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              ))
-          ) : (
-            <EmptyState type="empty" size="sm" title="אין כרגע חשבוניות להצגה" description="כאשר יופיע חיוב חדש, נראה אותו כאן." />
-          )}
-        </CardContent>
-      </Card>
-
-      <Card variant="muted" className="rounded-[24px] border-subtle-border/80">
-        <CardContent className="space-y-4 p-4">
-          <button
-            type="button"
-            className="flex w-full items-center justify-between text-right"
-            onClick={() => setShowMethods((current) => !current)}
-          >
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-primary" strokeWidth={1.75} />
-              <span className="font-semibold text-foreground">חיוב אוטומטי וכרטיסים</span>
+        )}
+      >
+        {selectedInvoice ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <QuickMetric label="סכום" value={formatCurrency(selectedInvoice.amount)} />
+              <QuickMetric label="מועד" value={formatDate(selectedInvoice.dueDate, locale)} />
             </div>
-            {showMethods ? <ChevronUp className="h-4 w-4 text-secondary-foreground" /> : <ChevronDown className="h-4 w-4 text-secondary-foreground" />}
-          </button>
-
-          {showMethods ? (
-            <div className="space-y-3">
-              <div className="flex items-start justify-between gap-4 rounded-[20px] border border-subtle-border bg-background p-3">
-                <div>
-                  <div className="font-semibold text-foreground">חיוב אוטומטי</div>
-                  <div className="text-sm text-secondary-foreground">תשלום עתידי דרך הכרטיס הראשי.</div>
-                </div>
-                <Switch checked={autopayEnabled} onCheckedChange={(checked) => void toggleAutopay(checked)} aria-label="הפעלת חיוב אוטומטי" />
+            <div className="rounded-[22px] border border-white/10 bg-white/6 p-3.5">
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-white/48">אמצעי תשלום</div>
+              <div className="mt-2 text-sm font-semibold text-inverse-text">
+                {primaryMethod
+                  ? `${translateCardBrand(primaryMethod.brand || primaryMethod.provider)} •••• ${primaryMethod.last4 || '••••'}`
+                  : 'לא נמצא כרטיס ראשי'}
               </div>
-
-              {paymentMethods.length ? (
-                paymentMethods.map((method) => (
-                  <div key={method.id} className="rounded-[20px] border border-subtle-border bg-background p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <div className="font-semibold text-foreground">
-                          {translateCardBrand(method.brand || method.provider)} •••• {method.last4 || '••••'}
-                        </div>
-                        <div className="text-sm text-secondary-foreground">
-                          תוקף {method.expMonth || '--'}/{method.expYear || '--'}
-                        </div>
-                      </div>
-                      {method.isDefault ? <Badge variant="success">ראשי</Badge> : null}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <EmptyState
-                  type="action"
-                  size="sm"
-                  title="אין כרטיס שמור"
-                  description="אפשר לפנות לתמיכה או להיכנס למסך שיטות תשלום."
-                  action={{ label: 'שיטות תשלום', onClick: () => void router.push('/resident/payment-methods'), variant: 'outline' }}
-                />
-              )}
+              <div className="mt-1 text-xs leading-5 text-white/64">
+                {primaryMethod ? 'האישור ייפתח דרך ספק הסליקה המאובטח.' : 'אפשר להמשיך למסך שיטות תשלום או לפנות לתמיכה.'}
+              </div>
             </div>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      <Card variant="muted" className="rounded-[24px] border-subtle-border/80">
-        <CardContent className="space-y-4 p-4">
-          <button
-            type="button"
-            className="flex w-full items-center justify-between text-right"
-            onClick={() => setShowLedger((current) => !current)}
-          >
-            <span className="font-semibold text-foreground">היסטוריה אחרונה</span>
-            {showLedger ? <ChevronUp className="h-4 w-4 text-secondary-foreground" /> : <ChevronDown className="h-4 w-4 text-secondary-foreground" />}
-          </button>
-
-          {showLedger ? (
-            <div className="space-y-2">
-              {finance.ledger.slice(0, 10).map((entry) => (
-                <div key={entry.id} className="flex items-center justify-between gap-3 rounded-[18px] border border-subtle-border bg-background px-3 py-2.5">
-                  <div>
-                    <div className="text-sm font-medium text-foreground">{entry.summary}</div>
-                    <div className="text-[12px] leading-5 text-secondary-foreground">{formatDate(entry.createdAt, locale)}</div>
-                  </div>
-                  <div className="text-sm font-semibold tabular-nums text-foreground">{formatCurrency(entry.amount)}</div>
-                </div>
-              ))}
+            <div className="flex items-start justify-between gap-4 rounded-[22px] border border-white/10 bg-white/6 p-3.5">
+              <div>
+                <div className="font-semibold text-inverse-text">חיוב אוטומטי</div>
+                <div className="text-sm text-white/64">אפשר להפעיל או לעצור ישירות מהמסך הזה.</div>
+              </div>
+              <Switch checked={autopayEnabled} onCheckedChange={(checked) => void toggleAutopay(checked)} aria-label="הפעלת חיוב אוטומטי במסך תשלום" />
             </div>
-          ) : null}
-        </CardContent>
-      </Card>
+            <div className="rounded-[22px] border border-primary/12 bg-primary/10 px-3.5 py-3 text-sm text-white/74">
+              פרטי הכרטיס לא נשמרים במסך זה. לחיצה על אישור תעביר למסלול התשלום המאובטח של AMS.
+            </div>
+          </div>
+        ) : null}
+      </AmsDrawer>
     </div>
   );
 }
