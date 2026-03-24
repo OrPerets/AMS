@@ -28,6 +28,7 @@ import {
   trackRememberChoiceToggle,
 } from '../lib/analytics';
 import { trackDestinationUsage, setLastModule, addRecentAction } from '../lib/engagement';
+import { showWorkspaceEntrySuccess } from '../lib/success-feedback';
 
 type WorkspaceCard = {
   choice: WorkspaceChoice;
@@ -124,6 +125,8 @@ export default function RoleSelectionPage() {
     setLastModule(choice, getCurrentUserId(), role);
     addRecentAction({ id: `workspace-${choice}`, label: choice, href: destination, screen: 'role-selection', role: role || 'unknown' }, getCurrentUserId());
     if (isResume) trackRoleSelectionResume(choice);
+
+    showWorkspaceEntrySuccess(choice);
 
     if (choice === 'supervision') {
       const externalWindow = window.open(destination, '_blank', 'noopener,noreferrer');

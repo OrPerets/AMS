@@ -11,6 +11,7 @@ import { useFormValidation } from '../hooks/use-form-validation';
 import { getDefaultRoute, getPortalEntryRoute, getTokenPayload, login } from '../lib/auth';
 import { useDirection, useLocale } from '../lib/providers';
 import { trackLoginSuccess, trackLoginFailed } from '../lib/analytics';
+import { showLoginSuccess } from '../lib/success-feedback';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -61,6 +62,7 @@ export default function LoginPage() {
       const destination = next || defaultRoute;
 
       trackLoginSuccess(role);
+      showLoginSuccess(role);
       router.replace(destination);
     } catch (err: any) {
       const msg = err?.message || t('login.error.generic');

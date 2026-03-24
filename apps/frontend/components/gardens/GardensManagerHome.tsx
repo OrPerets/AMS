@@ -20,6 +20,7 @@ import {
   type GardensMonthSummary,
 } from '../../lib/gardens';
 import { getEffectiveRole } from '../../lib/auth';
+import { showGardensMonthCreated } from '../../lib/success-feedback';
 
 export function GardensManagerHome() {
   const router = useRouter();
@@ -72,11 +73,7 @@ export function GardensManagerHome() {
     setCreating(true);
     try {
       await createGardensMonth({ plan: upcomingPlan });
-      toast({
-        title: 'חודש גינון חדש נוצר',
-        description: `החודש ${formatPlanLabel(upcomingPlan)} מוכן לעבודה.`,
-        variant: 'success',
-      });
+      showGardensMonthCreated(formatPlanLabel(upcomingPlan));
       await load();
       await router.push(`/gardens/months/${upcomingPlan}`);
     } catch {

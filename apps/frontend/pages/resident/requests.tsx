@@ -25,6 +25,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { toast } from '../../components/ui/use-toast';
 import { usePullToRefresh } from '../../hooks/use-pull-to-refresh';
 import { triggerHaptic } from '../../lib/mobile';
+import { showRequestSubmitted } from '../../lib/success-feedback';
 import {
   formatDate,
   getRequestTypeLabel,
@@ -226,7 +227,7 @@ export default function ResidentRequestsPage() {
       });
       if (!response.ok) throw new Error(await response.text());
       const payload = await response.json().catch(() => ({}));
-      toast({ title: 'הבקשה נשלחה לצוות הניהול', variant: 'success' });
+      showRequestSubmitted(form.requestType);
       triggerHaptic('success');
       setSubmittedRequestKey(payload?.requestKey || `REQ-${new Date().getTime().toString().slice(-6)}`);
       setSubmittedRequestType(form.requestType);

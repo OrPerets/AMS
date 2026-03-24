@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Bell, Building2, ClipboardList, Sparkles, Ticket } from 'lucide-react';
 import { ROLE_SELECTION_ROUTE, authFetch, getAuthSnapshot, getCurrentUserId, getEffectiveRole } from '../lib/auth';
+import { trackEvent } from '../lib/analytics';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
@@ -263,6 +264,7 @@ export default function HomePage() {
       window.localStorage.setItem(`amit-onboarding:v8:${currentUserId}:${role}`, new Date().toISOString());
     }
     setOnboardingOpen(false);
+    trackEvent('onboarding_complete', { role });
     toast({
       title: 'מסלול הפתיחה נשמר',
       description: 'המסך הראשי ימשיך לפתוח עבורך את הבלופרינט המתאים לכל תפקיד.',
