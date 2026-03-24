@@ -4,8 +4,7 @@ import { useRouter } from 'next/router';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowUpRight, Bell, Building2, ClipboardList, CreditCard, FileText, MapPinned, MessageCircle, Sparkles, Ticket, UserRound, WalletCards } from 'lucide-react';
 import { authFetch, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
-import { useLocale } from '../../lib/providers';
-import { cn, formatCurrency, formatDate, getStatusLabel, getTicketStatusTone } from '../../lib/utils';
+import { cn, formatCurrency, formatDate, getTicketStatusTone } from '../../lib/utils';
 import { Button } from '../../components/ui/button';
 import { EmptyState } from '../../components/ui/empty-state';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
@@ -59,7 +58,6 @@ const payableStatuses = new Set(['UNPAID', 'OVERDUE']);
 
 export default function ResidentAccountPage() {
   const router = useRouter();
-  const { locale } = useLocale();
   const reducedMotion = useReducedMotion();
   const [context, setContext] = useState<AccountContext | null>(null);
   const [finance, setFinance] = useState<ResidentFinance | null>(null);
@@ -121,35 +119,13 @@ export default function ResidentAccountPage() {
   const recentDocuments = useMemo(() => [...(context?.documents ?? [])].slice(0, 2), [context?.documents]);
   const newestDocument = recentDocuments[0] ?? null;
   const newestNotification = unreadNotifications[0] ?? null;
-  const labels = locale === 'en'
-    ? {
-        home: 'My account',
-        activeNow: 'Needs attention now',
-        activeNowSubtitle: 'The next item to pay, track, or open.',
-        actions: 'Quick actions',
-        recentDocs: 'Recent documents',
-        allDocs: 'All documents',
-        noUrgent: 'Nothing urgent right now',
-        noUrgentDesc: 'When a charge, request, or new update appears, it will show here first.',
-        docsEmpty: 'No recent documents',
-        docsEmptyDesc: 'New committee files and updates will appear here.',
-        updatesReady: '{{count}} new updates are waiting',
-        updatesClear: 'You are up to date',
-      }
-    : {
-        home: 'האזור האישי',
-        activeNow: 'פעיל עכשיו',
-        activeNowSubtitle: 'הפריט הבא שכדאי לשלם, לעקוב אחריו או לפתוח.',
-        actions: 'פעולות מהירות',
-        recentDocs: 'מסמכים אחרונים',
-        allDocs: 'לכל המסמכים',
-        noUrgent: 'אין משהו דחוף כרגע',
-        noUrgentDesc: 'כשתיפתח קריאה, יופיע חיוב או ייכנס עדכון חדש, נראה אותו כאן.',
-        docsEmpty: 'אין מסמכים חדשים',
-        docsEmptyDesc: 'כשהצוות יעלה מסמך חדש, הוא יופיע כאן.',
-        updatesReady: '{{count}} עדכונים חדשים מחכים לך',
-        updatesClear: 'כל העדכונים האחרונים נקראו',
-      };
+  const locale = 'he';
+  const labels = {
+    home: 'האזור האישי',
+    actions: 'פעולות מהירות',
+    updatesReady: '{{count}} עדכונים חדשים מחכים לך',
+    updatesClear: 'כל העדכונים האחרונים נקראו',
+  };
   const nextPaymentDue = useMemo(
     () =>
       [...(finance?.invoices ?? [])]
@@ -213,6 +189,11 @@ export default function ResidentAccountPage() {
     };
   })();
 
+  const heroSubline = primaryUnit
+    ? `דירה ${primaryUnit.number}${primaryBuilding?.name ? ` · ${primaryBuilding.name}` : ''}`
+    : 'חשבון דייר פעיל';
+  const heroSupportLine = primaryBuilding?.address || 'גישה מהירה לתשלומים, קריאות, מסמכים ועדכונים.';
+
   const actionItems = [
     {
       id: 'pay',
@@ -265,40 +246,6 @@ export default function ResidentAccountPage() {
       priority: 'utility' as const,
     },
   ];
-
-  const activeItems: Array<{
-    id: string;
-    status: string;
-    tone: 'danger' | 'warning' | 'success' | 'default' | 'neutral' | 'active';
-    title: string;
-    reason: string;
-    meta?: string;
-    href?: string;
-    ctaLabel?: string;
-  }> = [];
-  if (nextPaymentDue) {
-    activeItems.push({
-      id: `invoice-${nextPaymentDue.id}`,
-      status: nextPaymentDue.status === 'OVERDUE' ? 'פיגור' : 'לתשלום',
-      tone: nextPaymentDue.status === 'OVERDUE' ? 'danger' : 'warning',
-      title: nextPaymentDue.description,
-      reason: `${formatCurrency(nextPaymentDue.amount, 'ILS', locale)} · עד ${formatDate(nextPaymentDue.dueDate, locale)}`,
-      href: '/payments/resident',
-      ctaLabel: 'שלם עכשיו',
-    });
-  }
-  if (openTickets[0]) {
-    activeItems.push({
-      id: `ticket-${openTickets[0].id}`,
-      status: getStatusLabel(openTickets[0].status, 'he'),
-      tone: getTicketStatusTone(openTickets[0].status),
-      title: `קריאה #${openTickets[0].id}`,
-      reason: openTickets[0].description?.trim() || `${openTickets[0].unit.building.name} · דירה ${openTickets[0].unit.number}`,
-      meta: formatDate(openTickets[0].createdAt, locale),
-      href: '/resident/requests?view=history',
-      ctaLabel: 'עקוב',
-    });
-  }
 
   const userId = getCurrentUserId();
   const role = getEffectiveRole();
@@ -389,29 +336,36 @@ export default function ResidentAccountPage() {
         animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
         transition={{ duration: 0.34, ease: 'easeOut' }}
       >
-        <div className="relative overflow-hidden rounded-[32px] border border-primary/12 bg-[radial-gradient(circle_at_top_right,rgba(243,185,91,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(68,124,255,0.08),transparent_28%),linear-gradient(180deg,rgba(255,251,244,0.98)_0%,rgba(255,255,255,0.96)_55%,rgba(247,242,233,0.94)_100%)] px-4 pb-4 pt-4 text-foreground shadow-[0_18px_44px_rgba(44,28,9,0.08)] sm:px-5 sm:pb-5 sm:pt-5">
+        <div className="relative overflow-hidden rounded-[32px] border border-primary/12 bg-[radial-gradient(circle_at_top_right,rgba(243,185,91,0.34),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(248,217,154,0.16),transparent_28%),linear-gradient(135deg,rgba(32,24,16,0.98)_0%,rgba(76,52,19,0.95)_48%,rgba(207,146,50,0.94)_100%)] px-4 pb-4 pt-4 text-white shadow-[0_18px_44px_rgba(44,28,9,0.16)] sm:px-5 sm:pb-5 sm:pt-5">
           <AccountHeroPattern />
           <div className="relative z-10 space-y-4">
             <div className="flex items-start justify-between gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/10 bg-white/78 px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-secondary-foreground">
-                <Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={1.9} />
-                {labels.home}
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.24em] text-white/82">
+                <Sparkles className="h-3.5 w-3.5 text-white" strokeWidth={1.9} />
+                מרכז השליטה האישי
               </div>
-              <div className="rounded-full border border-primary/10 bg-white/72 px-3 py-1.5 text-xs font-semibold text-secondary-foreground">
-                {primaryBuilding ? `דירה ${primaryUnit?.number}` : residentName}
+              <div className="rounded-full border border-white/14 bg-white/12 px-3 py-1.5 text-xs font-semibold text-white">
+                חשבון דייר
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] border border-primary/12 bg-[linear-gradient(135deg,rgba(255,245,225,0.96)_0%,rgba(243,185,91,0.34)_100%)] text-primary shadow-[0_10px_24px_rgba(194,143,57,0.14)]">
-                <UserRound className="h-6 w-6" strokeWidth={1.8} />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[15px] font-semibold text-secondary-foreground">{residentName}</div>
-                <h1 className="mt-1 text-[34px] font-black leading-[1.02] tracking-[-0.02em] text-foreground">{primaryBuilding?.name || labels.home}</h1>
-                <p className="mt-2 max-w-[22rem] text-[15px] leading-6 text-secondary-foreground">
-                  {primaryBuilding?.address || 'גישה מהירה לתשלומים, קריאות, מסמכים ועדכונים.'}
-                </p>
+            <div className="relative rounded-[30px] border border-primary/14 bg-white/94 p-4 shadow-[0_22px_48px_rgba(44,28,9,0.12)] backdrop-blur-sm">
+              <div className="flex items-center gap-4">
+                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-4 border-white bg-[radial-gradient(circle_at_30%_30%,rgba(255,227,179,0.95),rgba(217,154,47,0.92)_42%,rgba(76,52,19,1)_100%)] text-white shadow-[0_18px_34px_rgba(207,146,50,0.34)]">
+                  <UserRound className="h-10 w-10" strokeWidth={1.8} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/72">
+                    {primaryBuilding?.name || labels.home}
+                  </div>
+                  <h1 className="mt-1 text-[30px] font-black leading-[1.02] tracking-[-0.02em] text-foreground">{residentName}</h1>
+                  <p className="mt-1 text-[14px] leading-6 text-secondary-foreground">{heroSubline}</p>
+                  <p className="mt-1 text-[13px] leading-5 text-secondary-foreground/90">{heroSupportLine}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <MiniHeroPill icon={<Bell className="h-3.5 w-3.5" strokeWidth={1.8} />} text={`${unreadNotifications.length} עדכונים`} />
+                    <MiniHeroPill icon={<Ticket className="h-3.5 w-3.5" strokeWidth={1.8} />} text={`${openTickets.length} קריאות פתוחות`} />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -419,7 +373,7 @@ export default function ResidentAccountPage() {
               <div className="rounded-[26px] border border-primary/12 bg-white/78 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground">{residentPrimaryAction.eyebrow}</div>
+                    <div className="text-[11px] font-semibold tracking-[0.16em] text-secondary-foreground">{residentPrimaryAction.eyebrow}</div>
                     <div className="mt-2 text-[38px] font-black leading-none text-foreground">
                       <bdi>
                         {nextPaymentDue
@@ -469,7 +423,7 @@ export default function ResidentAccountPage() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
+            {/* <div className="grid grid-cols-4 gap-2">
               {heroShortcuts.map((item) => (
                 <HeroShortcut
                   key={item.id}
@@ -479,7 +433,7 @@ export default function ResidentAccountPage() {
                   icon={<item.icon className="h-4 w-4" strokeWidth={1.85} />}
                 />
               ))}
-            </div>
+            </div> */}
           </div>
         </div>
       </motion.section>
@@ -494,40 +448,8 @@ export default function ResidentAccountPage() {
           >
             <div className="mb-3">
               <h2 className="text-[18px] font-semibold text-foreground">{labels.actions}</h2>
-              <p className="mt-1 text-[14px] leading-6 text-secondary-foreground">פעולות מהירות, גדולות וברורות למסך קטן.</p>
             </div>
             <ResidentActionConstellation items={actionItems} />
-          </motion.section>
-
-          <motion.section
-            initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.1, ease: 'easeOut' }}
-            className="rounded-[26px] border border-divider/60 bg-white/94 px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
-          >
-            <CompactSectionHeader
-              icon={<Sparkles className="h-4 w-4" strokeWidth={1.8} />}
-              title={labels.activeNow}
-              subtitle={activeItems.length ? `${activeItems.length} פריטים פתוחים` : labels.noUrgent}
-              actionLabel={activeItems[0]?.ctaLabel || 'פתח'}
-              actionHref={activeItems[0]?.href || '/resident/requests?view=new'}
-            />
-            {activeItems.length ? (
-              <div className="space-y-2">
-                {activeItems.slice(0, 2).map((item, index) => (
-                  <motion.div
-                    key={item.id}
-                    initial={reducedMotion ? false : { opacity: 0, y: 12 }}
-                    animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-                    transition={{ duration: 0.26, delay: reducedMotion ? 0 : 0.08 + index * 0.04, ease: 'easeOut' }}
-                  >
-                    <ResidentLiveItem item={item} />
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState type="empty" size="sm" title={labels.noUrgent} description={labels.noUrgentDesc} />
-            )}
           </motion.section>
         </div>
 
@@ -536,45 +458,6 @@ export default function ResidentAccountPage() {
             initial={reducedMotion ? false : { opacity: 0, y: 18 }}
             animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
             transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.15, ease: 'easeOut' }}
-            className="rounded-[26px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.95)_100%)] px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
-          >
-            <CompactSectionHeader
-              icon={<FileText className="h-4 w-4" strokeWidth={1.8} />}
-              title={labels.recentDocs}
-              subtitle={recentDocuments.length ? `${recentDocuments.length} זמינים` : labels.docsEmpty}
-              actionLabel={labels.allDocs}
-              actionHref="/documents"
-            />
-            {recentDocuments.length ? (
-              <div className="space-y-2">
-                {recentDocuments.map((document) => (
-                  <Link
-                    key={document.id}
-                    href="/documents"
-                    className="flex items-center justify-between gap-3 rounded-[20px] border border-subtle-border bg-white/84 px-3 py-2.5 transition hover:-translate-y-0.5 hover:border-primary/18"
-                  >
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/8 text-primary">
-                        <FileText className="h-4 w-4" strokeWidth={1.8} />
-                      </span>
-                      <div className="min-w-0">
-                        <div className="truncate text-[15px] font-semibold text-foreground">{document.name}</div>
-                        <div className="mt-0.5 text-[12px] text-secondary-foreground">{formatDate(document.uploadedAt, locale)}</div>
-                      </div>
-                    </div>
-                    <ArrowUpRight className="icon-directional h-4 w-4 shrink-0 text-primary" strokeWidth={1.8} />
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <EmptyState type="empty" size="sm" title={labels.docsEmpty} description={labels.docsEmptyDesc} />
-            )}
-          </motion.section>
-
-          <motion.section
-            initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.2, ease: 'easeOut' }}
             className="rounded-[26px] border border-divider/60 bg-white/94 px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
           >
             <CompactSectionHeader
@@ -604,7 +487,7 @@ export default function ResidentAccountPage() {
           <motion.section
             initial={reducedMotion ? false : { opacity: 0, y: 18 }}
             animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.24, ease: 'easeOut' }}
+            transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.2, ease: 'easeOut' }}
             className="rounded-[26px] border border-divider/60 bg-white/94 px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
           >
             <CompactSectionHeader
@@ -646,10 +529,10 @@ export default function ResidentAccountPage() {
 function AccountHeroPattern() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute -left-8 top-4 h-24 w-24 rounded-full border border-primary/10" />
-      <div className="absolute right-10 top-0 h-20 w-20 rounded-b-[30px] rounded-t-full bg-primary/6" />
-      <div className="absolute bottom-0 left-6 h-16 w-28 rounded-t-full bg-warning/10 blur-2xl" />
-      <div className="absolute bottom-4 right-4 h-14 w-14 rounded-[18px] bg-primary/8" />
+      <div className="absolute -left-8 top-4 h-24 w-24 rounded-full border border-white/10" />
+      <div className="absolute right-10 top-0 h-20 w-20 rounded-b-[30px] rounded-t-full bg-white/6" />
+      <div className="absolute bottom-0 left-6 h-16 w-28 rounded-t-full bg-warning/20 blur-2xl" />
+      <div className="absolute bottom-4 right-4 h-14 w-14 rounded-[18px] bg-white/8" />
     </div>
   );
 }
@@ -671,6 +554,15 @@ function HeroStatusBadge({ icon, label }: { icon: React.ReactNode; label: string
       {icon}
       <span>{label}</span>
     </div>
+  );
+}
+
+function MiniHeroPill({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/12 bg-primary/6 px-3 py-1.5 text-[12px] font-semibold text-secondary-foreground">
+      <span className="text-primary">{icon}</span>
+      <span>{text}</span>
+    </span>
   );
 }
 
@@ -698,26 +590,6 @@ function HeroShortcut({
       <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/8 text-primary">{icon}</span>
       <span className="mt-2 text-[12px] font-semibold leading-4 text-foreground">{label}</span>
     </Link>
-  );
-}
-
-function SectionHeading({
-  icon,
-  title,
-  subtitle,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="mb-3">
-      <div className="flex items-center gap-2 text-base font-semibold text-foreground">
-        <span className="text-primary">{icon}</span>
-        <span>{title}</span>
-      </div>
-      <p className="mt-1 text-sm leading-6 text-secondary-foreground">{subtitle}</p>
-    </div>
   );
 }
 

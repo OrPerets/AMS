@@ -62,7 +62,7 @@ const labels = {
   address: 'כתובת',
   email: 'אימייל',
   phone: 'טלפון',
-  pushToken: 'Push token',
+  pushToken: 'מזהה מכשיר',
   pushTokenHint: 'נשמר אוטומטית מהמכשיר הפעיל, אם קיים.',
   residentNameFallback: 'דייר',
   unreadUpdates: 'עדכונים שלא נקראו',
@@ -255,7 +255,7 @@ export default function ResidentProfilePage() {
             <div className="relative overflow-hidden rounded-b-[40px] bg-[radial-gradient(circle_at_top_right,rgba(243,185,91,0.35),transparent_28%),linear-gradient(135deg,rgba(32,24,16,0.98)_0%,rgba(76,52,19,0.94)_48%,rgba(207,146,50,0.94)_100%)] px-5 pb-14 pt-5 text-white">
               <HeroPattern />
               <div className="relative z-10 flex items-start justify-between gap-3">
-                <div className="min-w-0">
+                <div className="min-w-0 text-right">
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.24em] text-white/82">
                     <Sparkles className="h-3.5 w-3.5" strokeWidth={1.9} />
                     {labels.heroHint}
@@ -277,7 +277,7 @@ export default function ResidentProfilePage() {
                     className="h-24 w-24 shrink-0 border-4 border-white bg-[radial-gradient(circle_at_30%_30%,rgba(255,227,179,0.9),rgba(217,154,47,0.9)_42%,rgba(76,52,19,1)_100%)] text-white shadow-[0_18px_34px_rgba(207,146,50,0.34)]"
                     icon={<UserRound className="h-10 w-10" />}
                   />
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 text-right">
                     <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/72">
                       {primaryBuilding?.name || 'AMS Resident'}
                     </div>
@@ -304,11 +304,11 @@ export default function ResidentProfilePage() {
         transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.05, ease: 'easeOut' }}
       >
         <Card className="border border-divider/60 bg-white/92 shadow-[0_18px_42px_rgba(44,28,9,0.08)]">
-          <CardHeader className="flex flex-col items-start gap-1 px-4 pt-4 sm:px-5">
-            <h2 className="text-base font-semibold text-foreground">{labels.statusCardTitle}</h2>
-            <p className="text-sm text-default-500">{labels.statusCardSubtitle}</p>
+          <CardHeader className="flex w-full flex-col items-end gap-1 px-4 pt-4 text-right sm:px-5">
+            <h2 className="w-full text-right text-base font-semibold text-foreground">{labels.statusCardTitle}</h2>
+            <p className="w-full text-right text-sm text-default-500">{labels.statusCardSubtitle}</p>
           </CardHeader>
-          <CardBody className="grid grid-cols-3 gap-3 px-4 pb-4 pt-2 sm:px-5">
+          <CardBody className="grid grid-cols-3 gap-3 px-4 pb-4 pt-2 text-right sm:px-5">
             <MetricTile icon={<Bell className="h-4 w-4" />} label={labels.unreadUpdates} value={String(unreadNotifications)} />
             <MetricTile icon={<Ticket className="h-4 w-4" />} label={labels.openTickets} value={String(openTickets)} />
             <MetricTile icon={<WalletCards className="h-4 w-4" />} label={labels.documents} value={String(documentCount)} />
@@ -322,11 +322,11 @@ export default function ResidentProfilePage() {
         transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.1, ease: 'easeOut' }}
       >
         <Card className="border border-divider/60 bg-white/94 shadow-[0_18px_42px_rgba(44,28,9,0.08)]">
-          <CardHeader className="flex flex-col items-start gap-1 px-4 pt-4 sm:px-5">
-            <h2 className="text-base font-semibold text-foreground">{labels.quickActionsTitle}</h2>
-            <p className="text-sm text-default-500">{labels.quickActionsSubtitle}</p>
+          <CardHeader className="flex w-full flex-col items-end gap-1 px-4 pt-4 text-right sm:px-5">
+            <h2 className="w-full text-right text-base font-semibold text-foreground">{labels.quickActionsTitle}</h2>
+            <p className="w-full text-right text-sm text-default-500">{labels.quickActionsSubtitle}</p>
           </CardHeader>
-          <CardBody className="gap-2 px-3 pb-3 pt-2 sm:px-4">
+          <CardBody className="gap-2 px-3 pb-3 pt-2 text-right sm:px-4">
             {menuItems.map((item) => (
               <MenuRow key={item.id} item={item} />
             ))}
@@ -341,11 +341,11 @@ export default function ResidentProfilePage() {
         transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.15, ease: 'easeOut' }}
       >
         <Card className="border border-divider/60 bg-white/94 shadow-[0_18px_42px_rgba(44,28,9,0.08)]">
-          <CardHeader className="flex flex-col items-start gap-1 px-4 pt-4 sm:px-5">
-            <h2 className="text-base font-semibold text-foreground">{labels.personalSectionTitle}</h2>
-            <p className="text-sm text-default-500">{labels.personalSectionSubtitle}</p>
+          <CardHeader className="flex w-full flex-col items-end gap-1 px-4 pt-4 text-right sm:px-5">
+            <h2 className="w-full text-right text-base font-semibold text-foreground">{labels.personalSectionTitle}</h2>
+            <p className="w-full text-right text-sm text-default-500">{labels.personalSectionSubtitle}</p>
           </CardHeader>
-          <CardBody className="gap-4 px-4 pb-4 pt-2 sm:px-5">
+          <CardBody className="gap-4 px-4 pb-4 pt-2 text-right sm:px-5">
             <ProfileField
               label={labels.email}
               errorMessage={(submitted || touched.email) && errors.email ? errors.email : undefined}
@@ -397,7 +397,7 @@ export default function ResidentProfilePage() {
               </div>
             </ProfileField>
 
-            <div className="flex justify-start">
+            <div className="flex justify-end">
               <Button
                 color="primary"
                 radius="full"
@@ -420,11 +420,11 @@ export default function ResidentProfilePage() {
         transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.2, ease: 'easeOut' }}
       >
         <Card className="border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.95)_100%)] shadow-[0_18px_42px_rgba(44,28,9,0.08)]">
-          <CardHeader className="flex flex-col items-start gap-1 px-4 pt-4 sm:px-5">
-            <h2 className="text-base font-semibold text-foreground">{labels.accountSectionTitle}</h2>
-            <p className="text-sm text-default-500">{labels.accountSectionSubtitle}</p>
+          <CardHeader className="flex w-full flex-col items-end gap-1 px-4 pt-4 text-right sm:px-5">
+            <h2 className="w-full text-right text-base font-semibold text-foreground">{labels.accountSectionTitle}</h2>
+            <p className="w-full text-right text-sm text-default-500">{labels.accountSectionSubtitle}</p>
           </CardHeader>
-          <CardBody className="grid gap-3 px-4 pb-4 pt-2 sm:grid-cols-2 sm:px-5">
+          <CardBody className="grid gap-3 px-4 pb-4 pt-2 text-right sm:grid-cols-2 sm:px-5">
             <InfoRow icon={<UserRound className="h-4 w-4 text-default-400" />} label={labels.role} value="Resident" />
             <InfoRow icon={<CreditCard className="h-4 w-4 text-default-400" />} label={labels.unit} value={primaryUnit ? `דירה ${primaryUnit.number}` : 'לא שויך'} />
             <InfoRow icon={<Building2 className="h-4 w-4 text-default-400" />} label={labels.building} value={primaryBuilding?.name || 'לא שויך'} />
@@ -477,7 +477,7 @@ function HeroPattern() {
 
 function MiniPill({ icon, text }: { icon: ReactNode; text: string }) {
   return (
-    <div className="inline-flex items-center gap-1.5 rounded-full border border-divider/70 bg-muted/55 px-3 py-1.5 text-xs font-medium text-foreground">
+    <div className="inline-flex items-center gap-1.5 rounded-full border border-divider/70 bg-muted/55 px-3 py-1.5 text-right text-xs font-medium text-foreground">
       <span className="text-primary">{icon}</span>
       <span>{text}</span>
     </div>
@@ -498,22 +498,22 @@ function ProfileField({
   children: ReactNode;
 }) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-1 text-sm font-medium text-foreground">
+    <div className="space-y-2 text-right">
+      <div className="flex items-center justify-end gap-1 text-sm font-medium text-foreground">
         <span>{label}</span>
         {isRequired ? <span className="text-danger">*</span> : null}
       </div>
       {children}
-      {errorMessage ? <p className="text-xs text-danger">{errorMessage}</p> : null}
-      {!errorMessage && hint ? <p className="text-xs text-default-500">{hint}</p> : null}
+      {errorMessage ? <p className="text-right text-xs text-danger">{errorMessage}</p> : null}
+      {!errorMessage && hint ? <p className="text-right text-xs text-default-500">{hint}</p> : null}
     </div>
   );
 }
 
 function InfoRow({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-[22px] border border-divider/65 bg-white/80 p-3.5 shadow-[0_12px_26px_rgba(44,28,9,0.05)]">
-      <div className="mb-2 flex items-center gap-2 text-xs font-medium text-default-500">
+    <div className="rounded-[22px] border border-divider/65 bg-white/80 p-3.5 text-right shadow-[0_12px_26px_rgba(44,28,9,0.05)]">
+      <div className="mb-2 flex items-center justify-end gap-2 text-xs font-medium text-default-500">
         {icon}
         <span>{label}</span>
       </div>
@@ -525,9 +525,11 @@ function InfoRow({ icon, label, value }: { icon: ReactNode; label: string; value
 
 function MetricTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-[22px] border border-divider/65 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] p-3 text-center shadow-[0_12px_24px_rgba(44,28,9,0.05)]">
-      <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/14 bg-primary/8 text-primary">
-        {icon}
+    <div className="rounded-[22px] border border-divider/65 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] p-3 text-right shadow-[0_12px_24px_rgba(44,28,9,0.05)]">
+      <div className="mb-2 flex justify-end">
+        <span className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/14 bg-primary/8 text-primary">
+          {icon}
+        </span>
       </div>
       <div className="text-lg font-black text-foreground">
         <bdi>{value}</bdi>
@@ -550,7 +552,7 @@ function MenuRow({ item }: { item: MenuItem }) {
       <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] border ${toneClass}`}>
         {item.icon}
       </span>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 text-right">
         <div className="text-sm font-semibold text-foreground">{item.label}</div>
         <div className="mt-1 text-xs leading-5 text-default-500">{item.description}</div>
       </div>

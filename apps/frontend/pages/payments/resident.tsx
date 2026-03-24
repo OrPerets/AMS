@@ -568,13 +568,13 @@ function ActionTile({
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-[118px] flex-col items-end justify-center rounded-[28px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3 py-4 text-right shadow-[0_16px_30px_rgba(44,28,9,0.05)] transition hover:-translate-y-0.5 hover:border-primary/18"
+      className="flex min-h-[118px] flex-col items-center justify-center rounded-[28px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3 py-4 text-center shadow-[0_16px_30px_rgba(44,28,9,0.05)] transition hover:-translate-y-0.5 hover:border-primary/18"
     >
-      <span className="flex h-12 w-12 items-center justify-center self-end rounded-[18px] border border-primary/12 bg-primary/10 text-primary">
+      <span className="flex h-12 w-12 items-center justify-center rounded-[18px] border border-primary/12 bg-primary/10 text-primary">
         {icon}
       </span>
       <span className="mt-3 text-sm font-semibold text-foreground">{title}</span>
-      <span className="mt-1 text-[11px] leading-4 text-secondary-foreground">{subtitle}</span>
+      <span className="mt-1 max-w-full text-[11px] leading-4 text-secondary-foreground">{subtitle}</span>
     </button>
   );
 }
