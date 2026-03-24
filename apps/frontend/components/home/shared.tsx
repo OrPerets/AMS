@@ -5,6 +5,7 @@ import { CompactStatusStrip } from '../ui/compact-status-strip';
 import { MobileActionHub } from '../ui/mobile-action-hub';
 import { MobilePriorityInbox, type MobilePriorityInboxItem } from '../ui/mobile-priority-inbox';
 import { PrimaryActionCard } from '../ui/primary-action-card';
+import { AmsMetricProgress } from '../ui/ams-metric-progress';
 import { cn } from '../../lib/utils';
 import { trackQuickActionClick } from '../../lib/analytics';
 import { addRecentAction, getRecentActions } from '../../lib/engagement';
@@ -18,6 +19,8 @@ export type HomeStatusMetric = {
   value: string | number;
   tone?: 'default' | 'warning' | 'danger' | 'success';
   href?: string;
+  progress?: number;
+  hint?: string;
 };
 
 export type HomePrimaryAction = {
@@ -152,40 +155,64 @@ function RoleCommandBand({
 
   if (!primaryMetric) return null;
 
-  const shellTone = roleKey === 'ADMIN'
+  const isDark = roleKey === 'ADMIN';
+  const shellTone = isDark
     ? 'border-primary/16 bg-[linear-gradient(180deg,rgba(42,31,18,0.98)_0%,rgba(24,18,12,0.98)_100%)] text-inverse-text'
     : 'border-[hsl(var(--subtle-border))] bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(247,243,234,0.94)_100%)] text-foreground';
-
-  const chipTone = roleKey === 'ADMIN'
-    ? 'border-white/8 bg-white/6 text-white/74'
-    : 'border-subtle-border/80 bg-background/75 text-secondary-foreground';
 
   return (
     <div className={cn('rounded-2xl border p-3 shadow-[0_16px_34px_rgba(44,28,9,0.08)] sm:rounded-[24px]', shellTone)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className={cn('text-[10px] font-semibold uppercase tracking-[0.18em]', roleKey === 'ADMIN' ? 'text-white/56' : 'text-secondary-foreground')}>
-            {roleKey === 'ADMIN' ? 'Control Zone' : 'Dispatch Lane'}
+          <div className={cn('text-[10px] font-semibold uppercase tracking-[0.18em]', isDark ? 'text-white/56' : 'text-secondary-foreground')}>
+            {isDark ? 'Control Zone' : 'Dispatch Lane'}
           </div>
-          <div className={cn('mt-1 text-[15px] font-semibold leading-5', roleKey === 'ADMIN' ? 'text-inverse-text' : 'text-foreground')}>
+          <div className={cn('mt-1 text-[15px] font-semibold leading-5', isDark ? 'text-inverse-text' : 'text-foreground')}>
             {primaryMetric.label}
           </div>
-          <div className={cn('mt-1 text-[28px] font-black leading-none tabular-nums', roleKey === 'ADMIN' ? 'text-primary' : 'text-foreground')}>
+          <div className={cn('mt-1 text-[28px] font-black leading-none tabular-nums', isDark ? 'text-primary' : 'text-foreground')}>
             <bdi>{primaryMetric.value}</bdi>
+          </div>
+          <div className={cn('mt-1 text-xs leading-5', isDark ? 'text-white/64' : 'text-secondary-foreground')}>
+            {primaryMetric.hint ?? (roleKey === 'ADMIN' ? 'מוקד חריגים, עומס ותפוסה' : 'שיוך, טיפול וסגירה במסך אחד')}
           </div>
         </div>
 
         {secondaryMetric ? (
-          <div className={cn('rounded-2xl border px-3 py-2 text-start', chipTone)}>
-            <div className="text-[10px] font-semibold">{secondaryMetric.label}</div>
-            <div className={cn('mt-1 text-[16px] font-black tabular-nums', roleKey === 'ADMIN' ? 'text-inverse-text' : 'text-foreground')}>
-              <bdi>{secondaryMetric.value}</bdi>
-            </div>
+          <div className="w-[148px] shrink-0">
+            <AmsMetricProgress
+              label={secondaryMetric.label}
+              value={secondaryMetric.value}
+              progress={secondaryMetric.progress ?? metricProgressFromValue(secondaryMetric)}
+              hint={secondaryMetric.hint ?? secondaryMetric.label}
+              href={secondaryMetric.href}
+              tone={secondaryMetric.tone === 'danger' ? 'danger' : secondaryMetric.tone === 'warning' ? 'warning' : secondaryMetric.tone === 'success' ? 'success' : 'default'}
+              variant={isDark ? 'dark' : 'light'}
+              className="border-none bg-transparent p-0 shadow-none"
+            />
           </div>
         ) : null}
       </div>
     </div>
   );
+}
+
+function metricProgressFromValue(metric: HomeStatusMetric) {
+  if (typeof metric.progress === 'number') return metric.progress;
+  if (typeof metric.value !== 'number') {
+    return metric.tone === 'danger' ? 32 : metric.tone === 'warning' ? 58 : 84;
+  }
+
+  switch (metric.id) {
+    case 'sla':
+      return Math.max(8, 100 - Math.min(metric.value * 18, 92));
+    case 'urgent':
+      return Math.max(10, 100 - Math.min(metric.value * 14, 90));
+    case 'collection':
+      return Math.min(metric.value > 0 ? 64 : 24, 100);
+    default:
+      return Math.max(18, 100 - Math.min(metric.value * 9, 82));
+  }
 }
 
 function handleQuickActionClick(item: HomeQuickAction, roleKey: RoleKey) {

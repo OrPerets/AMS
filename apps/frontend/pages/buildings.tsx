@@ -10,15 +10,17 @@ import {
   Users, 
   MoreHorizontal,
   RefreshCw,
-  Filter,
   Building2
 } from 'lucide-react';
 import { authFetch } from '../lib/auth';
 import { DataTable } from '../components/ui/data-table';
-import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { AmsDrawer } from '../components/ui/ams-drawer';
+import { AmsFilterTabs } from '../components/ui/ams-filter-tabs';
+import { AmsMetricProgress } from '../components/ui/ams-metric-progress';
+import { AmsQueryField } from '../components/ui/ams-query-field';
 import { KpiCard } from '../components/ui/kpi-card';
 import { MobileContextBar } from '../components/ui/mobile-context-bar';
 import { MobilePriorityInbox } from '../components/ui/mobile-priority-inbox';
@@ -32,13 +34,6 @@ import {
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 import { Skeleton } from '../components/ui/skeleton';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select';
 import { cn, formatNumber } from '../lib/utils';
 import { toast } from '../components/ui/use-toast';
 import { useRouter } from 'next/router';
@@ -89,6 +84,7 @@ export default function Buildings() {
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [selectedBuildingId, setSelectedBuildingId] = useState<number | null>(null);
   const [selectedOverview, setSelectedOverview] = useState<BuildingOverview | null>(null);
+  const [previewBuildingId, setPreviewBuildingId] = useState<number | null>(null);
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -228,6 +224,10 @@ export default function Buildings() {
       return statusMatch && searchMatch;
     });
   }, [buildings, statusFilter, search]);
+  const previewBuilding = useMemo(
+    () => buildings.find((building) => building.id === previewBuildingId) ?? null,
+    [buildings, previewBuildingId],
+  );
 
   useEffect(() => {
     if (!filteredBuildings.length) {
@@ -257,6 +257,15 @@ export default function Buildings() {
       occupancyRate
     };
   }, [buildings]);
+  const filterCounts = useMemo(
+    () => ({
+      all: buildings.length,
+      ACTIVE: buildings.filter((building) => building.status === 'ACTIVE').length,
+      MAINTENANCE: buildings.filter((building) => building.status === 'MAINTENANCE').length,
+      INACTIVE: buildings.filter((building) => building.status === 'INACTIVE').length,
+    }),
+    [buildings],
+  );
 
   const columns: ColumnDef<Building>[] = [
     {
@@ -467,14 +476,6 @@ export default function Buildings() {
         </div>
         
         <div className="page-header-actions">
-          <div className="relative w-full sm:w-auto">
-            <Input
-              placeholder="חיפוש בניינים..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full sm:w-[220px]"
-            />
-          </div>
           <Button 
             variant="outline" 
             size="icon"
@@ -496,6 +497,23 @@ export default function Buildings() {
         subtitle={t('buildings.mobile.prioritySubtitle')}
         items={priorityItems}
       />
+
+      <div className="grid grid-cols-2 gap-2 md:hidden">
+        <AmsMetricProgress
+          label="תפוסה"
+          value={`${kpis.occupancyRate}%`}
+          progress={kpis.occupancyRate}
+          hint={`${kpis.totalUnits} יחידות פעילות`}
+          tone={kpis.occupancyRate > 85 ? 'success' : kpis.occupancyRate > 70 ? 'warning' : 'danger'}
+        />
+        <AmsMetricProgress
+          label="בניינים פעילים"
+          value={formatNumber(kpis.activeBuildings)}
+          progress={kpis.totalBuildings ? Math.round((kpis.activeBuildings / kpis.totalBuildings) * 100) : 0}
+          hint={`${filterCounts.MAINTENANCE + filterCounts.INACTIVE} דורשים תשומת לב`}
+          tone={filterCounts.MAINTENANCE + filterCounts.INACTIVE > 0 ? 'warning' : 'success'}
+        />
+      </div>
 
       {/* KPI Cards */}
       <div className="page-kpi-grid">
@@ -537,33 +555,24 @@ export default function Buildings() {
       </div>
 
       {/* Filters */}
-      <div className="page-filter-bar sticky top-16 z-10 rounded-xl border bg-card/95 p-3 backdrop-blur">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">סינון:</span>
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[140px]">
-            <SelectValue placeholder="סטטוס" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">כל הסטטוסים</SelectItem>
-            <SelectItem value="ACTIVE">פעיל</SelectItem>
-            <SelectItem value="MAINTENANCE">תחזוקה</SelectItem>
-            <SelectItem value="INACTIVE">לא פעיל</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {statusFilter !== 'all' && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setStatusFilter('all')}
-            className="w-full sm:w-auto"
-          >
-            נקה סינונים
-          </Button>
-        )}
+      <div className="sticky top-16 z-10 space-y-3 rounded-[24px] border border-subtle-border bg-card/95 p-3 backdrop-blur">
+        <AmsFilterTabs
+          ariaLabel="סינון בניינים לפי סטטוס"
+          selectedKey={statusFilter}
+          onSelectionChange={setStatusFilter}
+          items={[
+            { key: 'all', label: 'הכל', badge: filterCounts.all },
+            { key: 'ACTIVE', label: 'פעיל', badge: filterCounts.ACTIVE },
+            { key: 'MAINTENANCE', label: 'תחזוקה', badge: filterCounts.MAINTENANCE },
+            { key: 'INACTIVE', label: 'לא פעיל', badge: filterCounts.INACTIVE },
+          ]}
+        />
+        <AmsQueryField
+          value={search}
+          onChange={setSearch}
+          placeholder="חיפוש בניין, כתובת או תיק"
+          ariaLabel="חיפוש בניינים"
+        />
       </div>
 
       <Card variant="featured">
@@ -663,6 +672,7 @@ export default function Buildings() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button size="sm" variant={selectedBuildingId === building.id ? 'default' : 'outline'} onClick={(event) => { event.stopPropagation(); setSelectedBuildingId(building.id); }}>בחר</Button>
+                    <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); setPreviewBuildingId(building.id); }}>תצוגה מהירה</Button>
                     <Button size="sm" onClick={(event) => { event.stopPropagation(); handleViewBuilding(building); }}>צפה</Button>
                     <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); handleEditBuilding(building); }}>ערוך</Button>
                   </div>
@@ -672,6 +682,59 @@ export default function Buildings() {
             />
           </CardContent>
         </Card>
+
+        <AmsDrawer
+          isOpen={Boolean(previewBuilding)}
+          onOpenChange={(open) => {
+            if (!open) setPreviewBuildingId(null);
+          }}
+          title={previewBuilding?.name ?? 'תצוגה מהירה'}
+          description={previewBuilding?.address || 'ללא כתובת'}
+        >
+          {previewBuilding ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                <AmsMetricProgress
+                  label="תפוסה"
+                  value={`${previewBuilding.totalUnits && previewBuilding.occupiedUnits ? Math.round((previewBuilding.occupiedUnits / previewBuilding.totalUnits) * 100) : 0}%`}
+                  progress={previewBuilding.totalUnits && previewBuilding.occupiedUnits ? Math.round((previewBuilding.occupiedUnits / previewBuilding.totalUnits) * 100) : 0}
+                  hint={`${previewBuilding.occupiedUnits || 0}/${previewBuilding.totalUnits || 0} יחידות`}
+                  tone={previewBuilding.status === 'INACTIVE' ? 'danger' : previewBuilding.status === 'MAINTENANCE' ? 'warning' : 'success'}
+                  variant="dark"
+                />
+                <AmsMetricProgress
+                  label="סטטוס"
+                  value={statusConfig[previewBuilding.status as keyof typeof statusConfig]?.label || 'לא ידוע'}
+                  progress={previewBuilding.status === 'ACTIVE' ? 92 : previewBuilding.status === 'MAINTENANCE' ? 54 : 18}
+                  hint={previewBuilding.manager || 'ללא מנהל מוקצה'}
+                  tone={previewBuilding.status === 'ACTIVE' ? 'success' : previewBuilding.status === 'MAINTENANCE' ? 'warning' : 'danger'}
+                  variant="dark"
+                />
+              </div>
+              <div className="rounded-[24px] border border-white/10 bg-white/6 p-4 text-sm text-white/76">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/52">Summary</div>
+                <div className="mt-2 space-y-1">
+                  <div>מנהל: {previewBuilding.manager || 'לא הוקצה'}</div>
+                  <div>בדיקה אחרונה: {previewBuilding.lastInspection ? new Date(previewBuilding.lastInspection).toLocaleDateString('he-IL') : 'לא בוצעה'}</div>
+                  <div>מספר בניין: #{previewBuilding.id}</div>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => { setSelectedBuildingId(previewBuilding.id); setPreviewBuildingId(null); }}>
+                  פתח בלוח הצד
+                </Button>
+                <Button variant="outline" onClick={() => handleViewBuilding(previewBuilding)}>
+                  <Eye className="me-2 h-4 w-4" />
+                  עמוד מלא
+                </Button>
+                <Button variant="outline" onClick={() => handleEditBuilding(previewBuilding)}>
+                  <Edit className="me-2 h-4 w-4" />
+                  ערוך
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </AmsDrawer>
 
         <Card className="border-slate-200">
           <CardHeader>

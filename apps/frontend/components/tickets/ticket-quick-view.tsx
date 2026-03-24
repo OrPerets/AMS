@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
+import { AmsDrawer } from '../ui/ams-drawer';
 
 export function TicketQuickView({
   open,
@@ -15,14 +15,16 @@ export function TicketQuickView({
   children?: React.ReactNode;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[70vh] overflow-y-auto rounded-t-[28px] sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          {description ? <DialogDescription>{description}</DialogDescription> : null}
-        </DialogHeader>
+    <AmsDrawer
+      isOpen={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      placement="bottom"
+      size="lg"
+      bodyClassName="max-h-[68dvh] overflow-y-auto"
+    >
         {children}
-      </DialogContent>
-    </Dialog>
+    </AmsDrawer>
   );
 }

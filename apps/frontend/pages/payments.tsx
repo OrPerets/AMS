@@ -9,6 +9,10 @@ import { MobilePriorityInbox } from '../components/ui/mobile-priority-inbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
+import { AmsDrawer } from '../components/ui/ams-drawer';
+import { AmsFilterTabs } from '../components/ui/ams-filter-tabs';
+import { AmsMetricProgress } from '../components/ui/ams-metric-progress';
+import { AmsQueryField } from '../components/ui/ams-query-field';
 import { toast } from '../components/ui/use-toast';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useLocale } from '../lib/providers';
@@ -124,10 +128,12 @@ export default function PaymentsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [settlingId, setSettlingId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<'ALL' | InvoiceStatus>('ALL');
+  const [invoiceQuery, setInvoiceQuery] = useState('');
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [recurringInvoices, setRecurringInvoices] = useState<RecurringInvoiceRow[]>([]);
   const [residents, setResidents] = useState<ResidentOption[]>([]);
   const [collectionsSummary, setCollectionsSummary] = useState<CollectionsSummary | null>(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
   const [residentQuery, setResidentQuery] = useState('');
   const [recurringResidentQuery, setRecurringResidentQuery] = useState('');
   const [newInvoice, setNewInvoice] = useState({
@@ -213,9 +219,37 @@ export default function PaymentsPage() {
     loadCollectionsSummary();
   }, [role, router]);
 
-  const filteredInvoices = useMemo(
-    () => invoices.filter((invoice) => statusFilter === 'ALL' || invoice.status === statusFilter),
-    [invoices, statusFilter],
+  const filteredInvoices = useMemo(() => {
+    const query = invoiceQuery.trim().toLowerCase();
+    return invoices.filter((invoice) => {
+      const matchesStatus = statusFilter === 'ALL' || invoice.status === statusFilter;
+      const matchesQuery =
+        !query ||
+        [
+          String(invoice.id),
+          invoice.description,
+          invoice.residentName,
+          invoice.buildingName ?? '',
+          invoice.collectionStatus ?? '',
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(query);
+      return matchesStatus && matchesQuery;
+    });
+  }, [invoiceQuery, invoices, statusFilter]);
+  const selectedInvoice = useMemo(
+    () => invoices.find((invoice) => invoice.id === selectedInvoiceId) ?? null,
+    [invoices, selectedInvoiceId],
+  );
+  const invoiceFilterCounts = useMemo(
+    () => ({
+      ALL: invoices.length,
+      PENDING: invoices.filter((invoice) => invoice.status === 'PENDING').length,
+      OVERDUE: invoices.filter((invoice) => invoice.status === 'OVERDUE').length,
+      PAID: invoices.filter((invoice) => invoice.status === 'PAID').length,
+    }),
+    [invoices],
   );
 
   const stats = useMemo(() => {
@@ -480,6 +514,25 @@ export default function PaymentsPage() {
           tone={stats.overdueCount > 0 ? 'danger' : 'warning'}
         />
 
+        {collectionsSummary ? (
+          <div className="grid grid-cols-2 gap-2">
+            <AmsMetricProgress
+              label="גבייה חודשית"
+              value={formatCurrency(collectionsSummary.totals.collectedThisMonth)}
+              progress={collectionsSummary.totals.billedThisMonth ? Math.round((collectionsSummary.totals.collectedThisMonth / collectionsSummary.totals.billedThisMonth) * 100) : 0}
+              hint={`חויב: ${formatCurrency(collectionsSummary.totals.billedThisMonth)}`}
+              tone={collectionsSummary.totals.collectedThisMonth >= collectionsSummary.totals.billedThisMonth ? 'success' : 'warning'}
+            />
+            <AmsMetricProgress
+              label="שיעור פיגור"
+              value={`${collectionsSummary.totals.delinquencyRate}%`}
+              progress={Math.max(10, 100 - collectionsSummary.totals.delinquencyRate)}
+              hint={`${collectionsSummary.totals.overdueCount} חשבוניות באיחור`}
+              tone={collectionsSummary.totals.delinquencyRate > 12 ? 'danger' : collectionsSummary.totals.delinquencyRate > 5 ? 'warning' : 'success'}
+            />
+          </div>
+        ) : null}
+
         <div className="grid grid-cols-2 gap-3">
           <Button asChild className="h-auto min-h-[96px] flex-col items-start justify-between rounded-[24px] p-4 text-right"><a href="/payments"><span className="text-sm">תשלומים</span><span className="text-2xl font-black">{formatCurrency(collectionsSummary?.totals.collectedThisMonth ?? stats.paidAmount)}</span><span className="text-xs">היום</span></a></Button>
           <Button asChild variant="outline" className="h-auto min-h-[96px] flex-col items-start justify-between rounded-[24px] p-4 text-right"><a href="/finance/budgets"><span className="text-sm">תקציבים</span><span className="text-2xl font-black">{collectionsSummary?.followUps.length ?? 0}</span><span className="text-xs">חריגות</span></a></Button>
@@ -603,28 +656,48 @@ export default function PaymentsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Button variant={statusFilter === 'ALL' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('ALL')}>הכל</Button>
-            <Button variant={statusFilter === 'PENDING' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('PENDING')}>ממתינות</Button>
-            <Button variant={statusFilter === 'OVERDUE' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('OVERDUE')}>באיחור</Button>
-            <Button variant={statusFilter === 'PAID' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('PAID')}>שולמו</Button>
+          <div className="sticky top-16 z-10 -mx-1 space-y-3 rounded-[24px] border border-subtle-border bg-background/95 px-3 py-3 shadow-[0_18px_44px_rgba(44,28,9,0.08)] backdrop-blur">
+            <AmsFilterTabs
+              ariaLabel="סינון תשלומים לפי סטטוס"
+              selectedKey={statusFilter}
+              onSelectionChange={(key) => setStatusFilter(key as 'ALL' | InvoiceStatus)}
+              items={[
+                { key: 'ALL', label: 'הכל', badge: invoiceFilterCounts.ALL },
+                { key: 'PENDING', label: 'ממתינות', badge: invoiceFilterCounts.PENDING },
+                { key: 'OVERDUE', label: 'באיחור', badge: invoiceFilterCounts.OVERDUE },
+                { key: 'PAID', label: 'שולמו', badge: invoiceFilterCounts.PAID },
+              ]}
+            />
+            <AmsQueryField
+              value={invoiceQuery}
+              onChange={setInvoiceQuery}
+              placeholder="חיפוש לפי דייר, בניין, תיאור או מזהה"
+              ariaLabel="חיפוש תשלומים"
+            />
           </div>
 
           <div className="space-y-3 md:hidden">
             {filteredInvoices.map((invoice) => (
               <div key={invoice.id} className="rounded-xl border p-3 text-sm">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-medium">#{invoice.id} · {invoice.description}</div>
-                    <div className="text-muted-foreground">{invoice.residentName}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      פירעון: {formatDate(new Date(invoice.dueDate), locale)} · {invoice.buildingName ?? 'ללא בניין'}
+                <button
+                  type="button"
+                  onClick={() => setSelectedInvoiceId(invoice.id)}
+                  className="block w-full text-start"
+                  aria-label={`פתח תצוגה מהירה לחשבונית ${invoice.id}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-medium">#{invoice.id} · {invoice.description}</div>
+                      <div className="text-muted-foreground">{invoice.residentName}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        פירעון: {formatDate(new Date(invoice.dueDate), locale)} · {invoice.buildingName ?? 'ללא בניין'}
+                      </div>
                     </div>
+                    <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'warning'}>
+                      {statusLabel[invoice.status]}
+                    </Badge>
                   </div>
-                  <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'warning'}>
-                    {statusLabel[invoice.status]}
-                  </Badge>
-                </div>
+                </button>
                 <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
                   <div><span className="text-muted-foreground">סכום</span><div className="font-medium text-sm">{formatCurrency(invoice.amount)}</div></div>
                   <div><span className="text-muted-foreground">גבייה</span><div className="font-medium text-sm">{invoice.collectionStatus ?? 'CURRENT'}</div></div>
@@ -639,6 +712,9 @@ export default function PaymentsPage() {
                   </div>
                 )}
                 <div className="mt-3 flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setSelectedInvoiceId(invoice.id)}>
+                    תצוגה מהירה
+                  </Button>
                   {invoice.status !== 'PAID' && (
                     <Button size="sm" onClick={() => settleInvoice(invoice.id)} disabled={settlingId === invoice.id}>
                       {settlingId === invoice.id ? 'מסלק...' : 'סליקה'}
@@ -757,6 +833,88 @@ export default function PaymentsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <AmsDrawer
+        isOpen={Boolean(selectedInvoice)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedInvoiceId(null);
+        }}
+        title={selectedInvoice ? `חשבונית #${selectedInvoice.id}` : 'תצוגה מהירה'}
+        description={selectedInvoice ? `${selectedInvoice.residentName} · ${selectedInvoice.buildingName ?? 'ללא בניין'}` : undefined}
+      >
+        {selectedInvoice ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2">
+              <AmsMetricProgress
+                label="סכום"
+                value={formatCurrency(selectedInvoice.amount)}
+                progress={selectedInvoice.status === 'PAID' ? 100 : selectedInvoice.status === 'OVERDUE' ? 28 : 62}
+                hint={`פירעון ${formatDate(new Date(selectedInvoice.dueDate), locale)}`}
+                tone={selectedInvoice.status === 'PAID' ? 'success' : selectedInvoice.status === 'OVERDUE' ? 'danger' : 'warning'}
+                variant="dark"
+              />
+              <AmsMetricProgress
+                label="גבייה"
+                value={selectedInvoice.collectionStatus ?? 'CURRENT'}
+                progress={selectedInvoice.collectionStatus === 'RESOLVED' ? 100 : selectedInvoice.collectionStatus === 'IN_COLLECTIONS' ? 26 : selectedInvoice.collectionStatus === 'PROMISE_TO_PAY' ? 56 : 78}
+                hint={selectedInvoice.reminderState ?? 'ללא תזכורת'}
+                tone={selectedInvoice.collectionStatus === 'IN_COLLECTIONS' ? 'danger' : selectedInvoice.collectionStatus === 'PROMISE_TO_PAY' ? 'warning' : 'success'}
+                variant="dark"
+              />
+            </div>
+
+            <div className="rounded-[24px] border border-white/10 bg-white/6 p-4 text-sm text-white/76">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/52">Summary</div>
+              <div className="mt-2 text-base font-semibold text-inverse-text">{selectedInvoice.description}</div>
+              <div className="mt-2 space-y-1">
+                <div>הונפק: {formatDate(new Date(selectedInvoice.issueDate), locale)}</div>
+                {selectedInvoice.paidAt ? <div>שולם: {formatDate(new Date(selectedInvoice.paidAt), locale)}</div> : null}
+                {selectedInvoice.promiseToPayDate ? <div>הבטחת תשלום: {formatDate(new Date(selectedInvoice.promiseToPayDate), locale)}</div> : null}
+                {selectedInvoice.collectionNotes ? <div>הערת גבייה: {selectedInvoice.collectionNotes}</div> : null}
+              </div>
+            </div>
+
+            {selectedInvoice.history.length ? (
+              <div className="space-y-2">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/52">Latest movements</div>
+                <div className="space-y-2">
+                  {selectedInvoice.history.slice(0, 4).map((entry) => (
+                    <div key={`${entry.kind}-${entry.id}`} className="rounded-[20px] border border-white/10 bg-white/6 px-3.5 py-3 text-sm text-white/74">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-semibold text-inverse-text">{entry.kind === 'PAYMENT' ? 'תשלום' : 'החזר'}</span>
+                        <span>{formatCurrency(entry.amount)}</span>
+                      </div>
+                      <div className="mt-1 text-xs text-white/54">
+                        {entry.status} · {formatDate(new Date(entry.createdAt), locale)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap gap-2">
+              {selectedInvoice.status !== 'PAID' ? (
+                <Button onClick={() => settleInvoice(selectedInvoice.id)} disabled={settlingId === selectedInvoice.id}>
+                  {settlingId === selectedInvoice.id ? 'מסלק...' : 'סליקה'}
+                </Button>
+              ) : null}
+              <Button variant="outline" onClick={() => openAuthenticatedFile(`/api/v1/invoices/${selectedInvoice.id}/receipt`)}>
+                <Receipt className="me-2 h-4 w-4" />
+                קבלה
+              </Button>
+              {selectedInvoice.status === 'OVERDUE' ? (
+                <Button
+                  variant="outline"
+                  onClick={() => updateCollections(selectedInvoice.id, { reminderState: 'SENT', collectionStatus: 'PAST_DUE' })}
+                >
+                  נשלחה תזכורת
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </AmsDrawer>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {collectionsSummary && (

@@ -4,13 +4,13 @@ import { useRouter } from 'next/router';
 import { CalendarDays, FileText, Move, ParkingCircle, PhoneCall, Sparkles } from 'lucide-react';
 import { authFetch, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
+import { cn } from '../../lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { EmptyState } from '../../components/ui/empty-state';
 import { FormField, FormErrorSummary } from '../../components/ui/form-field';
 import { Input } from '../../components/ui/input';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { MobileContextBar } from '../../components/ui/mobile-context-bar';
-import { MobileActionHub } from '../../components/ui/mobile-action-hub';
 import { MobilePriorityInbox } from '../../components/ui/mobile-priority-inbox';
 import { MobileCardSkeleton } from '../../components/ui/page-states';
 import { PageHero } from '../../components/ui/page-hero';
@@ -378,25 +378,14 @@ export default function ResidentRequestsPage() {
 
       {view === 'new' ? (
       <>
-      <MobileActionHub
-        mobileHomeEffect
-        title="בחר סוג בקשה"
-        subtitle="בחירה אחת וממשיכים"
-        gridClassName="grid-cols-1 min-[390px]:grid-cols-2 lg:grid-cols-3"
-        items={requestTypes.map((type) => ({
-          id: type.value,
-          label: type.label,
-          description: type.description,
-          icon: type.icon,
-          accent: form.requestType === type.value ? 'primary' : 'neutral',
-          emphasize: form.requestType === type.value,
-          selected: form.requestType === type.value,
-          onClick: () => {
-            setForm((current) => ({ ...current, requestType: type.value }));
-            setFormStep(2);
-            setSubmittedRequestKey(null);
-          },
-        }))}
+      <RequestTypePicker
+        items={requestTypes}
+        selectedValue={form.requestType}
+        onSelect={(value) => {
+          setForm((current) => ({ ...current, requestType: value }));
+          setFormStep(2);
+          setSubmittedRequestKey(null);
+        }}
       />
 
       <div className="grid gap-4 sm:gap-6">
@@ -786,6 +775,79 @@ export default function ResidentRequestsPage() {
       </Card>
       ) : null}
     </div>
+  );
+}
+
+function RequestTypePicker({
+  items,
+  selectedValue,
+  onSelect,
+}: {
+  items: readonly typeof requestTypes;
+  selectedValue: string;
+  onSelect: (value: string) => void;
+}) {
+  return (
+    <section className="space-y-3" aria-label="בחר סוג בקשה">
+      <div className="text-right">
+        <h2 className="text-[15px] font-semibold text-foreground">בחר סוג בקשה</h2>
+        <p className="mt-1 text-[12px] leading-5 text-secondary-foreground">בחירה אחת וממשיכים</p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const selected = item.value === selectedValue;
+
+          return (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => onSelect(item.value)}
+              aria-pressed={selected}
+              className={cn(
+                'touch-target group w-full rounded-[26px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(250,247,241,0.94)_100%)] p-4 text-right shadow-[0_16px_34px_rgba(44,28,9,0.07)] transition-[transform,border-color,box-shadow,background] duration-200 active:scale-[0.99]',
+                selected
+                  ? 'border-primary/28 shadow-[0_20px_38px_rgba(188,136,20,0.16)] ring-1 ring-primary/12'
+                  : 'border-subtle-border hover:border-primary/18 hover:shadow-[0_18px_36px_rgba(44,28,9,0.1)]',
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <span
+                  className={cn(
+                    'inline-flex min-h-[34px] items-center rounded-full border px-3 py-1 text-[12px] font-semibold',
+                    selected
+                      ? 'border-primary/18 bg-primary/10 text-primary'
+                      : 'border-subtle-border bg-background/88 text-secondary-foreground',
+                  )}
+                >
+                  {selected ? 'נבחר' : 'בחר'}
+                </span>
+                <span
+                  className={cn(
+                    'inline-flex h-12 w-12 items-center justify-center rounded-[18px] border',
+                    selected
+                      ? 'border-primary/14 bg-primary/10 text-primary'
+                      : 'border-subtle-border bg-background/88 text-foreground/72',
+                  )}
+                >
+                  <Icon className="h-5 w-5" strokeWidth={1.75} />
+                </span>
+              </div>
+
+              <div className="mt-5">
+                <div className={cn('text-[17px] font-bold leading-6', selected ? 'text-primary' : 'text-foreground')}>
+                  {item.label}
+                </div>
+                <div className="mt-2 text-[14px] leading-6 text-secondary-foreground">{item.description}</div>
+              </div>
+
+              <div className="mt-4 text-[13px] font-semibold text-primary">פתיחה</div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

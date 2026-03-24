@@ -4,13 +4,13 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
-import { MoreHorizontal, X } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
 import { getTokenPayload, normalizeRole } from '../../lib/auth';
 import { useRegisterBottomSurface } from '../../lib/bottom-surface';
 import { getNavigationModel, type NavigationGroup, type NavigationItem } from '../../lib/navigation';
-import { AmsDrawer } from '../ui/ams-drawer';
+import { AmsCommandDrawer, type AmsCommandDrawerItem } from '../ui/ams-command-drawer';
 
 const RECENT_STORAGE_KEY = 'ams-mobile-nav-recent';
 const MAX_MORE_GROUPS = 3;
@@ -62,6 +62,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   const { t } = useLocale();
   const [userRole, setUserRole] = useState<string>('RESIDENT');
   const [moreOpen, setMoreOpen] = useState(false);
+  const [commandQuery, setCommandQuery] = useState('');
   const [mounted, setMounted] = useState(false);
   const [recentItems, setRecentItems] = useState<string[]>([]);
   const { refCallback: navRef } = useRegisterBottomSurface('mobile-bottom-nav', 'essential');
@@ -83,7 +84,49 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   const roleConfig = getNavigationModel(userRole, t);
   const primaryItems = roleConfig.mobilePrimary.slice(0, 4);
   const moreGroups = normalizeMoreGroups(roleConfig.mobileMoreGroups, primaryItems);
-  const recentNavItems = moreGroups.flatMap((group) => group.items).filter((item) => recentItems.includes(item.href));
+  const allCommandItems = [...primaryItems, ...moreGroups.flatMap((group) => group.items)];
+  const recentNavItems = allCommandItems.filter((item, index, items) => {
+    return recentItems.includes(item.href) && items.findIndex((candidate) => candidate.href === item.href) === index;
+  });
+  const topActionItems = primaryItems.map((item) => ({
+    id: item.id,
+    title: item.title,
+    href: item.href,
+    icon: item.icon,
+    hint: item.hint,
+    badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
+  }));
+  const commandSections = [
+    {
+      id: 'inbox',
+      title: 'Inbox',
+      items:
+        unreadNotifications > 0
+          ? [
+              {
+                id: 'notifications',
+                title: t('nav.notifications'),
+                href: '/notifications',
+                icon: roleConfig.mobileMoreGroups.flatMap((group) => group.items).find((item) => item.href === '/notifications')?.icon ?? MoreHorizontal,
+                hint: 'התראות, אישורים ופעולות ממתינות',
+                badge: unreadNotifications > 9 ? '9+' : unreadNotifications,
+              },
+            ]
+          : [],
+    },
+    ...moreGroups.map((group) => ({
+      id: group.id,
+      title: group.title,
+      items: group.items.map((item) => ({
+        id: item.id,
+        title: item.title,
+        href: item.href,
+        icon: item.icon,
+        hint: item.hint,
+        badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
+      })),
+    })),
+  ].filter((section) => section.items.length);
   const isActive = (href: string) => {
     const [path, query] = href.split('?');
     if (query) {
@@ -172,119 +215,39 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
         </div>
       </nav>
 
-      <AmsDrawer
+      <AmsCommandDrawer
         isOpen={moreOpen}
         onOpenChange={setMoreOpen}
         title={t('bottomNav.moreMenu')}
         description="קיצורי דרך משלימים, בלי כפילויות מהסרגל התחתון."
-        className="md:hidden"
-      >
-        <div className="space-y-4 py-2">
-          {recentNavItems.length ? (
-            <div className="space-y-2">
-              <h3 className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/56">Recently used</h3>
-              <div className="space-y-1">
-                {recentNavItems.map((item) => (
-                  <MoreSheetLink
-                    key={`recent-${item.href}`}
-                    item={item}
-                    active={isActive(item.href)}
-                    unreadNotifications={unreadNotifications}
-                    onNavigate={() => {
-                      saveRecentItem(item.href);
-                      setMoreOpen(false);
-                    }}
-                    tone="dark"
-                  />
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {moreGroups.map((group) => (
-            <div key={group.title} className="space-y-2">
-              <h3 className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/56">{group.title}</h3>
-              <div className="space-y-1">
-                {group.items.map((item) => (
-                  <MoreSheetLink
-                    key={item.href}
-                    item={item}
-                    active={isActive(item.href)}
-                    unreadNotifications={unreadNotifications}
-                    onNavigate={() => {
-                      saveRecentItem(item.href);
-                      setMoreOpen(false);
-                    }}
-                    tone="dark"
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </AmsDrawer>
+        query={commandQuery}
+        onQueryChange={setCommandQuery}
+        topActions={topActionItems}
+        recentItems={recentNavItems.map(toCommandItem)}
+        unreadCount={unreadNotifications}
+        sections={commandSections.map((section) => ({
+          ...section,
+          items: section.items.map(toCommandItem),
+        }))}
+        isActive={isActive}
+        onNavigate={(href) => {
+          saveRecentItem(href);
+          setRecentItems(loadRecentItems());
+          setMoreOpen(false);
+          setCommandQuery('');
+        }}
+      />
     </>
   );
 }
 
-function MoreSheetLink({
-  item,
-  active,
-  unreadNotifications,
-  onNavigate,
-  tone = 'light',
-}: {
-  item: NavigationItem;
-  active: boolean;
-  unreadNotifications: number;
-  onNavigate: () => void;
-  tone?: 'light' | 'dark';
-}) {
-  const Icon = item.icon;
-  const isDark = tone === 'dark';
-
-  return (
-    <Link
-      href={item.href}
-      onClick={onNavigate}
-      className={cn(
-        'flex min-h-[48px] items-center gap-3 rounded-2xl border px-3 py-2.5 text-[13px] font-medium transition-colors',
-        isDark
-          ? active
-            ? 'border-primary/18 bg-primary/12 text-inverse-text shadow-[0_14px_34px_rgba(0,0,0,0.22)]'
-            : 'border-white/10 bg-white/6 text-white/82 hover:bg-white/9 active:bg-white/12'
-          : active
-            ? 'surface-action text-foreground'
-            : 'border-subtle-border text-foreground/80 hover:bg-muted/60 active:bg-muted/80',
-      )}
-    >
-      <span
-        className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-          isDark
-            ? active
-              ? 'bg-primary/12 text-primary'
-              : 'bg-white/8 text-white/62'
-            : active
-              ? 'bg-primary/12 text-primary'
-              : 'bg-muted/60 text-muted-foreground',
-        )}
-      >
-        <Icon className="h-4 w-4" strokeWidth={1.75} />
-      </span>
-      <span className="flex-1">
-        <span className="block text-start">{item.title}</span>
-        {item.hint ? (
-          <span className={cn('mt-0.5 block text-[11px] font-normal', isDark ? 'text-white/56' : 'text-secondary-foreground')}>
-            {item.hint}
-          </span>
-        ) : null}
-      </span>
-      {item.href === '/notifications' && unreadNotifications > 0 ? (
-        <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">{unreadNotifications}</span>
-      ) : (
-        <X className={cn('h-4 w-4 rotate-45', isDark ? 'text-white/35' : 'text-muted-foreground')} strokeWidth={1.75} />
-      )}
-    </Link>
-  );
+function toCommandItem(item: NavigationItem & { badge?: React.ReactNode }): AmsCommandDrawerItem {
+  return {
+    id: item.id,
+    title: item.title,
+    href: item.href,
+    icon: item.icon,
+    hint: item.hint,
+    badge: item.badge,
+  };
 }

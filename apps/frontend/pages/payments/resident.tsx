@@ -268,6 +268,8 @@ export default function ResidentPaymentsPage() {
         ariaLabel="Resident payments"
         selectedKey={activeTab}
         onSelectionChange={(key) => setActiveTab(key as 'open' | 'history' | 'methods')}
+        listClassName="grid-cols-3 gap-1.5"
+        panelClassName="pt-3"
         items={[
           {
             key: 'open',

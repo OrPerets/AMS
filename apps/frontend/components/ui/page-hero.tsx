@@ -82,9 +82,9 @@ export function PageHero({
         <div className={cn('absolute inset-x-0 bottom-0 h-20 bg-linear-to-t sm:h-24', isOperational ? 'from-primary/6 to-transparent' : 'from-black/16 to-transparent')} />
       </div>
 
-      <div className="relative grid gap-2.5 p-3 sm:gap-5 sm:p-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(16rem,0.95fr)] lg:gap-8 lg:p-7">
-        <div className="space-y-3 sm:space-y-5">
-          <div className="space-y-2 sm:space-y-3">
+      <div className="relative grid gap-3 p-3 sm:gap-4 sm:p-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(15rem,0.9fr)] lg:gap-6 lg:p-5">
+        <div className="space-y-2.5 sm:space-y-4">
+          <div className="space-y-1.5 sm:space-y-2.5">
             {eyebrow ? <div className="flex flex-wrap items-center gap-2">{eyebrow}</div> : null}
             <div className="space-y-1.5 sm:space-y-2">
               {kicker ? (
@@ -92,24 +92,24 @@ export function PageHero({
                   {kicker}
                 </div>
               ) : null}
-              <h1 className={cn('max-w-[15ch] text-lg font-bold leading-[1.05] tracking-[-0.03em] sm:text-[2.35rem] lg:text-[3rem]', isOperational ? 'text-foreground' : 'text-white')}>
+              <h1 className={cn('max-w-[16ch] text-[1.1rem] font-bold leading-[1.05] tracking-[-0.03em] sm:text-[1.95rem] lg:text-[2.4rem]', isOperational ? 'text-foreground' : 'text-white')}>
                 {title}
               </h1>
               {description ? (
-                <div className={cn('max-w-2xl text-[13px] leading-5 sm:text-[0.95rem] sm:leading-7', isOperational ? 'text-muted-foreground' : 'text-white/76')}>
+                <div className={cn('max-w-2xl text-[13px] leading-5 sm:text-sm sm:leading-6', isOperational ? 'text-muted-foreground' : 'text-white/76')}>
                   {description}
                 </div>
               ) : null}
             </div>
           </div>
 
-          {actions ? <div className="flex flex-wrap gap-2.5">{actions}</div> : null}
+          {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
         </div>
 
         {aside ? (
           <div
             className={cn(
-              'hidden rounded-[24px] p-3.5 md:block sm:p-4',
+              'hidden rounded-[24px] p-3 md:block sm:p-3.5',
               isOperational
                 ? 'border border-subtle-border bg-background/86 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]'
                 : 'border border-white/10 bg-white/8 backdrop-blur-xl',

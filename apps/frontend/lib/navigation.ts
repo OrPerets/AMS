@@ -41,7 +41,7 @@ export type NavigationModel = {
   mobileMoreGroups: NavigationGroup[];
 };
 
-type Translator = (key: string, values?: Record<string, unknown>) => string;
+type Translator = (key: string, values?: Record<string, string | number>) => string;
 
 const supervisionItem: NavigationItem = {
   id: 'supervision',
