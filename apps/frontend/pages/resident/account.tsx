@@ -337,7 +337,7 @@ export default function ResidentAccountPage() {
         animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
         transition={{ duration: 0.34, ease: 'easeOut' }}
       >
-        <div className="resident-metal-panel relative rounded-[32px] px-4 pb-4 pt-4 text-white sm:px-5 sm:pb-5 sm:pt-5">
+        <div className="resident-profile-hero-surface relative rounded-[32px] border px-4 pb-4 pt-4 text-white sm:px-5 sm:pb-5 sm:pt-5">
           <AccountHeroPattern />
           <div className="relative z-10 space-y-4">
             <div className="flex items-start justify-between gap-3">

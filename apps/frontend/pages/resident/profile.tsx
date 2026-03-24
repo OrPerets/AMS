@@ -252,7 +252,7 @@ export default function ResidentProfilePage() {
       >
         <Card className="overflow-hidden border border-white/60 bg-[linear-gradient(180deg,rgba(255,251,245,0.98)_0%,rgba(255,255,255,0.96)_45%,rgba(250,245,237,0.98)_100%)] shadow-[0_28px_70px_rgba(44,28,9,0.12)]">
           <CardBody className="p-0">
-            <div className="relative overflow-hidden rounded-b-[40px] bg-[radial-gradient(circle_at_top_right,rgba(243,185,91,0.35),transparent_28%),linear-gradient(135deg,rgba(32,24,16,0.98)_0%,rgba(76,52,19,0.94)_48%,rgba(207,146,50,0.94)_100%)] px-5 pb-14 pt-5 text-white">
+            <div className="resident-profile-hero-surface relative rounded-b-[40px] px-5 pb-14 pt-5 text-white">
               <HeroPattern />
               <div className="relative z-10 flex items-start justify-between gap-3">
                 <div className="min-w-0 text-right">

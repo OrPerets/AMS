@@ -339,6 +339,18 @@
       linear-gradient(145deg, hsl(27 14% 18%), hsl(30 16% 22%) 52%, hsl(35 48% 33%) 100%);
   }
 
+  .resident-profile-hero-surface {
+    position: relative;
+    overflow: hidden;
+    border-color: rgb(255 255 255 / 0.12);
+    background:
+      radial-gradient(circle at top right, rgb(243 185 91 / 0.28), transparent 28%),
+      linear-gradient(135deg, rgb(32 24 16 / 0.98) 0%, rgb(76 52 19 / 0.94) 48%, rgb(207 146 50 / 0.9) 100%);
+    box-shadow:
+      0 28px 62px -34px rgb(26 17 9 / 0.4),
+      inset 0 1px 0 rgb(255 255 255 / 0.12);
+  }
+
   .dark-surface {
     color: rgb(255 255 255 / 0.96);
   }
@@ -392,6 +404,12 @@
         radial-gradient(circle at top right, hsl(var(--gold-300) / 0.16), transparent 30%),
         linear-gradient(160deg, hsl(28 13% 20%), hsl(30 14% 24%) 55%, hsl(35 42% 35%) 100%);
     }
+
+    .resident-profile-hero-surface {
+      background:
+        radial-gradient(circle at top right, rgb(243 185 91 / 0.24), transparent 30%),
+        linear-gradient(160deg, rgb(35 26 18 / 0.98) 0%, rgb(76 52 19 / 0.94) 54%, rgb(182 128 44 / 0.88) 100%);
+    }
   }
 
   .text-tertiary {
@@ -413,12 +431,17 @@
   .gold-sheen-button {
     position: relative;
     overflow: hidden;
-    border-color: hsl(var(--gold-accent-border) / 0.22);
+    border-color: hsl(var(--gold-accent-border) / 0.18);
     background:
-      linear-gradient(135deg, hsl(var(--gold-sheen-start)) 0%, hsl(var(--gold-sheen-mid)) 44%, hsl(var(--gold-sheen-end)) 100%);
+      linear-gradient(
+        135deg,
+        hsl(var(--gold-sheen-start) / 0.98) 0%,
+        hsl(var(--gold-sheen-mid) / 0.76) 46%,
+        hsl(var(--gold-sheen-end) / 0.9) 100%
+      );
     color: hsl(var(--primary-foreground));
     box-shadow:
-      0 18px 34px -20px hsl(var(--gold-accent-glow) / 0.52),
+      0 18px 34px -22px hsl(var(--gold-accent-glow) / 0.34),
       inset 0 1px 0 rgb(255 255 255 / 0.58);
   }
 
@@ -443,20 +466,31 @@
   .gold-sheen-surface {
     position: relative;
     overflow: hidden;
-    border-color: hsl(var(--gold-accent-border) / 0.18);
+    border-color: hsl(var(--gold-accent-border) / 0.14);
     background:
-      linear-gradient(180deg, hsl(var(--gold-sheen-start) / 0.96) 0%, hsl(var(--card) / 0.96) 64%, hsl(var(--surface-tint) / 0.92) 100%);
+      linear-gradient(
+        180deg,
+        hsl(var(--gold-sheen-start) / 0.9) 0%,
+        hsl(var(--gold-sheen-mid) / 0.14) 18%,
+        hsl(var(--card) / 0.96) 62%,
+        hsl(var(--surface-tint) / 0.92) 100%
+      );
     box-shadow:
-      0 18px 38px -28px hsl(var(--gold-accent-glow) / 0.3),
+      0 18px 38px -30px hsl(var(--gold-accent-glow) / 0.2),
       inset 0 1px 0 rgb(255 255 255 / 0.62);
   }
 
   .gold-active-pill {
-    border-color: hsl(var(--gold-accent-border) / 0.26);
+    border-color: hsl(var(--gold-accent-border) / 0.18);
     background:
-      linear-gradient(180deg, hsl(var(--gold-sheen-start) / 0.98) 0%, hsl(var(--gold-sheen-mid) / 0.62) 56%, hsl(var(--gold-sheen-start) / 0.94) 100%);
+      linear-gradient(
+        180deg,
+        hsl(var(--gold-sheen-start) / 0.98) 0%,
+        hsl(var(--gold-sheen-mid) / 0.42) 56%,
+        hsl(var(--gold-sheen-start) / 0.94) 100%
+      );
     box-shadow:
-      0 16px 32px -26px hsl(var(--gold-accent-glow) / 0.34),
+      0 16px 32px -28px hsl(var(--gold-accent-glow) / 0.24),
       inset 0 1px 0 rgb(255 255 255 / 0.72);
   }
 
@@ -494,13 +528,13 @@
   .resident-metal-panel {
     position: relative;
     overflow: hidden;
-    border-color: hsl(var(--gold-accent-border) / 0.18);
+    border-color: hsl(var(--gold-accent-border) / 0.15);
     background:
-      radial-gradient(circle at top right, hsl(var(--gold-accent-glow) / 0.24), transparent 28%),
-      radial-gradient(circle at bottom left, hsl(var(--gold-sheen-mid) / 0.14), transparent 32%),
+      radial-gradient(circle at top right, hsl(var(--gold-accent-glow) / 0.16), transparent 28%),
+      radial-gradient(circle at bottom left, hsl(var(--gold-sheen-mid) / 0.1), transparent 32%),
       linear-gradient(142deg, rgb(28 20 14 / 0.98) 0%, rgb(56 40 24 / 0.97) 54%, rgb(108 77 35 / 0.96) 100%);
     box-shadow:
-      0 28px 62px -34px rgb(26 17 9 / 0.44),
+      0 28px 62px -36px rgb(26 17 9 / 0.38),
       inset 0 1px 0 rgb(255 255 255 / 0.12);
   }
 }

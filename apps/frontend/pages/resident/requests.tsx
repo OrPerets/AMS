@@ -506,7 +506,48 @@ function RequestTypePicker({
         <p className="mt-1 text-[12px] leading-5 text-secondary-foreground">בחירה אחת וממשיכים</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 min-[390px]:grid-cols-2">
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:hidden">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const selected = item.value === selectedValue;
+
+          return (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => onSelect(item.value)}
+              aria-pressed={selected}
+              className={cn(
+                'touch-target mobile-segmented-shell flex min-w-[132px] shrink-0 items-center gap-2 rounded-[20px] border px-3 py-3 text-right transition-[transform,border-color,box-shadow,background] duration-200 active:scale-[0.99]',
+                selected
+                  ? 'gold-active-pill gold-current-pulse border-primary/22 text-foreground'
+                  : 'border-subtle-border text-secondary-foreground',
+              )}
+            >
+              <span
+                className={cn(
+                  'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] border',
+                  selected
+                    ? 'border-primary/16 bg-primary/10 text-primary'
+                    : 'border-subtle-border bg-background/88 text-foreground/72',
+                )}
+              >
+                <Icon className="h-4.5 w-4.5" strokeWidth={1.75} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className={cn('block truncate text-sm font-semibold', selected ? 'text-foreground' : 'text-foreground')}>
+                  {item.label}
+                </span>
+                <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                  {item.description}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="hidden grid-cols-1 gap-3 min-[390px]:grid-cols-2 sm:grid">
         {items.map((item) => {
           const Icon = item.icon;
           const selected = item.value === selectedValue;
