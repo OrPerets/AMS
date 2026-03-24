@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { CalendarDays, FileText, Move, ParkingCircle, PhoneCall, Sparkles } from 'lucide-react';
@@ -11,10 +11,10 @@ import { FormField, FormErrorSummary } from '../../components/ui/form-field';
 import { Input } from '../../components/ui/input';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { MobileContextBar } from '../../components/ui/mobile-context-bar';
-import { MobilePriorityInbox } from '../../components/ui/mobile-priority-inbox';
 import { MobileCardSkeleton } from '../../components/ui/page-states';
 import { PageHero } from '../../components/ui/page-hero';
 import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
+import { MobileInsightWidget } from '../../components/ui/mobile-insight-widget';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 import { PullToRefreshIndicator } from '../../components/ui/pull-to-refresh-indicator';
 import { SectionHeader } from '../../components/ui/section-header';
@@ -112,6 +112,7 @@ export default function ResidentRequestsPage() {
   const [submittedRequestKey, setSubmittedRequestKey] = useState<string | null>(null);
   const [submittedRequestType, setSubmittedRequestType] = useState<string | null>(null);
   const [view, setView] = useState<'new' | 'history'>('new');
+  const formSectionRef = useRef<HTMLDivElement | null>(null);
 
   const activeType = requestTypes.find((item) => item.value === form.requestType)!;
   const { pullDistance, isRefreshing } = usePullToRefresh({
@@ -133,6 +134,14 @@ export default function ResidentRequestsPage() {
     const nextView = router.query.view === 'history' ? 'history' : 'new';
     setView(nextView);
   }, [router.isReady, router.query.view]);
+
+  useEffect(() => {
+    if (view !== 'new' || formStep !== 2) return;
+    const handle = requestAnimationFrame(() => {
+      formSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(handle);
+  }, [form.requestType, formStep, view]);
 
   async function loadHistory() {
     try {
@@ -271,6 +280,11 @@ export default function ResidentRequestsPage() {
   ];
   const selectedTypeDescription = getRequestExpectations(form.requestType);
   const submittedTypeDescription = getRequestExpectations(submittedRequestType || form.requestType);
+  const fieldLabels = {
+    subject: 'נושא',
+    message: 'פרטי הבקשה',
+    requestedDate: 'תאריך מבוקש',
+  };
 
   return (
     <div className="space-y-5 pb-4 sm:space-y-8">
@@ -284,7 +298,35 @@ export default function ResidentRequestsPage() {
             { id: 'closed', label: 'נסגרו', value: closedRequests.length, tone: 'default' },
           ]}
         />
-       
+        <div className="grid grid-cols-2 gap-3">
+          <MobileInsightWidget
+            title="מעקב חי"
+            value={openRequests.length}
+            hint={openRequests[0] ? openRequests[0].subject.replace(/^[A-Z_]+:\s*/, '') : 'אין בקשה פתוחה כרגע'}
+            tone={openRequests.length ? 'warning' : 'success'}
+            href="/resident/requests?view=history"
+            sparkline={[openRequests.length, closedRequests.length, history.length]}
+            pulse={openRequests.length > 0}
+          />
+          <MobileInsightWidget
+            title="הבקשה הבאה"
+            value={activeType.label}
+            hint={`${selectedTypeDescription.responseWindow} · ${selectedTypeDescription.owner}`}
+            tone="default"
+            onClick={() => {
+              setView('new');
+              setFormStep(2);
+              formSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+            sparkline={[
+              form.requestType === 'MOVING' ? 82 : 24,
+              form.requestType === 'PARKING' ? 72 : 28,
+              form.requestType === 'DOCUMENT' ? 54 : 18,
+              form.requestType === 'CONTACT_UPDATE' ? 42 : 16,
+              form.requestType === 'GENERAL' ? 34 : 14,
+            ]}
+          />
+        </div>
       </div>
 
       <div className="hidden md:block">
@@ -327,10 +369,36 @@ export default function ResidentRequestsPage() {
         items={priorityItems}
       /> */}
 
+      {view === 'history' && openRequests[0] ? (
+        <PrimaryActionCard
+          eyebrow="בטיפול עכשיו"
+          title={openRequests[0].subject.replace(/^[A-Z_]+:\s*/, '')}
+          description={openRequests[0].statusNotes || t('residentRequests.priority.waitingReason')}
+          ctaLabel="פתח מעקב"
+          onClick={() => {
+            setView('history');
+          }}
+          tone={openRequests[0].status === 'SUBMITTED' ? 'warning' : 'default'}
+          visualStyle="resident"
+          secondaryAction={
+            <div className="flex flex-wrap items-center gap-2 text-xs text-secondary-foreground">
+              <span>{t('common.updatedAt', { value: formatDate(new Date(openRequests[0].updatedAt || openRequests[0].createdAt), locale) })}</span>
+              <span>{getResidentRequestStatusLabel(openRequests[0].status)}</span>
+            </div>
+          }
+        />
+      ) : null}
+
       <AmsTabs
         ariaLabel="Resident requests"
         selectedKey={view}
-        onSelectionChange={(key) => setView(key as 'new' | 'history')}
+        onSelectionChange={(key) => {
+          const nextView = key as 'new' | 'history';
+          setView(nextView);
+          if (nextView === 'new') {
+            setFormStep(2);
+          }
+        }}
         items={[
           { key: 'new', title: 'בקשה חדשה' },
           { key: 'history', title: 'מעקב', badge: openRequests.length || null },
@@ -375,8 +443,214 @@ export default function ResidentRequestsPage() {
         }}
       />
 
-      <div className="grid gap-4 sm:gap-6">
-      
+      <div ref={formSectionRef} className="grid gap-4 sm:gap-6">
+        <PrimaryActionCard
+          eyebrow="נבחר עכשיו"
+          title={activeType.label}
+          description={`${selectedTypeDescription.description} ${selectedTypeDescription.afterSubmit}`}
+          ctaLabel={submittedRequestKey ? 'שלח בקשה נוספת' : 'מלא את פרטי הבקשה'}
+          onClick={() => {
+            setSubmittedRequestKey(null);
+            setFormStep(2);
+            formSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+          tone="default"
+          visualStyle="resident"
+          secondaryAction={
+            <div className="flex flex-wrap items-center gap-2 text-xs text-secondary-foreground">
+              <span>זמן תגובה: {selectedTypeDescription.responseWindow}</span>
+              <span>מטפל: {selectedTypeDescription.owner}</span>
+            </div>
+          }
+        />
+
+        <Card variant="elevated">
+          <CardHeader className="space-y-2 p-4 sm:p-6">
+            <CardTitle className="text-right text-lg">פרטי הבקשה</CardTitle>
+            <CardDescription className="text-right">
+              ממלאים רק את מה שנדרש עבור {activeType.label}. אפשר לשלוח ישירות מהטלפון.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5 p-4 pt-0 sm:p-6 sm:pt-0">
+            <FormErrorSummary errors={visibleFormErrors} fieldLabels={fieldLabels} />
+
+            {form.requestType === 'MOVING' ? (
+              <div className="space-y-4">
+                <FormField label="סוג מעבר">
+                  <AmsSegmentedChoice
+                    value={form.movingDirection}
+                    options={movingDirectionOptions}
+                    onChange={(value) => setForm((current) => ({ ...current, movingDirection: value as typeof emptyForm.movingDirection }))}
+                  />
+                </FormField>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField label="תאריך מבוקש" error={shouldShowError('requestedDate') ? formErrors.requestedDate : ''}>
+                    <Input
+                      name="requestedDate"
+                      type="date"
+                      value={form.requestedDate}
+                      onChange={(event) => setForm((current) => ({ ...current, requestedDate: event.target.value }))}
+                      onBlur={() => setFormTouched((current) => ({ ...current, requestedDate: true }))}
+                    />
+                  </FormField>
+
+                  <FormField label="חלון זמן מועדף">
+                    <Input
+                      name="movingWindow"
+                      placeholder="למשל 08:00-11:00"
+                      value={form.movingWindow}
+                      onChange={(event) => setForm((current) => ({ ...current, movingWindow: event.target.value }))}
+                    />
+                  </FormField>
+                </div>
+
+                <FormField label="שמירת מעלית">
+                  <AmsSegmentedChoice
+                    value={form.elevatorNeeded}
+                    options={elevatorOptions}
+                    onChange={(value) => setForm((current) => ({ ...current, elevatorNeeded: value as typeof emptyForm.elevatorNeeded }))}
+                    columns={1}
+                  />
+                </FormField>
+              </div>
+            ) : null}
+
+            {form.requestType === 'PARKING' ? (
+              <div className="space-y-4">
+                <FormField label="סוג בקשת חניה">
+                  <AmsSegmentedChoice
+                    value={form.parkingRequestType}
+                    options={parkingRequestOptions}
+                    onChange={(value) => setForm((current) => ({ ...current, parkingRequestType: value as typeof emptyForm.parkingRequestType }))}
+                  />
+                </FormField>
+
+                <FormField label="מספר רכב">
+                  <Input
+                    name="plateNumber"
+                    placeholder="123-45-678"
+                    value={form.plateNumber}
+                    onChange={(event) => setForm((current) => ({ ...current, plateNumber: event.target.value }))}
+                  />
+                </FormField>
+              </div>
+            ) : null}
+
+            {form.requestType === 'DOCUMENT' ? (
+              <FormField label="איזה מסמך צריך">
+                <AmsSegmentedChoice
+                  value={form.documentCategory}
+                  options={documentCategoryOptions}
+                  onChange={(value) => setForm((current) => ({ ...current, documentCategory: value as typeof emptyForm.documentCategory }))}
+                />
+              </FormField>
+            ) : null}
+
+            {form.requestType === 'CONTACT_UPDATE' ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField label="טלפון חדש">
+                  <Input
+                    name="nextPhone"
+                    placeholder="050-1234567"
+                    value={form.nextPhone}
+                    onChange={(event) => setForm((current) => ({ ...current, nextPhone: event.target.value }))}
+                  />
+                </FormField>
+
+                <FormField label="אימייל חדש">
+                  <Input
+                    name="nextEmail"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={form.nextEmail}
+                    onChange={(event) => setForm((current) => ({ ...current, nextEmail: event.target.value }))}
+                  />
+                </FormField>
+
+                <FormField className="sm:col-span-2" label="איש קשר נוסף">
+                  <Input
+                    name="extraContact"
+                    placeholder="שם ותפקיד, אם צריך"
+                    value={form.extraContact}
+                    onChange={(event) => setForm((current) => ({ ...current, extraContact: event.target.value }))}
+                  />
+                </FormField>
+              </div>
+            ) : null}
+
+            <div className="grid gap-4">
+              <FormField label="נושא" required error={shouldShowError('subject') ? formErrors.subject : ''}>
+                <Input
+                  name="subject"
+                  placeholder={`למשל: ${activeType.label} לבניין`}
+                  value={form.subject}
+                  onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))}
+                  onBlur={() => setFormTouched((current) => ({ ...current, subject: true }))}
+                />
+              </FormField>
+
+              <FormField label="פרטי הבקשה" required error={shouldShowError('message') ? formErrors.message : ''}>
+                <Textarea
+                  name="message"
+                  rows={5}
+                  placeholder="כתוב בקצרה מה צריך, מתי, ולמי חשוב לעדכן."
+                  value={form.message}
+                  onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))}
+                  onBlur={() => setFormTouched((current) => ({ ...current, message: true }))}
+                />
+              </FormField>
+            </div>
+
+            {submitError ? (
+              <InlineErrorPanel
+                title="לא הצלחנו לשלוח את הבקשה"
+                description={submitError}
+                onRetry={submitRequest}
+              />
+            ) : null}
+
+            <AmsDisclosure
+              selectionMode="single"
+              defaultExpandedKeys={['after-submit']}
+              items={[
+                {
+                  key: 'after-submit',
+                  title: 'מה קורה אחרי השליחה',
+                  subtitle: selectedTypeDescription.nextStep,
+                  content: (
+                    <div className="space-y-2">
+                      <div>מטפל: {selectedTypeDescription.owner}</div>
+                      <div>זמן תגובה משוער: {selectedTypeDescription.responseWindow}</div>
+                      <div>{selectedTypeDescription.afterSubmit}</div>
+                    </div>
+                  ),
+                },
+              ]}
+            />
+
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setForm(emptyForm);
+                  setFormTouched({});
+                  setFormSubmitted(false);
+                  setSubmitError(null);
+                  setSubmittedRequestKey(null);
+                  setFormStep(1);
+                }}
+              >
+                נקה טופס
+              </Button>
+
+              <Button type="button" onClick={submitRequest} disabled={submitting}>
+                {submitting ? 'שולח...' : 'שלח בקשה'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
       </>
       ) : null}
@@ -499,6 +773,10 @@ function RequestTypePicker({
   selectedValue: string;
   onSelect: (value: string) => void;
 }) {
+  const selectItem = (value: string) => {
+    onSelect(value);
+  };
+
   return (
     <section className="space-y-3" aria-label="בחר סוג בקשה">
       <div className="text-right">
@@ -515,7 +793,8 @@ function RequestTypePicker({
             <button
               key={item.value}
               type="button"
-              onClick={() => onSelect(item.value)}
+              onMouseDown={() => selectItem(item.value)}
+              onClick={() => selectItem(item.value)}
               aria-pressed={selected}
               className={cn(
                 'touch-target mobile-segmented-shell flex min-w-[132px] shrink-0 items-center gap-2 rounded-[20px] border px-3 py-3 text-right transition-[transform,border-color,box-shadow,background] duration-200 active:scale-[0.99]',
@@ -556,7 +835,8 @@ function RequestTypePicker({
             <button
               key={item.value}
               type="button"
-              onClick={() => onSelect(item.value)}
+              onMouseDown={() => selectItem(item.value)}
+              onClick={() => selectItem(item.value)}
               aria-pressed={selected}
               className={cn(
                 'touch-target group w-full rounded-[26px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(250,247,241,0.94)_100%)] p-4 text-right shadow-[0_16px_34px_rgba(44,28,9,0.07)] transition-[transform,border-color,box-shadow,background] duration-200 active:scale-[0.99]',
