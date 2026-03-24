@@ -366,7 +366,7 @@ export default function ResidentAccountPage() {
         ]}
       />
 
-      <PrimaryActionCard
+      {/* <PrimaryActionCard
         eyebrow={`${residentName} · ${residentPrimaryAction.eyebrow}`}
         title={residentPrimaryAction.title}
         description={residentPrimaryAction.description}
@@ -375,19 +375,13 @@ export default function ResidentAccountPage() {
         tone={residentPrimaryAction.tone}
         visualStyle="resident"
         className="border-s-[5px] shadow-[0_24px_58px_rgba(84,58,15,0.16)]"
-        secondaryAction={
-          <Button variant="outline" size="sm" className="rounded-full px-4" asChild>
-            <Link href={primaryBuilding ? '/resident/building' : '/support'}>
-              {primaryBuilding ? 'פרטי בניין' : 'צור קשר'}
-            </Link>
-          </Button>
-        }
-      />
+        
+      /> */}
 
       <MobileActionHub
         mobileHomeEffect
         title={labels.actions}
-        subtitle="תשלום, בקשה, קריאה ומסמכים."
+        subtitle=""
         items={actionItems}
         layout="hierarchy"
       />

@@ -332,7 +332,7 @@ export default function CreateCall() {
           <CardContent>
             <AmsSegmentedChoice
               value={severity}
-              columns={1}
+              className="grid-cols-3 min-[390px]:grid-cols-3 gap-1.5 [&>button]:px-2.5 [&>button]:py-2 [&>button_span]:text-[13px] [&>button_div:last-child]:text-[11px] [&>button_div:last-child]:leading-4"
               onChange={(value) => setSeverity(value as 'NORMAL' | 'HIGH' | 'URGENT')}
               options={[
                 { value: 'URGENT', label: getSeverityLabel('URGENT'), description: getSeverityHint('URGENT') },

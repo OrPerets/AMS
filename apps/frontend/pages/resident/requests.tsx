@@ -284,20 +284,7 @@ export default function ResidentRequestsPage() {
             { id: 'closed', label: 'נסגרו', value: closedRequests.length, tone: 'default' },
           ]}
         />
-        <PrimaryActionCard
-          mobileHomeEffect
-          eyebrow="שירות עצמי"
-          title={view === 'history' ? 'מעקב בקשות' : 'בקשה חדשה'}
-          description={view === 'history' ? 'כל העדכונים במקום אחד.' : 'בחר סוג, מלא קצר, שלח.'}
-          ctaLabel={view === 'history' ? 'פתח מעקב' : 'פתח בקשה'}
-          onClick={() => setView('new')}
-          tone={openRequests.length ? 'warning' : 'default'}
-          secondaryAction={
-            <Button asChild variant="outline" size="sm">
-              <Link href="/create-call">קריאת תחזוקה</Link>
-            </Button>
-          }
-        />
+       
       </div>
 
       <div className="hidden md:block">
@@ -334,11 +321,11 @@ export default function ResidentRequestsPage() {
         />
       </div>
 
-      <MobilePriorityInbox
+      {/* <MobilePriorityInbox
         title="מה בטיפול"
         subtitle="עד שני פריטים שחשוב לפתוח עכשיו"
         items={priorityItems}
-      />
+      /> */}
 
       <AmsTabs
         ariaLabel="Resident requests"
@@ -389,282 +376,7 @@ export default function ResidentRequestsPage() {
       />
 
       <div className="grid gap-4 sm:gap-6">
-        <Card variant="elevated">
-          <CardHeader>
-            <CardTitle>{formStep === 1 ? 'ממלאים קצר' : activeType.label}</CardTitle>
-            <CardDescription>{selectedTypeDescription.description}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-2 sm:grid-cols-3">
-              <div className={`rounded-[18px] border px-3 py-2.5 text-sm ${formStep >= 1 ? 'border-primary/25 bg-primary/8 text-foreground' : 'border-subtle-border bg-muted/15 text-muted-foreground'}`}>
-                1. בחרת
-              </div>
-              <div className={`rounded-[18px] border px-3 py-2.5 text-sm ${formStep >= 2 ? 'border-primary/25 bg-primary/8 text-foreground' : 'border-subtle-border bg-muted/15 text-muted-foreground'}`}>
-                2. ממלאים
-              </div>
-              <div className="rounded-[18px] border border-subtle-border bg-muted/15 px-3 py-2.5 text-sm text-muted-foreground">
-                3. עוקבים
-              </div>
-            </div>
-
-            <SectionHeader
-              title="פרטי הפנייה"
-              subtitle="רק מה שצריך עכשיו"
-              meta={formStep === 1 ? 'בחר סוג בקשה כדי להמשיך' : 'טופס ממוקד'}
-            />
-
-            <AmsDisclosure
-              selectionMode="single"
-              defaultExpandedKeys={['after-submit']}
-              items={[
-                {
-                  key: 'after-submit',
-                  title: 'אחרי השליחה',
-                  subtitle: selectedTypeDescription.nextStep,
-                  content: (
-                    <div className="rounded-[18px] border border-subtle-border bg-background/88 px-3 py-3 text-sm text-secondary-foreground">
-                      {selectedTypeDescription.afterSubmit}
-                    </div>
-                  ),
-                },
-              ]}
-            />
-
-            {formStep === 1 ? (
-              <EmptyState
-                type="action"
-                size="sm"
-                title="בחר סוג בקשה כדי להמשיך"
-                description="אחר כך נציג רק את השדות הרלוונטיים."
-              />
-            ) : null}
-
-            {formStep === 2 && visibleFormErrors.length > 0 ? (
-              <FormErrorSummary
-                errors={visibleFormErrors}
-                fieldLabels={{ subject: 'נושא', message: 'פירוט הבקשה', requestedDate: 'תאריך מבוקש' }}
-                title={`${visibleFormErrors.length > 1 ? `${visibleFormErrors.length} שדות` : 'שדה'} דורשים תיקון`}
-              />
-            ) : null}
-
-            {formStep === 2 && submitError ? (
-              <div className="flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
-                {submitError}
-              </div>
-            ) : null}
-
-            {formStep === 2 ? (
-              <>
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                label="נושא"
-                description="שורה קצרה"
-                error={shouldShowError('subject') ? formErrors.subject || undefined : undefined}
-                required
-              >
-                <Input
-                  id="subject"
-                  name="subject"
-                  placeholder="למשל: תיאום מעבר"
-                  value={form.subject}
-                  onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))}
-                  onBlur={() => setFormTouched((prev) => ({ ...prev, subject: true }))}
-                />
-              </FormField>
-
-              <FormField
-                label="תאריך מבוקש"
-                description="אם יש תאריך יעד"
-                error={shouldShowError('requestedDate') ? formErrors.requestedDate || undefined : undefined}
-              >
-                <Input
-                  id="requestedDate"
-                  name="requestedDate"
-                  type="date"
-                  value={form.requestedDate}
-                  onChange={(event) => setForm((current) => ({ ...current, requestedDate: event.target.value }))}
-                  onBlur={() => setFormTouched((prev) => ({ ...prev, requestedDate: true }))}
-                />
-              </FormField>
-            </div>
-
-            {form.requestType === 'MOVING' ? (
-              <AmsDisclosure
-                selectionMode="single"
-                defaultExpandedKeys={['moving']}
-                items={[
-                  {
-                    key: 'moving',
-                    title: 'פרטי מעבר',
-                    subtitle: 'כניסה, חלון זמן ומעלית שירות.',
-                    content: (
-                      <div className="grid gap-4 md:grid-cols-3">
-                        <FormField label="סוג מעבר" description="כניסה או יציאה מהנכס.">
-                          <AmsSegmentedChoice
-                            value={form.movingDirection}
-                            options={movingDirectionOptions}
-                            onChange={(value) => setForm((current) => ({ ...current, movingDirection: value }))}
-                          />
-                        </FormField>
-
-                        <FormField label="שעה" description="למשל 08:00-11:00">
-                          <Input
-                            placeholder="08:00-11:00"
-                            value={form.movingWindow}
-                            onChange={(event) => setForm((current) => ({ ...current, movingWindow: event.target.value }))}
-                          />
-                        </FormField>
-
-                        <FormField label="מעלית שירות" description="כן או לא">
-                          <AmsSegmentedChoice
-                            value={form.elevatorNeeded}
-                            options={elevatorOptions}
-                            onChange={(value) => setForm((current) => ({ ...current, elevatorNeeded: value }))}
-                          />
-                        </FormField>
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-            ) : null}
-
-            {form.requestType === 'PARKING' ? (
-              <AmsDisclosure
-                selectionMode="single"
-                defaultExpandedKeys={['parking']}
-                items={[
-                  {
-                    key: 'parking',
-                    title: 'פרטי חניה',
-                    subtitle: 'סוג הבקשה ומספר רכב אם צריך.',
-                    content: (
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <FormField label="סוג בקשה" description="מה צריך?">
-                          <AmsSegmentedChoice
-                            value={form.parkingRequestType}
-                            options={parkingRequestOptions}
-                            onChange={(value) => setForm((current) => ({ ...current, parkingRequestType: value }))}
-                            columns={1}
-                          />
-                        </FormField>
-
-                        <FormField label="מספר רכב" description="אם רלוונטי">
-                          <Input
-                            placeholder="12-345-67"
-                            value={form.plateNumber}
-                            onChange={(event) => setForm((current) => ({ ...current, plateNumber: event.target.value }))}
-                          />
-                        </FormField>
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-            ) : null}
-
-            {form.requestType === 'DOCUMENT' ? (
-              <AmsDisclosure
-                selectionMode="single"
-                defaultExpandedKeys={['document']}
-                items={[
-                  {
-                    key: 'document',
-                    title: 'סוג מסמך',
-                    subtitle: 'בחירה אחת וממשיכים.',
-                    content: (
-                      <FormField label="סוג מסמך" description="בחר סוג אחד">
-                        <AmsSegmentedChoice
-                          value={form.documentCategory}
-                          options={documentCategoryOptions}
-                          onChange={(value) => setForm((current) => ({ ...current, documentCategory: value }))}
-                        />
-                      </FormField>
-                    ),
-                  },
-                ]}
-              />
-            ) : null}
-
-            {form.requestType === 'CONTACT_UPDATE' ? (
-              <AmsDisclosure
-                selectionMode="single"
-                defaultExpandedKeys={['contact']}
-                items={[
-                  {
-                    key: 'contact',
-                    title: 'פרטי קשר',
-                    subtitle: 'עדכון טלפון, אימייל או איש קשר נוסף.',
-                    content: (
-                      <div className="grid gap-4 md:grid-cols-3">
-                        <FormField label="טלפון חדש">
-                          <Input
-                            type="tel"
-                            inputMode="tel"
-                            placeholder="05X-XXXXXXX"
-                            value={form.nextPhone}
-                            onChange={(event) => setForm((current) => ({ ...current, nextPhone: event.target.value }))}
-                          />
-                        </FormField>
-                        <FormField label="אימייל חדש">
-                          <Input
-                            type="email"
-                            inputMode="email"
-                            placeholder="name@example.com"
-                            value={form.nextEmail}
-                            onChange={(event) => setForm((current) => ({ ...current, nextEmail: event.target.value }))}
-                          />
-                        </FormField>
-                        <FormField label="איש קשר נוסף" description="אם צריך">
-                          <Input
-                            placeholder="שם וטלפון"
-                            value={form.extraContact}
-                            onChange={(event) => setForm((current) => ({ ...current, extraContact: event.target.value }))}
-                          />
-                        </FormField>
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-            ) : null}
-
-              <FormField
-                label="פירוט הבקשה"
-                description="מה צריך שנעשה?"
-                error={shouldShowError('message') ? formErrors.message || undefined : undefined}
-                required
-              >
-              <Textarea
-                id="message"
-                name="message"
-                rows={5}
-                placeholder="למשל: צריך לתאם מעלית שירות ליום המעבר."
-                value={form.message}
-                onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))}
-                onBlur={() => setFormTouched((prev) => ({ ...prev, message: true }))}
-                className="sm:min-h-[10rem]"
-              />
-            </FormField>
-
-            <div className="flex flex-col gap-3 rounded-xl sm:rounded-[20px] border border-subtle-border bg-muted/30 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4 sm:py-4">
-              <div className="space-y-0.5 sm:space-y-1">
-                <div className="text-xs sm:text-sm font-semibold text-foreground">בקשת {activeType.label}</div>
-                <div className="text-xs sm:text-sm text-muted-foreground">{selectedTypeDescription.nextStep}</div>
-              </div>
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                <Button variant="outline" onClick={() => setFormStep(1)} className="w-full rounded-full sm:w-auto">
-                  חזרה לבחירה
-                </Button>
-                <Button onClick={submitRequest} disabled={submitting || Boolean(formErrors.subject || formErrors.message)} className="w-full sm:w-auto">
-                  {submitting ? 'שולח...' : 'שלח בקשה'}
-                </Button>
-              </div>
-            </div>
-              </>
-            ) : null}
-          </CardContent>
-        </Card>
+      
       </div>
       </>
       ) : null}
@@ -783,7 +495,7 @@ function RequestTypePicker({
   selectedValue,
   onSelect,
 }: {
-  items: readonly typeof requestTypes;
+  items: typeof requestTypes;
   selectedValue: string;
   onSelect: (value: string) => void;
 }) {

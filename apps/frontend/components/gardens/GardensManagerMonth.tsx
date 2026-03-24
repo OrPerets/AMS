@@ -1,13 +1,14 @@
-import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
-import { BellRing, CalendarDays, Download, FileCheck2, Undo2, Users } from 'lucide-react';
+import { BellRing, Download, FileCheck2, Undo2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent } from '../ui/card';
 import { EmptyState } from '../ui/empty-state';
+import { MobileMetricStrip } from '../ui/mobile-metric-strip';
 import { TableListSkeleton } from '../ui/page-states';
 import { PageHero } from '../ui/page-hero';
+import { RosterCard } from '../ui/roster-card';
 import { SectionHeader } from '../ui/section-header';
 import { toast } from '../ui/use-toast';
 import { GardensModuleShell } from './GardensModuleShell';
@@ -26,6 +27,7 @@ export function GardensManagerMonth({ plan }: { plan: string }) {
   const [dashboard, setDashboard] = useState<GardensManagerDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [reminding, setReminding] = useState(false);
+  const [workerReminderId, setWorkerReminderId] = useState<number | null>(null);
   const role = getEffectiveRole();
 
   const load = async () => {
@@ -76,6 +78,27 @@ export function GardensManagerMonth({ plan }: { plan: string }) {
       });
     } finally {
       setReminding(false);
+    }
+  };
+
+  const remindWorker = async (workerProfileId: number, workerName: string) => {
+    setWorkerReminderId(workerProfileId);
+    try {
+      await sendGardensReminders(plan, { workerProfileIds: [workerProfileId] });
+      toast({
+        title: 'תזכורת נשלחה',
+        description: `נשלחה תזכורת ל-${workerName}.`,
+        variant: 'success',
+      });
+      await load();
+    } catch {
+      toast({
+        title: 'שליחת התזכורת נכשלה',
+        description: 'נסו שוב בעוד רגע.',
+        variant: 'destructive',
+      });
+    } finally {
+      setWorkerReminderId(null);
     }
   };
 
@@ -135,26 +158,44 @@ export function GardensManagerMonth({ plan }: { plan: string }) {
           }
         />
 
-        <section className="grid gap-4 lg:grid-cols-4">
-          {[
-            { label: 'הוגשו', value: dashboard.stats.submitted, icon: FileCheck2 },
-            { label: 'אושרו', value: dashboard.stats.approved, icon: CalendarDays },
-            { label: 'נדרש עדכון', value: dashboard.stats.needsChanges, icon: BellRing },
-            { label: 'ימי שיבוץ', value: dashboard.stats.assignments, icon: Users },
-          ].map((item) => (
-            <Card key={item.label} variant="metric">
-              <CardContent className="flex items-center justify-between gap-4 p-5">
-                <div>
-                  <div className="text-xs text-muted-foreground">{item.label}</div>
-                  <div className="mt-2 text-3xl font-black">{item.value}</div>
-                </div>
-                <div className="rounded-[18px] border border-primary/12 bg-primary/8 p-3 text-primary">
-                  <item.icon className="h-5 w-5" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </section>
+        <MobileMetricStrip
+          roleKey={role === 'PM' ? 'PM' : 'ADMIN'}
+          metrics={[
+            {
+              id: 'submitted',
+              label: 'הוגשו',
+              value: dashboard.stats.submitted,
+              hint: `${dashboard.stats.workers} עובדים בחודש הפעיל`,
+              tone: dashboard.stats.needsChanges > 0 ? 'warning' : 'success',
+              href: '#gardens-approvals',
+            },
+            {
+              id: 'needs-changes',
+              label: 'נדרש עדכון',
+              value: dashboard.stats.needsChanges,
+              hint: reminderSummary > 0 ? `${reminderSummary} ממתינים לתזכורת או שינוי` : 'אין עובדים שמחכים להשלמה',
+              tone: dashboard.stats.needsChanges > 0 ? 'warning' : 'success',
+              href: '#gardens-approvals',
+            },
+          ]}
+          quickActions={[
+            {
+              id: 'approved',
+              title: 'אושרו',
+              value: dashboard.stats.approved,
+              subtitle: 'עובדים שאושרו',
+              href: '#gardens-approvals',
+              tone: 'success',
+            },
+            {
+              id: 'assignments',
+              title: 'שיבוצים',
+              value: dashboard.stats.assignments,
+              subtitle: 'ימי עבודה בחודש',
+              href: '#gardens-reports',
+            },
+          ]}
+        />
 
         <section id="gardens-approvals" className="space-y-4">
           <SectionHeader
@@ -172,72 +213,71 @@ export function GardensManagerMonth({ plan }: { plan: string }) {
         ) : (
           <div className="grid gap-4 xl:grid-cols-2">
             {dashboard.workers.map((worker) => (
-              <Card key={worker.workerProfileId} variant="action">
-                <CardHeader className="space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap gap-2">
-                        <GardensStatusBadge status={worker.status} />
-                        {worker.assignmentCount > 0 ? (
-                          <Badge variant="outline">{worker.assignmentCount} ימים שובצו</Badge>
-                        ) : (
-                          <Badge variant="outline">ללא שיבוצים</Badge>
-                        )}
-                      </div>
-                      <CardTitle>{worker.displayName}</CardTitle>
-                      <CardDescription>
-                        {worker.teamName || 'ללא צוות'} | {worker.email}
-                      </CardDescription>
-                    </div>
-                    <div className="rounded-[18px] border border-primary/12 bg-primary/8 p-3 text-primary">
-                      <Users className="h-5 w-5" />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-[20px] border border-subtle-border/80 bg-background/75 p-4">
-                      <div className="text-xs text-muted-foreground">הוגש</div>
-                      <div className="mt-2 text-sm font-semibold">
-                        {worker.submittedAt ? formatDateLabel(worker.submittedAt, { dateStyle: 'medium', timeStyle: 'short' }) : 'עדיין לא'}
-                      </div>
-                    </div>
-                    <div className="rounded-[20px] border border-subtle-border/80 bg-background/75 p-4">
-                      <div className="text-xs text-muted-foreground">תזכורת אחרונה</div>
-                      <div className="mt-2 text-sm font-semibold">
-                        {worker.lastReminderAt ? formatDateLabel(worker.lastReminderAt, { dateStyle: 'medium', timeStyle: 'short' }) : 'לא נשלחה'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {worker.reviewNote ? (
-                    <div className="rounded-[20px] border border-warning/20 bg-warning/8 p-4 text-sm leading-6 text-foreground">
+              <RosterCard
+                key={worker.workerProfileId}
+                title={worker.displayName}
+                subtitle={`${worker.teamName || 'ללא צוות'} · ${worker.email}`}
+                avatarItems={[
+                  { id: `worker-${worker.workerProfileId}`, label: worker.displayName, tone: 'primary' },
+                  ...(worker.teamName ? [{ id: `team-${worker.workerProfileId}`, label: worker.teamName, fallback: worker.teamName.slice(0, 1), tone: 'success' as const }] : []),
+                ]}
+                badges={
+                  <>
+                    <GardensStatusBadge status={worker.status} />
+                    <Badge variant="outline">{worker.assignmentCount > 0 ? `${worker.assignmentCount} ימים שובצו` : 'ללא שיבוצים'}</Badge>
+                    {worker.reviewedBy ? <Badge variant="secondary">נבדק ע״י {worker.reviewedBy}</Badge> : null}
+                  </>
+                }
+                details={[
+                  {
+                    label: 'הוגש',
+                    value: worker.submittedAt ? formatDateLabel(worker.submittedAt, { dateStyle: 'medium', timeStyle: 'short' }) : 'עדיין לא',
+                  },
+                  {
+                    label: 'תזכורת אחרונה',
+                    value: worker.lastReminderAt ? formatDateLabel(worker.lastReminderAt, { dateStyle: 'medium', timeStyle: 'short' }) : 'לא נשלחה',
+                  },
+                ]}
+                note={
+                  worker.reviewNote ? (
+                    <>
                       <div className="mb-1 font-semibold">הערת מנהל</div>
                       {worker.reviewNote}
-                    </div>
-                  ) : null}
-
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Link href={`/gardens/months/${plan}/workers/${worker.workerProfileId}`} className="inline-flex">
-                      <Button className="w-full">
-                        <FileCheck2 className="me-2 h-4 w-4" />
-                        פתח לאישור
-                      </Button>
-                    </Link>
-                    <Link
-                      href={`/gardens/months/${plan}/report/${worker.workerProfileId}?download=1`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex"
-                    >
-                      <Button variant="outline" className="w-full">
-                        <Download className="me-2 h-4 w-4" />
-                        הפק דו״ח
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
+                    </>
+                  ) : undefined
+                }
+                primaryAction={{
+                  label: 'פתח לאישור',
+                  href: `/gardens/months/${plan}/workers/${worker.workerProfileId}`,
+                  icon: FileCheck2,
+                }}
+                secondaryActions={[
+                  {
+                    id: `report-${worker.workerProfileId}`,
+                    label: 'הפק דו״ח חודשי',
+                    description: 'פתיחת הדו״ח בחלון חדש לצורך הורדה או הדפסה.',
+                    href: `/gardens/months/${plan}/report/${worker.workerProfileId}?download=1`,
+                    external: true,
+                    icon: Download,
+                  },
+                  {
+                    id: `review-${worker.workerProfileId}`,
+                    label: 'פתח כרטיס עובד',
+                    description: 'בדיקת פירוט מלא, הערות ושיבוצים לפני אישור.',
+                    href: `/gardens/months/${plan}/workers/${worker.workerProfileId}`,
+                    icon: FileCheck2,
+                  },
+                  {
+                    id: `reminder-${worker.workerProfileId}`,
+                    label: workerReminderId === worker.workerProfileId ? 'שולח תזכורת...' : 'שלח תזכורת אישית',
+                    description: 'שליחת תזכורת רק לעובד הזה להשלמת או עדכון החודש.',
+                    icon: BellRing,
+                    tone: 'warning',
+                    disabled: workerReminderId === worker.workerProfileId || worker.status === 'APPROVED',
+                    onSelect: () => remindWorker(worker.workerProfileId, worker.displayName),
+                  },
+                ]}
+              />
             ))}
           </div>
         )}
@@ -257,30 +297,51 @@ export function GardensManagerMonth({ plan }: { plan: string }) {
             type="empty"
           />
         ) : (
-          <Card variant="elevated">
-            <CardContent className="overflow-x-auto p-0">
-              <table className="min-w-full text-right">
-                <thead className="border-b border-subtle-border bg-muted/35 text-xs text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-4 font-medium">תאריך</th>
-                    <th className="px-4 py-4 font-medium">עובד</th>
-                    <th className="px-4 py-4 font-medium">מיקום</th>
-                    <th className="px-4 py-4 font-medium">הערות</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dashboard.assignments.map((assignment) => (
-                    <tr key={assignment.id} className="border-b border-subtle-border/70 last:border-b-0">
-                      <td className="px-4 py-4 text-sm">{formatDateLabel(assignment.date)}</td>
-                      <td className="px-4 py-4 text-sm font-medium">{assignment.workerName}</td>
-                      <td className="px-4 py-4 text-sm">{assignment.location}</td>
-                      <td className="px-4 py-4 text-sm text-muted-foreground">{assignment.notes || 'ללא הערה'}</td>
+          <>
+            <div className="grid gap-3 sm:hidden">
+              {dashboard.assignments.map((assignment) => (
+                <Card key={assignment.id} variant="elevated" className="rounded-[24px]">
+                  <CardContent className="space-y-3 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-semibold text-foreground">{assignment.workerName}</div>
+                        <div className="mt-1 text-[13px] leading-5 text-secondary-foreground">{assignment.location}</div>
+                      </div>
+                      <Badge variant="outline">{formatDateLabel(assignment.date)}</Badge>
+                    </div>
+                    <div className="rounded-[18px] border border-subtle-border/80 bg-background/70 p-3 text-sm leading-6 text-secondary-foreground">
+                      {assignment.notes || 'ללא הערה'}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <Card variant="elevated" className="hidden sm:block">
+              <CardContent className="overflow-x-auto p-0">
+                <table className="min-w-full text-right">
+                  <thead className="border-b border-subtle-border bg-muted/35 text-xs text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-4 font-medium">תאריך</th>
+                      <th className="px-4 py-4 font-medium">עובד</th>
+                      <th className="px-4 py-4 font-medium">מיקום</th>
+                      <th className="px-4 py-4 font-medium">הערות</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
+                  </thead>
+                  <tbody>
+                    {dashboard.assignments.map((assignment) => (
+                      <tr key={assignment.id} className="border-b border-subtle-border/70 last:border-b-0">
+                        <td className="px-4 py-4 text-sm">{formatDateLabel(assignment.date)}</td>
+                        <td className="px-4 py-4 text-sm font-medium">{assignment.workerName}</td>
+                        <td className="px-4 py-4 text-sm">{assignment.location}</td>
+                        <td className="px-4 py-4 text-sm text-muted-foreground">{assignment.notes || 'ללא הערה'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          </>
         )}
         </section>
       </div>
