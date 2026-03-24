@@ -21,6 +21,7 @@ export function AccountantMobileHome({ data }: { data: AccountantMobileHomeData 
       inboxItems={data.attentionItems}
       emptyTitle="אין חשבונות בפיגור"
       emptyDescription="הגבייה תקינה. אפשר לעבור על התקציבים והדוחות החודשיים."
+      emptyAction={{ label: 'בדוק דוחות חודשיים', href: '/finance/reports' }}
     />
   );
 }

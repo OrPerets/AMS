@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
-import { CalendarDays, ChevronLeft, Leaf, Plus, TimerReset } from 'lucide-react';
+import { CalendarDays, ChevronLeft, Leaf, Plus } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { EmptyState } from '../ui/empty-state';
 import { MobileCardSkeleton } from '../ui/page-states';
-import { PageHero } from '../ui/page-hero';
 import { MobileActionHub } from '../ui/mobile-action-hub';
 import { SectionHeader } from '../ui/section-header';
 import { Badge } from '../ui/badge';
@@ -20,6 +19,7 @@ import {
   type GardensMonthSummary,
 } from '../../lib/gardens';
 import { getEffectiveRole } from '../../lib/auth';
+import { showGardensMonthCreated } from '../../lib/success-feedback';
 
 export function GardensManagerHome() {
   const router = useRouter();
@@ -72,11 +72,7 @@ export function GardensManagerHome() {
     setCreating(true);
     try {
       await createGardensMonth({ plan: upcomingPlan });
-      toast({
-        title: 'חודש גינון חדש נוצר',
-        description: `החודש ${formatPlanLabel(upcomingPlan)} מוכן לעבודה.`,
-        variant: 'success',
-      });
+      showGardensMonthCreated(formatPlanLabel(upcomingPlan));
       await load();
       await router.push(`/gardens/months/${upcomingPlan}`);
     } catch {
@@ -100,7 +96,7 @@ export function GardensManagerHome() {
       activePlan={latestPlan}
       moduleLabel="דף הבית של מודול הגינון"
       title="מודול הגינון"
-      description="זהו אזור עבודה נפרד בתוך AMS לניהול חודשי הגינון, אישורים, דוחות ותזכורות בלי להרגיש כמו מסך צדדי מוסתר."
+      description="ניהול חודשי, אישורים, דוחות ותזכורות — במרחב נפרד בתוך AMS."
       actions={
         <Button onClick={createNextMonth} loading={creating}>
           <Plus className="me-2 h-4 w-4" />
@@ -109,51 +105,20 @@ export function GardensManagerHome() {
       }
     >
       <div className="space-y-4 sm:space-y-8">
-        <PageHero
-          variant="operational"
-          mobileCompact
-          eyebrow={<Badge variant="success">AMS Native</Badge>}
-          kicker="Gardens"
-          title="ניהול גננים"
-          description="התחל מהמשימות שממתינות לטיפול, המשך לחודש הפעיל, ומשם עבר לאישורים, דוחות ותזכורות."
-          actions={
-            latestPlan ? (
-              <Button variant="outline" onClick={() => void router.push(`/gardens/months/${latestPlan}`)}>
-                <TimerReset className="me-2 h-4 w-4" />
-                המשך לחודש הפעיל
-              </Button>
-            ) : undefined
-          }
-          aside={
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-tertiary">חודש יעד</div>
-                <div className="mt-2 text-xl font-black">{formatPlanLabel(upcomingPlan)}</div>
-              </div>
-              <div className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
-                <div className="text-xs uppercase tracking-[0.2em] text-tertiary">חודשים מנוהלים</div>
-                <div className="mt-2 text-2xl font-black">{months.length}</div>
-              </div>
-            </div>
-          }
-        />
-
-        <section className="grid gap-2.5 sm:gap-4 lg:grid-cols-3">
+        <section className="grid gap-2.5 sm:gap-4 lg:grid-cols-4">
+          <Card variant="metric">
+            <CardContent className="p-3.5 sm:p-5">
+              <div className="text-xs text-muted-foreground">חודש יעד</div>
+              <div className="mt-1.5 text-xl font-extrabold sm:mt-2">{formatPlanLabel(upcomingPlan)}</div>
+              <div className="mt-1.5 text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm">{months.length} חודשים מנוהלים</div>
+            </CardContent>
+          </Card>
           <Card variant="metric">
             <CardContent className="p-3.5 sm:p-5">
               <div className="text-xs text-muted-foreground">ממתינים לטיפול</div>
               <div className="mt-1.5 text-2xl font-extrabold tabular-nums sm:mt-2 sm:text-3xl">{pendingWorkersCount}</div>
               <div className="mt-1.5 text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm">
-                {latestMonth ? `${formatPlanLabel(latestMonth.plan)} עדיין דורש מעקב מנהל.` : 'ברגע שייפתח חודש, תראה כאן מה מחכה לבדיקה.'}
-              </div>
-            </CardContent>
-          </Card>
-          <Card variant="metric">
-            <CardContent className="p-3.5 sm:p-5">
-              <div className="text-xs text-muted-foreground">קיצור מומלץ</div>
-              <div className="mt-1.5 text-base font-extrabold sm:mt-2 sm:text-lg">{latestMonth ? 'אישורים ודוחות' : 'יצירת חודש ראשון'}</div>
-              <div className="mt-1.5 text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm">
-                {latestMonth ? 'פתח את החודש הפעיל כדי לבדוק הגשות, להחזיר לעדכון או לייצא דוח.' : 'התחל מיצירת חודש עבודה חדש לעובדי הגינון.'}
+                {latestMonth ? `${formatPlanLabel(latestMonth.plan)} דורש מעקב.` : 'ייפתח אחרי יצירת חודש.'}
               </div>
             </CardContent>
           </Card>
@@ -162,10 +127,19 @@ export function GardensManagerHome() {
               <div className="text-xs text-muted-foreground">תזכורות</div>
               <div className="mt-1.5 text-2xl font-extrabold tabular-nums sm:mt-2 sm:text-3xl">{latestMonth?.stats.needsChanges ?? 0}</div>
               <div className="mt-1.5 text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm">
-                עובדים עם צורך בעדכון או בהמשך מעקב לפני אישור סופי.
+                עובדים לעדכון לפני אישור.
               </div>
             </CardContent>
           </Card>
+          {latestPlan ? (
+            <Card variant="metric" className="cursor-pointer hover:border-primary/25" onClick={() => void router.push(`/gardens/months/${latestPlan}`)}>
+              <CardContent className="flex h-full flex-col justify-between p-3.5 sm:p-5">
+                <div className="text-xs text-muted-foreground">קיצור מומלץ</div>
+                <div className="mt-1.5 text-base font-extrabold sm:mt-2 sm:text-lg">המשך לחודש הפעיל</div>
+                <div className="mt-1.5 text-[13px] font-semibold text-primary sm:mt-2 sm:text-sm">פתח →</div>
+              </CardContent>
+            </Card>
+          ) : null}
         </section>
 
         <MobileActionHub

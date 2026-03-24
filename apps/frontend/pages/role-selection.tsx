@@ -20,6 +20,15 @@ import {
 } from '../lib/auth';
 import { canAccessGardens } from '../gardens/lib/ams-auth';
 import { useDirection, useLocale } from '../lib/providers';
+import {
+  trackRoleSelectionView,
+  trackRoleSelectionChoice,
+  trackRoleSelectionResume,
+  trackWorkspaceEnter,
+  trackRememberChoiceToggle,
+} from '../lib/analytics';
+import { trackDestinationUsage, setLastModule, addRecentAction, getPreferredDestination } from '../lib/engagement';
+import { showWorkspaceEntrySuccess } from '../lib/success-feedback';
 
 type WorkspaceCard = {
   choice: WorkspaceChoice;
@@ -58,10 +67,32 @@ export default function RoleSelectionPage() {
     }
 
     const storedChoice = getStoredWorkspaceChoice(effectiveRole, authSnapshot.userId);
+
+    if (storedChoice?.remember && storedChoice?.choice) {
+      const preferredDest = getPreferredDestination(authSnapshot.userId, effectiveRole);
+      if (preferredDest && preferredDest === storedChoice.choice) {
+        const destination = getWorkspaceChoiceRoute(storedChoice.choice as WorkspaceChoice, effectiveRole);
+        if (destination) {
+          trackRoleSelectionChoice(storedChoice.choice, effectiveRole);
+          trackWorkspaceEnter(storedChoice.choice as 'ams' | 'supervision' | 'gardens', effectiveRole);
+          trackDestinationUsage(storedChoice.choice, authSnapshot.userId, effectiveRole);
+          showWorkspaceEntrySuccess(storedChoice.choice as 'ams' | 'supervision' | 'gardens');
+
+          if (storedChoice.choice === 'supervision') {
+            window.open(destination, '_blank', 'noopener,noreferrer');
+          } else {
+            void router.replace(destination);
+          }
+          return;
+        }
+      }
+    }
+
     setRole(effectiveRole);
     setLastChoice(storedChoice?.choice ?? null);
     setRememberChoice(Boolean(storedChoice?.remember));
     setReady(true);
+    trackRoleSelectionView(effectiveRole);
   }, [router, router.isReady]);
 
   const next = typeof router.query.next === 'string' ? router.query.next : undefined;
@@ -98,7 +129,7 @@ export default function RoleSelectionPage() {
   const lastUsedCard = cards.find((card) => card.choice === lastChoice);
   const isUnsupportedRole = ready && !amsHref && role !== 'MASTER';
 
-  async function handleSelection(choice: WorkspaceChoice) {
+  async function handleSelection(choice: WorkspaceChoice, isResume = false) {
     const destination = choice === 'ams' && next ? next : getWorkspaceChoiceRoute(choice, role);
     if (!destination) return;
 
@@ -108,6 +139,15 @@ export default function RoleSelectionPage() {
       remember: rememberChoice,
     });
     setLastChoice(choice);
+
+    trackRoleSelectionChoice(choice, role);
+    trackWorkspaceEnter(choice, role);
+    trackDestinationUsage(choice, getCurrentUserId(), role);
+    setLastModule(choice, getCurrentUserId(), role);
+    addRecentAction({ id: `workspace-${choice}`, label: choice, href: destination, screen: 'role-selection', role: role || 'unknown' }, getCurrentUserId());
+    if (isResume) trackRoleSelectionResume(choice);
+
+    showWorkspaceEntrySuccess(choice);
 
     if (choice === 'supervision') {
       const externalWindow = window.open(destination, '_blank', 'noopener,noreferrer');
@@ -151,7 +191,7 @@ export default function RoleSelectionPage() {
                     {t('roleSelection.description')}
                   </CardDescription>
                 </div>
-                <div className="rounded-2xl border border-primary/15 bg-primary/5 px-3 py-2.5 text-[13px] leading-5 text-muted-foreground sm:px-4 sm:py-3 sm:text-sm sm:leading-6">
+                <div className="hidden rounded-2xl border border-primary/15 bg-primary/5 px-3 py-2.5 text-[13px] leading-5 text-muted-foreground sm:block sm:px-4 sm:py-3 sm:text-sm sm:leading-6">
                   {t('roleSelection.helper')}
                 </div>
               </CardHeader>
@@ -170,7 +210,7 @@ export default function RoleSelectionPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {lastUsedCard ? (
-                  <Button onClick={() => void handleSelection(lastUsedCard.choice)} size="lg" className="w-full justify-between">
+                  <Button onClick={() => void handleSelection(lastUsedCard.choice, true)} size="lg" className="w-full justify-between">
                     <span>{t('roleSelection.resumeCta')}</span>
                     <ArrowRight className="h-4 w-4" />
                   </Button>
@@ -181,7 +221,7 @@ export default function RoleSelectionPage() {
                       <p className="text-sm font-semibold text-foreground">{t('roleSelection.rememberTitle')}</p>
                       <p className="text-sm leading-6 text-muted-foreground">{t('roleSelection.rememberDescription')}</p>
                     </div>
-                    <Switch checked={rememberChoice} onCheckedChange={setRememberChoice} aria-label={t('roleSelection.rememberTitle')} />
+                    <Switch checked={rememberChoice} onCheckedChange={(v) => { setRememberChoice(v); trackRememberChoiceToggle(v); }} aria-label={t('roleSelection.rememberTitle')} />
                   </div>
                 </div>
                 {isUnsupportedRole ? (

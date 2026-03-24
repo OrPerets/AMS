@@ -6,6 +6,9 @@ import { MobileActionHub } from '../ui/mobile-action-hub';
 import { MobilePriorityInbox, type MobilePriorityInboxItem } from '../ui/mobile-priority-inbox';
 import { PrimaryActionCard } from '../ui/primary-action-card';
 import { cn } from '../../lib/utils';
+import { trackQuickActionClick } from '../../lib/analytics';
+import { addRecentAction, getRecentActions } from '../../lib/engagement';
+import { getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 
 export type RoleKey = 'ADMIN' | 'PM' | 'TECH' | 'RESIDENT' | 'ACCOUNTANT' | 'MASTER';
 
@@ -51,6 +54,7 @@ export type HomeBlueprintShellProps = {
   inboxItems: MobilePriorityInboxItem[];
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyAction?: { label: string; href: string };
   prioritizeInbox?: boolean;
 };
 
@@ -65,6 +69,7 @@ export function RoleHomeShell({
   inboxItems,
   emptyTitle,
   emptyDescription,
+  emptyAction,
   prioritizeInbox = false,
 }: HomeBlueprintShellProps) {
   const icon = getRoleStatusIcon(roleKey);
@@ -77,6 +82,7 @@ export function RoleHomeShell({
       items={inboxItems}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}
+      emptyAction={emptyAction}
       emphasizeFirst={roleKey !== 'ACCOUNTANT'}
     />
   );
@@ -182,14 +188,39 @@ function RoleCommandBand({
   );
 }
 
+function handleQuickActionClick(item: HomeQuickAction, roleKey: RoleKey) {
+  trackQuickActionClick(item.id, 'home', roleKey);
+  addRecentAction(
+    { id: `qa-${item.id}`, label: item.title, href: item.href, screen: 'home', role: roleKey },
+    getCurrentUserId(),
+  );
+}
+
+function sortByRecentUsage(items: HomeQuickAction[], roleKey: RoleKey): HomeQuickAction[] {
+  const recent = getRecentActions(getCurrentUserId(), getEffectiveRole());
+  if (!recent.length) return items;
+
+  const recentIds = new Set(recent.map((r) => r.id.replace('qa-', '')));
+  const hasWarning = items.some((i) => i.tone === 'warning' || i.tone === 'danger');
+  if (hasWarning) return items;
+
+  return [...items].sort((a, b) => {
+    const aRecent = recentIds.has(a.id) ? 1 : 0;
+    const bRecent = recentIds.has(b.id) ? 1 : 0;
+    return bRecent - aRecent;
+  });
+}
+
 export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: HomeQuickAction[]; roleKey?: RoleKey }) {
+  const sorted = sortByRecentUsage(items, roleKey);
+
   if (roleKey === 'PM' || roleKey === 'ADMIN') {
     return (
       <MobileActionHub
         title={roleKey === 'ADMIN' ? 'פעולות בקרה' : 'פעולות ניהול'}
         subtitle={roleKey === 'ADMIN' ? 'סיכון, בקרה ויומן בלי לרדת למסכים משניים.' : 'תיעדוף קריאות, בניינים ויומן התפעול בתצוגה אחת.'}
         layout="hierarchy"
-        items={items.slice(0, 4).map((item, index) => ({
+        items={sorted.slice(0, 4).map((item, index) => ({
           id: item.id,
           label: item.title,
           description: `${item.subtitle} · ${item.value}`,
@@ -208,6 +239,7 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
           badge: typeof item.value === 'number' && item.value > 0 ? item.value : undefined,
           emphasize: index === 0,
           priority: index === 0 ? 'primary' : index < 3 ? 'secondary' : 'utility',
+          onClick: () => handleQuickActionClick(item, roleKey),
         }))}
       />
     );
@@ -215,10 +247,16 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
 
   return (
     <div className="grid grid-cols-2 gap-2.5">
-      {items.slice(0, 4).map((item) => {
+      {sorted.slice(0, 4).map((item, index) => {
         const Icon = item.icon;
+        const isLeading = index === 0 && (item.tone === 'warning' || item.tone === 'danger');
         return (
-          <Link key={item.id} href={item.href} className="block">
+          <Link
+            key={item.id}
+            href={item.href}
+            className="block"
+            onClick={() => handleQuickActionClick(item, roleKey)}
+          >
             <Card
               variant="elevated"
               className={cn(
@@ -227,6 +265,7 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
                 item.tone === 'warning' && 'border-warning/30 bg-warning/5',
                 item.tone === 'danger' && 'border-destructive/30 bg-destructive/5',
                 item.tone === 'success' && 'border-success/30 bg-success/5',
+                isLeading && 'ring-2 ring-primary/20',
               )}
             >
               <CardContent className="flex h-full flex-col justify-between p-3">

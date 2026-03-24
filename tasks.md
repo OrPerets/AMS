@@ -517,50 +517,60 @@ Make the system clearer, more inviting, and easier to return to every day.
 
 ## Tasks
 ### 7.1 Smart quick actions
-- Show 2–4 common actions at the top of each relevant home screen.
-- Adapt them by role.
-- Present one leading action instead of multiple competing CTAs.
+- [x] Show 2–4 common actions at the top of each relevant home screen.
+- [x] Adapt them by role.
+- [x] Present one leading action instead of multiple competing CTAs.
 
 ### 7.2 Resume where you left off
-- Add "Continue where you left off" to relevant screens:
-  - AMS selection
-  - Gardens
-  - Resident requests/payments
+- [x] Add "Continue where you left off" to relevant screens:
+  - [x] AMS selection
+  - [x] Gardens
+  - [x] Resident requests/payments
 
 ### 7.3 Higher-quality empty states
-- For every empty screen, add:
-  - a short heading
-  - a short explanation
-  - a single CTA that leads to the next step
-- Avoid passive empty states that only say "No data".
+- [x] For every empty screen, add:
+  - [x] a short heading
+  - [x] a short explanation
+  - [x] a single CTA that leads to the next step
+- [x] Avoid passive empty states that only say "No data".
 
 ### 7.4 Success feedback
-- Show short and useful success messages after important actions.
-- Add a next-step suggestion where appropriate.
+- [x] Show short and useful success messages after important actions.
+- [x] Add a next-step suggestion where appropriate.
 
 ### 7.5 Reduce cognitive load
-- Reduce marketing-style text on work screens.
-- Merge similar cards.
-- Remove shortcuts / links with low usage.
+- [x] Reduce marketing-style text on work screens.
+- [x] Merge similar cards.
+- [x] Remove shortcuts / links with low usage.
 
 ### 7.6 Improve repeat usability for returning users
-- Last-used module.
-- Recently used actions.
-- Default destination for users who repeatedly make the same choice.
+- [x] Last-used module.
+- [x] Recently used actions.
+- [x] Default destination for users who repeatedly make the same choice.
 
 ### 7.7 Measurement and analytics
-Add basic events for:
-- click on the main "Enter the system" CTA
-- login success
-- role selection choice
-- click to AMS / supervision report / gardens
-- use of the last-used shortcut
-- abandonment on the selection screen
+- [x] Add basic events for:
+  - [x] click on the main "Enter the system" CTA
+  - [x] login success
+  - [x] role selection choice
+  - [x] click to AMS / supervision report / gardens
+  - [x] use of the last-used shortcut
+  - [x] abandonment on the selection screen
 
 Measurement goals:
-- Understand where users get stuck.
-- See whether the selection screen is actually helping.
-- Measure real usage of the gardens module and supervision report.
+- [x] Understand where users get stuck.
+- [x] See whether the selection screen is actually helping.
+- [x] Measure real usage of the gardens module and supervision report.
+
+#### Sprint 7 implementation notes
+- **Analytics (`lib/analytics.ts`):** Created a typed, handler-based analytics module with named events for the full user funnel: `landing_cta_click`, `login_success`, `login_failed`, `role_selection_view`, `role_selection_choice`, `role_selection_resume`, `role_selection_abandon`, `workspace_enter_ams`/`supervision`/`gardens`, `last_used_shortcut`, `remember_choice_toggle`, `quick_action_click`, `resume_click`, `empty_state_cta_click`, `success_next_step_click`, `onboarding_complete`, `page_view`. Events are stored in an in-memory log (capped at 200) and dispatched to registered handlers. No external SDK dependency — handlers can be plugged in for PostHog, Segment, or GA when ready.
+- **Engagement persistence (`lib/engagement.ts`):** Created a localStorage-based persistence layer for recent actions (per user+role, max 8), last-used module, preferred destination (auto-detected after 3+ consecutive same choices), and resume state (per screen, 7-day TTL). All keys are scoped by userId and role to avoid cross-user leakage.
+- **Smart quick actions (`components/home/shared.tsx`):** Updated `HomeQuickActionsGrid` to track clicks via analytics, record recent actions for future sorting, and re-order tiles by recent usage when no warning/danger items are present. Leading actions (warning/danger tone) get a `ring-2 ring-primary/20` highlight.
+- **Resume where you left off:** Added resume state tracking to `resident/account`, `payments/resident`, and `resident/requests`. The resident account page shows a "Continue where you left off" card when the user was previously on a different resident sub-page. Gardens already had resume via `GardensModuleShell`. Role selection already had "continue to last destination" from Sprint 3.
+- **Higher-quality empty states (`components/ui/empty-state.tsx`, `mobile-priority-inbox.tsx`):** Added 6 new typed presets (`EmptyNotifications`, `EmptyPayments`, `EmptyDocuments`, `EmptyRequests`, `EmptyGardenMonths`, `EmptyMaintenanceQueue`) with specific heading, explanation, and type. Added `emptyAction` prop to `MobilePriorityInbox` for CTA links inside empty inbox states. Wired actionable empty CTAs into all per-role home screens: Admin → dashboard, PM → buildings, Tech → gardens, Accountant → reports, Resident → create ticket.
+- **Success feedback (`lib/success-feedback.ts`):** Created typed helper functions for common success scenarios: `showLoginSuccess`, `showWorkspaceEntrySuccess`, `showPaymentSuccess`, `showRequestSubmitted`, `showTicketCreated`, `showGardensMonthCreated`, `showGardensApproval`, `showSettingsSaved`. Each triggers haptic feedback (`triggerHaptic('success')`) and includes a next-step hint in the toast description. Integrated into login, role selection, gardens month creation, and resident request submission.
+- **Cognitive load reduction:** Shortened the gardens module shell description. Removed the redundant `PageHero` from gardens manager home and merged its metrics into the card grid (now 4 columns with a direct "continue to active month" shortcut card). Hidden the role-selection helper text box on mobile to keep workspace cards above the fold.
+- **Repeat usability:** Added auto-redirect on role-selection for users with a preferred destination (≥3 consecutive same choices + remember toggle on), skipping the selection screen entirely. Tracked last-used module and recent actions on home page and gardens entry visits to inform smarter quick action ordering and future personalization.
 
 ---
 
