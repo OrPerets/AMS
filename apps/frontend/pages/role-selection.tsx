@@ -170,7 +170,7 @@ export default function RoleSelectionPage() {
                     {t('roleSelection.description')}
                   </CardDescription>
                 </div>
-                <div className="rounded-2xl border border-primary/15 bg-primary/5 px-3 py-2.5 text-[13px] leading-5 text-muted-foreground sm:px-4 sm:py-3 sm:text-sm sm:leading-6">
+                <div className="hidden rounded-2xl border border-primary/15 bg-primary/5 px-3 py-2.5 text-[13px] leading-5 text-muted-foreground sm:block sm:px-4 sm:py-3 sm:text-sm sm:leading-6">
                   {t('roleSelection.helper')}
                 </div>
               </CardHeader>
