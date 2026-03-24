@@ -503,14 +503,17 @@ export default function ResidentAccountPage() {
             initial={reducedMotion ? false : { opacity: 0, y: 18 }}
             animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
             transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.1, ease: 'easeOut' }}
-            className="rounded-[30px] border border-divider/60 bg-white/94 px-4 pb-4 pt-4 shadow-[0_16px_34px_rgba(44,28,9,0.06)]"
+            className="rounded-[26px] border border-divider/60 bg-white/94 px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
           >
-            <div className="mb-3">
-              <h2 className="text-[18px] font-semibold text-foreground">{labels.activeNow}</h2>
-              <p className="mt-1 text-[14px] leading-6 text-secondary-foreground">{labels.activeNowSubtitle}</p>
-            </div>
+            <CompactSectionHeader
+              icon={<Sparkles className="h-4 w-4" strokeWidth={1.8} />}
+              title={labels.activeNow}
+              subtitle={activeItems.length ? `${activeItems.length} פריטים פתוחים` : labels.noUrgent}
+              actionLabel={activeItems[0]?.ctaLabel || 'פתח'}
+              actionHref={activeItems[0]?.href || '/resident/requests?view=new'}
+            />
             {activeItems.length ? (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {activeItems.slice(0, 2).map((item, index) => (
                   <motion.div
                     key={item.id}
@@ -533,22 +536,33 @@ export default function ResidentAccountPage() {
             initial={reducedMotion ? false : { opacity: 0, y: 18 }}
             animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
             transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.15, ease: 'easeOut' }}
-            className="rounded-[30px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.95)_100%)] px-4 pb-4 pt-4 shadow-[0_16px_34px_rgba(44,28,9,0.06)]"
+            className="rounded-[26px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.95)_100%)] px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
           >
-            <SectionHeading icon={<FileText className="h-4 w-4" strokeWidth={1.8} />} title={labels.recentDocs} subtitle={recentDocuments.length ? `${recentDocuments.length} מסמכים זמינים` : labels.docsEmpty} />
+            <CompactSectionHeader
+              icon={<FileText className="h-4 w-4" strokeWidth={1.8} />}
+              title={labels.recentDocs}
+              subtitle={recentDocuments.length ? `${recentDocuments.length} זמינים` : labels.docsEmpty}
+              actionLabel={labels.allDocs}
+              actionHref="/documents"
+            />
             {recentDocuments.length ? (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {recentDocuments.map((document) => (
                   <Link
                     key={document.id}
                     href="/documents"
-                    className="flex items-center justify-between gap-3 rounded-[22px] border border-subtle-border bg-white/84 px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-primary/18"
+                    className="flex items-center justify-between gap-3 rounded-[20px] border border-subtle-border bg-white/84 px-3 py-2.5 transition hover:-translate-y-0.5 hover:border-primary/18"
                   >
-                    <div className="min-w-0">
-                      <div className="truncate text-base font-semibold text-foreground">{document.name}</div>
-                      <div className="mt-1 text-sm text-secondary-foreground">{formatDate(document.uploadedAt, locale)}</div>
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/8 text-primary">
+                        <FileText className="h-4 w-4" strokeWidth={1.8} />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="truncate text-[15px] font-semibold text-foreground">{document.name}</div>
+                        <div className="mt-0.5 text-[12px] text-secondary-foreground">{formatDate(document.uploadedAt, locale)}</div>
+                      </div>
                     </div>
-                    <span className="text-sm font-semibold text-primary">{labels.allDocs}</span>
+                    <ArrowUpRight className="icon-directional h-4 w-4 shrink-0 text-primary" strokeWidth={1.8} />
                   </Link>
                 ))}
               </div>
@@ -561,20 +575,28 @@ export default function ResidentAccountPage() {
             initial={reducedMotion ? false : { opacity: 0, y: 18 }}
             animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
             transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.2, ease: 'easeOut' }}
-            className="rounded-[30px] border border-divider/60 bg-white/94 px-4 pb-4 pt-4 shadow-[0_16px_34px_rgba(44,28,9,0.06)]"
+            className="rounded-[26px] border border-divider/60 bg-white/94 px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
           >
-            <SectionHeading icon={<Bell className="h-4 w-4" strokeWidth={1.8} />} title="עדכונים" subtitle={unreadNotificationsSummary} />
-            <div className="rounded-[24px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-3.5">
-              <div className="text-base font-semibold text-foreground">
+            <CompactSectionHeader
+              icon={<Bell className="h-4 w-4" strokeWidth={1.8} />}
+              title="עדכונים"
+              subtitle={unreadNotificationsSummary}
+              actionLabel="פתח"
+              actionHref="/notifications"
+            />
+            <div className="rounded-[20px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-3">
+              <div className="flex items-start gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/8 text-primary">
+                  <Bell className="h-4 w-4" strokeWidth={1.8} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[15px] font-semibold text-foreground">
                 {newestNotification?.title || (unreadNotifications.length ? labels.updatesReady.replace('{{count}}', String(unreadNotifications.length)) : labels.updatesClear)}
-              </div>
-              <div className="mt-1.5 text-sm leading-6 text-secondary-foreground">
-                {newestNotification?.message || 'כל ההתראות, האישורים והעדכונים האחרונים מרוכזים במסך אחד.'}
-              </div>
-              <div className="mt-3">
-                <Button variant="outline" size="sm" className="rounded-full px-4" asChild>
-                  <Link href="/notifications">פתח עדכונים</Link>
-                </Button>
+                  </div>
+                  <div className="mt-0.5 text-[13px] leading-5 text-secondary-foreground">
+                    {newestNotification?.message || 'כל ההתראות, האישורים והעדכונים האחרונים מרוכזים במסך אחד.'}
+                  </div>
+                </div>
               </div>
             </div>
           </motion.section>
@@ -583,25 +605,31 @@ export default function ResidentAccountPage() {
             initial={reducedMotion ? false : { opacity: 0, y: 18 }}
             animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
             transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.24, ease: 'easeOut' }}
-            className="rounded-[30px] border border-divider/60 bg-white/94 px-4 pb-4 pt-4 shadow-[0_16px_34px_rgba(44,28,9,0.06)]"
+            className="rounded-[26px] border border-divider/60 bg-white/94 px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
           >
-            <SectionHeading icon={<Building2 className="h-4 w-4" strokeWidth={1.8} />} title={primaryBuilding ? 'הבניין שלי' : 'קשר ומידע'} subtitle={primaryBuilding?.name || 'תמיכה וניהול'} />
+            <CompactSectionHeader
+              icon={<Building2 className="h-4 w-4" strokeWidth={1.8} />}
+              title={primaryBuilding ? 'הבניין שלי' : 'קשר ומידע'}
+              subtitle={primaryBuilding?.name || 'תמיכה וניהול'}
+              actionLabel={primaryBuilding ? 'פתח' : 'תמיכה'}
+              actionHref={primaryBuilding ? '/resident/building' : '/support'}
+            />
             {primaryBuilding ? (
-              <div className="space-y-2.5">
-                <Link href="/resident/building" className="block rounded-[24px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-3.5 transition hover:-translate-y-0.5 hover:border-primary/18">
-                  <div className="flex items-center gap-2 text-base font-semibold text-foreground">
-                    <MapPinned className="h-4 w-4 text-primary" strokeWidth={1.8} />
-                    {primaryBuilding.name}
+              <div className="grid grid-cols-2 gap-2">
+                <Link href="/resident/building" className="rounded-[20px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-3 transition hover:-translate-y-0.5 hover:border-primary/18">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/8 text-primary">
+                    <MapPinned className="h-4 w-4" strokeWidth={1.8} />
                   </div>
-                  <div className="mt-1.5 text-sm leading-6 text-secondary-foreground">{primaryBuilding.address}</div>
+                  <div className="mt-2 text-[15px] font-semibold text-foreground">{primaryBuilding.name}</div>
+                  <div className="mt-0.5 line-clamp-2 text-[12px] leading-5 text-secondary-foreground">{primaryBuilding.address}</div>
                 </Link>
-                <Link href="/support" className="block rounded-[24px] border border-subtle-border bg-white/82 p-3.5 transition hover:-translate-y-0.5 hover:border-primary/18">
-                  <div className="flex items-center gap-2 text-base font-semibold text-foreground">
-                    <MessageCircle className="h-4 w-4 text-primary" strokeWidth={1.8} />
-                    תמיכה וניהול
+                <Link href="/support" className="rounded-[20px] border border-subtle-border bg-white/82 p-3 transition hover:-translate-y-0.5 hover:border-primary/18">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/8 text-primary">
+                    <MessageCircle className="h-4 w-4" strokeWidth={1.8} />
                   </div>
-                  <div className="mt-1.5 text-sm leading-6 text-secondary-foreground">
-                    {newestNotification?.title || 'שאלות, עדכונים ופנייה לצוות הניהול.'}
+                  <div className="mt-2 text-[15px] font-semibold text-foreground">תמיכה</div>
+                  <div className="mt-0.5 line-clamp-2 text-[12px] leading-5 text-secondary-foreground">
+                    {newestNotification?.title || 'פנייה לצוות הניהול והתמיכה.'}
                   </div>
                 </Link>
               </div>
@@ -689,6 +717,38 @@ function SectionHeading({
         <span>{title}</span>
       </div>
       <p className="mt-1 text-sm leading-6 text-secondary-foreground">{subtitle}</p>
+    </div>
+  );
+}
+
+function CompactSectionHeader({
+  icon,
+  title,
+  subtitle,
+  actionLabel,
+  actionHref,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  actionLabel: string;
+  actionHref: string;
+}) {
+  return (
+    <div className="mb-3 flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 text-[16px] font-semibold text-foreground">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/8 text-primary">{icon}</span>
+          <span>{title}</span>
+        </div>
+        <div className="mt-1 truncate text-[12px] text-secondary-foreground">{subtitle}</div>
+      </div>
+      <Button variant="outline" size="sm" className="shrink-0 rounded-full px-3 text-[12px]" asChild>
+        <Link href={actionHref}>
+          {actionLabel}
+          <ArrowUpRight className="icon-directional ms-1 h-3.5 w-3.5" strokeWidth={1.8} />
+        </Link>
+      </Button>
     </div>
   );
 }
@@ -811,23 +871,23 @@ function ResidentLiveItem({
           : 'border-primary/16 bg-primary/8 text-primary';
 
   return (
-    <div className="rounded-[24px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] p-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]">
+    <div className="rounded-[20px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] p-3 shadow-[0_10px_20px_rgba(44,28,9,0.05)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className={cn('rounded-full border px-2.5 py-0.5 text-[11px] font-semibold', toneClasses)}>{item.status}</span>
             {item.meta ? <span className="text-[11px] text-secondary-foreground">{item.meta}</span> : null}
           </div>
-          <div className="mt-2 text-base font-semibold text-foreground">{item.title}</div>
-          <div className="mt-1 text-sm leading-6 text-secondary-foreground">{item.reason}</div>
+          <div className="mt-1.5 text-[15px] font-semibold text-foreground">{item.title}</div>
+          <div className="mt-0.5 text-[13px] leading-5 text-secondary-foreground">{item.reason}</div>
         </div>
-        <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] border', toneClasses)}>
-          <Sparkles className="h-4 w-4" strokeWidth={1.8} />
+        <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] border', toneClasses)}>
+          <Sparkles className="h-3.5 w-3.5" strokeWidth={1.8} />
         </span>
       </div>
       {item.href && item.ctaLabel ? (
-        <div className="mt-3">
-          <Button asChild size="sm" variant="outline" className="w-full justify-between rounded-full">
+        <div className="mt-2.5">
+          <Button asChild size="sm" variant="outline" className="w-full justify-between rounded-full text-[12px]">
             <Link href={item.href}>
               {item.ctaLabel}
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.8} />
