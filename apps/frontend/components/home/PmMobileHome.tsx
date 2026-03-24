@@ -21,6 +21,7 @@ export function PmMobileHome({ data }: { data: PmMobileHomeData }) {
       inboxItems={data.priorityItems}
       emptyTitle="אין קריאות חדשות"
       emptyDescription="כל הקריאות שויכו. זה זמן טוב לבדוק בניינים, ספקים ולוח תפעול."
+      emptyAction={{ label: 'בדוק בניינים', href: '/buildings' }}
       prioritizeInbox
     />
   );

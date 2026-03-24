@@ -54,6 +54,7 @@ export type HomeBlueprintShellProps = {
   inboxItems: MobilePriorityInboxItem[];
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyAction?: { label: string; href: string };
   prioritizeInbox?: boolean;
 };
 
@@ -68,6 +69,7 @@ export function RoleHomeShell({
   inboxItems,
   emptyTitle,
   emptyDescription,
+  emptyAction,
   prioritizeInbox = false,
 }: HomeBlueprintShellProps) {
   const icon = getRoleStatusIcon(roleKey);
@@ -80,6 +82,7 @@ export function RoleHomeShell({
       items={inboxItems}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}
+      emptyAction={emptyAction}
       emphasizeFirst={roleKey !== 'ACCOUNTANT'}
     />
   );

@@ -21,6 +21,7 @@ export function TechMobileHome({ data }: { data: TechMobileHomeData }) {
       inboxItems={data.queueItems}
       emptyTitle="אין משימות שטח להיום"
       emptyDescription="יום שקט. אפשר לבדוק את לוח המחר או לעבור על תוכנית הגינון."
+      emptyAction={{ label: 'פתח גינון חודשי', href: '/gardens' }}
     />
   );
 }

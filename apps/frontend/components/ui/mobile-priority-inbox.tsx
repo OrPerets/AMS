@@ -206,6 +206,7 @@ export function MobilePriorityInbox({
   items,
   emptyTitle,
   emptyDescription,
+  emptyAction,
   className,
   emphasizeFirst = true,
 }: {
@@ -214,6 +215,7 @@ export function MobilePriorityInbox({
   items: MobilePriorityInboxItem[];
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyAction?: { label: string; href: string };
   className?: string;
   emphasizeFirst?: boolean;
 }) {
@@ -265,6 +267,12 @@ export function MobilePriorityInbox({
           <motion.div layout className="rounded-[20px] border border-dashed border-subtle-border bg-muted/18 p-4">
             <div className="text-sm font-semibold text-foreground">{resolvedEmptyTitle}</div>
             <div className="mt-1 text-[13px] leading-5 text-muted-foreground">{resolvedEmptyDescription}</div>
+            {emptyAction ? (
+              <Link href={emptyAction.href} className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:underline">
+                {emptyAction.label}
+                <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+              </Link>
+            ) : null}
           </motion.div>
         )}
         {items.length > 3 ? (

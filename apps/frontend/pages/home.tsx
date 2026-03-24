@@ -352,6 +352,7 @@ function ResidentMobileHome({ data }: { data: ResidentHomeData }) {
       inboxItems={data.inboxItems}
       emptyTitle="אין קריאות פתוחות"
       emptyDescription="צריך משהו? אפשר לפתוח קריאת תחזוקה חדשה או לעבור למסמכים."
+      emptyAction={{ label: 'פתח קריאה חדשה', href: '/create-call' }}
     />
   );
 }
