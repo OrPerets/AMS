@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { CreditCard, Download, Receipt, ShieldCheck, Wallet } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ArrowUpLeft, BellRing, CalendarClock, CheckCircle2, ChevronDown, CreditCard, Download, Receipt, ShieldCheck, TriangleAlert, Wallet, WalletCards } from 'lucide-react';
 import { authFetch, downloadAuthenticatedFile, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { formatCurrency, formatDate, humanizeEnum } from '../../lib/utils';
 import { toast } from '../../components/ui/use-toast';
@@ -85,6 +86,7 @@ function translateCardBrand(value?: string | null) {
 export default function ResidentPaymentsPage() {
   const router = useRouter();
   const { locale } = useLocale();
+  const reducedMotion = useReducedMotion();
   const [context, setContext] = useState<AccountContext | null>(null);
   const [finance, setFinance] = useState<ResidentFinance | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -94,6 +96,7 @@ export default function ResidentPaymentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'open' | 'history' | 'methods'>('open');
   const [paymentDrawerInvoiceId, setPaymentDrawerInvoiceId] = useState<number | null>(null);
+  const [expandedInvoiceIds, setExpandedInvoiceIds] = useState<number[]>([]);
 
   useEffect(() => {
     setResumeState({ screen: 'resident', href: '/payments/resident', label: 'מרכז תשלומים', role: getEffectiveRole() || 'RESIDENT', userId: getCurrentUserId() });
@@ -206,18 +209,29 @@ export default function ResidentPaymentsPage() {
       ),
     [finance?.invoices],
   );
-  const primaryMethod = paymentMethods.find((method) => method.isDefault) ?? paymentMethods[0] ?? null;
-  const selectedInvoice = sortedInvoices.find((invoice) => invoice.id === paymentDrawerInvoiceId) ?? nextPaymentDue ?? null;
 
   if (loading) return <DetailPanelSkeleton />;
   if (error || !context || !finance) {
     return <InlineErrorPanel title="מסך התשלומים לא נטען" description={error || 'לא נמצאו נתונים'} onRetry={() => void loadPage()} />;
   }
 
+  const primaryMethod = paymentMethods.find((method) => method.isDefault) ?? paymentMethods[0] ?? null;
+  const selectedInvoice = sortedInvoices.find((invoice) => invoice.id === paymentDrawerInvoiceId) ?? nextPaymentDue ?? null;
+  const openInvoices = sortedInvoices.filter((invoice) => payableStatuses.has(invoice.status));
+  const historyEntries = finance.ledger.slice(0, 10);
+  const heroBalanceLabel = finance.summary.currentBalance > 0 ? 'יתרה לתשלום' : 'החשבון מאוזן';
+  const heroStatusTone = finance.summary.overdueInvoices > 0 ? 'danger' : finance.summary.unpaidInvoices > 0 ? 'warning' : 'success';
+  const nextDueLabel = nextPaymentDue ? formatDate(nextPaymentDue.dueDate, locale) : 'אין מועד פתוח';
   const primaryBuilding = context.units[0]?.building?.name;
 
+  function toggleInvoice(invoiceId: number) {
+    setExpandedInvoiceIds((current) =>
+      current.includes(invoiceId) ? current.filter((id) => id !== invoiceId) : [...current, invoiceId],
+    );
+  }
+
   return (
-    <div dir="rtl" className="space-y-4 text-right sm:space-y-6">
+    <div dir="rtl" className="space-y-4 pb-4 text-right sm:space-y-6">
       <div className="space-y-3">
         <CompactStatusStrip
           roleLabel={primaryBuilding ? `דייר · ${primaryBuilding}` : 'דייר'}
@@ -226,50 +240,120 @@ export default function ResidentPaymentsPage() {
             { id: 'balance', label: 'יתרה', value: Math.round(finance.summary.currentBalance), tone: finance.summary.currentBalance > 0 ? 'warning' : 'success' },
             { id: 'unpaid', label: 'פתוחים', value: finance.summary.unpaidInvoices, tone: finance.summary.unpaidInvoices > 0 ? 'warning' : 'success' },
           ]}
+          tone="resident"
         />
 
-        <PrimaryActionCard
-          eyebrow="תשלום מיידי"
-          title={nextPaymentDue ? `לתשלום ${formatCurrency(nextPaymentDue.amount)}` : 'אין כרגע תשלום פתוח'}
-          description={
-            nextPaymentDue
-              ? `${nextPaymentDue.description} · מועד ${formatDate(nextPaymentDue.dueDate, locale)}`
-              : 'החשבון שלך מעודכן.'
-          }
-          ctaLabel={nextPaymentDue ? 'שלם עכשיו' : 'חזור לחשבון'}
-          href={nextPaymentDue ? undefined : '/resident/account'}
-          onClick={nextPaymentDue ? () => setPaymentDrawerInvoiceId(nextPaymentDue.id) : undefined}
-          tone={nextPaymentDue?.status === 'OVERDUE' ? 'danger' : nextPaymentDue ? 'warning' : 'success'}
-          className="border-s-[5px] shadow-[0_24px_58px_rgba(84,58,15,0.16)]"
-        />
+        <motion.section
+          initial={reducedMotion ? false : { opacity: 0, y: 18 }}
+          animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.32, ease: 'easeOut' }}
+        >
+          <div className="relative overflow-hidden rounded-[32px] border border-white/50 bg-[radial-gradient(circle_at_top_left,rgba(226,186,111,0.32),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.16),transparent_28%),linear-gradient(140deg,rgba(32,24,16,0.98)_0%,rgba(64,42,14,0.96)_48%,rgba(198,145,55,0.94)_100%)] p-4 text-white shadow-[0_28px_70px_rgba(44,28,9,0.24)] sm:p-5">
+            <div className="pointer-events-none absolute inset-0">
+              <div className="absolute -left-5 top-4 h-20 w-20 rounded-full border border-white/12" />
+              <div className="absolute right-10 top-0 h-24 w-24 rounded-b-[32px] rounded-t-full bg-white/8" />
+              <div className="absolute bottom-0 left-10 h-16 w-32 rounded-t-full bg-white/10 blur-2xl" />
+            </div>
+
+            <div className="relative z-10 space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-white/80">
+                    <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.85} />
+                    מרכז תשלומים
+                  </div>
+                  <div>
+                    <p className="text-sm text-white/72">{heroBalanceLabel}</p>
+                    <h1 className="mt-1 text-[34px] font-black leading-none tracking-[-0.03em] sm:text-[40px]">
+                      <bdi>{formatCurrency(finance.summary.currentBalance)}</bdi>
+                    </h1>
+                  </div>
+                </div>
+                <div className="rounded-[22px] border border-white/12 bg-white/10 px-3 py-2 text-right backdrop-blur-sm">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">חיוב קרוב</div>
+                  <div className="mt-1 text-sm font-semibold text-white">{nextDueLabel}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <HeroStatChip icon={<Wallet className="h-4 w-4" strokeWidth={1.75} />} label="פתוחים" value={finance.summary.unpaidInvoices} />
+                <HeroStatChip icon={<TriangleAlert className="h-4 w-4" strokeWidth={1.75} />} label="בפיגור" value={finance.summary.overdueInvoices} />
+                <HeroStatChip icon={<BellRing className="h-4 w-4" strokeWidth={1.75} />} label="התראות" value={finance.summary.unreadNotifications} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={nextPaymentDue ? () => setPaymentDrawerInvoiceId(nextPaymentDue.id) : () => void router.push('/resident/account')}
+                  className="flex min-h-[58px] items-center justify-center gap-2 rounded-[24px] border border-white/16 bg-white/12 px-4 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-sm transition hover:bg-white/16"
+                >
+                  <ArrowUpLeft className="h-4 w-4" strokeWidth={1.9} />
+                  {nextPaymentDue ? 'תשלום מיידי' : 'חזרה לחשבון'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('methods')}
+                  className="flex min-h-[58px] items-center justify-center gap-2 rounded-[24px] border border-white/16 bg-[linear-gradient(135deg,rgba(255,255,255,0.22),rgba(255,255,255,0.08))] px-4 text-sm font-semibold text-white shadow-[0_18px_34px_rgba(18,12,6,0.18)] transition hover:bg-white/18"
+                >
+                  <WalletCards className="h-4 w-4" strokeWidth={1.9} />
+                  אמצעי תשלום
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.section>
       </div>
 
-      <Card variant="elevated" className="rounded-[28px] border-0 bg-[linear-gradient(180deg,rgba(37,99,235,0.08)_0%,rgba(255,255,255,1)_100%)]">
-        <CardContent className="space-y-4 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-black text-foreground">מרכז תשלומים</h1>
-              <p className="text-sm text-secondary-foreground">פתוחים, היסטוריה וכרטיסים במסך אחד.</p>
-            </div>
-            <div className="rounded-full bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
-              {finance.summary.unpaidInvoices ? `${finance.summary.unpaidInvoices} פתוחים` : 'מעודכן'}
-            </div>
-          </div>
+      <motion.section
+        initial={reducedMotion ? false : { opacity: 0, y: 18 }}
+        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+        transition={{ duration: 0.32, delay: reducedMotion ? 0 : 0.06, ease: 'easeOut' }}
+      >
+        <div className="grid grid-cols-3 gap-2.5">
+          <ActionTile
+            icon={<Receipt className="h-5 w-5" strokeWidth={1.8} />}
+            title="חשבוניות"
+            subtitle={openInvoices.length ? `${openInvoices.length} פתוחות` : 'הכל שולם'}
+            onClick={() => setActiveTab('open')}
+          />
+          <ActionTile
+            icon={<Download className="h-5 w-5" strokeWidth={1.8} />}
+            title="קבלות"
+            subtitle={historyEntries.length ? 'היסטוריה אחרונה' : 'אין עדיין'}
+            onClick={() => setActiveTab('history')}
+          />
+          <ActionTile
+            icon={<CreditCard className="h-5 w-5" strokeWidth={1.8} />}
+            title="כרטיסים"
+            subtitle={primaryMethod ? 'כרטיס ראשי' : 'לא הוגדר'}
+            onClick={() => setActiveTab('methods')}
+          />
+        </div>
+      </motion.section>
 
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <QuickMetric label="יתרה" value={formatCurrency(finance.summary.currentBalance)} />
-            <QuickMetric label="פתוחים" value={finance.summary.unpaidInvoices} />
-            <QuickMetric label="בפיגור" value={finance.summary.overdueInvoices} />
-          </div>
-        </CardContent>
-      </Card>
+      {/* <PrimaryActionCard
+        eyebrow="חיוב הבא"
+        title={nextPaymentDue ? `${nextPaymentDue.description}` : 'אין כרגע תשלום פתוח'}
+        description={
+          nextPaymentDue
+            ? `${formatCurrency(nextPaymentDue.amount)} · לפירעון ב-${formatDate(nextPaymentDue.dueDate, locale)}`
+            : 'החשבון שלך מעודכן, וכל התשלומים סגורים כרגע.'
+        }
+        ctaLabel={nextPaymentDue ? 'פתח תשלום' : 'חזרה לחשבון'}
+        href={nextPaymentDue ? undefined : '/resident/account'}
+        onClick={nextPaymentDue ? () => setPaymentDrawerInvoiceId(nextPaymentDue.id) : undefined}
+        tone={heroStatusTone}
+        visualStyle="resident"
+        className="border-s-[5px]"
+      /> */}
 
       <AmsTabs
         ariaLabel="Resident payments"
         selectedKey={activeTab}
         onSelectionChange={(key) => setActiveTab(key as 'open' | 'history' | 'methods')}
-        listClassName="grid-cols-3 gap-1.5"
-        panelClassName="pt-3"
+        className="w-full text-right"
+        listClassName="grid-cols-3 gap-1.5 rounded-[24px] border border-primary/10 bg-[linear-gradient(180deg,rgba(255,251,245,0.96)_0%,rgba(255,255,255,0.92)_100%)] p-1.5"
+        panelClassName="pt-3 text-right"
         items={[
           {
             key: 'open',
@@ -279,46 +363,30 @@ export default function ResidentPaymentsPage() {
             content: (
               <div className="space-y-3">
                 {sortedInvoices.length ? (
-                  <AmsDisclosure
-                    defaultExpandedKeys={nextPaymentDue ? [`invoice-${nextPaymentDue.id}`] : []}
-                    items={sortedInvoices.map((invoice) => ({
-                      key: `invoice-${invoice.id}`,
-                      title: (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span>{invoice.description}</span>
-                          <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'outline'}>
-                            {translateInvoiceStatus(invoice.status)}
-                          </Badge>
-                        </div>
-                      ),
-                      subtitle: `${formatCurrency(invoice.amount)} · פירעון ${formatDate(invoice.dueDate, locale)}`,
-                      startContent: <Wallet className="h-4 w-4 text-primary" strokeWidth={1.75} />,
-                      content: (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-2 gap-2">
-                            <QuickMetric label="סטטוס" value={translateInvoiceStatus(invoice.status)} />
-                            <QuickMetric label="סכום" value={formatCurrency(invoice.amount)} />
-                          </div>
-                          <div className="rounded-[18px] border border-subtle-border bg-background px-3 py-3 text-sm text-secondary-foreground">
-                            {invoice.issueDate ? `הונפק ב-${formatDate(invoice.issueDate, locale)}.` : 'חיוב זמין לתשלום.'} {invoice.receiptNumber ? `קבלה #${invoice.receiptNumber}.` : ''}
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {payableStatuses.has(invoice.status) ? (
-                              <Button size="sm" onClick={() => setPaymentDrawerInvoiceId(invoice.id)} disabled={processingInvoiceId === invoice.id}>
-                                {processingInvoiceId === invoice.id ? 'מעבד...' : 'פתח תשלום'}
-                              </Button>
-                            ) : null}
-                            {invoice.receiptNumber ? (
-                              <Button size="sm" variant="outline" onClick={() => downloadAuthenticatedFile(`/api/v1/invoices/${invoice.id}/receipt`, `receipt-${invoice.receiptNumber}.pdf`)}>
-                                <Download className="me-2 h-4 w-4" strokeWidth={1.75} />
-                                קבלה
-                              </Button>
-                            ) : null}
-                          </div>
-                        </div>
-                      ),
-                    }))}
-                  />
+                  <div className="space-y-3">
+                    {sortedInvoices.map((invoice, index) => (
+                      <motion.div
+                        key={invoice.id}
+                        initial={reducedMotion ? false : { opacity: 0, y: 14 }}
+                        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+                        transition={{ duration: 0.24, delay: reducedMotion ? 0 : index * 0.04, ease: 'easeOut' }}
+                      >
+                        <InvoiceShowcaseCard
+                          invoice={invoice}
+                          locale={locale}
+                          expanded={expandedInvoiceIds.includes(invoice.id)}
+                          isProcessing={processingInvoiceId === invoice.id}
+                          onToggle={() => toggleInvoice(invoice.id)}
+                          onPay={() => setPaymentDrawerInvoiceId(invoice.id)}
+                          onDownload={
+                            invoice.receiptNumber
+                              ? () => downloadAuthenticatedFile(`/api/v1/invoices/${invoice.id}/receipt`, `receipt-${invoice.receiptNumber}.pdf`)
+                              : undefined
+                          }
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
                 ) : (
                   <EmptyState type="empty" size="sm" title="אין כרגע חשבוניות להצגה" description="כאשר יופיע חיוב חדש, נראה אותו כאן." />
                 )}
@@ -332,14 +400,15 @@ export default function ResidentPaymentsPage() {
             content: (
               <div className="space-y-2">
                 {finance.ledger.length ? (
-                  finance.ledger.slice(0, 10).map((entry) => (
-                    <div key={entry.id} className="flex items-center justify-between gap-3 rounded-[20px] border border-subtle-border bg-background px-3 py-3">
-                      <div>
-                        <div className="text-sm font-medium text-foreground">{entry.summary}</div>
-                        <div className="text-[12px] leading-5 text-secondary-foreground">{formatDate(entry.createdAt, locale)}</div>
-                      </div>
-                      <div className="text-sm font-semibold tabular-nums text-foreground">{formatCurrency(entry.amount)}</div>
-                    </div>
+                  historyEntries.map((entry, index) => (
+                    <motion.div
+                      key={entry.id}
+                      initial={reducedMotion ? false : { opacity: 0, y: 14 }}
+                      animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+                      transition={{ duration: 0.24, delay: reducedMotion ? 0 : index * 0.03, ease: 'easeOut' }}
+                    >
+                      <LedgerRow entry={entry} locale={locale} />
+                    </motion.div>
                   ))
                 ) : (
                   <EmptyState type="empty" size="sm" title="עדיין אין היסטוריית תשלומים" description="לאחר תשלום ראשון נציג כאן קבלות וחיובים קודמים." />
@@ -354,23 +423,27 @@ export default function ResidentPaymentsPage() {
             icon: <CreditCard className="h-4 w-4" strokeWidth={1.75} />,
             content: (
               <div className="space-y-3">
-                <div className="flex items-start justify-between gap-4 rounded-[22px] border border-subtle-border bg-background p-3.5">
-                  <div>
-                    <div className="font-semibold text-foreground">חיוב אוטומטי</div>
-                    <div className="text-sm text-secondary-foreground">תשלום עתידי דרך הכרטיס הראשי.</div>
+                <div className="overflow-hidden rounded-[28px] border border-primary/12 bg-[linear-gradient(160deg,rgba(255,249,240,0.96)_0%,rgba(255,255,255,0.95)_46%,rgba(240,248,255,0.94)_100%)] p-4 shadow-[0_18px_36px_rgba(44,28,9,0.08)]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/72">מצב חשבון</div>
+                      <div className="mt-1 font-semibold text-foreground">חיוב אוטומטי</div>
+                      <div className="mt-1 text-sm text-secondary-foreground">תשלום עתידי דרך הכרטיס הראשי השמור בחשבון.</div>
+                    </div>
+                    <Switch checked={autopayEnabled} onCheckedChange={(checked) => void toggleAutopay(checked)} aria-label="הפעלת חיוב אוטומטי" />
                   </div>
-                  <Switch checked={autopayEnabled} onCheckedChange={(checked) => void toggleAutopay(checked)} aria-label="הפעלת חיוב אוטומטי" />
                 </div>
 
                 {paymentMethods.length ? (
                   paymentMethods.map((method) => (
-                    <div key={method.id} className="rounded-[22px] border border-subtle-border bg-background p-3.5">
+                    <div key={method.id} className="rounded-[26px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] p-4 shadow-[0_14px_28px_rgba(44,28,9,0.05)]">
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <div className="font-semibold text-foreground">
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/68">כרטיס שמור</div>
+                          <div className="mt-1 font-semibold text-foreground">
                             {translateCardBrand(method.brand || method.provider)} •••• {method.last4 || '••••'}
                           </div>
-                          <div className="text-sm text-secondary-foreground">
+                          <div className="mt-1 text-sm text-secondary-foreground">
                             תוקף {method.expMonth || '--'}/{method.expYear || '--'}
                           </div>
                         </div>
@@ -400,6 +473,8 @@ export default function ResidentPaymentsPage() {
         }}
         title="תשלום מאובטח"
         description={selectedInvoice ? `${selectedInvoice.description} · ${formatCurrency(selectedInvoice.amount)}` : 'אישור ותשלום בכרטיס הראשי.'}
+        headerClassName="text-right"
+        bodyClassName="text-right"
         footer={(onClose) => (
           <div className="w-full space-y-2">
             <Button
@@ -420,7 +495,7 @@ export default function ResidentPaymentsPage() {
         )}
       >
         {selectedInvoice ? (
-          <div className="space-y-3">
+          <div dir="rtl" className="space-y-3 text-right">
             <div className="grid grid-cols-2 gap-2">
               <QuickMetric label="סכום" value={formatCurrency(selectedInvoice.amount)} />
               <QuickMetric label="מועד" value={formatDate(selectedInvoice.dueDate, locale)} />
@@ -455,11 +530,175 @@ export default function ResidentPaymentsPage() {
 
 function QuickMetric({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-[18px] border border-subtle-border bg-background px-3 py-3">
+    <div className="rounded-[18px] border border-subtle-border bg-background px-3 py-3 text-right">
       <div className="text-sm font-bold text-foreground">
         <bdi>{value}</bdi>
       </div>
       <div className="mt-1 text-xs text-secondary-foreground">{label}</div>
+    </div>
+  );
+}
+
+function HeroStatChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
+  return (
+    <div className="rounded-[22px] border border-white/14 bg-white/10 px-3 py-3 text-right text-white backdrop-blur-sm">
+      <div className="flex items-center justify-between gap-2 text-white/72">
+        <span className="text-[11px] font-semibold">{label}</span>
+        <span className="text-white/70">{icon}</span>
+      </div>
+      <div className="mt-2 text-lg font-black tabular-nums text-white">
+        <bdi>{value}</bdi>
+      </div>
+    </div>
+  );
+}
+
+function ActionTile({
+  icon,
+  title,
+  subtitle,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-[118px] flex-col items-end justify-center rounded-[28px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3 py-4 text-right shadow-[0_16px_30px_rgba(44,28,9,0.05)] transition hover:-translate-y-0.5 hover:border-primary/18"
+    >
+      <span className="flex h-12 w-12 items-center justify-center self-end rounded-[18px] border border-primary/12 bg-primary/10 text-primary">
+        {icon}
+      </span>
+      <span className="mt-3 text-sm font-semibold text-foreground">{title}</span>
+      <span className="mt-1 text-[11px] leading-4 text-secondary-foreground">{subtitle}</span>
+    </button>
+  );
+}
+
+function InvoiceShowcaseCard({
+  invoice,
+  locale,
+  expanded,
+  isProcessing,
+  onToggle,
+  onPay,
+  onDownload,
+}: {
+  invoice: ResidentFinance['invoices'][number];
+  locale: string;
+  expanded: boolean;
+  isProcessing: boolean;
+  onToggle: () => void;
+  onPay: () => void;
+  onDownload?: () => void;
+}) {
+  const isPayable = payableStatuses.has(invoice.status);
+  const amountToneClass =
+    invoice.status === 'OVERDUE'
+      ? 'text-destructive'
+      : invoice.status === 'PAID'
+        ? 'text-success'
+        : 'text-foreground';
+
+  return (
+    <div className="overflow-hidden rounded-[30px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] text-right shadow-[0_18px_36px_rgba(44,28,9,0.06)]">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-start justify-between gap-4 px-4 pb-4 pt-4 text-right"
+        aria-expanded={expanded}
+      >
+        <div className={`text-xl font-black tabular-nums ${amountToneClass}`}>
+          <bdi>{formatCurrency(invoice.amount)}</bdi>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'outline'}>
+                  {translateInvoiceStatus(invoice.status)}
+                </Badge>
+                <span className="text-sm font-semibold text-foreground">{invoice.description}</span>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center justify-end gap-3 text-[12px] text-secondary-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <CalendarClock className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  פירעון {formatDate(invoice.dueDate, locale)}
+                </span>
+                {invoice.issueDate ? <span>הונפק {formatDate(invoice.issueDate, locale)}</span> : null}
+              </div>
+            </div>
+            <ChevronDown
+              className={`mt-0.5 h-4 w-4 shrink-0 text-secondary-foreground transition-transform ${expanded ? 'rotate-180' : ''}`}
+              strokeWidth={1.9}
+            />
+          </div>
+        </div>
+      </button>
+
+      {expanded ? (
+        <>
+          <div className="grid grid-cols-2 gap-px bg-subtle-border/70 text-right">
+            <div className="bg-white/74 px-4 py-3">
+              <div className="text-[11px] font-semibold text-secondary-foreground">מזהה / קבלה</div>
+              <div className="mt-1 text-sm font-medium text-foreground">{invoice.receiptNumber ? `#${invoice.receiptNumber}` : 'יופק לאחר תשלום'}</div>
+            </div>
+            <div className="bg-white/74 px-4 py-3">
+              <div className="text-[11px] font-semibold text-secondary-foreground">סטטוס</div>
+              <div className="mt-1 text-sm font-medium text-foreground">{translateInvoiceStatus(invoice.status)}</div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-start gap-2 px-4 py-4">
+            {isPayable ? (
+              <Button size="sm" className="rounded-full" onClick={onPay} disabled={isProcessing}>
+                {isProcessing ? 'מעבד...' : 'פתח תשלום'}
+              </Button>
+            ) : null}
+            {onDownload ? (
+              <Button size="sm" variant="outline" className="rounded-full" onClick={onDownload}>
+                <Download className="me-2 h-4 w-4" strokeWidth={1.75} />
+                הורדת קבלה
+              </Button>
+            ) : null}
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function LedgerRow({
+  entry,
+  locale,
+}: {
+  entry: ResidentFinance['ledger'][number];
+  locale: string;
+}) {
+  const isPositive = entry.amount >= 0;
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-[24px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-4 py-3.5 text-right shadow-[0_12px_24px_rgba(44,28,9,0.04)]">
+      <div className="flex min-w-0 items-center gap-3">
+        <span
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
+            isPositive ? 'bg-success/12 text-success' : 'bg-destructive/10 text-destructive'
+          }`}
+        >
+          {isPositive ? <CheckCircle2 className="h-5 w-5" strokeWidth={1.9} /> : <Receipt className="h-5 w-5" strokeWidth={1.9} />}
+        </span>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold text-foreground">{entry.summary}</div>
+          <div className="mt-1 text-[12px] text-secondary-foreground">{formatDate(entry.createdAt, locale)}</div>
+        </div>
+      </div>
+      <div className={`text-base font-black tabular-nums ${isPositive ? 'text-success' : 'text-foreground'}`}>
+        <bdi>{formatCurrency(entry.amount)}</bdi>
+      </div>
     </div>
   );
 }

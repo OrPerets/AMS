@@ -123,9 +123,7 @@ export default function LoginPage() {
                   {t('login.formDescription')}
                 </CardDescription>
               </div>
-              <div className="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
-                {t('login.postLoginHint')}
-              </div>
+             
             </CardHeader>
 
             <CardContent>
@@ -189,13 +187,6 @@ export default function LoginPage() {
                   {loading ? t('login.submitting') : t('login.submit')}
                 </Button>
 
-                <div className="rounded-2xl border border-border/70 bg-muted/45 p-4 text-sm leading-6 text-muted-foreground">
-                  <div className="mb-1 flex items-center gap-2 font-semibold text-foreground">
-                    <Lock className="h-4 w-4 text-primary" />
-                    {t('login.securityTitle')}
-                  </div>
-                  <p>{t('login.supportNote')}</p>
-                </div>
 
                 <div className="text-center text-sm text-muted-foreground">
                   <Link href="/" className="font-medium text-primary underline-offset-4 hover:underline">

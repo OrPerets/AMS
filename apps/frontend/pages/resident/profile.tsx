@@ -346,52 +346,56 @@ export default function ResidentProfilePage() {
             <p className="text-sm text-default-500">{labels.personalSectionSubtitle}</p>
           </CardHeader>
           <CardBody className="gap-4 px-4 pb-4 pt-2 sm:px-5">
-            <Input
-              type="email"
+            <ProfileField
               label={labels.email}
-              labelPlacement="outside"
-              placeholder="name@example.com"
-              value={profile.email}
-              startContent={<Mail className="h-4 w-4 text-default-400" />}
-              isRequired
-              isInvalid={Boolean((submitted || touched.email) && errors.email)}
               errorMessage={(submitted || touched.email) && errors.email ? errors.email : undefined}
-              onValueChange={(value) => setProfile((current) => ({ ...current, email: value }))}
-              onBlur={() => setTouched((current) => ({ ...current, email: true }))}
-              classNames={{
-                inputWrapper:
-                  'min-h-14 rounded-[20px] border border-divider/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] shadow-none',
-              }}
-            />
+              isRequired
+            >
+              <div dir="ltr">
+                <Input
+                  type="email"
+                  aria-label={labels.email}
+                  placeholder="name@example.com"
+                  value={profile.email}
+                  startContent={<Mail className="h-4 w-4 text-default-400" />}
+                  isRequired
+                  isInvalid={Boolean((submitted || touched.email) && errors.email)}
+                  onValueChange={(value) => setProfile((current) => ({ ...current, email: value }))}
+                  onBlur={() => setTouched((current) => ({ ...current, email: true }))}
+                  classNames={profileInputClassNames}
+                />
+              </div>
+            </ProfileField>
 
-            <Input
-              type="tel"
+            <ProfileField
               label={labels.phone}
-              labelPlacement="outside"
-              placeholder="050-000-0000"
-              value={profile.phone}
-              startContent={<Phone className="h-4 w-4 text-default-400" />}
-              isInvalid={Boolean((submitted || touched.phone) && errors.phone)}
               errorMessage={(submitted || touched.phone) && errors.phone ? errors.phone : undefined}
-              onValueChange={(value) => setProfile((current) => ({ ...current, phone: value }))}
-              onBlur={() => setTouched((current) => ({ ...current, phone: true }))}
-              classNames={{
-                inputWrapper:
-                  'min-h-14 rounded-[20px] border border-divider/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] shadow-none',
-              }}
-            />
+            >
+              <div dir="ltr">
+                <Input
+                  type="tel"
+                  aria-label={labels.phone}
+                  placeholder="050-000-0000"
+                  value={profile.phone}
+                  startContent={<Phone className="h-4 w-4 text-default-400" />}
+                  isInvalid={Boolean((submitted || touched.phone) && errors.phone)}
+                  onValueChange={(value) => setProfile((current) => ({ ...current, phone: value }))}
+                  onBlur={() => setTouched((current) => ({ ...current, phone: true }))}
+                  classNames={profileInputClassNames}
+                />
+              </div>
+            </ProfileField>
 
-            <Input
-              label={labels.pushToken}
-              labelPlacement="outside"
-              value={profile.pushToken || 'לא נשמר'}
-              isReadOnly
-              description={labels.pushTokenHint}
-              classNames={{
-                inputWrapper:
-                  'min-h-14 rounded-[20px] border border-divider/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] shadow-none',
-              }}
-            />
+            <ProfileField label={labels.pushToken} hint={labels.pushTokenHint}>
+              <div dir="ltr">
+                <Input
+                  aria-label={labels.pushToken}
+                  value={profile.pushToken || 'לא נשמר'}
+                  isReadOnly
+                  classNames={profileInputClassNames}
+                />
+              </div>
+            </ProfileField>
 
             <div className="flex justify-start">
               <Button
@@ -449,6 +453,14 @@ export default function ResidentProfilePage() {
   );
 }
 
+const profileInputClassNames = {
+  base: 'w-full',
+  inputWrapper:
+    'min-h-14 rounded-[20px] border border-divider/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] shadow-none',
+  input: 'text-left',
+  innerWrapper: 'gap-3',
+} as const;
+
 function HeroPattern() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -468,6 +480,32 @@ function MiniPill({ icon, text }: { icon: ReactNode; text: string }) {
     <div className="inline-flex items-center gap-1.5 rounded-full border border-divider/70 bg-muted/55 px-3 py-1.5 text-xs font-medium text-foreground">
       <span className="text-primary">{icon}</span>
       <span>{text}</span>
+    </div>
+  );
+}
+
+function ProfileField({
+  label,
+  hint,
+  errorMessage,
+  isRequired,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  errorMessage?: string;
+  isRequired?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-1 text-sm font-medium text-foreground">
+        <span>{label}</span>
+        {isRequired ? <span className="text-danger">*</span> : null}
+      </div>
+      {children}
+      {errorMessage ? <p className="text-xs text-danger">{errorMessage}</p> : null}
+      {!errorMessage && hint ? <p className="text-xs text-default-500">{hint}</p> : null}
     </div>
   );
 }
