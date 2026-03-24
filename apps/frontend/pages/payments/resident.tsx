@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { ChevronDown, ChevronUp, CreditCard, Download, Receipt, ShieldCheck } from 'lucide-react';
-import { authFetch, downloadAuthenticatedFile } from '../../lib/auth';
+import { authFetch, downloadAuthenticatedFile, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { formatCurrency, formatDate, humanizeEnum } from '../../lib/utils';
 import { toast } from '../../components/ui/use-toast';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
@@ -16,6 +16,7 @@ import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 import { useLocale } from '../../lib/providers';
 import { triggerHaptic } from '../../lib/mobile';
+import { setResumeState } from '../../lib/engagement';
 
 type AccountContext = {
   user: { id: number; email: string };
@@ -90,6 +91,10 @@ export default function ResidentPaymentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showMethods, setShowMethods] = useState(false);
   const [showLedger, setShowLedger] = useState(false);
+
+  useEffect(() => {
+    setResumeState({ screen: 'resident', href: '/payments/resident', label: 'מרכז תשלומים', role: getEffectiveRole() || 'RESIDENT', userId: getCurrentUserId() });
+  }, []);
 
   useEffect(() => {
     if (!router.isReady) return;

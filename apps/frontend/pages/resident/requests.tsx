@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { CalendarDays, FileText, Move, ParkingCircle, PhoneCall, Sparkles } from 'lucide-react';
-import { authFetch } from '../../lib/auth';
+import { authFetch, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { EmptyState } from '../../components/ui/empty-state';
@@ -32,6 +32,7 @@ import {
   getResidentRequestStatusTone,
 } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
+import { setResumeState } from '../../lib/engagement';
 
 const requestTypes = [
   { value: 'MOVING', label: 'מעבר', icon: Move, description: 'תיאום מהיר' },
@@ -115,6 +116,10 @@ export default function ResidentRequestsPage() {
       await loadHistory();
     },
   });
+
+  useEffect(() => {
+    setResumeState({ screen: 'resident', href: '/resident/requests', label: 'בקשות דייר', role: getEffectiveRole() || 'RESIDENT', userId: getCurrentUserId() });
+  }, []);
 
   useEffect(() => {
     void loadHistory();

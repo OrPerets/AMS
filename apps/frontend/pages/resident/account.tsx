@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Bell, Building2, ClipboardList, CreditCard, FileText, MessageCircle, Ticket } from 'lucide-react';
-import { authFetch } from '../../lib/auth';
+import { ArrowLeft, Bell, Building2, ClipboardList, CreditCard, FileText, MessageCircle, Ticket } from 'lucide-react';
+import { authFetch, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { useLocale } from '../../lib/providers';
 import { formatCurrency, formatDate, getStatusLabel, getTicketStatusTone } from '../../lib/utils';
 import { Button } from '../../components/ui/button';
@@ -14,6 +14,8 @@ import { MobileActionHub } from '../../components/ui/mobile-action-hub';
 import { MobilePriorityInbox, type MobilePriorityInboxItem } from '../../components/ui/mobile-priority-inbox';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
+import { getResumeState, setResumeState } from '../../lib/engagement';
+import { trackResumeClick } from '../../lib/analytics';
 
 type AccountContext = {
   user: { id: number; email: string; role: string };
@@ -292,6 +294,17 @@ export default function ResidentAccountPage() {
     });
   }
 
+  const userId = getCurrentUserId();
+  const role = getEffectiveRole();
+  const resumeState = useMemo(() => getResumeState('resident', userId, role), [userId, role]);
+  const showResume = resumeState && resumeState.href !== '/resident/account' && resumeState.href !== router.asPath;
+
+  useEffect(() => {
+    if (!loading && context) {
+      setResumeState({ screen: 'resident', href: '/resident/account', label: 'האזור האישי', role: role || 'RESIDENT', userId });
+    }
+  }, [loading, context, role, userId]);
+
   if (loading) return <DetailPanelSkeleton />;
   if (error || !context) {
     return (
@@ -305,6 +318,28 @@ export default function ResidentAccountPage() {
 
   return (
     <div dir="rtl" className="space-y-3 text-right sm:space-y-6">
+      {showResume ? (
+        <Card variant="muted" className="rounded-2xl border-primary/15 bg-primary/5">
+          <CardContent className="flex items-center justify-between gap-3 p-3">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-foreground">המשך מאיפה שעצרת</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">{resumeState.label}</div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              onClick={() => trackResumeClick('resident', resumeState.href)}
+            >
+              <Link href={resumeState.href}>
+                המשך
+                <ArrowLeft className="ms-1.5 h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <CompactStatusStrip
         roleLabel={primaryBuilding ? `${primaryBuilding.name} · דירה ${primaryUnit?.number}` : labels.home}
         icon={<Building2 className="h-4 w-4" strokeWidth={1.75} />}
