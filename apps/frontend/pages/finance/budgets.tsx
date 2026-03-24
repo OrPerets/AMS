@@ -270,7 +270,7 @@ export default function BudgetsPage() {
           <CardHeader><CardTitle>רישום הוצאה</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <Input placeholder="מזהה תקציב (אופציונלי)" value={expenseForm.budgetId} onChange={(event) => setExpenseForm({ ...expenseForm, budgetId: event.target.value })} />
-            <select className="rounded-md border px-3 py-2" value={expenseForm.category} onChange={(event) => setExpenseForm({ ...expenseForm, category: event.target.value })}>
+            <select className="rounded-md border px-3 py-2 text-start" value={expenseForm.category} onChange={(event) => setExpenseForm({ ...expenseForm, category: event.target.value })}>
               {['MAINTENANCE', 'UTILITIES', 'STAFF', 'ADMINISTRATION', 'OTHER'].map((category) => (
                 <option key={category} value={category}>{category}</option>
               ))}
@@ -288,7 +288,7 @@ export default function BudgetsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left">
+                <tr className="border-b text-start">
                   <th className="py-2">שם</th>
                   <th className="py-2">שנה</th>
                   <th className="py-2">סטטוס</th>

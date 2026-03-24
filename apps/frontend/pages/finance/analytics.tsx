@@ -166,7 +166,7 @@ export default function FinancialAnalyticsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left">
+                <tr className="border-b text-start">
                   <th className="py-2">שנה</th>
                   <th className="py-2">תקציב</th>
                   <th className="py-2">מתוכנן</th>

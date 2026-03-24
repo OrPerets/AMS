@@ -237,6 +237,7 @@
   textarea,
   select {
     font-size: 16px;
+    text-align: inherit;
   }
 }
 
@@ -289,6 +290,7 @@
     min-height: 100dvh;
     position: relative;
     isolation: isolate;
+    text-align: start;
   }
 
   html {
@@ -887,6 +889,7 @@
 
   input, textarea, select {
     font-size: 16px;
+    text-align: inherit;
   }
 
   html,

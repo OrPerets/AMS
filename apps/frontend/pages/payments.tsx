@@ -735,7 +735,7 @@ export default function PaymentsPage() {
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left">
+                <tr className="border-b text-start">
                   <th className="py-2">חשבונית</th>
                   <th className="py-2">דייר</th>
                   <th className="py-2">סכום</th>
@@ -1061,7 +1061,7 @@ export default function PaymentsPage() {
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-left">
+                <tr className="border-b text-start">
                   <th className="py-2">דייר</th>
                   <th className="py-2">שם חיוב</th>
                   <th className="py-2">מחזור</th>
