@@ -109,14 +109,14 @@ export function AmsCommandDrawer({
         ) : null}
 
         {unreadCount > 0 ? (
-          <div className="rounded-[24px] border border-primary/18 bg-primary/12 p-3 text-inverse-text shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+          <div className="gold-sheen-surface rounded-[24px] p-3 text-inverse" data-accent-sheen="true">
             <div className="flex items-start gap-3">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-primary">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/68 text-primary">
                 <Bell className="h-4 w-4" strokeWidth={1.75} />
               </span>
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold">מרכז עדכונים</div>
-                <div className="mt-1 text-xs leading-5 text-white/70">
+                <div className="mt-1 text-xs leading-5 text-muted-foreground">
                   {unreadCount} התראות לא נקראו. פתח את ההתראות או המשך למסך הפעולה הבא.
                 </div>
               </div>
@@ -146,6 +146,7 @@ export function AmsCommandDrawer({
         {filteredSections.map((section) => (
           <div key={section.id} className="space-y-2">
             <h3 className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/56">{section.title}</h3>
+            <div className="gold-divider-line h-px w-full" />
             <div className="space-y-1.5">
               {section.items.map((item) => (
                 <CommandLink
@@ -187,20 +188,21 @@ function CommandTile({
       className={cn(
         'rounded-[22px] border p-3 text-start transition-[transform,box-shadow,border-color,background-color] duration-200 active:scale-[0.99]',
         active
-          ? 'border-primary/20 bg-primary/12 text-inverse-text shadow-[0_18px_40px_rgba(0,0,0,0.18)]'
+          ? 'gold-sheen-surface text-inverse'
           : 'border-white/10 bg-white/6 text-white/84 hover:bg-white/8',
       )}
+      data-accent-sheen={active ? 'true' : undefined}
     >
-      <span className={cn('inline-flex h-10 w-10 items-center justify-center rounded-2xl', active ? 'bg-white/10 text-primary' : 'bg-white/8 text-white/64')}>
+      <span className={cn('inline-flex h-10 w-10 items-center justify-center rounded-2xl', active ? 'bg-white/62 text-primary' : 'bg-white/8 text-white/64')}>
         <Icon className="h-4 w-4" strokeWidth={1.75} />
       </span>
       <div className="mt-3 flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="text-sm font-semibold">{item.title}</div>
-          {item.hint ? <div className="mt-1 text-[11px] leading-5 text-white/58">{item.hint}</div> : null}
+          {item.hint ? <div className={cn('mt-1 text-[11px] leading-5', active ? 'text-muted-foreground' : 'text-white/58')}>{item.hint}</div> : null}
         </div>
         {item.badge ? (
-          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold text-white/78">{item.badge}</span>
+          <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold', active ? 'bg-white/70 text-primary' : 'bg-white/10 text-white/78')}>{item.badge}</span>
         ) : null}
       </div>
     </Link>
@@ -225,23 +227,24 @@ function CommandLink({
       className={cn(
         'flex min-h-[52px] items-center gap-3 rounded-[22px] border px-3.5 py-3 text-sm transition-[transform,box-shadow,border-color,background-color] duration-200 active:scale-[0.99]',
         active
-          ? 'border-primary/18 bg-primary/12 text-inverse-text shadow-[0_16px_34px_rgba(0,0,0,0.18)]'
+          ? 'gold-sheen-surface text-inverse'
           : 'border-white/10 bg-white/6 text-white/84 hover:bg-white/8',
       )}
+      data-accent-sheen={active ? 'true' : undefined}
     >
-      <span className={cn('inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl', active ? 'bg-white/10 text-primary' : 'bg-white/8 text-white/62')}>
+      <span className={cn('inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl', active ? 'bg-white/62 text-primary' : 'bg-white/8 text-white/62')}>
         <Icon className="h-4 w-4" strokeWidth={1.75} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate font-semibold">{item.title}</span>
-        {item.hint ? <span className="mt-0.5 block truncate text-[11px] font-normal text-white/56">{item.hint}</span> : null}
+        {item.hint ? <span className={cn('mt-0.5 block truncate text-[11px] font-normal', active ? 'text-muted-foreground' : 'text-white/56')}>{item.hint}</span> : null}
       </span>
       {item.badge ? (
-        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold text-white/78">{item.badge}</span>
+        <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold', active ? 'bg-white/70 text-primary' : 'bg-white/10 text-white/78')}>{item.badge}</span>
       ) : item.meta ? (
-        <span className="text-[10px] font-medium text-white/48">{item.meta}</span>
+        <span className={cn('text-[10px] font-medium', active ? 'text-muted-foreground' : 'text-white/48')}>{item.meta}</span>
       ) : (
-        <ArrowUpRight className="icon-directional h-4 w-4 text-white/34" strokeWidth={1.75} />
+        <ArrowUpRight className={cn('icon-directional h-4 w-4', active ? 'text-primary/72' : 'text-white/34')} strokeWidth={1.75} />
       )}
     </Link>
   );

@@ -142,7 +142,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
       <nav
         ref={navRef}
         className={cn(
-          'fixed inset-x-0 bottom-0 z-40 border-t border-white/35 bg-[linear-gradient(180deg,rgba(255,252,247,0.92)_0%,rgba(248,244,236,0.98)_100%)] shadow-[0_-18px_40px_rgba(44,28,9,0.08)] backdrop-blur-xl safe-pb thumb-zone md:hidden',
+          'fixed inset-x-0 bottom-0 z-40 border-t border-white/35 bg-[linear-gradient(180deg,rgba(255,252,247,0.9)_0%,rgba(246,241,231,0.98)_100%)] shadow-[0_-18px_40px_rgba(44,28,9,0.08)] backdrop-blur-xl safe-pb thumb-zone md:hidden',
           className,
         )}
         role="navigation"
@@ -167,11 +167,11 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                 {active ? (
                   <motion.span
                     layoutId="mobile-bottom-nav-active"
-                    className="absolute inset-0 rounded-2xl border border-primary/24 bg-primary/14 shadow-[0_12px_28px_rgba(44,28,9,0.12),inset_0_1px_0_rgba(255,255,255,0.58)]"
+                    className="gold-active-pill gold-current-pulse absolute inset-0 rounded-2xl"
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                   />
                 ) : null}
-                <span className={cn('relative z-10 flex h-8 w-8 items-center justify-center rounded-xl', active ? 'bg-background/88 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]' : 'text-muted-foreground')}>
+                <span className={cn('relative z-10 flex h-8 w-8 items-center justify-center rounded-xl transition-colors', active ? 'bg-white/76 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.68)]' : 'text-muted-foreground')}>
                   <Icon className={cn('h-[18px] w-[18px]', active && 'scale-105')} strokeWidth={1.75} />
                 </span>
                 <span className="relative z-10 w-full text-center leading-tight">
@@ -193,9 +193,9 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
             aria-controls="mobile-more-sheet"
           >
             {moreOpen || isMoreRouteActive ? (
-              <span className="absolute inset-0 rounded-2xl border border-primary/24 bg-primary/14 shadow-[0_12px_28px_rgba(44,28,9,0.12),inset_0_1px_0_rgba(255,255,255,0.58)]" />
+              <span className="gold-active-pill gold-current-pulse absolute inset-0 rounded-2xl" />
             ) : null}
-            <span className={cn('relative z-10 flex h-8 w-8 items-center justify-center rounded-xl', moreOpen || isMoreRouteActive ? 'bg-background/88 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]' : 'text-muted-foreground')}>
+            <span className={cn('relative z-10 flex h-8 w-8 items-center justify-center rounded-xl transition-colors', moreOpen || isMoreRouteActive ? 'bg-white/76 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.68)]' : 'text-muted-foreground')}>
               <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
               {unreadNotifications > 0 ? (
                 <motion.span

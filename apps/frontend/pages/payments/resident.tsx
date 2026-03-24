@@ -248,7 +248,7 @@ export default function ResidentPaymentsPage() {
           animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
           transition={{ duration: 0.32, ease: 'easeOut' }}
         >
-          <div className="relative overflow-hidden rounded-[32px] border border-white/50 bg-[radial-gradient(circle_at_top_left,rgba(226,186,111,0.32),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.16),transparent_28%),linear-gradient(140deg,rgba(32,24,16,0.98)_0%,rgba(64,42,14,0.96)_48%,rgba(198,145,55,0.94)_100%)] p-4 text-white shadow-[0_28px_70px_rgba(44,28,9,0.24)] sm:p-5">
+          <div className="resident-metal-panel relative rounded-[32px] p-4 text-white sm:p-5">
             <div className="pointer-events-none absolute inset-0">
               <div className="absolute -left-5 top-4 h-20 w-20 rounded-full border border-white/12" />
               <div className="absolute right-10 top-0 h-24 w-24 rounded-b-[32px] rounded-t-full bg-white/8" />
@@ -285,7 +285,8 @@ export default function ResidentPaymentsPage() {
                 <button
                   type="button"
                   onClick={nextPaymentDue ? () => setPaymentDrawerInvoiceId(nextPaymentDue.id) : () => void router.push('/resident/account')}
-                  className="flex min-h-[58px] items-center justify-center gap-2 rounded-[24px] border border-white/16 bg-white/12 px-4 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-sm transition hover:bg-white/16"
+                  className="gold-sheen-button flex min-h-[58px] items-center justify-center gap-2 rounded-[24px] px-4 text-sm font-semibold"
+                  data-accent-sheen="true"
                 >
                   <ArrowUpLeft className="h-4 w-4" strokeWidth={1.9} />
                   {nextPaymentDue ? 'תשלום מיידי' : 'חזרה לחשבון'}
@@ -293,7 +294,7 @@ export default function ResidentPaymentsPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('methods')}
-                  className="flex min-h-[58px] items-center justify-center gap-2 rounded-[24px] border border-white/16 bg-[linear-gradient(135deg,rgba(255,255,255,0.22),rgba(255,255,255,0.08))] px-4 text-sm font-semibold text-white shadow-[0_18px_34px_rgba(18,12,6,0.18)] transition hover:bg-white/18"
+                  className="flex min-h-[58px] items-center justify-center gap-2 rounded-[24px] border border-white/16 bg-white/10 px-4 text-sm font-semibold text-white shadow-[0_18px_34px_rgba(18,12,6,0.18)] transition hover:bg-white/14"
                 >
                   <WalletCards className="h-4 w-4" strokeWidth={1.9} />
                   אמצעי תשלום
@@ -352,7 +353,7 @@ export default function ResidentPaymentsPage() {
         selectedKey={activeTab}
         onSelectionChange={(key) => setActiveTab(key as 'open' | 'history' | 'methods')}
         className="w-full text-right"
-        listClassName="grid-cols-3 gap-1.5 rounded-[24px] border border-primary/10 bg-[linear-gradient(180deg,rgba(255,251,245,0.96)_0%,rgba(255,255,255,0.92)_100%)] p-1.5"
+        listClassName="grid-cols-3 gap-1.5"
         panelClassName="pt-3 text-right"
         items={[
           {
@@ -423,7 +424,7 @@ export default function ResidentPaymentsPage() {
             icon: <CreditCard className="h-4 w-4" strokeWidth={1.75} />,
             content: (
               <div className="space-y-3">
-                <div className="overflow-hidden rounded-[28px] border border-primary/12 bg-[linear-gradient(160deg,rgba(255,249,240,0.96)_0%,rgba(255,255,255,0.95)_46%,rgba(240,248,255,0.94)_100%)] p-4 shadow-[0_18px_36px_rgba(44,28,9,0.08)]">
+                <div className="gold-sheen-surface overflow-hidden rounded-[28px] p-4 shadow-[0_18px_36px_rgba(44,28,9,0.08)]" data-accent-sheen="true">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/72">מצב חשבון</div>
@@ -518,7 +519,7 @@ export default function ResidentPaymentsPage() {
               </div>
               <Switch checked={autopayEnabled} onCheckedChange={(checked) => void toggleAutopay(checked)} aria-label="הפעלת חיוב אוטומטי במסך תשלום" />
             </div>
-            <div className="rounded-[22px] border border-primary/12 bg-primary/10 px-3.5 py-3 text-sm text-white/74">
+            <div className="rounded-[22px] border border-[rgba(224,182,89,0.22)] bg-[linear-gradient(180deg,rgba(224,182,89,0.16)_0%,rgba(255,255,255,0.04)_100%)] px-3.5 py-3 text-sm text-white/78">
               פרטי הכרטיס לא נשמרים במסך זה. לחיצה על אישור תעביר למסלול התשלום המאובטח של AMS.
             </div>
           </div>
@@ -570,7 +571,7 @@ function ActionTile({
       onClick={onClick}
       className="flex min-h-[118px] flex-col items-center justify-center rounded-[28px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3 py-4 text-center shadow-[0_16px_30px_rgba(44,28,9,0.05)] transition hover:-translate-y-0.5 hover:border-primary/18"
     >
-      <span className="flex h-12 w-12 items-center justify-center rounded-[18px] border border-primary/12 bg-primary/10 text-primary">
+      <span className="flex h-12 w-12 items-center justify-center rounded-[18px] border border-primary/12 bg-[linear-gradient(180deg,rgba(255,248,233,0.98)_0%,rgba(248,234,199,0.94)_100%)] text-primary">
         {icon}
       </span>
       <span className="mt-3 text-sm font-semibold text-foreground">{title}</span>
@@ -643,11 +644,11 @@ function InvoiceShowcaseCard({
       {expanded ? (
         <>
           <div className="grid grid-cols-2 gap-px bg-subtle-border/70 text-right">
-            <div className="bg-white/74 px-4 py-3">
+            <div className="bg-[linear-gradient(180deg,rgba(255,251,245,0.9)_0%,rgba(255,255,255,0.74)_100%)] px-4 py-3">
               <div className="text-[11px] font-semibold text-secondary-foreground">מזהה / קבלה</div>
               <div className="mt-1 text-sm font-medium text-foreground">{invoice.receiptNumber ? `#${invoice.receiptNumber}` : 'יופק לאחר תשלום'}</div>
             </div>
-            <div className="bg-white/74 px-4 py-3">
+            <div className="bg-[linear-gradient(180deg,rgba(255,251,245,0.9)_0%,rgba(255,255,255,0.74)_100%)] px-4 py-3">
               <div className="text-[11px] font-semibold text-secondary-foreground">סטטוס</div>
               <div className="mt-1 text-sm font-medium text-foreground">{translateInvoiceStatus(invoice.status)}</div>
             </div>

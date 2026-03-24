@@ -39,7 +39,7 @@ export function MobileActionBar({
                 onClick={() => setOpen(true)}
               >
                 <span className="flex min-w-0 items-center gap-2.5">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] bg-primary text-primary-foreground shadow-card">
+                  <span className="gold-sheen-button gold-current-pulse flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px]">
                     <Sparkles className="h-3.5 w-3.5" />
                   </span>
                   <span className="min-w-0">
@@ -53,7 +53,7 @@ export function MobileActionBar({
                 </span>
               </Button>
             ) : (
-              <div className="rounded-[22px] bg-background/82 p-2">
+              <div className="gold-sheen-surface rounded-[22px] p-2">
                 <div className="mb-2.5 flex items-start justify-between gap-2 px-1.5 pt-0.5">
                   <div className="min-w-0">
                     <div className="mb-1 text-[10px] font-medium uppercase tracking-[0.18em] text-tertiary">קיצורי דרך</div>
@@ -67,6 +67,7 @@ export function MobileActionBar({
                     </Button>
                   </div>
                 </div>
+                <div className="gold-divider-line mb-2 h-px w-full" />
                 <div className="px-1.5 pb-1.5">{children}</div>
               </div>
             )}

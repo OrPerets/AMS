@@ -51,7 +51,7 @@ export function AmsDrawer({
         backdrop: 'bg-black/50 backdrop-blur-sm',
         wrapper: placement === 'bottom' ? 'items-end' : undefined,
         base: cn(
-          'border border-white/12 bg-[linear-gradient(180deg,rgba(32,24,17,0.98)_0%,rgba(20,15,11,0.98)_100%)] text-inverse-text shadow-modal',
+          'drawer-premium-surface text-inverse-text',
           placement === 'bottom' && 'm-0 max-h-[88dvh] rounded-t-[30px] rounded-b-none',
           placement !== 'bottom' && 'rounded-[28px]',
           className,
@@ -81,14 +81,15 @@ export function AmsDrawer({
         {(onClose) => (
           <>
             <div className="px-4 pt-3">
-              <div className="mx-auto h-1.5 w-12 rounded-full bg-white/18" />
+              <div className="gold-current-pulse mx-auto h-1.5 w-14 rounded-full bg-[linear-gradient(90deg,rgba(255,242,214,0.28),rgba(224,182,89,0.95),rgba(255,242,214,0.28))]" />
             </div>
             {(title || description || !hideCloseButton) ? (
               <DrawerHeader>
-                <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-3">
+                <div className="flex items-start justify-between gap-3 border-b border-white/8 pb-3">
                   <div className="min-w-0">
                     {title ? <h2 className="text-base font-semibold text-inverse-text">{title}</h2> : null}
                     {description ? <p className="mt-1 text-sm leading-6 text-white/70">{description}</p> : null}
+                    <div className="gold-divider-line mt-3 h-px w-full" />
                   </div>
                   {!hideCloseButton ? (
                     <button

@@ -99,7 +99,9 @@ export function MobileRowActionsSheet({
                 className={cn(
                   'flex min-h-[64px] w-full items-center gap-3 rounded-[24px] border border-white/10 bg-white/6 px-4 py-3 text-start transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-40',
                   action.tone === 'warning' && 'border-warning/20 bg-warning/10',
+                  action.tone === 'primary' && 'gold-sheen-surface',
                 )}
+                data-accent-sheen={action.tone === 'primary' ? 'true' : undefined}
                 onClick={() => void handleAction(action)}
                 disabled={action.disabled}
               >

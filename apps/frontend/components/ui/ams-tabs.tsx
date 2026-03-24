@@ -43,13 +43,13 @@ export function AmsTabs({
       classNames={{
         base: 'w-full',
         tabList: cn(
-          'grid w-full grid-cols-2 rounded-[24px] border border-subtle-border bg-background/92 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.48)]',
+          'mobile-segmented-shell grid w-full grid-cols-2 rounded-[24px] p-1.5',
           listClassName,
         ),
         cursor:
-          'rounded-[18px] border border-primary/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(255,243,214,0.95)_100%)] shadow-[0_12px_30px_rgba(44,28,9,0.12)]',
+          'gold-active-pill gold-current-pulse rounded-[18px]',
         tab: 'min-h-[48px] px-3 transition-transform data-[pressed=true]:scale-[0.98]',
-        tabContent: 'flex items-center gap-2 text-[14px] font-semibold text-muted-foreground group-data-[selected=true]:text-foreground',
+        tabContent: 'flex items-center gap-2 text-[14px] font-semibold text-muted-foreground transition-colors group-data-[selected=true]:text-foreground',
         panel: cn('pt-4', panelClassName),
       }}
       variant="light"

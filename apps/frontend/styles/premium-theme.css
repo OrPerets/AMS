@@ -67,6 +67,11 @@
     --mobile-page-glow: 37 86% 72%;
     --mobile-page-shadow: 32 26% 18%;
     --mobile-page-noise-opacity: 0.04;
+    --gold-sheen-start: 44 100% 97%;
+    --gold-sheen-mid: 42 92% 82%;
+    --gold-sheen-end: 36 70% 38%;
+    --gold-accent-border: 39 78% 58%;
+    --gold-accent-glow: 41 87% 68%;
 
     --surface-shadow-card:
       0 22px 50px -38px rgb(44 28 9 / 0.16),
@@ -127,6 +132,11 @@
     --mobile-page-glow: 40 86% 56%;
     --mobile-page-shadow: 0 0% 0%;
     --mobile-page-noise-opacity: 0.06;
+    --gold-sheen-start: 37 44% 18%;
+    --gold-sheen-mid: 38 58% 29%;
+    --gold-sheen-end: 39 78% 58%;
+    --gold-accent-border: 40 84% 70%;
+    --gold-accent-glow: 43 90% 72%;
 
     --surface-shadow-card:
       0 24px 44px -28px rgb(0 0 0 / 0.36),
@@ -398,5 +408,99 @@
 
   .brand-divider {
     background: linear-gradient(90deg, transparent, hsl(var(--gold-400) / 0.7), transparent);
+  }
+
+  .gold-sheen-button {
+    position: relative;
+    overflow: hidden;
+    border-color: hsl(var(--gold-accent-border) / 0.22);
+    background:
+      linear-gradient(135deg, hsl(var(--gold-sheen-start)) 0%, hsl(var(--gold-sheen-mid)) 44%, hsl(var(--gold-sheen-end)) 100%);
+    color: hsl(var(--primary-foreground));
+    box-shadow:
+      0 18px 34px -20px hsl(var(--gold-accent-glow) / 0.52),
+      inset 0 1px 0 rgb(255 255 255 / 0.58);
+  }
+
+  .gold-sheen-button::after,
+  .gold-sheen-surface::after {
+    content: "";
+    position: absolute;
+    inset: -18%;
+    background: linear-gradient(115deg, transparent 16%, rgb(255 255 255 / 0.52) 46%, transparent 72%);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-52%) skewX(-18deg);
+  }
+
+  .gold-sheen-button:hover::after,
+  .gold-sheen-button:focus-visible::after,
+  .gold-sheen-surface[data-accent-sheen="true"]::after {
+    opacity: 1;
+    animation: gold-sheen-sweep 720ms var(--ease-emphasis) 1;
+  }
+
+  .gold-sheen-surface {
+    position: relative;
+    overflow: hidden;
+    border-color: hsl(var(--gold-accent-border) / 0.18);
+    background:
+      linear-gradient(180deg, hsl(var(--gold-sheen-start) / 0.96) 0%, hsl(var(--card) / 0.96) 64%, hsl(var(--surface-tint) / 0.92) 100%);
+    box-shadow:
+      0 18px 38px -28px hsl(var(--gold-accent-glow) / 0.3),
+      inset 0 1px 0 rgb(255 255 255 / 0.62);
+  }
+
+  .gold-active-pill {
+    border-color: hsl(var(--gold-accent-border) / 0.26);
+    background:
+      linear-gradient(180deg, hsl(var(--gold-sheen-start) / 0.98) 0%, hsl(var(--gold-sheen-mid) / 0.62) 56%, hsl(var(--gold-sheen-start) / 0.94) 100%);
+    box-shadow:
+      0 16px 32px -26px hsl(var(--gold-accent-glow) / 0.34),
+      inset 0 1px 0 rgb(255 255 255 / 0.72);
+  }
+
+  .gold-soft-ring {
+    box-shadow:
+      0 0 0 1px hsl(var(--gold-accent-border) / 0.18),
+      0 16px 34px -28px hsl(var(--gold-accent-glow) / 0.34);
+  }
+
+  .gold-divider-line {
+    background: linear-gradient(90deg, transparent, hsl(var(--gold-accent-glow) / 0.82), hsl(var(--gold-accent-border) / 0.62), transparent);
+  }
+
+  .gold-current-pulse {
+    animation: gold-current-pulse 1.45s ease-out 1;
+  }
+
+  .mobile-segmented-shell {
+    border-color: hsl(var(--subtle-border));
+    background:
+      linear-gradient(180deg, hsl(var(--surface-tint) / 0.92) 0%, hsl(var(--muted-surface) / 0.9) 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.68),
+      0 16px 34px -30px rgb(44 28 9 / 0.14);
+  }
+
+  .drawer-premium-surface {
+    border-color: rgb(255 255 255 / 0.1);
+    background:
+      radial-gradient(circle at top, hsl(var(--gold-accent-glow) / 0.12), transparent 38%),
+      linear-gradient(180deg, rgb(36 26 18 / 0.98) 0%, rgb(18 13 10 / 0.98) 100%);
+    box-shadow: var(--surface-shadow-modal);
+  }
+
+  .resident-metal-panel {
+    position: relative;
+    overflow: hidden;
+    border-color: hsl(var(--gold-accent-border) / 0.18);
+    background:
+      radial-gradient(circle at top right, hsl(var(--gold-accent-glow) / 0.24), transparent 28%),
+      radial-gradient(circle at bottom left, hsl(var(--gold-sheen-mid) / 0.14), transparent 32%),
+      linear-gradient(142deg, rgb(28 20 14 / 0.98) 0%, rgb(56 40 24 / 0.97) 54%, rgb(108 77 35 / 0.96) 100%);
+    box-shadow:
+      0 28px 62px -34px rgb(26 17 9 / 0.44),
+      inset 0 1px 0 rgb(255 255 255 / 0.12);
   }
 }

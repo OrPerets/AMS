@@ -102,7 +102,7 @@ export default function ResidentBuildingPage() {
         }
       />
 
-      <Card variant="elevated" className="rounded-[28px] border-0 bg-[linear-gradient(180deg,rgba(37,99,235,0.08)_0%,rgba(255,255,255,1)_100%)]">
+      <Card variant="elevated" className="gold-sheen-surface rounded-[28px] border-0" data-accent-sheen="true">
         <CardContent className="space-y-4 p-4">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary-foreground">המיקום שלך</div>
@@ -163,7 +163,7 @@ export default function ResidentBuildingPage() {
           <div className="flex flex-wrap gap-2">
             {building?.amenities?.length ? (
               building.amenities.slice(0, 6).map((amenity) => (
-                <span key={amenity} className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                <span key={amenity} className="rounded-full border border-primary/12 bg-[linear-gradient(180deg,rgba(255,248,233,0.98)_0%,rgba(248,234,199,0.94)_100%)] px-3 py-1 text-xs font-medium text-primary">
                   {amenity}
                 </span>
               ))
@@ -222,7 +222,7 @@ function MiniInfoCard({ label, value }: { label: string; value: string | number 
 
 function QuickLink({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} className="rounded-[18px] border border-subtle-border bg-background px-3 py-3 text-center text-sm font-semibold text-foreground transition hover:border-primary/25">
+    <Link href={href} className="rounded-[18px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3 py-3 text-center text-sm font-semibold text-foreground transition hover:border-primary/25">
       {label}
     </Link>
   );

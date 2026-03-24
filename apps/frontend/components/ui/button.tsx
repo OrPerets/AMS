@@ -9,7 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[linear-gradient(180deg,hsl(var(--primary))/0.94_0%,hsl(var(--primary))/1_100%)] text-primary-foreground shadow-card hover:-translate-y-0.5 hover:shadow-raised active:translate-y-0 active:scale-[0.99]",
+          "gold-sheen-button text-primary-foreground shadow-card hover:-translate-y-0.5 hover:shadow-raised active:translate-y-0 active:scale-[0.99]",
         destructive:
           "bg-[linear-gradient(180deg,hsl(var(--destructive))/0.92_0%,hsl(var(--destructive))/1_100%)] text-destructive-foreground shadow-card hover:-translate-y-0.5 hover:shadow-raised",
         outline:
@@ -25,7 +25,7 @@ const buttonVariants = cva(
         info:
           "bg-[linear-gradient(180deg,hsl(var(--info))/0.92_0%,hsl(var(--info))/1_100%)] text-info-foreground shadow-card hover:-translate-y-0.5 hover:shadow-raised",
         hero:
-          "relative overflow-hidden border-white/20 bg-[linear-gradient(135deg,rgba(255,255,255,0.98)_0%,rgba(252,245,233,0.94)_56%,rgba(255,232,188,0.86)_100%)] text-slate-950 shadow-raised before:absolute before:inset-y-0 before:left-[-45%] before:w-1/2 before:rotate-12 before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.58),transparent)] before:opacity-70 before:transition-transform before:duration-700 hover:-translate-y-0.5 hover:shadow-[0_28px_68px_-36px_rgba(45,24,3,0.45)] hover:before:translate-x-[240%] active:translate-y-0 active:scale-[0.99]",
+          "gold-sheen-button border-white/18 text-slate-950 shadow-raised hover:-translate-y-0.5 hover:shadow-[0_28px_68px_-36px_rgba(45,24,3,0.45)] active:translate-y-0 active:scale-[0.99]",
       },
       size: {
         default: "h-10 px-4 py-2 sm:h-11 sm:px-5 sm:py-2.5",

@@ -103,9 +103,10 @@ function ActionTile({
           layout === 'hierarchy' && priority === 'primary' && 'min-h-[100px] text-start sm:min-h-[120px]',
           layout === 'hierarchy' && priority === 'secondary' && 'min-h-[88px]',
           layout === 'hierarchy' && priority === 'utility' && 'min-h-[76px] bg-muted-surface/85 shadow-elevation-1',
-          isSelected && 'border-primary/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(239,246,255,0.96)_100%)] shadow-[0_16px_36px_rgba(59,130,246,0.14)] ring-1 ring-primary/10',
+          isSelected && 'gold-sheen-surface gold-current-pulse border-primary/35 ring-1 ring-primary/10',
           !item.href && !item.onClick && 'pointer-events-none',
         )}
+        data-accent-sheen={isSelected ? 'true' : undefined}
       >
         <div className={cn('flex h-full flex-col', layout === 'hierarchy' && priority === 'primary' ? 'items-stretch text-start' : 'items-center')}>
           <div className="flex w-full items-start justify-between gap-2">

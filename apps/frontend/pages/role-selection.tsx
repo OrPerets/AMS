@@ -174,12 +174,12 @@ export default function RoleSelectionPage() {
   return (
     <main
       dir={direction}
-      className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(201,156,72,0.18),_transparent_30%),linear-gradient(180deg,_rgba(250,247,240,0.98),_rgba(245,240,230,0.88))] px-3 py-4 sm:px-4 sm:py-6"
+      className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(201,156,72,0.14),_transparent_32%),linear-gradient(180deg,_rgba(250,247,240,0.98),_rgba(245,240,230,0.9))] px-3 py-4 sm:px-4 sm:py-6"
     >
       <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center justify-center sm:min-h-[calc(100vh-3rem)]">
         <div className="w-full space-y-4 sm:space-y-5">
           <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6">
-            <Card variant="featured" className="border-primary/18 shadow-[0_30px_90px_-60px_rgba(0,0,0,0.45)]">
+            <Card variant="featured" className="gold-sheen-surface shadow-[0_30px_90px_-60px_rgba(0,0,0,0.32)]" data-accent-sheen="true">
               <CardHeader className="space-y-3 sm:space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="gold">{t('roleSelection.eyebrow')}</Badge>
@@ -191,7 +191,7 @@ export default function RoleSelectionPage() {
                     {t('roleSelection.description')}
                   </CardDescription>
                 </div>
-                <div className="hidden rounded-2xl border border-primary/15 bg-primary/5 px-3 py-2.5 text-[13px] leading-5 text-muted-foreground sm:block sm:px-4 sm:py-3 sm:text-sm sm:leading-6">
+                <div className="hidden rounded-2xl border border-primary/12 bg-[linear-gradient(180deg,rgba(255,248,233,0.88)_0%,rgba(255,255,255,0.74)_100%)] px-3 py-2.5 text-[13px] leading-5 text-muted-foreground sm:block sm:px-4 sm:py-3 sm:text-sm sm:leading-6">
                   {t('roleSelection.helper')}
                 </div>
               </CardHeader>
@@ -240,10 +240,15 @@ export default function RoleSelectionPage() {
               const isDisabled = !card.href;
 
               return (
-                <Card key={card.choice} variant="action" className="border-border/70 bg-card/95">
+                <Card
+                  key={card.choice}
+                  variant="action"
+                  className={card.choice === 'ams' ? 'gold-sheen-surface border-border/70 bg-card/95' : 'border-border/70 bg-card/95'}
+                  data-accent-sheen={card.choice === 'ams' ? 'true' : undefined}
+                >
                   <CardHeader className="space-y-3 pb-3 sm:space-y-4 sm:pb-4">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-12 sm:w-12 sm:rounded-2xl">
+                      <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-primary/12 bg-[linear-gradient(180deg,rgba(255,248,233,0.98)_0%,rgba(248,234,199,0.94)_100%)] text-primary sm:h-12 sm:w-12 sm:rounded-2xl">
                         <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
                       </div>
                       <div className="flex flex-wrap justify-end gap-2">

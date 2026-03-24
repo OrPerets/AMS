@@ -100,9 +100,10 @@ export function PrimaryActionCard({
               className={cn(
                 'inline-flex min-h-[46px] w-full items-center justify-center gap-1 rounded-2xl px-4 py-2.5 text-center text-sm font-semibold sm:min-h-[48px] sm:w-auto',
                 visualStyle === 'admin'
-                  ? 'bg-primary text-primary-foreground shadow-[0_14px_30px_rgba(194,143,57,0.24)]'
-                  : 'bg-primary text-primary-foreground shadow-[0_10px_22px_rgba(194,143,57,0.22)]',
+                  ? 'gold-sheen-button'
+                  : 'gold-sheen-button',
               )}
+              data-accent-sheen="true"
             >
               {ctaLabel}
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.75} />
@@ -114,9 +115,10 @@ export function PrimaryActionCard({
               className={cn(
                 'inline-flex min-h-[46px] w-full items-center justify-center gap-1 rounded-2xl px-4 py-2.5 text-center text-sm font-semibold sm:min-h-[48px] sm:w-auto',
                 visualStyle === 'admin'
-                  ? 'bg-primary text-primary-foreground shadow-[0_14px_30px_rgba(194,143,57,0.24)]'
-                  : 'bg-primary text-primary-foreground shadow-[0_10px_22px_rgba(194,143,57,0.22)]',
+                  ? 'gold-sheen-button'
+                  : 'gold-sheen-button',
               )}
+              data-accent-sheen="true"
             >
               {ctaLabel}
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.75} />

@@ -308,7 +308,8 @@ export default function ResidentAccountPage() {
           initial={reducedMotion ? false : { opacity: 0, y: 12 }}
           animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
           transition={{ duration: 0.28, ease: 'easeOut' }}
-          className="rounded-[24px] border border-primary/12 bg-[linear-gradient(180deg,rgba(255,249,240,0.96)_0%,rgba(255,255,255,0.92)_100%)] px-4 py-3 shadow-[0_14px_32px_rgba(44,28,9,0.06)]"
+          className="gold-sheen-surface rounded-[24px] px-4 py-3"
+          data-accent-sheen="true"
         >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -336,22 +337,22 @@ export default function ResidentAccountPage() {
         animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
         transition={{ duration: 0.34, ease: 'easeOut' }}
       >
-        <div className="relative overflow-hidden rounded-[32px] border border-primary/12 bg-[radial-gradient(circle_at_top_right,rgba(243,185,91,0.34),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(248,217,154,0.16),transparent_28%),linear-gradient(135deg,rgba(32,24,16,0.98)_0%,rgba(76,52,19,0.95)_48%,rgba(207,146,50,0.94)_100%)] px-4 pb-4 pt-4 text-white shadow-[0_18px_44px_rgba(44,28,9,0.16)] sm:px-5 sm:pb-5 sm:pt-5">
+        <div className="resident-metal-panel relative rounded-[32px] px-4 pb-4 pt-4 text-white sm:px-5 sm:pb-5 sm:pt-5">
           <AccountHeroPattern />
           <div className="relative z-10 space-y-4">
             <div className="flex items-start justify-between gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.24em] text-white/82">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-1 text-[11px] font-semibold tracking-[0.24em] text-white/82">
                 <Sparkles className="h-3.5 w-3.5 text-white" strokeWidth={1.9} />
                 מרכז השליטה האישי
               </div>
-              <div className="rounded-full border border-white/14 bg-white/12 px-3 py-1.5 text-xs font-semibold text-white">
+              <div className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white">
                 חשבון דייר
               </div>
             </div>
 
-            <div className="relative rounded-[30px] border border-primary/14 bg-white/94 p-4 shadow-[0_22px_48px_rgba(44,28,9,0.12)] backdrop-blur-sm">
+            <div className="relative rounded-[30px] border border-white/55 bg-[linear-gradient(180deg,rgba(255,251,245,0.98)_0%,rgba(255,255,255,0.94)_100%)] p-4 shadow-[0_22px_48px_rgba(44,28,9,0.12)] backdrop-blur-sm">
               <div className="flex items-center gap-4">
-                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-4 border-white bg-[radial-gradient(circle_at_30%_30%,rgba(255,227,179,0.95),rgba(217,154,47,0.92)_42%,rgba(76,52,19,1)_100%)] text-white shadow-[0_18px_34px_rgba(207,146,50,0.34)]">
+                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-4 border-white bg-[radial-gradient(circle_at_30%_30%,rgba(255,244,220,0.96),rgba(221,174,80,0.94)_38%,rgba(101,70,28,1)_100%)] text-white shadow-[0_18px_34px_rgba(207,146,50,0.28)]">
                   <UserRound className="h-10 w-10" strokeWidth={1.8} />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -370,7 +371,7 @@ export default function ResidentAccountPage() {
             </div>
 
             <div className="grid gap-3">
-              <div className="rounded-[26px] border border-primary/12 bg-white/78 p-4">
+              <div className="gold-sheen-surface rounded-[26px] p-4" data-accent-sheen="true">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-[11px] font-semibold tracking-[0.16em] text-secondary-foreground">{residentPrimaryAction.eyebrow}</div>
@@ -402,7 +403,7 @@ export default function ResidentAccountPage() {
             <div className="grid grid-cols-2 gap-2.5">
               <Button
                 size="lg"
-                className="min-h-[54px] rounded-full bg-primary text-primary-foreground shadow-[0_14px_28px_rgba(194,143,57,0.22)] hover:bg-primary/92"
+                className="min-h-[54px] rounded-full"
                 asChild
               >
                 <Link href={residentPrimaryAction.href}>
@@ -458,7 +459,7 @@ export default function ResidentAccountPage() {
             initial={reducedMotion ? false : { opacity: 0, y: 18 }}
             animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
             transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.15, ease: 'easeOut' }}
-            className="rounded-[26px] border border-divider/60 bg-white/94 px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
+            className="rounded-[26px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
           >
             <CompactSectionHeader
               icon={<Bell className="h-4 w-4" strokeWidth={1.8} />}
@@ -488,7 +489,7 @@ export default function ResidentAccountPage() {
             initial={reducedMotion ? false : { opacity: 0, y: 18 }}
             animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
             transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.2, ease: 'easeOut' }}
-            className="rounded-[26px] border border-divider/60 bg-white/94 px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
+            className="rounded-[26px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
           >
             <CompactSectionHeader
               icon={<Building2 className="h-4 w-4" strokeWidth={1.8} />}
@@ -539,9 +540,9 @@ function AccountHeroPattern() {
 
 function HeroSignalChip({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-[20px] border border-primary/10 bg-white/76 px-3 py-3 shadow-[0_8px_20px_rgba(44,28,9,0.04)]">
-      <div className="text-[11px] font-semibold text-secondary-foreground">{label}</div>
-      <div className="mt-1.5 text-[22px] font-black tabular-nums text-foreground">
+    <div className="rounded-[20px] border border-white/12 bg-white/8 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-sm">
+      <div className="text-[11px] font-semibold text-white/68">{label}</div>
+      <div className="mt-1.5 text-[22px] font-black tabular-nums text-white">
         <bdi>{value}</bdi>
       </div>
     </div>
@@ -550,7 +551,7 @@ function HeroSignalChip({ label, value }: { label: string; value: string | numbe
 
 function HeroStatusBadge({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/10 bg-primary/6 px-3 py-1.5 text-[11px] font-semibold text-primary">
+    <div className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-semibold text-white">
       {icon}
       <span>{label}</span>
     </div>
@@ -559,8 +560,8 @@ function HeroStatusBadge({ icon, label }: { icon: React.ReactNode; label: string
 
 function MiniHeroPill({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/12 bg-primary/6 px-3 py-1.5 text-[12px] font-semibold text-secondary-foreground">
-      <span className="text-primary">{icon}</span>
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[12px] font-semibold text-white/86">
+      <span className="text-white">{icon}</span>
       <span>{text}</span>
     </span>
   );
@@ -643,7 +644,7 @@ function ResidentActionConstellation({
   const secondary = items.filter((item) => item.id !== primary.id);
 
   return (
-    <div className="rounded-[28px] border border-primary/10 bg-[radial-gradient(circle_at_top,rgba(243,185,91,0.10),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.96)_100%)] p-3.5">
+    <div className="rounded-[28px] border border-primary/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.96)_100%)] p-3.5">
       <div className="flex justify-center">
         <ResidentActionBubble item={primary} primary />
       </div>
@@ -680,7 +681,7 @@ function ResidentActionBubble({
         ? 'border-info/18 bg-[linear-gradient(135deg,rgba(240,248,255,1)_0%,rgba(255,255,255,0.94)_100%)] text-info'
         : item.accent === 'neutral'
           ? 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] text-foreground'
-          : 'border-primary/18 bg-[linear-gradient(135deg,rgba(245,235,214,1)_0%,rgba(255,255,255,0.94)_100%)] text-primary';
+          : 'border-primary/18 bg-[linear-gradient(135deg,rgba(250,242,224,1)_0%,rgba(255,255,255,0.94)_100%)] text-primary';
 
   return (
     <motion.div
@@ -692,14 +693,15 @@ function ResidentActionBubble({
         className={cn(
           'group block rounded-[24px] border p-3 text-center shadow-[0_12px_24px_rgba(44,28,9,0.05)] transition hover:-translate-y-1 hover:shadow-[0_18px_32px_rgba(44,28,9,0.08)]',
           accentClasses,
-          primary && 'relative overflow-hidden border-primary/16 bg-[radial-gradient(circle_at_top,rgba(243,185,91,0.18),transparent_36%),linear-gradient(135deg,rgba(255,250,240,1)_0%,rgba(255,255,255,0.96)_44%,rgba(240,247,255,0.90)_100%)] py-4',
+          primary && 'gold-sheen-surface relative py-4',
         )}
+        data-accent-sheen={primary ? 'true' : undefined}
       >
         {primary ? <span className="absolute inset-x-6 top-0 h-px bg-white/70" /> : null}
         <div
           className={cn(
             'mx-auto flex items-center justify-center rounded-full border',
-            primary ? 'h-24 w-24 border-primary/12 bg-[linear-gradient(135deg,rgba(53,111,237,0.96)_0%,rgba(207,146,50,0.96)_100%)] text-white shadow-[0_18px_34px_rgba(80,61,24,0.18)]' : 'h-16 w-16 border-current/10 bg-white/78',
+            primary ? 'h-24 w-24 border-primary/12 bg-[radial-gradient(circle_at_30%_30%,rgba(255,244,220,0.98),rgba(218,171,77,0.96)_40%,rgba(101,70,28,1)_100%)] text-white shadow-[0_18px_34px_rgba(80,61,24,0.18)]' : 'h-16 w-16 border-current/10 bg-white/78',
           )}
         >
           <Icon className={cn(primary ? 'h-8 w-8' : 'h-6 w-6')} strokeWidth={1.85} />

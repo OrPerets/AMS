@@ -44,7 +44,7 @@ export function AmsFilterTabs({
         role="tablist"
         aria-label={ariaLabel}
         className={cn(
-          'inline-flex min-w-full items-stretch gap-1 border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(247,243,234,0.94)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.62),0_18px_40px_rgba(44,28,9,0.08)]',
+          'mobile-segmented-shell inline-flex min-w-full items-stretch gap-1',
           shellClassName,
           fullWidth && 'grid'
         )}
@@ -64,7 +64,7 @@ export function AmsFilterTabs({
                 itemClassName,
                 fullWidth && 'w-full',
                 selected
-                  ? 'border-primary/24 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(255,243,214,0.94)_100%)] text-foreground shadow-[0_16px_32px_rgba(44,28,9,0.12)]'
+                  ? 'gold-active-pill gold-current-pulse text-foreground'
                   : 'border-transparent bg-transparent text-secondary-foreground hover:border-primary/14 hover:bg-background/70',
               )}
             >
