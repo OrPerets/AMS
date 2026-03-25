@@ -62,7 +62,7 @@ export default function LoginPage() {
       const destination = next || defaultRoute;
 
       trackLoginSuccess(role);
-      showLoginSuccess(role);
+      // showLoginSuccess(role);
       router.replace(destination);
     } catch (err: any) {
       const msg = err?.message || t('login.error.generic');
