@@ -53,11 +53,12 @@ test.describe('sprint 10 mobile breakpoint coverage', () => {
       await page.goto('/payments/resident', { waitUntil: 'domcontentloaded' });
       await closeNavigationOverlayIfOpen(page);
       await expect(page.getByRole('heading', { name: 'מרכז תשלומים' })).toBeVisible();
+      await expect(page.getByText('דופק חיובים')).toBeVisible();
       await expect(page.getByRole('tab', { name: /פתוחים/ })).toBeVisible();
       await page.getByRole('button', { name: /תשלום מיידי|פתח תשלום/ }).click();
-      await expect(page.getByText('תשלום מאובטח')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'תשלום מאובטח' })).toBeVisible();
       await page.keyboard.press('Escape');
-      await expect(page.getByText('תשלום מאובטח')).toBeHidden();
+      await expect(page.getByRole('heading', { name: 'תשלום מאובטח' })).toBeHidden();
       await expectNoHorizontalOverflow(page);
     });
 
@@ -69,11 +70,12 @@ test.describe('sprint 10 mobile breakpoint coverage', () => {
       await page.goto('/resident/requests', { waitUntil: 'domcontentloaded' });
       await closeNavigationOverlayIfOpen(page);
       await expect(page.getByText(/בקשת דייר חדשה|בקשות דייר/).first()).toBeVisible();
-      await expect(page.getByRole('tab', { name: /בקשה חדשה/ })).toBeVisible();
+      await expect(page.getByRole('dialog')).toBeVisible();
       await page.getByRole('button', { name: /חניה.*שינוי או תקלה/ }).click();
-      await expect(page.getByRole('heading', { name: 'פרטי הבקשה' })).toBeVisible();
+      await page.getByRole('button', { name: /המשך לפרטים/ }).click();
       await expect(page.getByRole('button', { name: /שינוי הקצאה/ }).first()).toBeVisible();
       await expect(page.getByLabel('מספר רכב')).toBeVisible();
+      await page.keyboard.press('Escape');
       await page.getByRole('tab', { name: /מעקב/ }).click();
       await expect(page.getByText(/בקשה לאישור חניה|שינוי פרטי התקשרות/).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);

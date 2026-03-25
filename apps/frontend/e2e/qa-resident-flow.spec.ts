@@ -17,6 +17,7 @@ test.describe('resident flow continuity', () => {
 
     await page.goto('/payments/resident', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'מרכז תשלומים' })).toBeVisible();
+    await expect(page.getByText('דופק חיובים')).toBeVisible();
     await expect(page.getByRole('button', { name: /תשלום מיידי|חזרה לחשבון/ }).first()).toBeVisible();
     await expectNoHorizontalOverflow(page);
 

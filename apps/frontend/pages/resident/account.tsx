@@ -9,8 +9,8 @@ import { Button } from '../../components/ui/button';
 import { EmptyState } from '../../components/ui/empty-state';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
-import { MobileInsightWidget } from '../../components/ui/mobile-insight-widget';
 import { ResidentHero } from '../../components/resident/resident-hero';
+import { ResidentKpiChart } from '../../components/resident/resident-kpi-chart';
 import { getResumeState, setResumeState } from '../../lib/engagement';
 import { trackResumeClick } from '../../lib/analytics';
 
@@ -226,8 +226,18 @@ export default function ResidentAccountPage() {
             value: unreadNotifications.length,
             description: unreadNotifications.length ? 'עדכונים חדשים מחכים לעיון.' : 'אין כרגע משהו דחוף לטפל בו.',
             progress: unreadNotifications.length ? 44 : 100,
-            tone: unreadNotifications.length ? ('default' as const) : ('success' as const),
+        tone: unreadNotifications.length ? ('default' as const) : ('success' as const),
           };
+  const chartDateFormatter = new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'short' });
+  const residentChartPoints = [...(finance?.invoices ?? [])]
+    .slice(0, 6)
+    .reverse()
+    .map((invoice) => ({
+      label: chartDateFormatter.format(new Date(invoice.dueDate)),
+      value: Math.round(invoice.amount),
+      note: invoice.status === 'OVERDUE' ? 'בפיגור' : invoice.status === 'UNPAID' ? 'פתוח' : 'שולם',
+      emphasis: invoice.id === nextPaymentDue?.id,
+    }));
 
   const actionItems = [
     {
@@ -450,21 +460,32 @@ export default function ResidentAccountPage() {
                   <div className="mt-2 text-[15px] leading-6 text-secondary-foreground">{spotlight.description}</div>
                 </div>
 
-                <MobileInsightWidget
-                  title="קצב חשבון"
-                  value={finance?.summary.unpaidInvoices ?? 0}
-                  hint={finance?.summary.overdueInvoices ? `${finance.summary.overdueInvoices} בפיגור` : 'ללא פיגור'}
-                  tone={spotlight.tone}
-                  ringProgress={spotlight.progress}
-                  sparkline={[
-                    finance?.summary.currentBalance ?? 0,
-                    finance?.summary.unpaidInvoices ?? 0,
-                    finance?.summary.overdueInvoices ?? 0,
-                    openTickets.length,
-                    unreadNotifications.length,
-                  ]}
-                  href="/payments/resident"
+                <ResidentKpiChart
+                  compact
                   className="min-h-[132px]"
+                  title="דופק חשבון"
+                  subtitle={
+                    nextPaymentDue
+                      ? 'אותו סגנון תנועה ממשיך גם למסך התשלומים, עם הדגשה של החיוב הקרוב.'
+                      : 'מבט קצר על קצב החיובים האחרון, כדי שההמשך למסך התשלומים ירגיש טבעי וברור.'
+                  }
+                  metricLabel={nextPaymentDue ? 'חיוב קרוב' : 'מצב החשבון'}
+                  metricValue={<bdi>{spotlight.value}</bdi>}
+                  points={
+                    residentChartPoints.length
+                      ? residentChartPoints
+                      : [
+                          { label: 'יתרה', value: Math.round(finance?.summary.currentBalance ?? 0), note: 'מאזן', emphasis: true },
+                          { label: 'פתוחים', value: finance?.summary.unpaidInvoices ?? 0, note: 'חיובים' },
+                          { label: 'קריאות', value: openTickets.length, note: 'מעקב' },
+                        ]
+                  }
+                  tone={spotlight.tone}
+                  summaryItems={[
+                    { label: 'פתוחים', value: finance?.summary.unpaidInvoices ?? 0 },
+                    { label: 'קריאות', value: openTickets.length },
+                    { label: 'עדכונים', value: unreadNotifications.length },
+                  ]}
                 />
               </div>
 
