@@ -5,26 +5,28 @@ import { CalendarDays, FileText, Move, ParkingCircle, PhoneCall, Sparkles } from
 import { authFetch, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
 import { cn } from '../../lib/utils';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import { EmptyState } from '../../components/ui/empty-state';
+import { FileUpload } from '../../components/ui/file-upload';
 import { FormField, FormErrorSummary } from '../../components/ui/form-field';
 import { Input } from '../../components/ui/input';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { MobileContextBar } from '../../components/ui/mobile-context-bar';
-import { MobilePriorityInbox } from '../../components/ui/mobile-priority-inbox';
 import { MobileCardSkeleton } from '../../components/ui/page-states';
-import { PageHero } from '../../components/ui/page-hero';
 import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
+import { MobileInsightWidget } from '../../components/ui/mobile-insight-widget';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 import { PullToRefreshIndicator } from '../../components/ui/pull-to-refresh-indicator';
 import { SectionHeader } from '../../components/ui/section-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { StatusBadge } from '../../components/ui/status-badge';
 import { AmsDisclosure } from '../../components/ui/ams-disclosure';
+import { AmsDrawer } from '../../components/ui/ams-drawer';
 import { AmsSegmentedChoice } from '../../components/ui/ams-segmented-choice';
 import { AmsTabs } from '../../components/ui/ams-tabs';
 import { Textarea } from '../../components/ui/textarea';
 import { toast } from '../../components/ui/use-toast';
+import { ResidentHero } from '../../components/resident/resident-hero';
 import { usePullToRefresh } from '../../hooks/use-pull-to-refresh';
 import { triggerHaptic } from '../../lib/mobile';
 import { showRequestSubmitted } from '../../lib/success-feedback';
@@ -108,7 +110,9 @@ export default function ResidentRequestsPage() {
   const [formTouched, setFormTouched] = useState<Record<string, boolean>>({});
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [formStep, setFormStep] = useState<1 | 2>(1);
+  const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [draftAttachment, setDraftAttachment] = useState<File | null>(null);
   const [submittedRequestKey, setSubmittedRequestKey] = useState<string | null>(null);
   const [submittedRequestType, setSubmittedRequestType] = useState<string | null>(null);
   const [view, setView] = useState<'new' | 'history'>('new');
@@ -132,7 +136,26 @@ export default function ResidentRequestsPage() {
     if (!router.isReady) return;
     const nextView = router.query.view === 'history' ? 'history' : 'new';
     setView(nextView);
+    if (nextView === 'new') {
+      setComposerOpen(true);
+      setFormStep(1);
+    }
   }, [router.isReady, router.query.view]);
+
+  useEffect(() => {
+    if (view !== 'new' || !composerOpen) return;
+    setResumeState({
+      screen: 'resident',
+      href: '/resident/requests?view=new',
+      label: `בקשה חדשה · שלב ${formStep}`,
+      role: getEffectiveRole() || 'RESIDENT',
+      userId: getCurrentUserId(),
+      context: {
+        requestStep: formStep,
+        requestType: form.requestType,
+      },
+    });
+  }, [composerOpen, form.requestType, formStep, view]);
 
   async function loadHistory() {
     try {
@@ -161,26 +184,32 @@ export default function ResidentRequestsPage() {
           movingDirection: form.movingDirection,
           movingWindow: form.movingWindow || null,
           elevatorNeeded: form.elevatorNeeded === 'YES',
+          attachmentName: draftAttachment?.name || null,
         };
       case 'PARKING':
         return {
           parkingRequestType: form.parkingRequestType,
           plateNumber: form.plateNumber || null,
+          attachmentName: draftAttachment?.name || null,
         };
       case 'DOCUMENT':
         return {
           documentCategory: form.documentCategory,
+          attachmentName: draftAttachment?.name || null,
         };
       case 'CONTACT_UPDATE':
         return {
           nextPhone: form.nextPhone || null,
           nextEmail: form.nextEmail || null,
           extraContact: form.extraContact || null,
+          attachmentName: draftAttachment?.name || null,
         };
       default:
-        return {};
+        return {
+          attachmentName: draftAttachment?.name || null,
+        };
     }
-  }, [form]);
+  }, [draftAttachment?.name, form]);
 
   const formErrors = useMemo(() => {
     return {
@@ -234,10 +263,14 @@ export default function ResidentRequestsPage() {
       setSubmittedRequestKey(payload?.requestKey || `REQ-${new Date().getTime().toString().slice(-6)}`);
       setSubmittedRequestType(form.requestType);
       setForm(emptyForm);
+      setDraftAttachment(null);
       setFormTouched({});
       setFormSubmitted(false);
       setSubmitError(null);
       setFormStep(1);
+      setComposerOpen(false);
+      setView('history');
+      void router.replace('/resident/requests?view=history', undefined, { shallow: true });
       await loadHistory();
     } catch (error) {
       console.error(error);
@@ -251,26 +284,43 @@ export default function ResidentRequestsPage() {
   const openRequests = history.filter((item) => item.status === 'SUBMITTED' || item.status === 'IN_REVIEW');
   const closedRequests = history.filter((item) => item.status === 'COMPLETED' || item.status === 'CLOSED');
   const filtersApplied = historyFilter.status !== 'ALL' || historyFilter.requestType !== 'ALL';
-  const priorityItems = [
-    openRequests[0]
-      ? {
-          id: 'open-request',
-          status: openRequests[0].status === 'SUBMITTED' ? t('status.waiting') : t('status.inProgress'),
-          tone: openRequests[0].status === 'SUBMITTED' ? 'warning' as const : 'active' as const,
-          title: openRequests[0].subject.replace(/^[A-Z_]+:\s*/, ''),
-          reason: openRequests[0].statusNotes || t('residentRequests.priority.waitingReason'),
-          meta: t('common.updatedAt', { value: formatDate(new Date(openRequests[0].updatedAt || openRequests[0].createdAt), locale) }),
-        }
-      : {
-          id: 'no-open-request',
-          status: t('status.completed'),
-          tone: 'success' as const,
-          title: t('residentRequests.priority.noneTitle'),
-          reason: t('residentRequests.priority.noneReason'),
-        },
-  ];
   const selectedTypeDescription = getRequestExpectations(form.requestType);
   const submittedTypeDescription = getRequestExpectations(submittedRequestType || form.requestType);
+  const stepSummaries = [
+    { id: 1, label: 'סוג בקשה' },
+    { id: 2, label: 'פרטים' },
+    { id: 3, label: 'אישור' },
+  ] as const;
+  const fieldLabels = {
+    subject: 'נושא',
+    message: 'פרטי הבקשה',
+    requestedDate: 'תאריך מבוקש',
+  };
+
+  function openComposer(nextStep: 1 | 2 | 3 = 1) {
+    setComposerOpen(true);
+    setFormStep(nextStep);
+    setSubmitError(null);
+    triggerHaptic('light');
+  }
+
+  function closeComposer() {
+    setComposerOpen(false);
+  }
+
+  function advanceComposer(nextStep: 1 | 2 | 3) {
+    triggerHaptic('light');
+    setFormStep(nextStep);
+  }
+
+  function continueToConfirmation() {
+    setFormSubmitted(true);
+    if (formErrors.subject || formErrors.message || (form.requestType === 'MOVING' && formErrors.requestedDate)) {
+      toast({ title: 'יש להשלים את שדות החובה לפני האישור', variant: 'destructive' });
+      return;
+    }
+    advanceComposer(3);
+  }
 
   return (
     <div className="space-y-5 pb-4 sm:space-y-8">
@@ -284,7 +334,6 @@ export default function ResidentRequestsPage() {
             { id: 'closed', label: 'נסגרו', value: closedRequests.length, tone: 'default' },
           ]}
         />
-       
       </div>
 
       <div className="hidden md:block">
@@ -300,44 +349,116 @@ export default function ResidentRequestsPage() {
         />
       </div>
 
-      <div className="hidden md:block">
-        <PageHero
-          compact
-          variant="operational"
-          kicker="שירות עצמי לדייר"
-          eyebrow={<StatusBadge label="שירות דיירים" tone="finance" />}
-          title="בקשות דייר"
-          description="בחר את סוג הבקשה, מלא רק את מה שנדרש, ועקוב אחרי ההתקדמות מאותו מסך."
-          actions={
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => setView('new')}>
-                בקשה חדשה
-              </Button>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/create-call">קריאת תחזוקה</Link>
-              </Button>
+      <ResidentHero
+        eyebrow="מסלול בקשות"
+        title="בקשות דייר"
+        subtitle="בחר מסלול קצר, הוסף רק את מה שצריך, וקבל צפי ברור כבר במסך הראשון."
+        badge={<div className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white">שירות עצמי</div>}
+        floatingCard={
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">
+                  {openRequests[0] ? 'כרגע בטיפול' : 'המסלול הבא'}
+                </div>
+                <div className="mt-1 text-[26px] font-black leading-[1.04] text-foreground">
+                  {openRequests[0] ? openRequests[0].subject.replace(/^[A-Z_]+:\s*/, '') : activeType.label}
+                </div>
+                <div className="mt-2 text-[14px] leading-6 text-secondary-foreground">
+                  {openRequests[0]
+                    ? openRequests[0].statusNotes || t('residentRequests.priority.waitingReason')
+                    : `${selectedTypeDescription.responseWindow} · ${selectedTypeDescription.owner}`}
+                </div>
+              </div>
+              <StatusBadge
+                label={openRequests[0] ? getResidentRequestStatusLabel(openRequests[0].status) : 'פתיחה מהירה'}
+                tone={openRequests[0] ? getResidentRequestStatusTone(openRequests[0].status) : 'finance'}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <MobileInsightWidget
+                title="מעקב חי"
+                value={openRequests.length}
+                hint={openRequests[0] ? openRequests[0].subject.replace(/^[A-Z_]+:\s*/, '') : 'אין בקשה פתוחה כרגע'}
+                tone={openRequests.length ? 'warning' : 'success'}
+                href="/resident/requests?view=history"
+                sparkline={[openRequests.length, closedRequests.length, history.length]}
+                pulse={openRequests.length > 0}
+              />
+              <MobileInsightWidget
+                title="הבקשה הבאה"
+                value={activeType.label}
+                hint={`${selectedTypeDescription.responseWindow} · ${selectedTypeDescription.owner}`}
+                tone="default"
+                onClick={() => {
+                  setView('new');
+                  openComposer(1);
+                }}
+                sparkline={[
+                  form.requestType === 'MOVING' ? 82 : 24,
+                  form.requestType === 'PARKING' ? 72 : 28,
+                  form.requestType === 'DOCUMENT' ? 54 : 18,
+                  form.requestType === 'CONTACT_UPDATE' ? 42 : 16,
+                  form.requestType === 'GENERAL' ? 34 : 14,
+                ]}
+              />
+            </div>
+          </div>
+        }
+        bodyClassName="pt-0"
+      >
+        <div className="grid grid-cols-2 gap-2.5">
+          <Button size="lg" className="min-h-[54px] rounded-full" onClick={() => {
+            setView('new');
+            openComposer(1);
+          }}>
+            בקשה חדשה
+          </Button>
+          <Button asChild variant="outline" size="lg" className="min-h-[54px] rounded-full border-primary/14 bg-white/76 text-foreground hover:bg-white">
+            <Link href="/create-call">קריאת תחזוקה</Link>
+          </Button>
+        </div>
+      </ResidentHero>
+
+      {view === 'history' && openRequests[0] ? (
+        <PrimaryActionCard
+          eyebrow="בטיפול עכשיו"
+          title={openRequests[0].subject.replace(/^[A-Z_]+:\s*/, '')}
+          description={openRequests[0].statusNotes || t('residentRequests.priority.waitingReason')}
+          ctaLabel="פתח מעקב"
+          onClick={() => {
+            setView('history');
+          }}
+          tone={openRequests[0].status === 'SUBMITTED' ? 'warning' : 'default'}
+          visualStyle="resident"
+          secondaryAction={
+            <div className="flex flex-wrap items-center gap-2 text-xs text-secondary-foreground">
+              <span>{t('common.updatedAt', { value: formatDate(new Date(openRequests[0].updatedAt || openRequests[0].createdAt), locale) })}</span>
+              <span>{getResidentRequestStatusLabel(openRequests[0].status)}</span>
             </div>
           }
         />
-      </div>
-
-      {/* <MobilePriorityInbox
-        title="מה בטיפול"
-        subtitle="עד שני פריטים שחשוב לפתוח עכשיו"
-        items={priorityItems}
-      /> */}
+      ) : null}
 
       <AmsTabs
         ariaLabel="Resident requests"
         selectedKey={view}
-        onSelectionChange={(key) => setView(key as 'new' | 'history')}
+        onSelectionChange={(key) => {
+          const nextView = key as 'new' | 'history';
+          setView(nextView);
+          if (nextView === 'new') {
+            openComposer(1);
+          } else {
+            setComposerOpen(false);
+          }
+        }}
         items={[
           { key: 'new', title: 'בקשה חדשה' },
           { key: 'history', title: 'מעקב', badge: openRequests.length || null },
         ]}
       />
 
-      {view === 'new' && submittedRequestKey ? (
+      {submittedRequestKey ? (
         <Card variant="featured">
           <CardContent className="space-y-3 p-4 sm:p-5">
             <SectionHeader
@@ -359,27 +480,365 @@ export default function ResidentRequestsPage() {
                 <div className="mt-1 text-sm font-semibold text-foreground">{submittedTypeDescription.nextStep}</div>
               </div>
             </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setSubmittedRequestKey(null);
+                  setSubmittedRequestType(null);
+                  setView('new');
+                  openComposer(1);
+                }}
+              >
+                בקשה נוספת
+              </Button>
+              <Button type="button" onClick={() => setView('history')}>
+                פתח מעקב
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : null}
 
       {view === 'new' ? (
-      <>
-      <RequestTypePicker
-        items={requestTypes}
-        selectedValue={form.requestType}
-        onSelect={(value) => {
-          setForm((current) => ({ ...current, requestType: value }));
-          setFormStep(2);
-          setSubmittedRequestKey(null);
-        }}
-      />
+        <>
+          <PrimaryActionCard
+            eyebrow="שלושה שלבים קצרים"
+            title="פתיחת בקשה ברורה ומהירה"
+            description="סוג הבקשה, הפרטים החשובים, ואז אישור קצר עם צפי הטיפול לפני השליחה."
+            ctaLabel="פתח מסלול בקשה"
+            onClick={() => {
+              setSubmittedRequestKey(null);
+              setSubmittedRequestType(null);
+              openComposer(1);
+            }}
+            tone="default"
+            visualStyle="resident"
+            secondaryAction={
+              <div className="flex flex-wrap items-center gap-2 text-xs text-secondary-foreground">
+                <span>זמן תגובה: {selectedTypeDescription.responseWindow}</span>
+                <span>מטפל: {selectedTypeDescription.owner}</span>
+              </div>
+            }
+          />
 
-      <div className="grid gap-4 sm:gap-6">
-      
-      </div>
-      </>
+          <Card variant="elevated">
+            <CardContent className="space-y-4 p-4">
+              <SectionHeader
+                title="מה אפשר לפתוח מכאן"
+                subtitle="כל המסלולים זמינים באותו מסך, עם הסברים קצרים לפני כניסה."
+                meta={`${requestTypes.length} מסלולים`}
+              />
+              <div className="grid gap-3 min-[390px]:grid-cols-2">
+                {requestTypes.map((item) => {
+                  const Icon = item.icon;
+                  const selected = item.value === form.requestType;
+                  return (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => {
+                        setForm((current) => ({ ...current, requestType: item.value }));
+                        openComposer(1);
+                      }}
+                      className={cn(
+                        'rounded-[24px] border p-4 text-right shadow-[0_16px_34px_rgba(44,28,9,0.07)] transition hover:-translate-y-0.5 hover:border-primary/18',
+                        selected
+                          ? 'gold-sheen-surface border-primary/28'
+                          : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(250,247,241,0.94)_100%)]',
+                      )}
+                      data-accent-sheen={selected ? 'true' : undefined}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-primary/12 bg-primary/8 text-primary">
+                          <Icon className="h-4.5 w-4.5" strokeWidth={1.8} />
+                        </span>
+                        <span className="rounded-full border border-primary/10 bg-primary/6 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                          {item.description}
+                        </span>
+                      </div>
+                      <div className="mt-3 text-[15px] font-semibold text-foreground">{item.label}</div>
+                      <div className="mt-1 text-[12px] leading-5 text-secondary-foreground">
+                        {getRequestExpectations(item.value).description}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </>
       ) : null}
+
+      <AmsDrawer
+        isOpen={composerOpen}
+        onOpenChange={(open) => {
+          if (!open) closeComposer();
+          else setComposerOpen(true);
+        }}
+        title="בקשה חדשה"
+        description="מסלול קצר לדיירים עם שלבים ברורים וצפי טיפול לפני השליחה."
+        headerClassName="text-right"
+        bodyClassName="text-right"
+        footer={(onClose) => (
+          <div className="w-full space-y-2">
+            {formStep === 1 ? (
+              <Button type="button" size="lg" className="w-full" onClick={() => advanceComposer(2)}>
+                המשך לפרטים
+              </Button>
+            ) : null}
+            {formStep === 2 ? (
+              <>
+                <Button type="button" size="lg" className="w-full" onClick={continueToConfirmation}>
+                  מעבר לאישור
+                </Button>
+                <Button type="button" variant="outline" className="w-full rounded-full" onClick={() => advanceComposer(1)}>
+                  חזרה לסוג הבקשה
+                </Button>
+              </>
+            ) : null}
+            {formStep === 3 ? (
+              <>
+                <Button type="button" size="lg" className="w-full" onClick={submitRequest} disabled={submitting}>
+                  {submitting ? 'שולח...' : 'אישור ושליחה'}
+                </Button>
+                <Button type="button" variant="outline" className="w-full rounded-full" onClick={() => advanceComposer(2)}>
+                  ערוך פרטים
+                </Button>
+              </>
+            ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full rounded-full text-white/72 hover:bg-white/8"
+              onClick={() => {
+                onClose();
+                closeComposer();
+              }}
+            >
+              סגור
+            </Button>
+          </div>
+        )}
+      >
+        <div className="space-y-4">
+          <RequestFlowProgress currentStep={formStep} items={stepSummaries} />
+
+          {formStep === 1 ? (
+            <RequestTypePicker
+              items={requestTypes}
+              selectedValue={form.requestType}
+              onSelect={(value) => {
+                setForm((current) => ({ ...current, requestType: value }));
+                setSubmittedRequestKey(null);
+              }}
+            />
+          ) : null}
+
+          {formStep === 2 ? (
+            <div className="space-y-4">
+              <div className="rounded-[24px] border border-white/10 bg-white/6 p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-white/56">נבחר עכשיו</div>
+                <div className="mt-1 text-lg font-semibold text-inverse-text">{activeType.label}</div>
+                <div className="mt-1 text-sm leading-6 text-white/72">{selectedTypeDescription.description}</div>
+              </div>
+
+              <FormErrorSummary errors={visibleFormErrors} fieldLabels={fieldLabels} />
+
+              {form.requestType === 'MOVING' ? (
+                <div className="space-y-4">
+                  <FormField label="סוג מעבר">
+                    <AmsSegmentedChoice
+                      value={form.movingDirection}
+                      options={movingDirectionOptions}
+                      onChange={(value) => setForm((current) => ({ ...current, movingDirection: value as typeof emptyForm.movingDirection }))}
+                    />
+                  </FormField>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField label="תאריך מבוקש" error={shouldShowError('requestedDate') ? formErrors.requestedDate : ''}>
+                      <Input
+                        name="requestedDate"
+                        aria-label="תאריך מבוקש"
+                        type="date"
+                        value={form.requestedDate}
+                        onChange={(event) => setForm((current) => ({ ...current, requestedDate: event.target.value }))}
+                        onBlur={() => setFormTouched((current) => ({ ...current, requestedDate: true }))}
+                      />
+                    </FormField>
+
+                    <FormField label="חלון זמן מועדף">
+                    <Input
+                      name="movingWindow"
+                      aria-label="חלון זמן מועדף"
+                      placeholder="למשל 08:00-11:00"
+                        value={form.movingWindow}
+                        onChange={(event) => setForm((current) => ({ ...current, movingWindow: event.target.value }))}
+                      />
+                    </FormField>
+                  </div>
+
+                  <FormField label="שמירת מעלית">
+                    <AmsSegmentedChoice
+                      value={form.elevatorNeeded}
+                      options={elevatorOptions}
+                      onChange={(value) => setForm((current) => ({ ...current, elevatorNeeded: value as typeof emptyForm.elevatorNeeded }))}
+                      columns={1}
+                    />
+                  </FormField>
+                </div>
+              ) : null}
+
+              {form.requestType === 'PARKING' ? (
+                <div className="space-y-4">
+                  <FormField label="סוג בקשת חניה">
+                    <AmsSegmentedChoice
+                      value={form.parkingRequestType}
+                      options={parkingRequestOptions}
+                      onChange={(value) => setForm((current) => ({ ...current, parkingRequestType: value as typeof emptyForm.parkingRequestType }))}
+                    />
+                  </FormField>
+
+                  <FormField label="מספר רכב">
+                    <Input
+                      name="plateNumber"
+                      aria-label="מספר רכב"
+                      placeholder="123-45-678"
+                      value={form.plateNumber}
+                      onChange={(event) => setForm((current) => ({ ...current, plateNumber: event.target.value }))}
+                    />
+                  </FormField>
+                </div>
+              ) : null}
+
+              {form.requestType === 'DOCUMENT' ? (
+                <FormField label="איזה מסמך צריך">
+                  <AmsSegmentedChoice
+                    value={form.documentCategory}
+                    options={documentCategoryOptions}
+                    onChange={(value) => setForm((current) => ({ ...current, documentCategory: value as typeof emptyForm.documentCategory }))}
+                  />
+                </FormField>
+              ) : null}
+
+              {form.requestType === 'CONTACT_UPDATE' ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField label="טלפון חדש">
+                    <Input
+                      name="nextPhone"
+                      aria-label="טלפון חדש"
+                      placeholder="050-1234567"
+                      value={form.nextPhone}
+                      onChange={(event) => setForm((current) => ({ ...current, nextPhone: event.target.value }))}
+                    />
+                  </FormField>
+
+                  <FormField label="אימייל חדש">
+                    <Input
+                      name="nextEmail"
+                      aria-label="אימייל חדש"
+                      type="email"
+                      placeholder="name@example.com"
+                      value={form.nextEmail}
+                      onChange={(event) => setForm((current) => ({ ...current, nextEmail: event.target.value }))}
+                    />
+                  </FormField>
+
+                  <FormField className="sm:col-span-2" label="איש קשר נוסף">
+                    <Input
+                      name="extraContact"
+                      aria-label="איש קשר נוסף"
+                      placeholder="שם ותפקיד, אם צריך"
+                      value={form.extraContact}
+                      onChange={(event) => setForm((current) => ({ ...current, extraContact: event.target.value }))}
+                    />
+                  </FormField>
+                </div>
+              ) : null}
+
+              <div className="grid gap-4">
+                <FormField label="נושא" required error={shouldShowError('subject') ? formErrors.subject : ''}>
+                  <Input
+                    name="subject"
+                    aria-label="נושא"
+                    placeholder={`למשל: ${activeType.label} לבניין`}
+                    value={form.subject}
+                    onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))}
+                    onBlur={() => setFormTouched((current) => ({ ...current, subject: true }))}
+                  />
+                </FormField>
+
+                <FormField label="פרטי הבקשה" required error={shouldShowError('message') ? formErrors.message : ''}>
+                  <Textarea
+                    name="message"
+                    aria-label="פרטי הבקשה"
+                    rows={5}
+                    placeholder="כתוב בקצרה מה צריך, מתי, ולמי חשוב לעדכן."
+                    value={form.message}
+                    onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))}
+                    onBlur={() => setFormTouched((current) => ({ ...current, message: true }))}
+                  />
+                </FormField>
+              </div>
+
+              <FileUpload
+                label="קובץ עזר (אופציונלי)"
+                hint="אפשר לצרף צילום, מסמך או קובץ עזר שיסומן בבקשה לצוות."
+                onFileSelect={setDraftAttachment}
+              />
+
+              {submitError ? (
+                <InlineErrorPanel
+                  title="לא הצלחנו לשלוח את הבקשה"
+                  description={submitError}
+                  onRetry={submitRequest}
+                />
+              ) : null}
+            </div>
+          ) : null}
+
+          {formStep === 3 ? (
+            <div className="space-y-4">
+              <div className="rounded-[24px] border border-white/10 bg-white/6 p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-white/56">לפני שליחה</div>
+                <div className="mt-1 text-lg font-semibold text-inverse-text">{activeType.label}</div>
+                <div className="mt-1 text-sm leading-6 text-white/72">{selectedTypeDescription.afterSubmit}</div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ReviewTile label="נושא" value={form.subject || 'לא הוזן'} />
+                <ReviewTile label="צפי טיפול" value={selectedTypeDescription.responseWindow} />
+                <ReviewTile label="מטפל" value={selectedTypeDescription.owner} />
+                <ReviewTile label="קובץ עזר" value={draftAttachment?.name || 'ללא קובץ'} />
+              </div>
+
+              <div className="rounded-[22px] border border-subtle-border bg-background px-4 py-3 text-sm leading-6 text-secondary-foreground">
+                {form.message || 'לא הוזנו פרטים.'}
+              </div>
+
+              <AmsDisclosure
+                selectionMode="single"
+                defaultExpandedKeys={['after-submit']}
+                items={[
+                  {
+                    key: 'after-submit',
+                    title: 'מה קורה אחרי השליחה',
+                    subtitle: selectedTypeDescription.nextStep,
+                    content: (
+                      <div className="space-y-2">
+                        <div>מטפל: {selectedTypeDescription.owner}</div>
+                        <div>זמן תגובה משוער: {selectedTypeDescription.responseWindow}</div>
+                        <div>{selectedTypeDescription.afterSubmit}</div>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </div>
+          ) : null}
+        </div>
+      </AmsDrawer>
 
       {view === 'history' ? (
       <Card variant="elevated">
@@ -499,6 +958,10 @@ function RequestTypePicker({
   selectedValue: string;
   onSelect: (value: string) => void;
 }) {
+  const selectItem = (value: string) => {
+    onSelect(value);
+  };
+
   return (
     <section className="space-y-3" aria-label="בחר סוג בקשה">
       <div className="text-right">
@@ -515,7 +978,8 @@ function RequestTypePicker({
             <button
               key={item.value}
               type="button"
-              onClick={() => onSelect(item.value)}
+              onMouseDown={() => selectItem(item.value)}
+              onClick={() => selectItem(item.value)}
               aria-pressed={selected}
               className={cn(
                 'touch-target mobile-segmented-shell flex min-w-[132px] shrink-0 items-center gap-2 rounded-[20px] border px-3 py-3 text-right transition-[transform,border-color,box-shadow,background] duration-200 active:scale-[0.99]',
@@ -556,7 +1020,8 @@ function RequestTypePicker({
             <button
               key={item.value}
               type="button"
-              onClick={() => onSelect(item.value)}
+              onMouseDown={() => selectItem(item.value)}
+              onClick={() => selectItem(item.value)}
               aria-pressed={selected}
               className={cn(
                 'touch-target group w-full rounded-[26px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(250,247,241,0.94)_100%)] p-4 text-right shadow-[0_16px_34px_rgba(44,28,9,0.07)] transition-[transform,border-color,box-shadow,background] duration-200 active:scale-[0.99]',
@@ -601,6 +1066,59 @@ function RequestTypePicker({
         })}
       </div>
     </section>
+  );
+}
+
+function RequestFlowProgress({
+  currentStep,
+  items,
+}: {
+  currentStep: 1 | 2 | 3;
+  items: ReadonlyArray<{ id: 1 | 2 | 3; label: string }>;
+}) {
+  return (
+    <div className="rounded-[22px] border border-white/10 bg-white/6 p-3">
+      <div className="flex items-center justify-between gap-2">
+        {items.map((item, index) => {
+          const isActive = item.id === currentStep;
+          const isComplete = item.id < currentStep;
+
+          return (
+            <div key={item.id} className="flex min-w-0 flex-1 items-center gap-2">
+              <div
+                className={cn(
+                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-semibold',
+                  isActive
+                    ? 'gold-sheen-button border-primary/30 text-primary-foreground'
+                    : isComplete
+                      ? 'border-primary/16 bg-primary/10 text-primary'
+                      : 'border-white/12 bg-white/8 text-white/72',
+                )}
+              >
+                {item.id}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className={cn('truncate text-[12px] font-semibold', isActive ? 'text-inverse-text' : 'text-white/72')}>
+                  {item.label}
+                </div>
+                {index < items.length - 1 ? (
+                  <div className={cn('mt-1 h-px w-full', isComplete ? 'gold-divider-line' : 'bg-white/10')} />
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ReviewTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[18px] border border-subtle-border bg-background px-3 py-3 text-right">
+      <div className="text-xs text-secondary-foreground">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-foreground">{value}</div>
+    </div>
   );
 }
 

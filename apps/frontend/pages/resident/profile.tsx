@@ -21,6 +21,7 @@ import {
 import { authFetch, logout } from '../../lib/auth';
 import { isValidEmail } from '../../lib/utils';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
+import { ResidentHero } from '../../components/resident/resident-hero';
 import { toast } from '../../components/ui/use-toast';
 
 type AccountContext = {
@@ -250,52 +251,39 @@ export default function ResidentProfilePage() {
         animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
         transition={{ duration: 0.34, ease: 'easeOut' }}
       >
-        <Card className="overflow-hidden border border-white/60 bg-[linear-gradient(180deg,rgba(255,251,245,0.98)_0%,rgba(255,255,255,0.96)_45%,rgba(250,245,237,0.98)_100%)] shadow-[0_28px_70px_rgba(44,28,9,0.12)]">
-          <CardBody className="p-0">
-            <div className="resident-profile-hero-surface relative rounded-b-[40px] px-5 pb-14 pt-5 text-white">
-              <HeroPattern />
-              <div className="relative z-10 flex items-start justify-between gap-3">
-                <div className="min-w-0 text-right">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-[0.24em] text-white/82">
-                    <Sparkles className="h-3.5 w-3.5" strokeWidth={1.9} />
-                    {labels.heroHint}
-                  </div>
-                  <h1 className="mt-3 text-[30px] font-black leading-none text-white">{labels.pageTitle}</h1>
-                  <p className="mt-2 max-w-[18rem] text-sm leading-6 text-white/76">{labels.pageSubtitle}</p>
+        <ResidentHero
+          eyebrow={labels.heroHint}
+          title={labels.pageTitle}
+          subtitle={labels.pageSubtitle}
+          badge={
+            <Chip radius="full" variant="flat" className="border border-white/14 bg-white/12 px-3 text-white">
+              {labels.residentBadge}
+            </Chip>
+          }
+          floatingCard={
+            <div className="flex items-center gap-4">
+              <Avatar
+                name={displayName}
+                className="h-24 w-24 shrink-0 border-4 border-white bg-[radial-gradient(circle_at_30%_30%,rgba(255,227,179,0.9),rgba(217,154,47,0.9)_42%,rgba(76,52,19,1)_100%)] text-white shadow-[0_18px_34px_rgba(207,146,50,0.34)]"
+                icon={<UserRound className="h-10 w-10" />}
+              />
+              <div className="min-w-0 flex-1 text-right">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/72">
+                  {primaryBuilding?.name || 'AMS Resident'}
                 </div>
-                <Chip radius="full" variant="flat" className="border border-white/14 bg-white/12 px-3 text-white">
-                  {labels.residentBadge}
-                </Chip>
-              </div>
-            </div>
-
-            <div className="relative px-5 pb-5">
-              <div className="-mt-11 rounded-[30px] border border-primary/14 bg-white/94 p-4 shadow-[0_22px_48px_rgba(44,28,9,0.12)] backdrop-blur-sm">
-                <div className="flex items-center gap-4">
-                  <Avatar
-                    name={displayName}
-                    className="h-24 w-24 shrink-0 border-4 border-white bg-[radial-gradient(circle_at_30%_30%,rgba(255,227,179,0.9),rgba(217,154,47,0.9)_42%,rgba(76,52,19,1)_100%)] text-white shadow-[0_18px_34px_rgba(207,146,50,0.34)]"
-                    icon={<UserRound className="h-10 w-10" />}
-                  />
-                  <div className="min-w-0 flex-1 text-right">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/72">
-                      {primaryBuilding?.name || 'AMS Resident'}
-                    </div>
-                    <div className="mt-1 text-2xl font-black leading-tight text-foreground">{displayName}</div>
-                    <div className="mt-1 text-sm text-default-500">
-                      {primaryUnit ? `דירה ${primaryUnit.number}` : 'חשבון משויך'}
-                      {primaryBuilding?.address ? ` · ${primaryBuilding.address}` : ''}
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <MiniPill icon={<Bell className="h-3.5 w-3.5" strokeWidth={1.8} />} text={`${unreadNotifications} התראות`} />
-                      <MiniPill icon={<Ticket className="h-3.5 w-3.5" strokeWidth={1.8} />} text={`${openTickets} קריאות פתוחות`} />
-                    </div>
-                  </div>
+                <div className="mt-1 text-2xl font-black leading-tight text-foreground">{displayName}</div>
+                <div className="mt-1 text-sm text-default-500">
+                  {primaryUnit ? `דירה ${primaryUnit.number}` : 'חשבון משויך'}
+                  {primaryBuilding?.address ? ` · ${primaryBuilding.address}` : ''}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <MiniPill icon={<Bell className="h-3.5 w-3.5" strokeWidth={1.8} />} text={`${unreadNotifications} התראות`} />
+                  <MiniPill icon={<Ticket className="h-3.5 w-3.5" strokeWidth={1.8} />} text={`${openTickets} קריאות פתוחות`} />
                 </div>
               </div>
             </div>
-          </CardBody>
-        </Card>
+          }
+        />
       </motion.section>
 
       <motion.section
@@ -460,20 +448,6 @@ const profileInputClassNames = {
   input: 'text-left',
   innerWrapper: 'gap-3',
 } as const;
-
-function HeroPattern() {
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute -right-6 top-4 h-24 w-24 rounded-[2rem] bg-white/10" />
-      <div className="absolute right-20 top-0 h-20 w-20 rounded-b-full rounded-t-[1.5rem] bg-primary/80" />
-      <div className="absolute left-8 top-6 h-16 w-16 rounded-full border-[14px] border-white/18 border-b-transparent border-l-transparent" />
-      <div className="absolute left-20 top-16 h-28 w-28 rounded-full bg-white/10" />
-      <div className="absolute bottom-6 left-0 h-16 w-32 rounded-r-full bg-white/10" />
-      <div className="absolute bottom-0 right-14 h-20 w-20 rounded-t-full bg-white/14" />
-      <div className="absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.08))]" />
-    </div>
-  );
-}
 
 function MiniPill({ icon, text }: { icon: ReactNode; text: string }) {
   return (

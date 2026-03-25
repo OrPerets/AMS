@@ -408,6 +408,15 @@ async function buildAdminHomeData(): Promise<AdminMobileHomeData> {
   const unassignedCount = tickets?.items?.filter((item) => item.status === 'OPEN').length ?? 0;
   const unverifiedMaintenance = exceptions?.summary?.unverifiedMaintenance ?? dashboard.maintenanceSummary.overdue ?? 0;
   const calendarEvents = operations?.summary?.total ?? 0;
+  const monthlyLoad = dashboard.ticketTrends.monthlyTrend.slice(-6).map((item) => item.count);
+  const controlPulse = [
+    dashboard.portfolioKpis.openTickets,
+    dashboard.portfolioKpis.urgentTickets,
+    dashboard.portfolioKpis.slaBreaches,
+    dashboard.systemAdmin.stats.pendingApprovals,
+    unverifiedMaintenance,
+    calendarEvents,
+  ];
   const priorityItems: MobilePriorityInboxItem[] = [
     {
       id: 'sla-breach',
@@ -443,8 +452,25 @@ async function buildAdminHomeData(): Promise<AdminMobileHomeData> {
 
   return {
     statusMetrics: [
-      { id: 'tickets', label: 'קריאות', value: dashboard.portfolioKpis.openTickets, tone: dashboard.portfolioKpis.openTickets > 0 ? 'warning' : 'success', href: '/tickets' },
-      { id: 'sla', label: 'SLA', value: dashboard.portfolioKpis.slaBreaches, tone: dashboard.portfolioKpis.slaBreaches > 0 ? 'danger' : 'success', href: '/admin/dashboard' },
+      {
+        id: 'tickets',
+        label: 'קריאות',
+        value: dashboard.portfolioKpis.openTickets,
+        tone: dashboard.portfolioKpis.openTickets > 0 ? 'warning' : 'success',
+        href: '/tickets',
+        trendLabel: `${dashboard.portfolioKpis.resolvedToday} נסגרו היום`,
+        sparkline: monthlyLoad,
+      },
+      {
+        id: 'sla',
+        label: 'SLA',
+        value: dashboard.portfolioKpis.slaBreaches,
+        tone: dashboard.portfolioKpis.slaBreaches > 0 ? 'danger' : 'success',
+        href: '/admin/dashboard',
+        trendLabel: dashboard.portfolioKpis.slaBreaches > 0 ? `${dashboard.systemAdmin.stats.pendingApprovals} אישורים פתוחים` : 'ללא חריגה פתוחה',
+        sparkline: controlPulse,
+        emphasis: dashboard.portfolioKpis.slaBreaches > 0,
+      },
     ],
     primaryAction: {
       eyebrow: 'מוקד בקרה',
@@ -458,10 +484,53 @@ async function buildAdminHomeData(): Promise<AdminMobileHomeData> {
       secondaryAction: { label: 'מערכת ובקרה', href: '/admin/dashboard' },
     },
     quickActions: [
-      { id: 'tickets', title: 'מוקד קריאות', value: dashboard.portfolioKpis.openTickets, subtitle: 'פתוחות עכשיו', href: '/tickets', icon: homeIcons.ticket, tone: dashboard.portfolioKpis.openTickets > 0 ? 'warning' : 'success' },
-      { id: 'control', title: 'בקרה מערכתית', value: `${occupancyRate}%`, subtitle: 'תפוסה פעילה', href: '/admin/dashboard', icon: homeIcons.dashboard },
-      { id: 'approvals', title: 'אישורים', value: dashboard.systemAdmin.stats.pendingApprovals, subtitle: 'ממתינים', href: '/communications', icon: homeIcons.notifications, tone: dashboard.systemAdmin.stats.pendingApprovals > 0 ? 'warning' : 'default' },
-      { id: 'maintenance', title: 'תחזוקה', value: unverifiedMaintenance, subtitle: 'חריגים לבדיקה', href: '/maintenance', icon: homeIcons.maintenance, tone: unverifiedMaintenance > 0 ? 'warning' : 'success' },
+      {
+        id: 'tickets',
+        title: 'מוקד קריאות',
+        value: dashboard.portfolioKpis.openTickets,
+        previewValue: dashboard.portfolioKpis.urgentTickets ? `${dashboard.portfolioKpis.urgentTickets} דחוף` : dashboard.portfolioKpis.openTickets,
+        subtitle: 'פתוחות עכשיו',
+        href: '/tickets',
+        icon: homeIcons.ticket,
+        tone: dashboard.portfolioKpis.openTickets > 0 ? 'warning' : 'success',
+        microViz: monthlyLoad,
+        fullCardTap: true,
+      },
+      {
+        id: 'control',
+        title: 'בקרה מערכתית',
+        value: `${occupancyRate}%`,
+        previewValue: `${occupancyRate}%`,
+        subtitle: 'תפוסה פעילה',
+        href: '/admin/dashboard',
+        icon: homeIcons.dashboard,
+        microViz: [dashboard.portfolioKpis.occupiedUnits, dashboard.portfolioKpis.vacantUnits, dashboard.systemAdmin.stats.totalBuildings],
+        fullCardTap: true,
+      },
+      {
+        id: 'approvals',
+        title: 'אישורים',
+        value: dashboard.systemAdmin.stats.pendingApprovals,
+        previewValue: dashboard.systemAdmin.stats.pendingApprovals,
+        subtitle: 'ממתינים',
+        href: '/communications',
+        icon: homeIcons.notifications,
+        tone: dashboard.systemAdmin.stats.pendingApprovals > 0 ? 'warning' : 'default',
+        microViz: [dashboard.systemAdmin.stats.pendingApprovals, unassignedCount, dashboard.portfolioKpis.slaBreaches],
+        fullCardTap: true,
+      },
+      {
+        id: 'maintenance',
+        title: 'תחזוקה',
+        value: unverifiedMaintenance,
+        previewValue: unverifiedMaintenance,
+        subtitle: 'חריגים לבדיקה',
+        href: '/maintenance',
+        icon: homeIcons.maintenance,
+        tone: unverifiedMaintenance > 0 ? 'warning' : 'success',
+        microViz: [unverifiedMaintenance, dashboard.maintenanceSummary.dueToday, dashboard.maintenanceSummary.dueInRange],
+        fullCardTap: true,
+      },
     ],
     priorityItems,
   };

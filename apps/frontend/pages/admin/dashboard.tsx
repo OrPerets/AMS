@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Activity, BarChart3, ShieldAlert, Users } from 'lucide-react';
 import { authFetch } from '../../lib/auth';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { DashboardPageSkeleton } from '../../components/ui/page-states';
@@ -17,6 +18,7 @@ import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { SectionHeader } from '../../components/ui/section-header';
 import { Button } from '../../components/ui/button';
+import { MobileInsightWidget } from '../../components/ui/mobile-insight-widget';
 import Link from 'next/link';
 import { useLocale } from '../../lib/providers';
 
@@ -81,6 +83,31 @@ export default function AdminDashboardPage() {
       ctaLabel: item.ctaLabel,
     }));
   }, [data, t]);
+  const monthlyTrend = useMemo(() => data?.ticketTrends.monthlyTrend.slice(-6).map((item) => item.count) ?? [], [data]);
+  const controlPulse = useMemo(() => {
+    if (!data) return [];
+    return [
+      data.portfolioKpis.openTickets,
+      data.portfolioKpis.urgentTickets,
+      data.portfolioKpis.slaBreaches,
+      data.systemAdmin.stats.pendingApprovals,
+      data.maintenanceSummary.overdue,
+      data.systemAdmin.stats.activeUsersInRange,
+    ];
+  }, [data]);
+  const healthSnapshot = useMemo(() => {
+    if (!data) return { critical: 0, warning: 0, healthy: 0, pulse: [] as number[] };
+    const values = Object.values(data.systemAdmin.health);
+    const critical = values.filter((item) => item.status === 'critical').length;
+    const warning = values.filter((item) => item.status === 'warning').length;
+    const healthy = values.filter((item) => item.status === 'healthy').length;
+    return {
+      critical,
+      warning,
+      healthy,
+      pulse: values.map((item) => (item.status === 'critical' ? 100 : item.status === 'warning' ? 62 : 28)),
+    };
+  }, [data]);
 
   if (loading || !data) {
     if (!loading && error) {
@@ -128,34 +155,69 @@ export default function AdminDashboardPage() {
           tone={data.portfolioKpis.slaBreaches > 0 ? 'danger' : 'warning'}
         />
 
+        <section className="space-y-3" aria-label="מדדי שליטה">
+          <div className="grid grid-cols-2 gap-3">
+            <MobileInsightWidget
+              title={t('adminDashboard.mobile.openTicketsMetric')}
+              value={data.portfolioKpis.openTickets}
+              hint={`${data.portfolioKpis.urgentTickets} דחופות עכשיו`}
+              tone={data.portfolioKpis.openTickets > 0 ? 'warning' : 'success'}
+              href="/tickets"
+              sparkline={monthlyTrend}
+              pulse={data.portfolioKpis.urgentTickets > 0}
+            />
+            <MobileInsightWidget
+              title={t('adminDashboard.mobile.slaBreachesMetric')}
+              value={data.portfolioKpis.slaBreaches}
+              hint={`${data.systemAdmin.stats.pendingApprovals} אישורים פתוחים`}
+              tone={data.portfolioKpis.slaBreaches > 0 ? 'danger' : 'success'}
+              href="/admin/activity"
+              sparkline={controlPulse}
+              pulse={data.portfolioKpis.slaBreaches > 0}
+            />
+            <MobileInsightWidget
+              title={t('adminDashboard.mobile.occupancyMetric')}
+              value={`${occupancyRate}%`}
+              hint={`${data.portfolioKpis.occupiedUnits} יחידות מאוכלסות`}
+              tone={occupancyRate >= 92 ? 'success' : occupancyRate >= 80 ? 'warning' : 'danger'}
+              href="/admin/dashboard"
+              ringProgress={occupancyRate}
+            />
+            <MobileInsightWidget
+              title="בריאות מערכת"
+              value={healthSnapshot.critical ? `${healthSnapshot.critical} קריטי` : `${healthSnapshot.warning} אזהרות`}
+              hint={`${healthSnapshot.healthy} תקינים · ${data.systemAdmin.recentImpersonationEvents.length} אירועי אודיט`}
+              tone={healthSnapshot.critical ? 'danger' : healthSnapshot.warning ? 'warning' : 'success'}
+              href="/admin/activity"
+              sparkline={healthSnapshot.pulse}
+              pulse={healthSnapshot.critical > 0}
+            />
+          </div>
+
+          <MobileInsightWidget
+            className="min-h-[138px]"
+            title="קצב טיפול"
+            value={`${data.portfolioKpis.resolvedInRange}/${Math.max(data.portfolioKpis.createdInRange, 1)}`}
+            hint={`החודש: ${data.portfolioKpis.resolvedToday} נסגרו היום · ${data.maintenanceSummary.dueToday} לביצוע היום`}
+            tone={data.portfolioKpis.resolvedInRange >= data.portfolioKpis.createdInRange ? 'success' : 'warning'}
+            href="/admin/dashboard"
+            sparkline={monthlyTrend}
+            ringProgress={Math.min(100, data.portfolioKpis.createdInRange ? Math.round((data.portfolioKpis.resolvedInRange / data.portfolioKpis.createdInRange) * 100) : 100)}
+          />
+        </section>
+
         <MobilePriorityInbox
           title={t('adminDashboard.mobile.triageTitle')}
           subtitle={t('adminDashboard.mobile.triageSubtitle')}
           items={mobilePriorityItems}
         />
 
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           <Card variant="elevated">
-            <CardHeader>
-              <SectionHeader
-                title={t('adminDashboard.mobile.portfolioHealthTitle')}
-                subtitle={t('adminDashboard.mobile.portfolioHealthSubtitle')}
-                meta={t('adminDashboard.mobile.overview')}
-              />
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3">
-              <CompactMetric label={t('adminDashboard.mobile.openTicketsMetric')} value={data.portfolioKpis.openTickets} />
-              <CompactMetric label={t('adminDashboard.mobile.slaBreachesMetric')} value={data.portfolioKpis.slaBreaches} />
-              <CompactMetric label={t('adminDashboard.mobile.unpaidBalanceMetric')} value={formatCurrency(data.portfolioKpis.unpaidBalance)} />
-              <CompactMetric label={t('adminDashboard.mobile.occupancyMetric')} value={`${occupancyRate}%`} />
-            </CardContent>
-          </Card>
-
-          <Card variant="elevated">
-            <CardHeader>
+            <CardHeader className="pb-3">
               <SectionHeader
                 title={t('adminDashboard.mobile.decisionShortcutsTitle')}
-                subtitle={t('adminDashboard.mobile.decisionShortcutsSubtitle')}
+                subtitle="מסלולים קצרים למסכי ההכרעה בלי להעמיס כפתורים קטנים."
                 meta={t('adminDashboard.mobile.actNow')}
               />
             </CardHeader>
@@ -167,35 +229,41 @@ export default function AdminDashboardPage() {
             </CardContent>
           </Card>
 
-          <Card variant="elevated">
-            <CardHeader>
-              <CardTitle>{t('adminDashboard.mobile.systemAlertsTitle')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <details className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
-                <summary className="cursor-pointer text-sm font-semibold text-foreground">{t('adminDashboard.mobile.systemHealthTitle')}</summary>
-                <div className="mt-3 space-y-2">
-                  {Object.values(data.systemAdmin.health).map((item) => (
-                    <div key={item.label} className="rounded-2xl border border-subtle-border bg-muted/20 px-3 py-2.5">
-                      <div className="text-sm font-medium text-foreground">{item.label}</div>
-                      <div className="text-xs text-muted-foreground">{item.value} · {item.description}</div>
-                    </div>
-                  ))}
-                </div>
-              </details>
-              <details className="rounded-[20px] border border-subtle-border bg-background/88 p-4">
-                <summary className="cursor-pointer text-sm font-semibold text-foreground">{t('adminDashboard.mobile.sensitiveActivityTitle')}</summary>
-                <div className="mt-3 space-y-2">
-                  <div className="rounded-2xl border border-subtle-border bg-muted/20 px-3 py-2.5 text-sm text-foreground">
-                    {t('adminDashboard.mobile.impersonationEvents', { count: data.systemAdmin.recentImpersonationEvents.length })}
-                  </div>
-                  <div className="rounded-2xl border border-subtle-border bg-muted/20 px-3 py-2.5 text-sm text-foreground">
-                    {t('adminDashboard.mobile.approvalsCurrentlyWaiting', { count: data.systemAdmin.stats.pendingApprovals })}
-                  </div>
-                </div>
-              </details>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-2 gap-3">
+            <MobileInsightWidget
+              title="משתמשים פעילים"
+              value={data.systemAdmin.stats.activeUsersInRange}
+              hint={`${data.systemAdmin.stats.activityEventsInRange} אירועים בטווח`}
+              tone="info"
+              href="/admin/activity"
+              sparkline={[data.systemAdmin.stats.totalUsers, data.systemAdmin.stats.activeUsersInRange, data.systemAdmin.stats.activityEventsInRange]}
+              badge={<Users className="h-5 w-5 text-info" strokeWidth={1.75} />}
+            />
+            <MobileInsightWidget
+              title="תחזוקה"
+              value={data.maintenanceSummary.overdue}
+              hint={`${data.maintenanceSummary.dueToday} לביצוע היום`}
+              tone={data.maintenanceSummary.overdue > 0 ? 'warning' : 'success'}
+              href="/maintenance"
+              sparkline={[data.maintenanceSummary.overdue, data.maintenanceSummary.dueToday, data.maintenanceSummary.dueInRange]}
+              badge={<ShieldAlert className="h-5 w-5 text-warning" strokeWidth={1.75} />}
+            />
+            <MobileInsightWidget
+              className="col-span-2"
+              title="מעקב בקרה"
+              value={formatCurrency(data.portfolioKpis.unpaidBalance)}
+              hint={`${data.collectionsSummary.overdueInvoices} חשבוניות בפיגור · ${data.collectionsSummary.pendingInvoices} ממתינות`}
+              tone={data.collectionsSummary.overdueInvoices > 0 ? 'warning' : 'default'}
+              href="/payments"
+              sparkline={[
+                data.collectionsSummary.pendingInvoices,
+                data.collectionsSummary.overdueInvoices,
+                data.systemAdmin.stats.pendingApprovals,
+                data.portfolioKpis.slaBreaches,
+              ]}
+              badge={<BarChart3 className="h-5 w-5 text-primary" strokeWidth={1.75} />}
+            />
+          </div>
         </div>
       </div>
 
@@ -240,15 +308,6 @@ export default function AdminDashboardPage() {
           formatDate={(value) => formatDate(new Date(value))}
         />
       </div>
-    </div>
-  );
-}
-
-function CompactMetric({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-[20px] border border-subtle-border bg-background/88 p-3">
-      <div className="text-[11px] uppercase tracking-[0.16em] text-tertiary">{label}</div>
-      <div className="mt-1 text-base font-semibold text-foreground">{value}</div>
     </div>
   );
 }

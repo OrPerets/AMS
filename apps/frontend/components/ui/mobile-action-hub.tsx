@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useMobileDepthEffect, useTouchHoldLift } from './mobile-card-effects';
+import { MiniSparkline } from './mobile-insight-widget';
 
 type IconType = React.ComponentType<{ className?: string; strokeWidth?: number }>;
 
@@ -19,6 +20,9 @@ export type MobileActionHubItem = {
   emphasize?: boolean;
   selected?: boolean;
   priority?: 'primary' | 'secondary' | 'utility';
+  previewValue?: string | number;
+  microViz?: number[];
+  fullCardTap?: boolean;
 };
 
 function toneClasses(accent: MobileActionHubItem['accent']) {
@@ -132,6 +136,11 @@ function ActionTile({
           </div>
 
           <div className={cn('mt-2 flex-1', layout === 'hierarchy' && priority === 'primary' && 'w-full')}>
+            {item.previewValue !== undefined ? (
+              <div className={cn('mb-1.5 text-[1.35rem] font-black leading-none tabular-nums', isSelected ? 'text-primary' : 'text-foreground')}>
+                <bdi>{item.previewValue}</bdi>
+              </div>
+            ) : null}
             <div className={cn(priority === 'primary' ? 'text-[16px]' : 'text-[15px] sm:text-sm', 'font-semibold leading-5 text-foreground', isSelected && 'text-primary')}>
               {item.label}
             </div>
@@ -144,6 +153,13 @@ function ActionTile({
               >
                 {item.description}
               </div>
+            ) : null}
+            {item.microViz?.length ? (
+              <MiniSparkline
+                data={item.microViz}
+                tone={item.accent === 'warning' ? 'warning' : item.accent === 'success' ? 'success' : item.accent === 'info' ? 'info' : 'default'}
+                className="mt-2 h-7"
+              />
             ) : null}
           </div>
 
