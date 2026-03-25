@@ -1,3 +1,4 @@
+import { motion, useReducedMotion } from 'framer-motion';
 import { Radio, RefreshCw } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -31,11 +32,21 @@ export function ResidentFreshnessStrip({
   className,
   compact = false,
 }: ResidentFreshnessStripProps) {
+  const reducedMotion = useReducedMotion();
   const statusLabel = connected ? 'מחובר להתראות' : 'ממתין לחיבור';
   const freshnessLabel = formatFreshness(lastUpdatedAt);
 
   return (
-    <div
+    <motion.div
+      initial={reducedMotion ? false : { opacity: 0, y: 14, scale: 0.985 }}
+      animate={
+        reducedMotion
+          ? undefined
+          : connected
+            ? { opacity: 1, y: 0, scale: 1, boxShadow: '0 14px 28px rgba(44,28,9,0.07)' }
+            : { opacity: 1, y: 0, scale: 1, boxShadow: '0 12px 24px rgba(196,118,18,0.08)' }
+      }
+      transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
         'flex flex-wrap items-center justify-between gap-3 rounded-full border px-3.5 py-2.5 text-right shadow-[0_10px_20px_rgba(44,28,9,0.04)]',
         connected
@@ -52,7 +63,12 @@ export function ResidentFreshnessStrip({
             connected ? 'bg-primary/10 text-primary' : 'bg-warning/12 text-warning',
           )}
         >
-          <Radio className="h-3.5 w-3.5" strokeWidth={1.9} />
+          <motion.span
+            animate={reducedMotion ? undefined : connected ? { scale: [1, 1.12, 1] } : { opacity: [0.7, 1, 0.7] }}
+            transition={reducedMotion ? undefined : { duration: connected ? 1.8 : 1.2, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <Radio className="h-3.5 w-3.5" strokeWidth={1.9} />
+          </motion.span>
         </span>
         <div>
           <div className="font-semibold text-foreground">{statusLabel}</div>
@@ -64,6 +80,6 @@ export function ResidentFreshnessStrip({
         <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.8} />
         <span>{unreadCount ? `${unreadCount} עדכונים ממתינים` : 'אין עדכונים שמחכים לך'}</span>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -146,7 +146,7 @@ export default function ResidentPaymentsPage() {
       triggerHaptic('success');
       toast({
         title: result.redirectUrl ? 'המסלול המאובטח מוכן' : 'התשלום נוצר',
-        description: result.redirectUrl ? 'בדקו את הסיכום האחרון ואז המשיכו למסלול המאובטח.' : 'נשאיר אתכם במסך האישור עד להמשך הפעולה.',
+        description: result.redirectUrl ? 'אפשר להמשיך.' : 'התשלום מוכן.',
       });
     } catch (nextError) {
       console.error(nextError);
@@ -210,7 +210,7 @@ export default function ResidentPaymentsPage() {
       triggerHaptic('success');
       toast({
         title: 'הכרטיס נשמר',
-        description: 'אמצעי התשלום החדש זמין עכשיו במסלול התשלום.',
+        description: 'הכרטיס זמין עכשיו.',
       });
       setLastUpdatedAt(Date.now());
       await loadPage();
@@ -385,9 +385,9 @@ export default function ResidentPaymentsPage() {
     <div dir="rtl" className="space-y-4 pb-4 text-right sm:space-y-6">
       <motion.section {...residentScreenMotion(motionReduced)}>
         <ResidentHero
-          eyebrow="מרכז תשלומים"
+          eyebrow="תשלומים"
           eyebrowIcon={<ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.85} />}
-          title="מרכז תשלומים"
+          title="תשלומים"
           subtitle={undefined}
           badge={<div className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white">חשבון דייר</div>}
           floatingCard={
@@ -474,14 +474,14 @@ export default function ResidentPaymentsPage() {
         <div className="rounded-[30px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.99)_0%,rgba(249,245,238,0.94)_100%)] p-4 shadow-[0_18px_36px_rgba(44,28,9,0.07)]">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">מסלול תשלום</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">לתשלום</div>
               <h2 className="mt-1 line-clamp-1 text-[20px] font-semibold text-foreground">
                 {selectedInvoice ? selectedInvoice.description : 'אין כרגע חיוב פתוח'}
               </h2>
               <div className="mt-1 text-[13px] leading-5 text-secondary-foreground">
                 {selectedInvoice
                   ? `${formatDate(selectedInvoice.dueDate, locale)} · ${translateInvoiceStatus(selectedInvoice.status)}`
-                  : 'קבלות, כרטיסים ותשלומים קודמים במקום אחד.'}
+                  : 'קבלות וכרטיסים.'}
               </div>
             </div>
             <Badge variant={selectedInvoice ? 'warning' : 'outline'}>{selectedInvoice ? 'מוכן' : 'שקט'}</Badge>
@@ -565,7 +565,7 @@ export default function ResidentPaymentsPage() {
                       ))}
                     </div>
                   ) : (
-                    <EmptyState type="empty" size="sm" title="אין כרגע חשבוניות להצגה" description="כאשר יופיע חיוב חדש, נראה אותו כאן." />
+                    <EmptyState type="empty" size="sm" title="אין חיובים פתוחים" description="חיוב חדש יופיע כאן." />
                   )}
                 </div>
               ),
@@ -588,7 +588,7 @@ export default function ResidentPaymentsPage() {
                       </motion.div>
                     ))
                   ) : (
-                    <EmptyState type="empty" size="sm" title="עדיין אין היסטוריית תשלומים" description="לאחר תשלום ראשון נציג כאן קבלות וחיובים קודמים." />
+                    <EmptyState type="empty" size="sm" title="אין היסטוריה עדיין" description="התשלום הראשון יופיע כאן." />
                   )}
                 </div>
               ),
@@ -720,7 +720,7 @@ export default function ResidentPaymentsPage() {
           <div dir="rtl" className="space-y-4 text-right">
             <div className="flex items-center justify-between gap-3 rounded-[26px] border border-subtle-border bg-background/90 px-4 py-3">
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground">מסלול תשלום</div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground">תשלום</div>
                 <div className="mt-1 text-[17px] font-semibold text-foreground">{selectedInvoice.description}</div>
               </div>
               <button
@@ -745,7 +745,7 @@ export default function ResidentPaymentsPage() {
                       <div>
                         <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/72">תשלום נבחר</div>
                         <div className="mt-2 text-lg font-semibold text-foreground">{selectedInvoice.description}</div>
-                        <div className="mt-1 text-sm text-secondary-foreground">{translateInvoiceStatus(selectedInvoice.status)} · עד {formatDate(selectedInvoice.dueDate, locale)}</div>
+                        <div className="mt-1 text-sm text-secondary-foreground">{translateInvoiceStatus(selectedInvoice.status)} · {formatDate(selectedInvoice.dueDate, locale)}</div>
                       </div>
                       <Badge variant={selectedInvoice.status === 'OVERDUE' ? 'warning' : 'outline'}>{selectedInvoice.status === 'OVERDUE' ? 'בפיגור' : 'מוכן לאישור'}</Badge>
                     </div>
@@ -775,7 +775,7 @@ export default function ResidentPaymentsPage() {
 
                   <div className="flex items-start justify-between gap-4 rounded-[24px] border border-subtle-border bg-background/90 p-4">
                     <div>
-                      <div className="font-semibold text-foreground">כרטיס וחיוב אוטומטי</div>
+                      <div className="font-semibold text-foreground">כרטיס</div>
                       <div className="text-sm text-secondary-foreground">
                         {primaryMethod ? `הכרטיס הראשי הוא •••• ${primaryMethod.last4 || '••••'}.` : 'אין עדיין כרטיס שמור.'}
                       </div>
@@ -805,11 +805,11 @@ export default function ResidentPaymentsPage() {
                         <bdi className="font-semibold text-foreground">{formatCurrency(selectedInvoice.amount)}</bdi>
                       </div>
                       <div className="flex items-center justify-between text-sm text-secondary-foreground">
-                        <span>מועד חיוב</span>
+                        <span>מועד</span>
                         <span className="font-semibold text-foreground">{formatDate(selectedInvoice.dueDate, locale)}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm text-secondary-foreground">
-                        <span>אמצעי תשלום</span>
+                        <span>כרטיס</span>
                         <span className="font-semibold text-foreground">{primaryMethod ? `•••• ${primaryMethod.last4 || '••••'}` : 'לא הוגדר'}</span>
                       </div>
                     </div>
@@ -858,12 +858,12 @@ export default function ResidentPaymentsPage() {
                       </div>
                     </div>
                     <div className="mt-6 text-xl font-bold text-foreground">
-                      {paymentRedirectUrl ? 'המסלול המאובטח מוכן' : 'התשלום עבר בהצלחה'}
+                      {paymentRedirectUrl ? 'מוכן להמשך' : 'התשלום נקלט'}
                     </div>
                     <div className="mt-2 max-w-[18rem] text-[15px] leading-6 text-secondary-foreground">
                       {paymentRedirectUrl
-                        ? 'נשאר רק שלב אחרון של אישור הסליקה במסוף המאובטח.'
-                        : 'הקבלה וההיסטוריה יתעדכנו תוך מספר רגעים.'}
+                        ? 'נשאר אישור אחד.'
+                        : 'הקבלה תופיע בעוד רגע.'}
                     </div>
                   </div>
                   <ResidentStepSummaryTiles
@@ -1012,45 +1012,45 @@ function InvoiceShowcaseCard({
         : 'text-foreground';
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] text-right shadow-[0_12px_24px_rgba(44,28,9,0.06)]">
+    <div className="overflow-hidden rounded-[24px] border border-subtle-border/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.99)_0%,rgba(249,245,238,0.94)_100%)] text-right shadow-[0_8px_18px_rgba(44,28,9,0.05)]">
       <button
         type="button"
         onClick={isPayable ? onPay : onToggle}
-        className="flex w-full items-center justify-between gap-4 p-4 text-right"
+        className="flex w-full items-center justify-between gap-3 p-3.5 text-right"
         aria-expanded={isPayable ? undefined : expanded}
       >
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-[15px] font-bold text-foreground">{invoice.description}</span>
+            <span className="text-[14px] font-bold text-foreground">{invoice.description}</span>
             <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'outline'} className="text-[10px] px-2 py-0">
               {translateInvoiceStatus(invoice.status)}
             </Badge>
           </div>
-          <div className="mt-1 flex items-center gap-2 text-[12px] text-secondary-foreground">
+          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-secondary-foreground">
             <CalendarClock className="h-3.5 w-3.5" strokeWidth={1.75} />
-            <span>פירעון {formatDate(invoice.dueDate, locale)}</span>
+            <span>{formatDate(invoice.dueDate, locale)}</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className={`text-[19px] font-black tabular-nums ${amountToneClass}`}>
+          <div className={`text-[18px] font-black tabular-nums ${amountToneClass}`}>
             <bdi>{formatCurrency(invoice.amount)}</bdi>
           </div>
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-subtle-border bg-background text-secondary-foreground shadow-sm">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-subtle-border bg-white text-secondary-foreground">
             {isPayable ? <ArrowUpLeft className="h-4 w-4" strokeWidth={2} /> : <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} strokeWidth={2} />}
           </span>
         </div>
       </button>
 
       {isPayable && !expanded ? (
-        <div className="flex items-center justify-between border-t border-subtle-border/60 bg-white/40 px-4 py-2.5">
+        <div className="flex items-center justify-between border-t border-subtle-border/60 bg-white/50 px-3.5 py-2">
           <button
             type="button"
             onClick={onToggle}
             className="text-[11px] font-semibold text-primary"
           >
-            הצג פרטים
+            פרטים
           </button>
-          <span className="text-[11px] text-secondary-foreground/80">לחץ לתשלום מהיר</span>
+          <span className="text-[11px] text-secondary-foreground/80">לתשלום מהיר</span>
         </div>
       ) : null}
 
@@ -1097,7 +1097,7 @@ function LedgerRow({
   const isPositive = entry.amount >= 0;
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[22px] border border-subtle-border bg-white/80 px-3.5 py-3 text-right shadow-sm transition hover:border-primary/20">
+    <div className="flex items-center justify-between gap-3 rounded-[20px] border border-subtle-border/90 bg-white/88 px-3.5 py-3 text-right transition hover:border-primary/16">
       <div className="flex min-w-0 items-center gap-3">
         <span
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
@@ -1108,7 +1108,7 @@ function LedgerRow({
         </span>
         <div className="min-w-0">
           <div className="truncate text-[14px] font-semibold text-foreground leading-tight">{entry.summary}</div>
-          <div className="mt-1 text-[11px] text-secondary-foreground">{formatDate(entry.createdAt, locale)}</div>
+          <div className="mt-0.5 text-[11px] text-secondary-foreground">{formatDate(entry.createdAt, locale)}</div>
         </div>
       </div>
       <div className={`text-[15px] font-black tabular-nums ${isPositive ? 'text-success' : 'text-foreground'}`}>

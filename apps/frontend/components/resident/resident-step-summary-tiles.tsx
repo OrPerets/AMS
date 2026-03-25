@@ -1,3 +1,4 @@
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
 type ResidentStepSummaryTile = {
@@ -35,13 +36,21 @@ export function ResidentStepSummaryTiles({
   columns = 3,
   surface = 'light',
 }: ResidentStepSummaryTilesProps) {
+  const reducedMotion = useReducedMotion();
   if (!items.length) return null;
 
   return (
     <div className={cn('grid gap-2', columns === 2 ? 'grid-cols-2' : 'grid-cols-3', className)}>
-      {items.map((item) => (
-        <div
+      {items.map((item, index) => (
+        <motion.div
           key={item.id}
+          initial={reducedMotion ? false : { opacity: 0, y: 18, scale: 0.97 }}
+          animate={reducedMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+          transition={{
+            duration: 0.3,
+            delay: reducedMotion ? 0 : index * 0.05,
+            ease: [0.16, 1, 0.3, 1],
+          }}
           className={cn(
             'rounded-[18px] border px-3 py-3 text-right shadow-[0_12px_24px_rgba(44,28,9,0.05)]',
             toneClass(item.tone, surface),
@@ -58,7 +67,7 @@ export function ResidentStepSummaryTiles({
               {item.hint}
             </div>
           ) : null}
-        </div>
+        </motion.div>
       ))}
     </div>
   );

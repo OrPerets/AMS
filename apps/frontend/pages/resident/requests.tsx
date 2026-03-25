@@ -349,7 +349,7 @@ export default function ResidentRequestsPage() {
       </div>
 
       <ResidentHero
-        eyebrow="מסלול בקשות"
+        eyebrow="בקשות"
         title="בקשות דייר"
         subtitle={undefined}
         badge={<div className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white">שירות עצמי</div>}
@@ -358,7 +358,7 @@ export default function ResidentRequestsPage() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">
-                  {openRequests[0] ? 'כרגע בטיפול' : 'המסלול הבא'}
+                  {openRequests[0] ? 'בטיפול' : 'השלב הבא'}
                 </div>
                 <div className="mt-1 text-[26px] font-black leading-[1.04] text-foreground">
                   {openRequests[0] ? openRequests[0].subject.replace(/^[A-Z_]+:\s*/, '') : activeType.label}
@@ -417,7 +417,7 @@ export default function ResidentRequestsPage() {
             בקשה חדשה
           </button>
           <Button asChild variant="outline" size="lg" className="min-h-[54px] rounded-full border-primary/14 bg-white/76 text-foreground hover:bg-white">
-            <Link href="/create-call">קריאת תחזוקה</Link>
+            <Link href="/create-call">תחזוקה</Link>
           </Button>
         </div>
       </ResidentHero>
@@ -510,7 +510,7 @@ export default function ResidentRequestsPage() {
           <div className="flex items-center justify-between px-1">
             <div>
               <div className="text-sm font-semibold text-foreground">בחר מסלול</div>
-              <div className="mt-0.5 text-[11px] text-secondary-foreground">כניסה מהירה לבקשה החדשה</div>
+              <div className="mt-0.5 text-[11px] text-secondary-foreground">בחירה והמשך</div>
             </div>
             <Button size="sm" className="rounded-full px-4" onClick={() => openComposer(1)}>
               פתח מסלול
@@ -560,7 +560,7 @@ export default function ResidentRequestsPage() {
           else setComposerOpen(true);
         }}
         title="בקשה חדשה"
-        description={formStep === 1 ? 'בחר מסלול' : formStep === 2 ? 'מלא פרטים קצרים' : 'בדיקה לפני שליחה'}
+        description={formStep === 1 ? 'בחר סוג' : formStep === 2 ? 'פרטים' : 'אישור'}
         tone="light"
         size="full"
         className="max-h-[100dvh] rounded-none md:max-h-[88dvh] md:rounded-t-[30px]"
@@ -776,7 +776,7 @@ export default function ResidentRequestsPage() {
 
               <div className="space-y-3 rounded-[24px] border border-subtle-border bg-background/90 p-4">
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">לפני שליחה</div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">בדיקה</div>
                   <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.nextStep}</div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -791,7 +791,7 @@ export default function ResidentRequestsPage() {
             <div className="space-y-4">
               <div className="space-y-3 rounded-[24px] border border-subtle-border bg-background/90 p-4">
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">לפני שליחה</div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">אישור</div>
                   <div className="mt-1 text-lg font-semibold text-foreground">{selectedTypeDescription.nextStep}</div>
                   <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.responseWindow}</div>
                 </div>
@@ -824,7 +824,7 @@ export default function ResidentRequestsPage() {
 
       {view === 'history' ? (
       <div className="space-y-6 rounded-[30px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-4 shadow-[0_16px_34px_rgba(44,28,9,0.07)] sm:p-6">
-          <SectionHeader title="מעקב" subtitle="סטטוס קצר וברור" meta={`${history.length} פריטים`} />
+          <SectionHeader title="מעקב" subtitle={undefined} meta={`${history.length} פריטים`} />
 
           <div className="grid gap-4 md:grid-cols-2">
             <FormField label="סטטוס">
@@ -889,7 +889,7 @@ export default function ResidentRequestsPage() {
           ) : (
             <div className="space-y-8">
               <section className="space-y-4">
-                <SectionHeader title="בטיפול" subtitle="הבקשות שעדיין פתוחות" meta={`${openRequests.length} פתוחות`} />
+                <SectionHeader title="בטיפול" subtitle={undefined} meta={`${openRequests.length} פתוחות`} />
                 {openRequests.length === 0 ? (
                   <Card className="border-dashed">
                     <CardContent className="py-10">
@@ -906,7 +906,7 @@ export default function ResidentRequestsPage() {
               </section>
 
               <section className="space-y-4">
-                <SectionHeader title="הושלמו" subtitle="בקשות שנסגרו" meta={`${closedRequests.length} הושלמו`} />
+                <SectionHeader title="הושלמו" subtitle={undefined} meta={`${closedRequests.length} הושלמו`} />
                 {closedRequests.length === 0 ? (
                   <Card className="border-dashed">
                     <CardContent className="py-10">
@@ -974,7 +974,7 @@ function RequestTypePicker({
     <section className="space-y-4" aria-label="בחר סוג בקשה">
       <div className="text-right">
         <h2 className="text-[16px] font-bold text-foreground">איך אפשר לעזור?</h2>
-        <p className="mt-1 text-[12px] text-secondary-foreground">בחר את המסלול המתאים ביותר לבקשה שלך.</p>
+        <p className="mt-1 text-[12px] text-secondary-foreground">בחר מסלול.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-2.5">
@@ -1076,7 +1076,7 @@ function RequestHistoryList({ items, locale }: { items: RequestHistoryItem[]; lo
   return (
     <div className="space-y-3">
       {items.map((item) => (
-        <div key={item.requestKey} className="rounded-[24px] border border-subtle-border bg-white/80 p-4 shadow-sm transition hover:border-primary/10 hover:bg-white">
+        <div key={item.requestKey} className="rounded-[22px] border border-subtle-border/90 bg-white/88 p-3.5 transition hover:border-primary/14 hover:bg-white">
           <div className="flex flex-col gap-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
@@ -1084,8 +1084,8 @@ function RequestHistoryList({ items, locale }: { items: RequestHistoryItem[]; lo
                   <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">{item.requestKey}</span>
                   <StatusBadge label={getResidentRequestStatusLabel(item.status)} tone={getResidentRequestStatusTone(item.status)} className="px-1.5 py-0 h-4 text-[9px]" />
                 </div>
-                <div className="text-[15px] font-bold text-foreground leading-tight">{item.subject.replace(/^[A-Z_]+:\s*/, '')}</div>
-                <div className="mt-1 text-[12px] leading-tight text-secondary-foreground line-clamp-1">{item.message}</div>
+                <div className="text-[14px] font-bold text-foreground leading-tight">{item.subject.replace(/^[A-Z_]+:\s*/, '')}</div>
+                <div className="mt-0.5 text-[12px] leading-tight text-secondary-foreground line-clamp-1">{item.message}</div>
               </div>
               <div className="flex flex-col items-end gap-1 shrink-0">
                 <div className="text-[10px] font-bold text-muted-foreground/60">{formatDate(new Date(item.updatedAt || item.createdAt), locale)}</div>
@@ -1094,10 +1094,10 @@ function RequestHistoryList({ items, locale }: { items: RequestHistoryItem[]; lo
             </div>
 
             {item.statusNotes ? (
-              <div className="rounded-2xl border border-primary/10 bg-primary/5 px-3 py-2.5 text-[12px] leading-5 text-secondary-foreground">
-                <div className="flex items-center gap-1.5 font-bold text-primary mb-1">
+              <div className="rounded-[18px] border border-primary/10 bg-primary/5 px-3 py-2 text-[12px] leading-5 text-secondary-foreground">
+                <div className="mb-1 flex items-center gap-1.5 font-bold text-primary">
                   <Sparkles className="h-3.5 w-3.5" strokeWidth={2.5} />
-                  עדכון טיפול
+                  עדכון
                 </div>
                 {item.statusNotes}
               </div>

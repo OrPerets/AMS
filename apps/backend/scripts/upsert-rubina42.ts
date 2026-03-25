@@ -197,7 +197,7 @@ async function main() {
       managerName: 'ועד הבית רובינא 42',
       contactEmail: 'board-rubina42@demo.local',
       contactPhone: '09-9554242',
-      notes: 'Remote Rubina 42 dataset for end-to-end testing.',
+      notes: 'מערך נתונים מרוחק עבור חנה רובינא 42 לצורכי בדיקות מקצה לקצה.',
       isActive: true,
     },
   });
@@ -215,10 +215,10 @@ async function main() {
         where: { id: existingAsset.id },
         data: {
           buildingId: building.id,
-          name: 'Rubina 42 Elevator',
+          name: 'מעלית חנה רובינא 42',
           category: MaintenanceCategory.SAFETY,
-          description: 'Main passenger elevator for Rubina 42.',
-          location: 'Lobby',
+          description: 'מעלית הנוסעים הראשית של חנה רובינא 42.',
+          location: 'לובי',
           purchaseDate: new Date(2019, 4, 1),
           warrantyExpiry: new Date(now.getFullYear() + 1, 4, 1),
           status: 'OPERATIONAL',
@@ -227,11 +227,11 @@ async function main() {
     : await prisma.asset.create({
         data: {
           buildingId: building.id,
-          name: 'Rubina 42 Elevator',
+          name: 'מעלית חנה רובינא 42',
           category: MaintenanceCategory.SAFETY,
-          description: 'Main passenger elevator for Rubina 42.',
+          description: 'מעלית הנוסעים הראשית של חנה רובינא 42.',
           serialNumber: 'R42-ELEV-001',
-          location: 'Lobby',
+          location: 'לובי',
           purchaseDate: new Date(2019, 4, 1),
           warrantyExpiry: new Date(now.getFullYear() + 1, 4, 1),
           status: 'OPERATIONAL',
@@ -277,7 +277,7 @@ async function main() {
   const document = await prisma.document.findFirst({
     where: {
       buildingId: building.id,
-      name: 'Rubina 42 House Committee Summary.pdf',
+      name: 'סיכום ועד הבית חנה רובינא 42.pdf',
     },
   });
 
@@ -294,7 +294,7 @@ async function main() {
     await prisma.document.create({
       data: {
         buildingId: building.id,
-        name: 'Rubina 42 House Committee Summary.pdf',
+        name: 'סיכום ועד הבית חנה רובינא 42.pdf',
         url: 'https://example.com/docs/rubina-42-committee-summary.pdf',
         category: 'committee',
         uploadedById: maya.id,
@@ -303,9 +303,9 @@ async function main() {
   }
 
   for (const codeRecord of [
-    { codeType: CodeType.ENTRANCE, description: 'Main entrance keypad', code: '4242' },
-    { codeType: CodeType.ELEVATOR, description: 'Elevator service mode', code: '4201' },
-    { codeType: CodeType.WIFI, description: 'Lobby WiFi', code: 'Rubina42-Residents' },
+    { codeType: CodeType.ENTRANCE, description: 'לוח מקשים בכניסה הראשית', code: '4242' },
+    { codeType: CodeType.ELEVATOR, description: 'מצב שירות למעלית', code: '4201' },
+    { codeType: CodeType.WIFI, description: 'רשת ה-WiFi בלובי', code: 'Rubina42-Residents' },
   ]) {
     const existing = await prisma.buildingCode.findFirst({
       where: {

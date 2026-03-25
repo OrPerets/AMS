@@ -163,7 +163,7 @@ export default function ResidentPaymentMethodsPage() {
         <PrimaryActionCard
           eyebrow="כרטיס ראשי"
           title={defaultMethod ? `${translateResidentCardBrand(defaultMethod.brand || defaultMethod.provider)} •••• ${defaultMethod.last4 || '••••'}` : 'הוסף כרטיס ראשון'}
-          description={defaultMethod ? 'עדכון כרטיסים וחיוב אוטומטי' : 'הוספת כרטיס מהמובייל'}
+          description={defaultMethod ? 'כרטיסים וחיוב' : 'הוספת כרטיס'}
           ctaLabel={defaultMethod ? 'עבור לתשלומים' : 'הוסף כרטיס'}
           href={defaultMethod ? '/payments/resident' : '/resident/payment-methods?addCard=1'}
           tone="default"

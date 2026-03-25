@@ -226,7 +226,7 @@ export default function ResidentAccountPage() {
     return {
       eyebrow: 'הכול בשליטה',
       title: 'אין משהו דחוף כרגע',
-      description: 'בקשה חדשה או בדיקת עדכונים.',
+      description: 'בקשה חדשה או עדכון.',
       ctaLabel: 'בקשה חדשה',
       href: '/resident/requests?view=new',
       tone: 'success' as const,
@@ -250,7 +250,7 @@ export default function ResidentAccountPage() {
       ? {
           label: finance.summary.currentBalance > 0 ? 'יתרה פתוחה' : 'מצב חשבון',
           value: formatCurrency(finance.summary.currentBalance, 'ILS', locale),
-          description: finance.summary.currentBalance > 0 ? 'אפשר לעבור לתשלום או לפירוט החשבון.' : 'כל החיובים כרגע סגורים.',
+          description: finance.summary.currentBalance > 0 ? 'מוכן לתשלום.' : 'הכול סגור.',
           progress: finance.summary.currentBalance > 0 ? 58 : 100,
           tone: finance.summary.currentBalance > 0 ? ('warning' as const) : ('success' as const),
         }
@@ -491,7 +491,6 @@ export default function ResidentAccountPage() {
       <motion.section {...residentScreenMotion(motionReduced, 0.1)} className="px-1">
         <MobileActionHub
           title="פעולות מהירות"
-          subtitle="מה שצריך עכשיו"
           items={hubItems}
           layout="hierarchy"
         />
@@ -509,7 +508,6 @@ export default function ResidentAccountPage() {
             <div className="flex items-center justify-between border-b border-subtle-border/70 px-4 py-3">
               <div>
                 <div className="text-sm font-semibold text-foreground">להמשך מהיר</div>
-                <div className="mt-0.5 text-[11px] text-secondary-foreground">פריט אחד לפתוח, ואז ממשיכים</div>
               </div>
               <Link href={continuationItems[0].href} className="text-xs font-semibold text-primary">
                 פתח

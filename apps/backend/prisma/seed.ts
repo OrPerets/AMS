@@ -642,11 +642,11 @@ async function main() {
   const rubinaAsset = await prisma.asset.create({
     data: {
       buildingId: rubina42Building.id,
-      name: 'Rubina 42 Elevator',
+      name: 'מעלית חנה רובינא 42',
       category: MaintenanceCategory.SAFETY,
-      description: 'Main passenger elevator for Rubina 42.',
+      description: 'מעלית הנוסעים הראשית של חנה רובינא 42.',
       serialNumber: 'R42-ELEV-001',
-      location: 'Lobby',
+      location: 'לובי',
       purchaseDate: new Date(2019, 4, 1),
       warrantyExpiry: new Date(now.getFullYear() + 1, 4, 1),
       status: 'OPERATIONAL',
@@ -671,7 +671,7 @@ async function main() {
   await prisma.document.create({
     data: {
       buildingId: rubina42Building.id,
-      name: 'Rubina 42 House Committee Summary.pdf',
+      name: 'סיכום ועד הבית חנה רובינא 42.pdf',
       url: 'https://example.com/docs/rubina-42-committee-summary.pdf',
       category: 'committee',
       uploadedById: createdUsers['maya@demo.com'].id,
@@ -684,21 +684,21 @@ async function main() {
         buildingId: rubina42Building.id,
         codeType: CodeType.ENTRANCE,
         code: '4242',
-        description: 'Main entrance keypad',
+        description: 'לוח מקשים בכניסה הראשית',
         createdBy: createdUsers['maya@demo.com'].id,
       },
       {
         buildingId: rubina42Building.id,
         codeType: CodeType.ELEVATOR,
         code: '4201',
-        description: 'Elevator service mode',
+        description: 'מצב שירות למעלית',
         createdBy: createdUsers['maya@demo.com'].id,
       },
       {
         buildingId: rubina42Building.id,
         codeType: CodeType.WIFI,
         code: 'Rubina42-Residents',
-        description: 'Lobby WiFi',
+        description: 'רשת ה-WiFi בלובי',
         createdBy: createdUsers['maya@demo.com'].id,
       },
     ],

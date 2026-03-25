@@ -73,11 +73,20 @@ export function AmsDrawer({
             ? {
                 enter: {
                   y: 0,
-                  transition: { duration: 0.26, ease: [0.16, 1, 0.3, 1] },
+                  scale: 1,
+                  opacity: 1,
+                  transition: { duration: 0.34, ease: [0.16, 1, 0.3, 1] },
                 },
                 exit: {
                   y: '100%',
-                  transition: { duration: 0.18, ease: [0.7, 0, 0.84, 0] },
+                  scale: 0.985,
+                  opacity: 0.96,
+                  transition: { duration: 0.22, ease: [0.7, 0, 0.84, 0] },
+                },
+                initial: {
+                  y: '100%',
+                  scale: 0.97,
+                  opacity: 0.92,
                 },
               }
             : undefined,
