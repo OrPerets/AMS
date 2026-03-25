@@ -3,15 +3,20 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowUpRight, Bell, Building2, ClipboardList, CreditCard, FileText, MapPinned, MessageCircle, ShieldCheck, Ticket, UserRound } from 'lucide-react';
-import { authFetch, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
+import { authFetch, getAccessToken, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { cn, formatCurrency, formatDate, getTicketStatusTone } from '../../lib/utils';
 import { Button } from '../../components/ui/button';
 import { EmptyState } from '../../components/ui/empty-state';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
 import { ResidentHero } from '../../components/resident/resident-hero';
+import { ResidentFreshnessStrip } from '../../components/resident/resident-freshness-strip';
+import { ResidentTrendCard } from '../../components/resident/resident-trend-card';
+import { buildResidentTrendState } from '../../components/resident/resident-view-models';
+import { residentScreenMotion } from '../../components/resident/motion';
 import { getResumeState, setResumeState } from '../../lib/engagement';
 import { trackResumeClick } from '../../lib/analytics';
+import { websocketService } from '../../lib/websocket';
 
 type AccountContext = {
   user: { id: number; email: string; role: string };
@@ -60,8 +65,11 @@ const payableStatuses = new Set(['UNPAID', 'OVERDUE']);
 export default function ResidentAccountPage() {
   const router = useRouter();
   const reducedMotion = useReducedMotion();
+  const motionReduced = Boolean(reducedMotion);
   const [context, setContext] = useState<AccountContext | null>(null);
   const [finance, setFinance] = useState<ResidentFinance | null>(null);
+  const [liveConnected, setLiveConnected] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,6 +112,7 @@ export default function ResidentAccountPage() {
       }
 
       setFinance(await financeRes.json());
+      setLastUpdatedAt(Date.now());
     } catch (nextError) {
       console.error(nextError);
       setError('לא ניתן לטעון כעת את האזור האישי.');
@@ -123,7 +132,6 @@ export default function ResidentAccountPage() {
   const locale = 'he';
   const labels = {
     home: 'האזור האישי',
-    actions: 'פעולות מהירות',
     updatesReady: '{{count}} עדכונים חדשים מחכים לך',
     updatesClear: 'כל העדכונים האחרונים נקראו',
   };
@@ -162,7 +170,7 @@ export default function ResidentAccountPage() {
       return {
         eyebrow: 'מסמך חדש',
         title: newestDocument.name,
-        description: `עלה ב-${formatDate(newestDocument.uploadedAt, locale)} ונמצא במסמכים שלך.`,
+        description: formatDate(newestDocument.uploadedAt, locale),
         ctaLabel: 'פתח מסמכים',
         href: '/documents',
         tone: 'default' as const,
@@ -173,7 +181,7 @@ export default function ResidentAccountPage() {
       return {
         eyebrow: 'מרכז עדכונים',
         title: unreadNotifications.length > 1 ? `${unreadNotifications.length} עדכונים חדשים` : newestNotification.title,
-        description: unreadNotifications.length > 1 ? 'כל ההתראות והאישורים מרוכזים במסך אחד.' : newestNotification.message,
+        description: unreadNotifications.length > 1 ? 'פתח עדכונים' : newestNotification.message,
         ctaLabel: 'פתח עדכונים',
         href: '/notifications',
         tone: 'default' as const,
@@ -183,7 +191,7 @@ export default function ResidentAccountPage() {
     return {
       eyebrow: 'הכול בשליטה',
       title: 'אין משהו דחוף כרגע',
-      description: 'אפשר לפתוח בקשה חדשה, לדווח על תקלה או לבדוק מסמכים ועדכונים אחרונים.',
+      description: 'בקשה חדשה או בדיקת עדכונים.',
       ctaLabel: 'בקשה חדשה',
       href: '/resident/requests?view=new',
       tone: 'success' as const,
@@ -193,7 +201,7 @@ export default function ResidentAccountPage() {
   const heroSubline = primaryUnit
     ? `דירה ${primaryUnit.number}${primaryBuilding?.name ? ` · ${primaryBuilding.name}` : ''}`
     : 'חשבון דייר פעיל';
-  const heroSupportLine = primaryBuilding?.address || 'גישה מהירה לתשלומים, קריאות, מסמכים ועדכונים.';
+  const heroSupportLine = primaryBuilding?.address || '';
   const spotlight = nextPaymentDue
     ? {
         label: nextPaymentDue.status === 'OVERDUE' ? 'לתשלום מיידי' : 'חיוב קרוב',
@@ -216,14 +224,14 @@ export default function ResidentAccountPage() {
         ? {
             label: 'קריאות פתוחות',
             value: openTickets.length,
-            description: 'מעקב חי אחרי סטטוס הטיפול והעדכונים האחרונים.',
+            description: 'פתח מעקב',
             progress: Math.min(openTickets.length * 22, 100),
             tone: openTickets.length > 1 ? ('warning' as const) : ('default' as const),
           }
         : {
             label: 'הכול בשליטה',
             value: unreadNotifications.length,
-            description: unreadNotifications.length ? 'עדכונים חדשים מחכים לעיון.' : 'אין כרגע משהו דחוף לטפל בו.',
+            description: unreadNotifications.length ? 'פתח עדכונים' : 'אין משהו דחוף',
             progress: unreadNotifications.length ? 44 : 100,
             tone: unreadNotifications.length ? ('default' as const) : ('success' as const),
           };
@@ -231,7 +239,7 @@ export default function ResidentAccountPage() {
     {
       id: 'pay',
       label: nextPaymentDue ? 'שלם עכשיו' : 'מרכז תשלומים',
-      description: nextPaymentDue ? residentPrimaryAction.description : 'יתרה, קבלות ואמצעי תשלום במקום אחד.',
+      description: nextPaymentDue ? residentPrimaryAction.description : 'יתרה, קבלות וכרטיסים',
       href: '/payments/resident',
       icon: CreditCard,
       badge: finance?.summary.unpaidInvoices ? finance.summary.unpaidInvoices : undefined,
@@ -240,7 +248,7 @@ export default function ResidentAccountPage() {
     {
       id: 'request',
       label: 'בקשה חדשה',
-      description: 'פתיחה קצרה עם צפי טיפול ברור.',
+      description: 'פתיחה מהירה',
       href: '/resident/requests?view=new',
       icon: ClipboardList,
       accent: 'primary' as const,
@@ -248,7 +256,7 @@ export default function ResidentAccountPage() {
     {
       id: 'call',
       label: openTickets.length ? 'מעקב קריאות' : 'קריאת תחזוקה',
-      description: openTickets.length ? 'בדוק מה בטיפול כרגע.' : 'דיווח מהיר עם צילום כשצריך.',
+      description: openTickets.length ? 'פתח מעקב' : 'דיווח מהיר',
       href: openTickets.length ? '/resident/requests?view=history' : '/create-call',
       icon: Ticket,
       badge: openTickets.length || undefined,
@@ -257,7 +265,7 @@ export default function ResidentAccountPage() {
     {
       id: 'contact',
       label: primaryBuilding ? 'הבניין שלי' : 'צור קשר',
-      description: primaryBuilding?.name || 'תמיכה וניהול',
+      description: primaryBuilding?.name || 'תמיכה',
       href: primaryBuilding ? '/resident/building' : '/support',
       icon: primaryBuilding ? Building2 : MessageCircle,
       accent: 'neutral' as const,
@@ -297,13 +305,49 @@ export default function ResidentAccountPage() {
       hint: unreadNotifications.length ? 'פתח מרכז עדכונים' : 'כל ההתראות נקראו',
     },
   ];
-  const updatesPreview = newestNotification?.message || 'כל העדכונים מרוכזים במקום אחד.';
+  const updatesPreview = newestNotification?.message || 'פתח מרכז עדכונים';
 
   useEffect(() => {
     if (!loading && context) {
       setResumeState({ screen: 'resident', href: '/resident/account', label: 'האזור האישי', role: role || 'RESIDENT', userId });
     }
   }, [loading, context, role, userId]);
+
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) return;
+
+    websocketService.connect(token);
+    setLiveConnected(websocketService.isConnected());
+
+    const handleNewNotification = (event: { notification?: AccountContext['notifications'][number] }) => {
+      if (!event.notification) return;
+      setContext((current) => {
+        if (!current) return current;
+        const nextNotifications = [
+          event.notification!,
+          ...current.notifications.filter((item) => item.id !== event.notification!.id),
+        ];
+
+        return {
+          ...current,
+          notifications: nextNotifications,
+        };
+      });
+      setLastUpdatedAt(Date.now());
+    };
+
+    websocketService.on('new_notification', handleNewNotification);
+
+    const statusTimer = window.setInterval(() => {
+      setLiveConnected(websocketService.isConnected());
+    }, 5000);
+
+    return () => {
+      websocketService.off('new_notification', handleNewNotification);
+      window.clearInterval(statusTimer);
+    };
+  }, []);
 
   if (loading) return <DetailPanelSkeleton />;
   if (error || !context) {
@@ -315,6 +359,18 @@ export default function ResidentAccountPage() {
       />
     );
   }
+
+  const trendState = finance
+    ? buildResidentTrendState({
+        currentBalance: finance.summary.currentBalance,
+        unpaidInvoices: finance.summary.unpaidInvoices,
+        overdueInvoices: finance.summary.overdueInvoices,
+        openTickets: openTickets.length,
+        unreadNotifications: unreadNotifications.length,
+        latestLedgerAmount: finance.invoices[0]?.amount ?? null,
+        locale,
+      })
+    : null;
 
   return (
     <div dir="rtl" className="mx-auto w-full max-w-md space-y-4 pb-24 text-right sm:max-w-4xl sm:space-y-5">
@@ -347,15 +403,11 @@ export default function ResidentAccountPage() {
         </motion.div>
       ) : null}
 
-      <motion.section
-        initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.34, ease: 'easeOut' }}
-      >
+      <motion.section {...residentScreenMotion(motionReduced)}>
         <ResidentHero
           eyebrow="מרכז השליטה האישי"
           title={labels.home}
-          subtitle="הכול מתחיל מפעולה אחת ברורה, והשאר נשאר נגיש אבל שקט."
+          subtitle={undefined}
           badge={<div className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white">חשבון דייר</div>}
           floatingCard={
             <div className="space-y-3">
@@ -366,7 +418,7 @@ export default function ResidentAccountPage() {
                   </div>
                   <h1 className="mt-1 text-[30px] font-black leading-[1.02] tracking-[-0.02em] text-foreground">{residentName}</h1>
                   <p className="mt-1 text-[14px] leading-6 text-secondary-foreground">{heroSubline}</p>
-                  <p className="mt-1 text-[13px] leading-5 text-secondary-foreground/90">{heroSupportLine}</p>
+                  {heroSupportLine ? <p className="mt-1 text-[13px] leading-5 text-secondary-foreground/90">{heroSupportLine}</p> : null}
                 </div>
                 <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-4 border-white bg-[radial-gradient(circle_at_30%_30%,rgba(255,244,220,0.96),rgba(221,174,80,0.94)_38%,rgba(101,70,28,1)_100%)] text-white shadow-[0_18px_34px_rgba(207,146,50,0.28)]">
                   <UserRound className="h-10 w-10" strokeWidth={1.8} />
@@ -390,9 +442,20 @@ export default function ResidentAccountPage() {
               </div>
 
               <div className="grid gap-2.5 sm:grid-cols-3">
-                {residentSignals.map((signal) => (
-                  <HeroSignalChip key={signal.id} label={signal.label} value={signal.value} href={signal.href} hint={signal.hint} tone={signal.tone} />
-                ))}
+                <HeroSignalChip
+                  key={residentSignals[0].id}
+                  label={residentSignals[0].label}
+                  value={residentSignals[0].value}
+                  href={residentSignals[0].href}
+                  hint={residentSignals[0].hint}
+                  tone={residentSignals[0].tone}
+                  className="sm:col-span-1"
+                />
+                <div className="grid grid-cols-2 gap-2.5 sm:col-span-2">
+                  {residentSignals.slice(1).map((signal) => (
+                    <HeroSignalChip key={signal.id} label={signal.label} value={signal.value} href={signal.href} hint={signal.hint} tone={signal.tone} />
+                  ))}
+                </div>
               </div>
             </div>
           }
@@ -405,21 +468,7 @@ export default function ResidentAccountPage() {
                 <ArrowUpRight className="icon-directional me-2 h-4 w-4" strokeWidth={1.85} />
               </Link>
             </Button>
-            <div className="grid gap-2.5 min-[420px]:grid-cols-[1.15fr_0.85fr]">
-              <div className="rounded-[24px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] p-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-[11px] font-semibold tracking-[0.16em] text-primary/70">{residentPrimaryAction.eyebrow}</div>
-                    <div className="mt-1 text-[16px] font-semibold text-foreground">{residentPrimaryAction.title}</div>
-                  </div>
-                  <span className="rounded-full border border-primary/12 bg-primary/8 px-2.5 py-1 text-[11px] font-semibold text-primary">
-                    {residentPrimaryAction.ctaLabel}
-                  </span>
-                </div>
-                <div className="mt-1 text-[13px] leading-5 text-secondary-foreground">{residentPrimaryAction.description}</div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2.5">
               <Button
                 size="lg"
                 variant="outline"
@@ -439,23 +488,42 @@ export default function ResidentAccountPage() {
                   <UserRound className="me-2 h-4 w-4" strokeWidth={1.85} />
                 </Link>
               </Button>
-              </div>
             </div>
           </div>
         </ResidentHero>
       </motion.section>
 
+      <motion.section
+        {...residentScreenMotion(motionReduced, 0.05)}
+        className="space-y-3"
+      >
+        <ResidentFreshnessStrip
+          connected={liveConnected}
+          lastUpdatedAt={lastUpdatedAt}
+          unreadCount={unreadNotifications.length}
+        />
+        {trendState ? (
+          <ResidentTrendCard
+            title={trendState.title}
+            subtitle={trendState.subtitle}
+            metricLabel={trendState.metricLabel}
+            metricValue={trendState.metricValue}
+            points={trendState.points}
+            insight={trendState.insight}
+            tone={trendState.tone}
+            summaryItems={trendState.summaryItems}
+          />
+        ) : null}
+      </motion.section>
+
       <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-4">
           <motion.section
-            initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.05, ease: 'easeOut' }}
+            {...residentScreenMotion(motionReduced, 0.1)}
             className="rounded-[30px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-4 pb-4 pt-4 shadow-[0_18px_40px_rgba(44,28,9,0.06)]"
           >
             <div className="mb-3">
-              <h2 className="text-[18px] font-semibold text-foreground">המשך מהיר</h2>
-              <div className="mt-1 text-[12px] text-secondary-foreground">מסלולים קצרים וברורים.</div>
+              <h2 className="text-[18px] font-semibold text-foreground">מה ממשיכים עכשיו</h2>
             </div>
             <div className="space-y-2.5">
               {actionItems.map((item) => {
@@ -501,9 +569,7 @@ export default function ResidentAccountPage() {
 
         <div className="space-y-4">
           <motion.section
-            initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.15, ease: 'easeOut' }}
+            {...residentScreenMotion(motionReduced, 0.15)}
             className="rounded-[26px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
           >
             <CompactSectionHeader
@@ -522,18 +588,14 @@ export default function ResidentAccountPage() {
                   <div className="text-[15px] font-semibold text-foreground">
                     {unreadNotifications.length ? labels.updatesReady.replace('{{count}}', String(unreadNotifications.length)) : labels.updatesClear}
                   </div>
-                  <div className="mt-0.5 text-[13px] leading-5 text-secondary-foreground">
-                    {updatesPreview}
-                  </div>
+                  <div className="mt-0.5 line-clamp-2 text-[13px] leading-5 text-secondary-foreground">{updatesPreview}</div>
                 </div>
               </div>
             </div>
           </motion.section>
 
           <motion.section
-            initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-            transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.2, ease: 'easeOut' }}
+            {...residentScreenMotion(motionReduced, 0.2)}
             className="rounded-[26px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
           >
             <CompactSectionHeader
@@ -557,9 +619,7 @@ export default function ResidentAccountPage() {
                     <MessageCircle className="h-4 w-4" strokeWidth={1.8} />
                   </div>
                   <div className="mt-2 text-[15px] font-semibold text-foreground">תמיכה</div>
-                  <div className="mt-0.5 line-clamp-2 text-[12px] leading-5 text-secondary-foreground">
-                    {newestNotification?.title || 'פנייה לצוות הניהול והתמיכה.'}
-                  </div>
+                  <div className="mt-0.5 line-clamp-2 text-[12px] leading-5 text-secondary-foreground">{newestNotification?.title || 'צור קשר'}</div>
                 </Link>
               </div>
             ) : (
@@ -578,12 +638,14 @@ function HeroSignalChip({
   href,
   hint,
   tone = 'default',
+  className,
 }: {
   label: string;
   value: string | number;
   href: string;
   hint: string;
   tone?: 'default' | 'warning' | 'success' | 'info';
+  className?: string;
 }) {
   const toneClass =
     tone === 'warning'
@@ -600,6 +662,7 @@ function HeroSignalChip({
       className={cn(
         'rounded-[20px] border px-3 py-3 shadow-[0_12px_24px_rgba(44,28,9,0.06)] transition hover:-translate-y-0.5 hover:border-primary/18',
         toneClass,
+        className,
       )}
     >
       <div className="text-[11px] font-semibold text-primary/72">{label}</div>

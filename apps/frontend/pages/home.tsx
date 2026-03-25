@@ -733,7 +733,7 @@ async function buildResidentHomeData(currentUserId: number | null): Promise<Resi
       { id: 'tickets', label: 'קריאות', value: openTickets, tone: openTickets > 0 ? 'warning' : 'success', href: '/resident/account' },
     ],
     primaryAction: {
-      eyebrow: 'Balance Card',
+      eyebrow: 'מצב חשבון',
       title: 'יתרה לתשלום',
       description: `${formatCurrency(dueBalance)} · ${unpaidInvoices} חיובים פתוחים · מועד ${dueDate}`,
       ctaLabel: 'שלם עכשיו',
@@ -742,10 +742,10 @@ async function buildResidentHomeData(currentUserId: number | null): Promise<Resi
       secondaryAction: { label: 'פרטי חשבון', href: '/resident/account' },
     },
     quickActions: [
-      { id: 'requests', title: 'בקשה', value: 'חדשה', subtitle: '📋', href: '/resident/requests', icon: ClipboardList },
-      { id: 'ticket', title: 'קריאה', value: 'תחזוקה', subtitle: '🔧', href: '/create-call', icon: Ticket },
+      { id: 'requests', title: 'בקשה', value: 'חדשה', subtitle: 'פתיחה מהירה', href: '/resident/requests', icon: ClipboardList },
+      { id: 'ticket', title: 'קריאה', value: 'תחזוקה', subtitle: 'דיווח מיידי', href: '/create-call', icon: Ticket },
       { id: 'docs', title: 'מסמכים', value: data.summary?.unreadNotifications ?? 0, subtitle: 'חדשים', href: '/documents', icon: Bell },
-      { id: 'building', title: 'הבניין', value: 'שלי', subtitle: '🏢', href: '/resident/account?section=building', icon: Building2 },
+      { id: 'building', title: 'הבניין', value: 'שלי', subtitle: 'מידע ויצירת קשר', href: '/resident/account?section=building', icon: Building2 },
     ],
     inboxItems: (data.tickets || []).slice(0, 2).map((ticket, index) => ({
       id: `resident-ticket-${ticket.id || index}`,
@@ -766,7 +766,7 @@ function buildResidentFallback(): ResidentHomeData {
       { id: 'tickets', label: 'קריאות', value: 0, tone: 'success', href: '/resident/account' },
     ],
     primaryAction: {
-      eyebrow: 'Balance Card',
+      eyebrow: 'מצב חשבון',
       title: 'פתח את האזור האישי',
       description: 'מסלולי תשלום, קריאות ומסמכים זמינים גם כאשר הסיכום האישי לא נטען.',
       ctaLabel: 'פרטי חשבון',
@@ -775,10 +775,10 @@ function buildResidentFallback(): ResidentHomeData {
       secondaryAction: { label: 'שלם עכשיו', href: '/payments/resident' },
     },
     quickActions: [
-      { id: 'requests', title: 'בקשה', value: 'חדשה', subtitle: '📋', href: '/resident/requests', icon: ClipboardList },
-      { id: 'ticket', title: 'קריאה', value: 'תחזוקה', subtitle: '🔧', href: '/create-call', icon: Ticket },
+      { id: 'requests', title: 'בקשה', value: 'חדשה', subtitle: 'פתיחה מהירה', href: '/resident/requests', icon: ClipboardList },
+      { id: 'ticket', title: 'קריאה', value: 'תחזוקה', subtitle: 'דיווח מיידי', href: '/create-call', icon: Ticket },
       { id: 'docs', title: 'מסמכים', value: 0, subtitle: 'חדשים', href: '/documents', icon: Bell },
-      { id: 'building', title: 'הבניין', value: 'שלי', subtitle: '🏢', href: '/resident/account?section=building', icon: Building2 },
+      { id: 'building', title: 'הבניין', value: 'שלי', subtitle: 'מידע ויצירת קשר', href: '/resident/account?section=building', icon: Building2 },
     ],
     inboxItems: [],
   };

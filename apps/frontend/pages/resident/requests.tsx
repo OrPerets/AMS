@@ -340,7 +340,7 @@ export default function ResidentRequestsPage() {
       <ResidentHero
         eyebrow="מסלול בקשות"
         title="בקשות דייר"
-        subtitle="בחר מסלול קצר, הוסף רק את מה שצריך, וקבל צפי ברור כבר במסך הראשון."
+        subtitle={undefined}
         badge={<div className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white">שירות עצמי</div>}
         floatingCard={
           <div className="space-y-4">
@@ -355,7 +355,7 @@ export default function ResidentRequestsPage() {
                 <div className="mt-2 text-[14px] leading-6 text-secondary-foreground">
                   {openRequests[0]
                     ? openRequests[0].statusNotes || t('residentRequests.priority.waitingReason')
-                    : `${selectedTypeDescription.responseWindow} · ${selectedTypeDescription.owner}`}
+                    : selectedTypeDescription.responseWindow}
                 </div>
               </div>
               <StatusBadge
@@ -376,7 +376,7 @@ export default function ResidentRequestsPage() {
               <MobileInsightWidget
                 title="הבקשה הבאה"
                 value={activeType.label}
-                hint={`${selectedTypeDescription.responseWindow} · ${selectedTypeDescription.owner}`}
+                hint={selectedTypeDescription.responseWindow}
                 tone="default"
                 onClick={() => {
                   void router.replace('/resident/requests?view=new', undefined, { shallow: true });
@@ -450,7 +450,7 @@ export default function ResidentRequestsPage() {
           <CardContent className="space-y-3 p-4 sm:p-5">
             <SectionHeader
               title="הבקשה התקבלה"
-              subtitle="השלב הבא ברור כבר עכשיו."
+              subtitle={undefined}
               meta={submittedRequestKey}
             />
             <div className="grid gap-3 sm:grid-cols-3">
@@ -493,7 +493,7 @@ export default function ResidentRequestsPage() {
             <CardContent className="space-y-4 p-4">
               <SectionHeader
                 title="בקשה חדשה"
-                subtitle="בחר מסלול והמשך לפרטים."
+                subtitle={undefined}
                 meta={`${requestTypes.length} מסלולים`}
                 actions={
                   <Button size="sm" className="rounded-full px-4" onClick={() => openComposer(1)}>
@@ -530,7 +530,6 @@ export default function ResidentRequestsPage() {
                         </span>
                       </div>
                       <div className="mt-3 text-[14px] font-semibold text-foreground">{item.label}</div>
-                      <div className="mt-1 text-[11px] leading-5 text-secondary-foreground">{item.description}</div>
                     </button>
                   );
                 })}
@@ -547,7 +546,7 @@ export default function ResidentRequestsPage() {
           else setComposerOpen(true);
         }}
         title="בקשה חדשה"
-        description="פרטים קצרים ושליחה."
+        description="פרטים ושליחה"
         tone="light"
         headerClassName="text-right"
         bodyClassName="text-right"
@@ -602,7 +601,7 @@ export default function ResidentRequestsPage() {
               <div className="rounded-[24px] border border-subtle-border bg-background/90 p-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">נבחר עכשיו</div>
                 <div className="mt-1 text-lg font-semibold text-foreground">{activeType.label}</div>
-                <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.description}</div>
+                <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.responseWindow}</div>
               </div>
 
               <FormErrorSummary errors={visibleFormErrors} fieldLabels={fieldLabels} />
@@ -735,7 +734,7 @@ export default function ResidentRequestsPage() {
                     name="message"
                     aria-label="פרטי הבקשה"
                     rows={5}
-                    placeholder="כתוב בקצרה מה צריך, מתי, ולמי חשוב לעדכן."
+                    placeholder="כתוב בקצרה מה צריך"
                     value={form.message}
                     onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))}
                     onBlur={() => setFormTouched((current) => ({ ...current, message: true }))}
@@ -745,7 +744,7 @@ export default function ResidentRequestsPage() {
 
               <FileUpload
                 label="קובץ עזר (אופציונלי)"
-                hint="אפשר לצרף צילום, מסמך או קובץ עזר שיסומן בבקשה לצוות."
+                hint="צילום או מסמך"
                 onFileSelect={setDraftAttachment}
               />
 
@@ -753,7 +752,7 @@ export default function ResidentRequestsPage() {
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">לפני שליחה</div>
                   <div className="mt-1 text-lg font-semibold text-foreground">{selectedTypeDescription.nextStep}</div>
-                  <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.afterSubmit}</div>
+                  <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.responseWindow}</div>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -829,7 +828,7 @@ export default function ResidentRequestsPage() {
               description={
                 filtersApplied
                   ? 'נסה לנקות את המסננים או לבחור סוג בקשה אחר.'
-                  : 'כשתשלח בקשה חדשה לצוות הניהול, היא תופיע כאן עם סטטוס ברור, הערות טיפול ותאריך עדכון.'
+                  : 'בקשה חדשה תופיע כאן'
               }
               action={
                 filtersApplied
@@ -855,7 +854,7 @@ export default function ResidentRequestsPage() {
                       <EmptyState
                         type="empty"
                         title="אין כרגע בקשות פתוחות"
-                        description="כל הבקשות האחרונות הושלמו או נסגרו. בקשה חדשה תופיע כאן עד לסיום הטיפול."
+                        description="בקשה חדשה תופיע כאן"
                       />
                     </CardContent>
                   </Card>
@@ -872,7 +871,7 @@ export default function ResidentRequestsPage() {
                       <EmptyState
                         type="empty"
                         title="אין עדיין בקשות שהושלמו"
-                        description="בקשות שיסיימו טיפול יופיעו כאן עם תאריך העדכון האחרון."
+                        description="בקשות סגורות יופיעו כאן"
                       />
                     </CardContent>
                   </Card>
@@ -906,7 +905,6 @@ function RequestTypePicker({
     <section className="space-y-3" aria-label="בחר סוג בקשה">
       <div className="text-right">
         <h2 className="text-[15px] font-semibold text-foreground">בחר סוג בקשה</h2>
-        <p className="mt-1 text-[12px] leading-5 text-secondary-foreground">לחיצה מעבירה מיד לפרטים</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

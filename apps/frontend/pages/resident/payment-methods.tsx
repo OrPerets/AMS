@@ -136,7 +136,7 @@ export default function ResidentPaymentMethodsPage() {
     triggerHaptic('success');
     toast({
       title: enabled ? 'חיוב אוטומטי הופעל' : 'חיוב אוטומטי הושהה',
-      description: enabled ? 'חשבוניות עתידיות יחויבו דרך הכרטיס הראשי השמור שלך.' : 'תשלומים יישארו ידניים עד להפעלה מחדש.',
+      description: enabled ? 'החיובים הבאים יעברו דרך הכרטיס הראשי.' : 'התשלומים נשארים ידניים.',
     });
   }
 
@@ -163,7 +163,7 @@ export default function ResidentPaymentMethodsPage() {
         <PrimaryActionCard
           eyebrow="כרטיס ראשי"
           title={defaultMethod ? `${translateResidentCardBrand(defaultMethod.brand || defaultMethod.provider)} •••• ${defaultMethod.last4 || '••••'}` : 'הוסף כרטיס ראשון'}
-          description={defaultMethod ? 'אפשר לעדכן ברירת מחדל, להסיר כרטיסים ולהפעיל חיוב אוטומטי מתוך המסלול החדש.' : 'פתחנו מסלול קצר להוספת כרטיס חדש ישירות מהמובייל.'}
+          description={defaultMethod ? 'עדכון כרטיסים וחיוב אוטומטי' : 'הוספת כרטיס מהמובייל'}
           ctaLabel={defaultMethod ? 'עבור לתשלומים' : 'הוסף כרטיס'}
           href={defaultMethod ? '/payments/resident' : '/resident/payment-methods?addCard=1'}
           tone="default"
@@ -174,7 +174,6 @@ export default function ResidentPaymentMethodsPage() {
         <Card variant="elevated">
           <CardHeader>
             <CardTitle>שיטות תשלום</CardTitle>
-            <CardDescription>מסך ממוקד לכרטיסים שמורים, ברירת מחדל וחיוב אוטומטי.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -183,7 +182,6 @@ export default function ResidentPaymentMethodsPage() {
         <Card variant="elevated">
           <CardHeader>
             <CardTitle>חיוב אוטומטי ואמצעי תשלום</CardTitle>
-            <CardDescription>ניהול כרטיסים שמורים מתוך המובייל, עם מסלול קצר להוספת כרטיס חדש.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <ResidentPaymentMethodsPanel
@@ -205,14 +203,10 @@ export default function ResidentPaymentMethodsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-primary" />
-              מה אפשר לעשות מכאן
+              קישורים
             </CardTitle>
-            <CardDescription>המשך ישיר למסכים שקשורים לאמצעי התשלום שלך.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="rounded-[22px] border border-subtle-border bg-muted/20 p-4 text-sm leading-6 text-muted-foreground">
-              הכרטיס הראשי משמש לחיוב אוטומטי של חשבוניות עתידיות. אם אין כרטיס שמור, התשלומים יישארו ידניים ותוכל להשלים אותם ממסך התשלומים.
-            </div>
             <Button asChild>
               <Link href="/payments/resident">למסך התשלומים</Link>
             </Button>

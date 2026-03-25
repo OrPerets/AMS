@@ -7,6 +7,7 @@ import { EmptyState } from '../ui/empty-state';
 import { Input } from '../ui/input';
 import { Switch } from '../ui/switch';
 import { AmsDrawer } from '../ui/ams-drawer';
+import { ResidentPaymentTrustStrip } from './resident-payment-trust-strip';
 import { cn } from '../../lib/utils';
 
 export type ResidentPaymentMethod = {
@@ -47,8 +48,12 @@ type ResidentPaymentMethodsPanelProps = {
 
 type AddCardStep = 1 | 2 | 3;
 
-const inputClassName =
-  'h-12 rounded-[18px] border-subtle-border bg-white text-right text-foreground placeholder:text-muted-foreground focus-visible:ring-[rgba(224,182,89,0.28)] focus-visible:ring-offset-0';
+function inputClassName(hasError = false) {
+  return cn(
+    'h-12 rounded-[18px] bg-white text-right text-foreground placeholder:text-muted-foreground focus-visible:ring-[rgba(224,182,89,0.28)] focus-visible:ring-offset-0',
+    hasError ? 'border-destructive/32 focus-visible:ring-destructive/20' : 'border-subtle-border',
+  );
+}
 
 function inferBrand(cardNumber: string) {
   const sanitized = cardNumber.replace(/\D/g, '');
@@ -107,6 +112,7 @@ export function ResidentPaymentMethodsPanel({
   const [holderName, setHolderName] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ holderName?: string; cardNumber?: string; expiry?: string }>({});
   const [markAsDefault, setMarkAsDefault] = useState(true);
   const [cardError, setCardError] = useState<string | null>(null);
   const [autopayPending, setAutopayPending] = useState(false);
@@ -130,6 +136,7 @@ export function ResidentPaymentMethodsPanel({
     if (!drawerOpen) {
       setStep(1);
       setCardError(null);
+      setFieldErrors({});
       return;
     }
     setMarkAsDefault(paymentMethods.length === 0);
@@ -138,21 +145,29 @@ export function ResidentPaymentMethodsPanel({
   function openAddFlow() {
     setDrawerOpen(true);
     setCardError(null);
+    setFieldErrors({});
   }
 
   function validateStepOne() {
+    const nextErrors: { holderName?: string; cardNumber?: string; expiry?: string } = {};
+
     if (!holderName.trim()) {
-      setCardError('יש למלא שם בעל הכרטיס.');
-      return false;
+      nextErrors.holderName = 'יש למלא שם בעל הכרטיס.';
     }
     if (sanitizedCardNumber.length < 12) {
-      setCardError('מספר הכרטיס אינו מלא.');
-      return false;
+      nextErrors.cardNumber = 'מספר הכרטיס אינו מלא.';
     }
     if (!expMonth || !expYear || Number(expMonth) < 1 || Number(expMonth) > 12 || expYear.length !== 2) {
-      setCardError('יש להזין תוקף בפורמט MM/YY.');
+      nextErrors.expiry = 'יש להזין תוקף בפורמט MM/YY.';
+    }
+
+    if (Object.keys(nextErrors).length) {
+      setFieldErrors(nextErrors);
+      setCardError('יש להשלים את השדות המסומנים לפני המעבר לאישור.');
       return false;
     }
+
+    setFieldErrors({});
     setCardError(null);
     return true;
   }
@@ -185,6 +200,7 @@ export function ResidentPaymentMethodsPanel({
       setHolderName('');
       setCardNumber('');
       setExpiry('');
+      setFieldErrors({});
     } finally {
       setAddPending(false);
     }
@@ -225,7 +241,7 @@ export function ResidentPaymentMethodsPanel({
         </div>
         <div>
           <div className={cn('text-sm font-semibold', embedded ? 'text-foreground' : 'text-inverse-text')}>הוסף כרטיס חדש</div>
-          <div className={cn('mt-1 text-xs', embedded ? 'text-secondary-foreground' : 'text-white/60')}>מסלול קצר עם אישור לפני שמירת הכרטיס הראשי.</div>
+          <div className={cn('mt-1 text-xs', embedded ? 'text-secondary-foreground' : 'text-white/60')}>פתיחה מהירה</div>
         </div>
       </div>
       <ChevronLeft className={cn('h-4 w-4 transition group-hover:-translate-x-0.5', embedded ? 'text-secondary-foreground' : 'text-white/48')} strokeWidth={1.9} />
@@ -282,11 +298,39 @@ export function ResidentPaymentMethodsPanel({
               </div>
               <div className={cn('mt-2 text-base font-semibold', embedded ? 'text-foreground' : 'text-inverse-text')}>חיוב אוטומטי</div>
               <div className={cn('mt-1 text-sm leading-6', embedded ? 'text-secondary-foreground' : 'text-white/64')}>
-                כשהאפשרות פעילה, החשבונית הבאה תמשוך את הכרטיס הראשי ותשמור את שאר הפעולות למסך התשלומים בלבד.
+                החיוב הבא יעבור דרך הכרטיס הראשי.
               </div>
             </div>
             <Switch checked={autopayEnabled} disabled={autopayPending} onCheckedChange={(checked) => void handleAutopayChange(checked)} aria-label="הפעלת חיוב אוטומטי" />
           </div>
+
+          <ResidentPaymentTrustStrip
+            className="mt-3"
+            surface={embedded ? 'light' : 'dark'}
+            eyebrow="מצב בטוח"
+            title="אותו כרטיס, אותה בהירות"
+            items={[
+              {
+                id: 'methods-primary',
+                label: 'כרטיס ראשי',
+                value: defaultMethod ? `•••• ${defaultMethod.last4 || '••••'}` : 'טרם הוגדר',
+                tone: defaultMethod ? 'success' : 'warning',
+              },
+              {
+                id: 'methods-autopay',
+                label: 'חיוב אוטומטי',
+                value: autopayEnabled ? 'פעיל' : 'ידני',
+                tone: autopayEnabled ? 'success' : 'warning',
+              },
+              {
+                id: 'methods-secure',
+                label: 'אבטחה',
+                value: paymentMethods.some((method) => method.networkTokenized) ? 'Tokenized' : 'מוכן להצפנה',
+                tone: 'success',
+              },
+            ]}
+            compact
+          />
         </div>
 
         {paymentMethods.length ? (
@@ -317,7 +361,7 @@ export function ResidentPaymentMethodsPanel({
                       {translateResidentCardBrand(method.brand || method.provider)} •••• {method.last4 || '••••'}
                     </div>
                     <div className={cn('mt-1 text-sm', embedded ? 'text-secondary-foreground' : 'text-white/60')}>
-                      תוקף {method.expMonth || '--'}/{method.expYear || '--'} {method.networkTokenized ? '· נשמר בצורה מאובטחת' : ''}
+                      תוקף {method.expMonth || '--'}/{method.expYear || '--'} {method.networkTokenized ? '· מאובטח' : ''}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
@@ -349,7 +393,7 @@ export function ResidentPaymentMethodsPanel({
               type="action"
               size="sm"
               title="עדיין אין כרטיס שמור"
-              description="עכשיו אפשר להוסיף כרטיס חדש ישירות מהמובייל, לשמור אותו כברירת מחדל ולהפעיל אוטופיי בלי לעבור דרך התמיכה."
+              description="הוסף כרטיס כדי לשלם מהמובייל."
               action={{ label: 'הוסף כרטיס', onClick: openAddFlow, variant: 'outline' }}
             />
             <Button
@@ -367,7 +411,7 @@ export function ResidentPaymentMethodsPanel({
         isOpen={drawerOpen}
         onOpenChange={setDrawerOpen}
         title="הוספת כרטיס חדש"
-        description={step === 1 ? 'פרטים קצרים לפני שמירה.' : step === 2 ? 'בדיקה אחרונה.' : 'הכרטיס נשמר.'}
+        description={step === 1 ? 'פרטים' : step === 2 ? 'אישור' : 'נשמר'}
         tone="light"
       >
         <div dir="rtl" className="space-y-4 text-right">
@@ -388,7 +432,7 @@ export function ResidentPaymentMethodsPanel({
                     <div>
                       <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">כרטיס חדש</div>
                       <div className="mt-1 text-lg font-semibold text-foreground">נשמר ישירות לחשבון</div>
-                      <div className="mt-1 text-sm leading-6 text-secondary-foreground">מופיע מיד במסך התשלומים.</div>
+                      <div className="mt-1 text-sm leading-6 text-secondary-foreground">זמין מיד לתשלום</div>
                     </div>
                     <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-primary/10 text-primary">
                       <WalletCards className="h-5 w-5" strokeWidth={1.85} />
@@ -397,46 +441,69 @@ export function ResidentPaymentMethodsPanel({
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <MethodTile active title="כרטיס אשראי" subtitle={defaultMethod ? 'יופיע לצד הכרטיסים השמורים' : 'יהפוך לכרטיס הראשון בחשבון'} icon={<CreditCard className="h-5 w-5" strokeWidth={1.85} />} />
-                  <MethodTile active={false} disabled title="Apple Pay" subtitle="בקרוב" icon={<Sparkles className="h-5 w-5" strokeWidth={1.85} />} />
+                  <MethodTile active title="כרטיס אשראי" subtitle={defaultMethod ? 'נשמר לחשבון' : 'הכרטיס הראשון בחשבון'} icon={<CreditCard className="h-5 w-5" strokeWidth={1.85} />} />
+                  <MethodTile
+                    active={!fieldErrors.cardNumber}
+                    title={translateResidentCardBrand(inferredBrand)}
+                    subtitle={last4 ? `תצוגה · •••• ${last4}` : 'המותג יופיע בזמן ההקלדה'}
+                    icon={<Sparkles className="h-5 w-5" strokeWidth={1.85} />}
+                  />
                 </div>
 
                 <div className="grid gap-3">
                   <label className="space-y-2">
                     <span className="text-sm font-medium text-foreground">שם בעל הכרטיס</span>
-                    <Input value={holderName} onChange={(event) => setHolderName(event.target.value)} placeholder="לדוגמה: Or Peretz" className={inputClassName} dir="ltr" />
+                    <Input
+                      value={holderName}
+                      onChange={(event) => {
+                        setHolderName(event.target.value);
+                        setFieldErrors((current) => ({ ...current, holderName: undefined }));
+                      }}
+                      placeholder="לדוגמה: Or Peretz"
+                      className={inputClassName(Boolean(fieldErrors.holderName))}
+                      dir="ltr"
+                    />
+                    {fieldErrors.holderName ? <div className="text-xs text-destructive">{fieldErrors.holderName}</div> : null}
                   </label>
                   <label className="space-y-2">
                     <span className="text-sm font-medium text-foreground">מספר כרטיס</span>
                     <Input
                       value={cardNumber}
-                      onChange={(event) => setCardNumber(formatCardNumber(event.target.value))}
+                      onChange={(event) => {
+                        setCardNumber(formatCardNumber(event.target.value));
+                        setFieldErrors((current) => ({ ...current, cardNumber: undefined }));
+                      }}
                       placeholder="4242 4242 4242 4242"
-                      className={inputClassName}
+                      className={inputClassName(Boolean(fieldErrors.cardNumber))}
                       dir="ltr"
                       inputMode="numeric"
                     />
+                    {fieldErrors.cardNumber ? <div className="text-xs text-destructive">{fieldErrors.cardNumber}</div> : null}
                   </label>
                   <label className="space-y-2">
                     <span className="text-sm font-medium text-foreground">תוקף</span>
                     <Input
                       value={expiry}
-                      onChange={(event) => setExpiry(formatExpiry(event.target.value))}
+                      onChange={(event) => {
+                        setExpiry(formatExpiry(event.target.value));
+                        setFieldErrors((current) => ({ ...current, expiry: undefined }));
+                      }}
                       placeholder="12/28"
-                      className={inputClassName}
+                      className={inputClassName(Boolean(fieldErrors.expiry))}
                       dir="ltr"
                       inputMode="numeric"
                     />
+                    {fieldErrors.expiry ? <div className="text-xs text-destructive">{fieldErrors.expiry}</div> : null}
                   </label>
                 </div>
 
                 {cardError ? <div className="rounded-[18px] border border-destructive/20 bg-destructive/10 px-3.5 py-3 text-sm text-destructive">{cardError}</div> : null}
 
                 <div className="flex items-start justify-between gap-4 rounded-[22px] border border-subtle-border bg-background/90 p-3.5">
-                  <div>
-                    <div className="font-semibold text-foreground">שמור כברירת מחדל</div>
-                    <div className="text-sm text-secondary-foreground">ישמש לחיוב הבא אם החיוב האוטומטי פעיל.</div>
-                  </div>
+                    <div>
+                      <div className="font-semibold text-foreground">שמור כברירת מחדל</div>
+                      <div className="text-sm text-secondary-foreground">ישמש לחיוב הבא</div>
+                    </div>
                   <Switch checked={markAsDefault} onCheckedChange={setMarkAsDefault} aria-label="שמירה כברירת מחדל" />
                 </div>
 
@@ -475,7 +542,7 @@ export function ResidentPaymentMethodsPanel({
                 </div>
 
                 <div className="rounded-[22px] border border-primary/16 bg-primary/6 px-3.5 py-3 text-sm leading-6 text-secondary-foreground">
-                  אחרי האישור הכרטיס יתווסף לרשימה ויהיה זמין לתשלום הבא.
+                  אחרי האישור הכרטיס יתווסף לרשימה.
                 </div>
 
                 <Button size="lg" className="min-h-[52px] w-full" loading={addPending} onClick={() => void handleSaveCard()}>

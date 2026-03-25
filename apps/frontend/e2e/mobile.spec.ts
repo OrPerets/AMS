@@ -51,8 +51,40 @@ test.describe('mobile support smoke', () => {
     await setSession(page, 'RESIDENT');
 
     await page.goto('/resident/account');
-    await expect(page.getByText(/מה צריך עכשיו/i).first()).toBeVisible();
+    await expect(page.getByText(/דופק החשבון/i).first()).toBeVisible();
     await expect(page.getByText(/שלם עכשיו|Pay now/i).first()).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test('resident payment lane keeps one clear next action and secure handoff', async ({ page }) => {
+    await mockApi(page);
+    await setSession(page, 'RESIDENT');
+
+    await page.goto('/payments/resident');
+    await expect(page.getByText('מסלול תשלום מהיר')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'תשלום מיידי' })).toBeVisible();
+    await page.getByRole('button', { name: 'תשלום מיידי' }).click();
+    await expect(page.getByRole('heading', { name: 'תשלום מאובטח' })).toBeVisible();
+    await expect(page.getByText('לפני שעוברים למסלול המאובטח')).toBeVisible();
+    await page.getByRole('button', { name: 'המשך לאישור תשלום' }).click();
+    await page.getByRole('button', { name: 'אישור ותשלום' }).click();
+    await expect(page.getByRole('button', { name: 'המשך למסלול המאובטח' })).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test('resident add-card flow shows inline validation on mobile', async ({ page }) => {
+    await mockApi(page, { residentPaymentMethods: [] });
+    await setSession(page, 'RESIDENT');
+
+    await page.goto('/payments/resident?section=methods');
+    await expect(page.getByRole('tab', { name: /כרטיסים/ })).toBeVisible();
+    await page.getByRole('tab', { name: /כרטיסים/ }).click();
+    await page.getByRole('button', { name: 'הוסף כרטיס' }).click();
+    await expect(page.getByRole('heading', { name: 'הוספת כרטיס חדש' })).toBeVisible();
+    await page.getByRole('button', { name: 'המשך לאישור' }).click();
+    await expect(page.getByText('יש למלא שם בעל הכרטיס.')).toBeVisible();
+    await expect(page.getByText('מספר הכרטיס אינו מלא.')).toBeVisible();
+    await expect(page.getByText('יש להזין תוקף בפורמט MM/YY.')).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 

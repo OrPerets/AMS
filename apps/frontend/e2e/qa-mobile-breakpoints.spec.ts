@@ -45,7 +45,7 @@ test.describe('sprint 10 mobile breakpoint coverage', () => {
 
       await page.goto('/resident/account', { waitUntil: 'domcontentloaded' });
       await closeNavigationOverlayIfOpen(page);
-      await expect(page.getByText(/מה צריך עכשיו|פעיל עכשיו|Needs attention now/i).first()).toBeVisible();
+      await expect(page.getByText(/דופק החשבון|האזור האישי/i).first()).toBeVisible();
       await expect(page.getByRole('link', { name: /שלם עכשיו|Pay now/i }).first()).toBeVisible();
       await expect(page.getByRole('link', { name: /בקשה חדשה/ }).first()).toBeVisible();
       await expectNoHorizontalOverflow(page);
@@ -53,9 +53,9 @@ test.describe('sprint 10 mobile breakpoint coverage', () => {
       await page.goto('/payments/resident', { waitUntil: 'domcontentloaded' });
       await closeNavigationOverlayIfOpen(page);
       await expect(page.getByRole('heading', { name: 'מרכז תשלומים' })).toBeVisible();
-      await expect(page.getByText('דופק חיובים')).toBeVisible();
+      await expect(page.getByText('מסלול תשלום מהיר')).toBeVisible();
       await expect(page.getByRole('tab', { name: /פתוחים/ })).toBeVisible();
-      await page.getByRole('button', { name: /תשלום מיידי|פתח תשלום/ }).click();
+      await page.getByRole('button', { name: 'תשלום מיידי' }).click();
       await expect(page.getByRole('heading', { name: 'תשלום מאובטח' })).toBeVisible();
       await page.keyboard.press('Escape');
       await expect(page.getByRole('heading', { name: 'תשלום מאובטח' })).toBeHidden();
@@ -70,9 +70,10 @@ test.describe('sprint 10 mobile breakpoint coverage', () => {
       await page.goto('/resident/requests', { waitUntil: 'domcontentloaded' });
       await closeNavigationOverlayIfOpen(page);
       await expect(page.getByText(/בקשת דייר חדשה|בקשות דייר/).first()).toBeVisible();
+      await page.getByRole('tab', { name: /בקשה חדשה/ }).click();
+      await page.getByRole('button', { name: /פתח פרטים/ }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
       await page.getByRole('button', { name: /חניה.*שינוי או תקלה/ }).click();
-      await page.getByRole('button', { name: /המשך לפרטים/ }).click();
       await expect(page.getByRole('button', { name: /שינוי הקצאה/ }).first()).toBeVisible();
       await expect(page.getByLabel('מספר רכב')).toBeVisible();
       await page.keyboard.press('Escape');
@@ -102,7 +103,7 @@ test.describe('sprint 10 mobile breakpoint coverage', () => {
     await closeNavigationOverlayIfOpen(page);
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'ams-dark');
-    await expect(page.getByText(/מה צריך עכשיו|פעיל עכשיו|Needs attention now/i).first()).toBeVisible();
+    await expect(page.getByText(/דופק החשבון|האזור האישי/i).first()).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 });

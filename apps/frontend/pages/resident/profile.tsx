@@ -48,15 +48,15 @@ type ProfileState = {
 
 const labels = {
   pageTitle: 'הפרופיל שלי',
-  pageSubtitle: 'כל מה שחשוב לך במקום אחד, עם גישה מהירה לעדכונים, תשלומים ופרטי החשבון.',
+  pageSubtitle: '',
   residentBadge: 'חשבון דייר',
   heroHint: 'מרכז השליטה האישי',
   quickActionsTitle: 'גישה מהירה',
-  quickActionsSubtitle: 'הפעולות והמסכים שמשתמשים בהם הכי הרבה בפרופיל הדייר.',
+  quickActionsSubtitle: '',
   personalSectionTitle: 'פרטי קשר',
-  personalSectionSubtitle: 'עדכון פרטים שמופיעים בהתראות, בקבלות ובתקשורת עם צוות הבניין.',
+  personalSectionSubtitle: '',
   accountSectionTitle: 'שיוך וסטטוס',
-  accountSectionSubtitle: 'מידע זמין לקריאה בלבד על החשבון והבניין המשויך.',
+  accountSectionSubtitle: '',
   role: 'תפקיד',
   unit: 'דירה',
   building: 'בניין',
@@ -64,7 +64,6 @@ const labels = {
   email: 'אימייל',
   phone: 'טלפון',
   pushToken: 'מזהה מכשיר',
-  pushTokenHint: 'נשמר אוטומטית מהמכשיר הפעיל, אם קיים.',
   residentNameFallback: 'דייר',
   unreadUpdates: 'עדכונים שלא נקראו',
   openTickets: 'קריאות פתוחות',
@@ -79,7 +78,7 @@ const labels = {
   emailError: 'יש להזין כתובת אימייל תקינה.',
   phoneError: 'מספר הטלפון לא תקין.',
   statusCardTitle: 'היום שלך במבט אחד',
-  statusCardSubtitle: 'שקט תפעולי מתחיל בפרופיל ברור, נקי וזמין.',
+  statusCardSubtitle: '',
   logout: 'התנתקות',
 };
 
@@ -157,7 +156,7 @@ export default function ResidentProfilePage() {
     {
       id: 'details',
       label: 'הפרטים שלי',
-      description: 'עריכת האימייל, הטלפון ופרטי ההתקשרות.',
+      description: 'אימייל וטלפון',
       onPress: () => {
         if (typeof document === 'undefined') return;
         document.getElementById('profile-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -168,7 +167,7 @@ export default function ResidentProfilePage() {
     {
       id: 'payments',
       label: 'תשלומים ושיטות חיוב',
-      description: 'יתרות, חשבוניות ותשלום מהיר.',
+      description: 'חיובים וכרטיסים',
       href: '/payments/resident',
       icon: <WalletCards className="h-5 w-5" strokeWidth={1.85} />,
       accent: unreadNotifications > 0 ? 'warning' : 'default',
@@ -176,14 +175,14 @@ export default function ResidentProfilePage() {
     {
       id: 'building',
       label: 'הבניין שלי',
-      description: 'אנשי קשר, כתובת והנחיות לבניין.',
+      description: 'אנשי קשר וכתובת',
       href: '/resident/building',
       icon: <Building2 className="h-5 w-5" strokeWidth={1.85} />,
     },
     {
       id: 'requests',
       label: 'בקשות ועדכוני שירות',
-      description: 'מעקב אחר קריאות פתוחות ובקשות קודמות.',
+      description: 'מעקב ובקשות',
       href: '/resident/requests?view=history',
       icon: <Ticket className="h-5 w-5" strokeWidth={1.85} />,
       accent: openTickets > 0 ? 'warning' : 'default',
@@ -191,7 +190,7 @@ export default function ResidentProfilePage() {
     {
       id: 'settings',
       label: 'הגדרות והעדפות',
-      description: 'שפה, התראות והגדרות מערכת.',
+      description: 'שפה והתראות',
       href: '/settings',
       icon: <Settings2 className="h-5 w-5" strokeWidth={1.85} />,
     },
@@ -254,7 +253,7 @@ export default function ResidentProfilePage() {
         <ResidentHero
           eyebrow={labels.heroHint}
           title={labels.pageTitle}
-          subtitle={labels.pageSubtitle}
+          subtitle={labels.pageSubtitle || undefined}
           badge={
             <Chip radius="full" variant="flat" className="border border-white/14 bg-white/12 px-3 text-white">
               {labels.residentBadge}
@@ -294,7 +293,7 @@ export default function ResidentProfilePage() {
         <Card className="border border-divider/60 bg-white/92 shadow-[0_18px_42px_rgba(44,28,9,0.08)]">
           <CardHeader className="flex w-full flex-col items-end gap-1 px-4 pt-4 text-right sm:px-5">
             <h2 className="w-full text-right text-base font-semibold text-foreground">{labels.statusCardTitle}</h2>
-            <p className="w-full text-right text-sm text-default-500">{labels.statusCardSubtitle}</p>
+            {labels.statusCardSubtitle ? <p className="w-full text-right text-sm text-default-500">{labels.statusCardSubtitle}</p> : null}
           </CardHeader>
           <CardBody className="grid grid-cols-3 gap-3 px-4 pb-4 pt-2 text-right sm:px-5">
             <MetricTile icon={<Bell className="h-4 w-4" />} label={labels.unreadUpdates} value={String(unreadNotifications)} />
@@ -312,7 +311,7 @@ export default function ResidentProfilePage() {
         <Card className="border border-divider/60 bg-white/94 shadow-[0_18px_42px_rgba(44,28,9,0.08)]">
           <CardHeader className="flex w-full flex-col items-end gap-1 px-4 pt-4 text-right sm:px-5">
             <h2 className="w-full text-right text-base font-semibold text-foreground">{labels.quickActionsTitle}</h2>
-            <p className="w-full text-right text-sm text-default-500">{labels.quickActionsSubtitle}</p>
+            {labels.quickActionsSubtitle ? <p className="w-full text-right text-sm text-default-500">{labels.quickActionsSubtitle}</p> : null}
           </CardHeader>
           <CardBody className="gap-2 px-3 pb-3 pt-2 text-right sm:px-4">
             {menuItems.map((item) => (
@@ -331,7 +330,7 @@ export default function ResidentProfilePage() {
         <Card className="border border-divider/60 bg-white/94 shadow-[0_18px_42px_rgba(44,28,9,0.08)]">
           <CardHeader className="flex w-full flex-col items-end gap-1 px-4 pt-4 text-right sm:px-5">
             <h2 className="w-full text-right text-base font-semibold text-foreground">{labels.personalSectionTitle}</h2>
-            <p className="w-full text-right text-sm text-default-500">{labels.personalSectionSubtitle}</p>
+            {labels.personalSectionSubtitle ? <p className="w-full text-right text-sm text-default-500">{labels.personalSectionSubtitle}</p> : null}
           </CardHeader>
           <CardBody className="gap-4 px-4 pb-4 pt-2 text-right sm:px-5">
             <ProfileField
@@ -374,7 +373,7 @@ export default function ResidentProfilePage() {
               </div>
             </ProfileField>
 
-            <ProfileField label={labels.pushToken} hint={labels.pushTokenHint}>
+            <ProfileField label={labels.pushToken}>
               <div dir="ltr">
                 <Input
                   aria-label={labels.pushToken}
@@ -410,7 +409,7 @@ export default function ResidentProfilePage() {
         <Card className="border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.95)_100%)] shadow-[0_18px_42px_rgba(44,28,9,0.08)]">
           <CardHeader className="flex w-full flex-col items-end gap-1 px-4 pt-4 text-right sm:px-5">
             <h2 className="w-full text-right text-base font-semibold text-foreground">{labels.accountSectionTitle}</h2>
-            <p className="w-full text-right text-sm text-default-500">{labels.accountSectionSubtitle}</p>
+            {labels.accountSectionSubtitle ? <p className="w-full text-right text-sm text-default-500">{labels.accountSectionSubtitle}</p> : null}
           </CardHeader>
           <CardBody className="grid gap-3 px-4 pb-4 pt-2 text-right sm:grid-cols-2 sm:px-5">
             <InfoRow icon={<UserRound className="h-4 w-4 text-default-400" />} label={labels.role} value="Resident" />

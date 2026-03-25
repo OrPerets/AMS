@@ -91,7 +91,7 @@ export default function ResidentBuildingPage() {
       <PrimaryActionCard
         eyebrow="איש קשר"
         title={building?.managerName || 'צוות הבניין'}
-        description={building?.contactPhone ? `זמין בטלפון ${building.contactPhone}` : 'צריך עזרה? אפשר לפתוח קריאה או לפנות לתמיכה.'}
+        description={building?.contactPhone || 'פתח קריאה או צור קשר'}
         ctaLabel={building?.contactPhone ? 'התקשר' : 'פתח קריאה'}
         href={building?.contactPhone ? `tel:${building.contactPhone}` : '/create-call'}
         tone={building?.contactPhone ? 'default' : 'warning'}
@@ -152,7 +152,7 @@ export default function ResidentBuildingPage() {
         <CardContent className="space-y-3 p-4">
           <div className="flex items-center gap-2">
             <Wrench className="h-4 w-4 text-primary" strokeWidth={1.75} />
-            <h2 className="text-base font-semibold text-foreground">שירותים וקישורים</h2>
+            <h2 className="text-base font-semibold text-foreground">קישורים</h2>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <QuickLink href="/documents" label="מסמכים" />
@@ -168,7 +168,7 @@ export default function ResidentBuildingPage() {
                 </span>
               ))
             ) : (
-              <EmptyState size="sm" type="empty" title="אין כרגע פירוט מתקנים" description="המתקנים והשירותים הזמינים יופיעו כאן." />
+              <EmptyState size="sm" type="empty" title="אין כרגע פירוט מתקנים" description="המתקנים יופיעו כאן." />
             )}
           </div>
         </CardContent>
