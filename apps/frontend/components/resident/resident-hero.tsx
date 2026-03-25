@@ -47,7 +47,7 @@ export function ResidentHero({
     >
       <div
         className={cn(
-          'resident-profile-hero-surface relative px-5 pb-14 pt-5 text-white',
+          'resident-profile-hero-surface relative px-5 pb-10 pt-5 text-white',
           shellClassName,
         )}
       >
@@ -60,9 +60,9 @@ export function ResidentHero({
                 <span>{eyebrow}</span>
               </div>
             ) : null}
-            <h1 className={cn('mt-3 text-[30px] font-black leading-none text-white', titleClassName)}>{title}</h1>
+            <h1 className={cn('mt-2 text-[28px] font-black leading-none text-white', titleClassName)}>{title}</h1>
             {subtitle ? (
-              <div className={cn('mt-2 max-w-[18rem] text-sm leading-6 text-white/76', subtitleClassName)}>{subtitle}</div>
+              <div className={cn('mt-1.5 max-w-[18rem] text-sm leading-6 text-white/76', subtitleClassName)}>{subtitle}</div>
             ) : null}
           </div>
           {badge ? <div className="shrink-0">{badge}</div> : null}
@@ -73,7 +73,7 @@ export function ResidentHero({
         <div className="relative px-5 pb-5">
           <div
             className={cn(
-              '-mt-11 rounded-[30px] border border-primary/14 bg-white/94 p-4 shadow-[0_22px_48px_rgba(44,28,9,0.12)] backdrop-blur-sm',
+              '-mt-8 rounded-[30px] border border-primary/14 bg-white/94 p-4 shadow-[0_22px_48px_rgba(44,28,9,0.12)] backdrop-blur-sm',
               floatingCardClassName,
             )}
           >

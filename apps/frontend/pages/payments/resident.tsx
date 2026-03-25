@@ -830,31 +830,33 @@ export default function ResidentPaymentsPage() {
                   {...residentSuccessMotion(motionReduced)}
                   className="space-y-4"
                 >
-                  <div className="flex flex-col items-center justify-center rounded-[26px] border border-primary/14 bg-[linear-gradient(180deg,rgba(255,249,240,0.98)_0%,rgba(255,255,255,0.96)_100%)] px-5 py-8 text-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <CheckCircle2 className="h-8 w-8" strokeWidth={1.9} />
+                  <div className="flex flex-col items-center justify-center rounded-[30px] border border-primary/20 bg-[linear-gradient(180deg,rgba(255,248,230,0.98)_0%,rgba(255,255,255,0.96)_100%)] px-5 py-10 text-center shadow-[0_22px_48px_rgba(207,146,50,0.12)]">
+                    <div className="relative">
+                      <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+                      <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-primary/15 text-primary">
+                        <CheckCircle2 className="h-10 w-10" strokeWidth={2} />
+                      </div>
                     </div>
-                    <div className="mt-4 text-lg font-semibold text-foreground">
-                      {paymentRedirectUrl ? 'המסלול המאובטח מוכן לפתיחה' : 'התשלום עבר לשלב האישור הבא'}
+                    <div className="mt-6 text-xl font-bold text-foreground">
+                      {paymentRedirectUrl ? 'המסלול המאובטח מוכן' : 'התשלום עבר בהצלחה'}
                     </div>
-                    <div className="mt-2 max-w-[18rem] text-sm leading-6 text-secondary-foreground">
+                    <div className="mt-2 max-w-[18rem] text-[15px] leading-6 text-secondary-foreground">
                       {paymentRedirectUrl
-                        ? 'הקבלה וההיסטוריה יתעדכנו אחרי השלמת הסליקה. אפשר להמשיך עכשיו או לחזור לחשבון.'
-                        : `${selectedInvoice.description} · נחזיק אותך כאן עד לעדכון הבא.`}
+                        ? 'נשאר רק שלב אחרון של אישור הסליקה במסוף המאובטח.'
+                        : 'הקבלה וההיסטוריה יתעדכנו תוך מספר רגעים.'}
                     </div>
                   </div>
                   <ResidentStepSummaryTiles
                     items={[
-                      { id: 'success-total', label: 'סה״כ', value: formatCurrency(selectedInvoice.amount) },
+                      { id: 'success-total', label: 'סה״כ', value: formatCurrency(selectedInvoice.amount), tone: 'success' },
                       { id: 'success-card', label: 'כרטיס', value: primaryMethod ? `•••• ${primaryMethod.last4 || '••••'}` : 'לא הוגדר' },
                       {
                         id: 'success-next',
-                        label: 'המשך',
-                        value: paymentRedirectUrl ? 'למסלול המאובטח' : 'חזרה לחשבון',
-                        tone: paymentRedirectUrl ? ('success' as const) : ('default' as const),
+                        label: 'השלב הבא',
+                        value: paymentRedirectUrl ? 'מעבר לסליקה' : 'סיום',
+                        tone: paymentRedirectUrl ? 'warning' : 'success',
                       },
                     ]}
-                    surface="light"
                   />
                 </motion.div>
               ) : null}
@@ -987,81 +989,76 @@ function InvoiceShowcaseCard({
         : 'text-foreground';
 
   return (
-    <div className="overflow-hidden rounded-[30px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] text-right shadow-[0_18px_36px_rgba(44,28,9,0.06)]">
+    <div className="overflow-hidden rounded-[28px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] text-right shadow-[0_12px_24px_rgba(44,28,9,0.06)]">
       <button
         type="button"
         onClick={isPayable ? onPay : onToggle}
-        className="flex w-full items-start justify-between gap-4 px-4 pb-4 pt-4 text-right"
+        className="flex w-full items-center justify-between gap-4 p-4 text-right"
         aria-expanded={isPayable ? undefined : expanded}
       >
-        <div className={`text-xl font-black tabular-nums ${amountToneClass}`}>
-          <bdi>{formatCurrency(invoice.amount)}</bdi>
-        </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'outline'}>
-                  {translateInvoiceStatus(invoice.status)}
-                </Badge>
-                <span className="text-sm font-semibold text-foreground">{invoice.description}</span>
-              </div>
-              <div className="mt-2 flex flex-wrap items-center justify-end gap-3 text-[12px] text-secondary-foreground">
-                <span className="inline-flex items-center gap-1">
-                  <CalendarClock className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  פירעון {formatDate(invoice.dueDate, locale)}
-                </span>
-                {invoice.issueDate ? <span>הונפק {formatDate(invoice.issueDate, locale)}</span> : null}
-              </div>
-            </div>
-            <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-subtle-border bg-background text-secondary-foreground">
-              {isPayable ? <ArrowUpLeft className="h-4 w-4" strokeWidth={1.9} /> : <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} strokeWidth={1.9} />}
-            </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[15px] font-bold text-foreground">{invoice.description}</span>
+            <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'outline'} className="text-[10px] px-2 py-0">
+              {translateInvoiceStatus(invoice.status)}
+            </Badge>
           </div>
+          <div className="mt-1 flex items-center gap-2 text-[12px] text-secondary-foreground">
+            <CalendarClock className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <span>פירעון {formatDate(invoice.dueDate, locale)}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className={`text-[19px] font-black tabular-nums ${amountToneClass}`}>
+            <bdi>{formatCurrency(invoice.amount)}</bdi>
+          </div>
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-subtle-border bg-background text-secondary-foreground shadow-sm">
+            {isPayable ? <ArrowUpLeft className="h-4 w-4" strokeWidth={2} /> : <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} strokeWidth={2} />}
+          </span>
         </div>
       </button>
 
-      {isPayable ? (
-        <div className="flex flex-wrap justify-between gap-2 border-t border-subtle-border/70 px-4 py-3">
+      {isPayable && !expanded ? (
+        <div className="flex items-center justify-between border-t border-subtle-border/60 bg-white/40 px-4 py-2.5">
           <button
             type="button"
             onClick={onToggle}
-            className="text-[12px] font-semibold text-secondary-foreground"
-            aria-expanded={expanded}
+            className="text-[11px] font-semibold text-primary"
           >
-            {expanded ? 'הסתר פרטים' : 'הצג פרטים'}
+            הצג פרטים
           </button>
-          <span className="text-[12px] text-secondary-foreground">פתיחה מהירה למסלול התשלום</span>
+          <span className="text-[11px] text-secondary-foreground/80">לחץ לתשלום מהיר</span>
         </div>
       ) : null}
 
       {expanded ? (
-        <>
-          <div className="grid grid-cols-2 gap-px bg-subtle-border/70 text-right">
-            <div className="bg-[linear-gradient(180deg,rgba(255,251,245,0.9)_0%,rgba(255,255,255,0.74)_100%)] px-4 py-3">
-              <div className="text-[11px] font-semibold text-secondary-foreground">מזהה / קבלה</div>
-              <div className="mt-1 text-sm font-medium text-foreground">{invoice.receiptNumber ? `#${invoice.receiptNumber}` : 'יופק לאחר תשלום'}</div>
-            </div>
-            <div className="bg-[linear-gradient(180deg,rgba(255,251,245,0.9)_0%,rgba(255,255,255,0.74)_100%)] px-4 py-3">
-              <div className="text-[11px] font-semibold text-secondary-foreground">סטטוס</div>
-              <div className="mt-1 text-sm font-medium text-foreground">{translateInvoiceStatus(invoice.status)}</div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap justify-start gap-2 px-4 py-4">
+        <div className="space-y-3 border-t border-subtle-border/60 bg-white/50 p-4">
+          <ResidentStepSummaryTiles
+            items={[
+              { id: 'inv-id', label: 'מזהה', value: invoice.receiptNumber ? `#${invoice.receiptNumber}` : '—', hint: 'מספר קבלה' },
+              { id: 'inv-date', label: 'הונפק', value: invoice.issueDate ? formatDate(invoice.issueDate, locale) : '—' },
+              { id: 'inv-status', label: 'מצב', value: translateInvoiceStatus(invoice.status), tone: invoice.status === 'OVERDUE' ? 'warning' : invoice.status === 'PAID' ? 'success' : 'default' },
+            ]}
+          />
+          <div className="flex flex-wrap gap-2">
             {isPayable ? (
-              <Button size="sm" className="rounded-full" onClick={onPay} disabled={isProcessing}>
-                {isProcessing ? 'מעבד...' : 'פתח תשלום'}
+              <Button size="sm" className="flex-1 rounded-full h-10" onClick={onPay} disabled={isProcessing}>
+                {isProcessing ? 'מעבד...' : 'שלם עכשיו'}
               </Button>
             ) : null}
             {onDownload ? (
-              <Button size="sm" variant="outline" className="rounded-full" onClick={onDownload}>
+              <Button size="sm" variant="outline" className="flex-1 rounded-full h-10" onClick={onDownload}>
                 <Download className="me-2 h-4 w-4" strokeWidth={1.75} />
                 הורדת קבלה
               </Button>
             ) : null}
+            {isPayable ? (
+               <Button size="sm" variant="ghost" className="rounded-full h-10" onClick={onToggle}>
+                 סגור
+               </Button>
+            ) : null}
           </div>
-        </>
+        </div>
       ) : null}
     </div>
   );
@@ -1077,21 +1074,21 @@ function LedgerRow({
   const isPositive = entry.amount >= 0;
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[24px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-4 py-3.5 text-right shadow-[0_12px_24px_rgba(44,28,9,0.04)]">
+    <div className="flex items-center justify-between gap-3 rounded-[22px] border border-subtle-border bg-white/80 px-3.5 py-3 text-right shadow-sm transition hover:border-primary/20">
       <div className="flex min-w-0 items-center gap-3">
         <span
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
-            isPositive ? 'bg-success/12 text-success' : 'bg-destructive/10 text-destructive'
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+            isPositive ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'
           }`}
         >
-          {isPositive ? <CheckCircle2 className="h-5 w-5" strokeWidth={1.9} /> : <Receipt className="h-5 w-5" strokeWidth={1.9} />}
+          {isPositive ? <CheckCircle2 className="h-4 w-4" strokeWidth={2} /> : <Receipt className="h-4 w-4" strokeWidth={2} />}
         </span>
         <div className="min-w-0">
-          <div className="truncate text-sm font-semibold text-foreground">{entry.summary}</div>
-          <div className="mt-1 text-[12px] text-secondary-foreground">{formatDate(entry.createdAt, locale)}</div>
+          <div className="truncate text-[14px] font-semibold text-foreground leading-tight">{entry.summary}</div>
+          <div className="mt-1 text-[11px] text-secondary-foreground">{formatDate(entry.createdAt, locale)}</div>
         </div>
       </div>
-      <div className={`text-base font-black tabular-nums ${isPositive ? 'text-success' : 'text-foreground'}`}>
+      <div className={`text-[15px] font-black tabular-nums ${isPositive ? 'text-success' : 'text-foreground'}`}>
         <bdi>{formatCurrency(entry.amount)}</bdi>
       </div>
     </div>

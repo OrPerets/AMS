@@ -942,12 +942,13 @@ function RequestTypePicker({
   };
 
   return (
-    <section className="space-y-3" aria-label="בחר סוג בקשה">
+    <section className="space-y-4" aria-label="בחר סוג בקשה">
       <div className="text-right">
-        <h2 className="text-[15px] font-semibold text-foreground">בחר סוג בקשה</h2>
+        <h2 className="text-[16px] font-bold text-foreground">איך אפשר לעזור?</h2>
+        <p className="mt-1 text-[12px] text-secondary-foreground">בחר את המסלול המתאים ביותר לבקשה שלך.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-2.5">
         {items.map((item) => {
           const Icon = item.icon;
           const selected = item.value === selectedValue;
@@ -956,48 +957,33 @@ function RequestTypePicker({
             <button
               key={item.value}
               type="button"
-              onMouseDown={() => selectItem(item.value)}
               onClick={() => selectItem(item.value)}
               aria-pressed={selected}
               className={cn(
-                'touch-target group w-full rounded-[22px] border p-3.5 text-right shadow-[0_16px_34px_rgba(44,28,9,0.07)] transition-[transform,border-color,box-shadow,background] duration-200 active:scale-[0.99]',
+                'group flex w-full items-center justify-between rounded-[24px] border p-4 text-right transition-all duration-200 active:scale-[0.985]',
                 selected
-                  ? 'gold-sheen-surface border-primary/28 shadow-[0_20px_38px_rgba(188,136,20,0.16)] ring-1 ring-primary/12'
-                  : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(250,247,241,0.94)_100%)] hover:border-primary/18 hover:shadow-[0_18px_36px_rgba(44,28,9,0.1)]',
+                  ? 'gold-sheen-surface border-primary/25 shadow-md ring-1 ring-primary/10'
+                  : 'border-subtle-border bg-white/80 hover:border-primary/15 hover:bg-white',
               )}
               data-accent-sheen={selected ? 'true' : undefined}
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-4">
                 <span
                   className={cn(
-                    'inline-flex min-h-[30px] items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold',
+                    'flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] border transition-colors',
                     selected
-                      ? 'border-primary/18 bg-primary/10 text-primary'
-                      : 'border-subtle-border bg-background/88 text-secondary-foreground',
+                      ? 'border-primary/20 bg-primary/10 text-primary'
+                      : 'border-subtle-border bg-muted/30 text-muted-foreground group-hover:bg-primary/5 group-hover:text-primary',
                   )}
                 >
-                  {selected ? 'נבחר' : 'פתח'}
+                  <Icon className="h-5 w-5" strokeWidth={2} />
                 </span>
-                <span
-                  className={cn(
-                    'inline-flex h-11 w-11 items-center justify-center rounded-[16px] border',
-                    selected
-                      ? 'border-primary/14 bg-primary/10 text-primary'
-                      : 'border-subtle-border bg-background/88 text-foreground/72',
-                  )}
-                >
-                  <Icon className="h-5 w-5" strokeWidth={1.75} />
-                </span>
-              </div>
-
-                <div className="mt-4">
-                  <div className={cn('text-[15px] font-bold leading-6', selected ? 'text-foreground' : 'text-foreground')}>
-                    {item.label}
-                  </div>
-                  <div className="mt-1 text-[12px] leading-5 text-secondary-foreground">{item.description}</div>
+                <div className="min-w-0">
+                  <div className="text-[15px] font-bold text-foreground leading-tight">{item.label}</div>
+                  <div className="mt-1 text-[12px] text-secondary-foreground leading-tight">{item.description}</div>
                 </div>
-
-              <div className="mt-3 text-[12px] font-semibold text-primary">המשך</div>
+              </div>
+              <ArrowUpRight className={cn('h-4.5 w-4.5 transition-transform', selected ? 'text-primary' : 'text-muted-foreground/50')} strokeWidth={2} />
             </button>
           );
         })}
@@ -1014,38 +1000,36 @@ function RequestFlowProgress({
   items: ReadonlyArray<{ id: 1 | 2 | 3; label: string }>;
 }) {
   return (
-    <div className="rounded-[22px] border border-subtle-border bg-background/90 p-3">
-      <div className="flex items-center justify-between gap-2">
-        {items.map((item, index) => {
-          const isActive = item.id === currentStep;
-          const isComplete = item.id < currentStep;
+    <div className="flex items-center justify-between gap-1 px-1">
+      {items.map((item, index) => {
+        const isActive = item.id === currentStep;
+        const isComplete = item.id < currentStep;
 
-          return (
-            <div key={item.id} className="flex min-w-0 flex-1 items-center gap-2">
+        return (
+          <React.Fragment key={item.id}>
+            <div className="flex flex-col items-center gap-1.5 min-w-0">
               <div
                 className={cn(
-                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-semibold',
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[13px] font-bold transition-all',
                   isActive
-                    ? 'gold-sheen-button border-primary/30 text-primary-foreground'
+                    ? 'gold-sheen-button border-primary/30 text-primary-foreground shadow-sm'
                     : isComplete
-                      ? 'border-primary/16 bg-primary/10 text-primary'
-                      : 'border-subtle-border bg-background text-muted-foreground',
+                      ? 'border-primary/15 bg-primary/10 text-primary'
+                      : 'border-subtle-border bg-muted/20 text-muted-foreground',
                 )}
               >
-                {item.id}
+                {isComplete ? <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} /> : item.id}
               </div>
-              <div className="min-w-0 flex-1">
-                <div className={cn('truncate text-[12px] font-semibold', isActive ? 'text-foreground' : 'text-muted-foreground')}>
-                  {item.label}
-                </div>
-                {index < items.length - 1 ? (
-                  <div className={cn('mt-1 h-px w-full', isComplete ? 'gold-divider-line' : 'bg-border')} />
-                ) : null}
-              </div>
+              <span className={cn('text-[10px] font-bold uppercase tracking-wider truncate', isActive ? 'text-primary' : 'text-muted-foreground/60')}>
+                {item.label}
+              </span>
             </div>
-          );
-        })}
-      </div>
+            {index < items.length - 1 ? (
+              <div className={cn('mt-[-18px] h-[2px] flex-1 rounded-full', isComplete ? 'gold-divider-line' : 'bg-subtle-border/40')} />
+            ) : null}
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 }
@@ -1061,42 +1045,41 @@ function ReviewTile({ label, value }: { label: string; value: string }) {
 
 function RequestHistoryList({ items, locale }: { items: RequestHistoryItem[]; locale: string }) {
   return (
-    <div className="space-y-2.5 sm:space-y-3">
+    <div className="space-y-3">
       {items.map((item) => (
-        <div key={item.requestKey} className="rounded-xl sm:rounded-[20px] border border-subtle-border bg-background p-3 sm:p-4">
-          <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-2 sm:space-y-3">
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <StatusBadge label={getResidentRequestStatusLabel(item.status)} tone={getResidentRequestStatusTone(item.status)} />
-                <StatusBadge label={getRequestTypeLabel(item.requestType)} tone="neutral" />
-                {item.requestedDate ? (
-                  <StatusBadge
-                    label={`יעד: ${formatDate(item.requestedDate, locale)}`}
-                    tone="warning"
-                    className="gap-1.5"
-                  />
-                ) : null}
-              </div>
-
-              <div className="space-y-0.5 sm:space-y-1">
-                <div className="text-sm sm:text-base font-semibold text-foreground">{item.subject.replace(/^[A-Z_]+:\s*/, '')}</div>
-                <div className="text-xs sm:text-sm leading-5 sm:leading-6 text-muted-foreground line-clamp-2 sm:line-clamp-none">{item.message}</div>
-              </div>
-
-              {item.statusNotes ? (
-                <div className="rounded-xl sm:rounded-2xl border border-subtle-border bg-muted/40 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">הערת טיפול:</span> {item.statusNotes}
+        <div key={item.requestKey} className="rounded-[24px] border border-subtle-border bg-white/80 p-4 shadow-sm transition hover:border-primary/10 hover:bg-white">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">{item.requestKey}</span>
+                  <StatusBadge label={getResidentRequestStatusLabel(item.status)} tone={getResidentRequestStatusTone(item.status)} className="px-1.5 py-0 h-4 text-[9px]" />
                 </div>
-              ) : null}
+                <div className="text-[15px] font-bold text-foreground leading-tight">{item.subject.replace(/^[A-Z_]+:\s*/, '')}</div>
+                <div className="mt-1 text-[12px] leading-tight text-secondary-foreground line-clamp-1">{item.message}</div>
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <div className="text-[10px] font-bold text-muted-foreground/60">{formatDate(new Date(item.updatedAt || item.createdAt), locale)}</div>
+                <StatusBadge label={getRequestTypeLabel(item.requestType)} tone="neutral" className="px-1.5 py-0 h-4 text-[9px]" />
+              </div>
             </div>
 
-            <div className="shrink-0 rounded-xl sm:rounded-2xl border border-subtle-border bg-muted/40 px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-muted-foreground">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-                עודכן
+            {item.statusNotes ? (
+              <div className="rounded-2xl border border-primary/10 bg-primary/5 px-3 py-2.5 text-[12px] leading-5 text-secondary-foreground">
+                <div className="flex items-center gap-1.5 font-bold text-primary mb-1">
+                  <Sparkles className="h-3.5 w-3.5" strokeWidth={2.5} />
+                  עדכון טיפול
+                </div>
+                {item.statusNotes}
               </div>
-              <div className="mt-1 sm:mt-2 font-medium text-foreground">{formatDate(new Date(item.updatedAt || item.createdAt), locale)}</div>
-            </div>
+            ) : null}
+
+            {item.requestedDate ? (
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-warning">
+                <CalendarDays className="h-3.5 w-3.5" strokeWidth={2.5} />
+                <span>יעד: {formatDate(item.requestedDate, locale)}</span>
+              </div>
+            ) : null}
           </div>
         </div>
       ))}

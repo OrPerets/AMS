@@ -158,7 +158,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                 href={item.href}
                 onClick={() => saveRecentItem(item.href)}
                 className={cn(
-                  'relative flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
+                  'relative flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-[20px] px-1 py-1 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
                   active ? 'text-primary' : 'text-muted-foreground',
                 )}
                 aria-current={active ? 'page' : undefined}
@@ -167,11 +167,11 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                 {active ? (
                   <motion.span
                     layoutId="mobile-bottom-nav-active"
-                    className="gold-active-pill gold-current-pulse absolute inset-0 rounded-2xl"
+                    className="gold-active-pill gold-current-pulse absolute inset-0 rounded-[20px]"
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                   />
                 ) : null}
-                <span className={cn('relative z-10 flex h-[30px] w-[30px] items-center justify-center rounded-xl transition-colors', active ? 'bg-white/72 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]' : 'text-muted-foreground')}>
+                <span className={cn('relative z-10 flex h-[30px] w-[30px] items-center justify-center rounded-[14px] transition-colors', active ? 'bg-white/72 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]' : 'text-muted-foreground')}>
                   <Icon className={cn('h-[18px] w-[18px]', active && 'scale-105')} strokeWidth={1.75} />
                 </span>
                 <span className="relative z-10 w-full text-center leading-tight">
@@ -184,7 +184,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
           <button
             type="button"
             className={cn(
-              'relative flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
+              'relative flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-[20px] px-1 py-1 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
               moreOpen || isMoreRouteActive ? 'text-primary' : 'text-muted-foreground',
             )}
             onClick={() => setMoreOpen((current) => !current)}
@@ -193,9 +193,9 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
             aria-controls="mobile-more-sheet"
           >
             {moreOpen || isMoreRouteActive ? (
-              <span className="gold-active-pill gold-current-pulse absolute inset-0 rounded-2xl" />
+              <span className="gold-active-pill gold-current-pulse absolute inset-0 rounded-[20px]" />
             ) : null}
-            <span className={cn('relative z-10 flex h-[30px] w-[30px] items-center justify-center rounded-xl transition-colors', moreOpen || isMoreRouteActive ? 'bg-white/72 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]' : 'text-muted-foreground')}>
+            <span className={cn('relative z-10 flex h-[30px] w-[30px] items-center justify-center rounded-[14px] transition-colors', moreOpen || isMoreRouteActive ? 'bg-white/72 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]' : 'text-muted-foreground')}>
               <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
               {unreadNotifications > 0 ? (
                 <motion.span

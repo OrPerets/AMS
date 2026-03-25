@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/button';
 import { EmptyState } from '../../components/ui/empty-state';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
+import { MobileActionHub, type MobileActionHubItem } from '../../components/ui/mobile-action-hub';
 import { ResidentHero } from '../../components/resident/resident-hero';
 import { ResidentFreshnessStrip } from '../../components/resident/resident-freshness-strip';
 import { ResidentTrendCard } from '../../components/resident/resident-trend-card';
@@ -273,108 +274,66 @@ export default function ResidentAccountPage() {
   ];
   const continuationItems = actionItems.slice(0, 3);
 
-  const userId = getCurrentUserId();
-  const role = getEffectiveRole();
-  const resumeState = useMemo(() => getResumeState('resident', userId, role), [userId, role]);
-  const showResume = resumeState && resumeState.href !== '/resident/account' && resumeState.href !== router.asPath;
-  const unreadNotificationsSummary = unreadNotifications.length
-    ? `${unreadNotifications.length} עדכונים חדשים`
-    : 'הכול נקרא';
-  const residentSignals = [
+  const hubItems: MobileActionHubItem[] = [
     {
-      id: 'signal-balance',
-      label: 'יתרה',
-      value: finance ? formatCurrency(finance.summary.currentBalance, 'ILS', locale) : '—',
+      id: 'pay',
+      label: nextPaymentDue ? 'שלם עכשיו' : 'מרכז תשלומים',
+      description: nextPaymentDue ? nextPaymentDue.description : 'יתרה, קבלות וכרטיסים',
       href: '/payments/resident',
-      tone: nextPaymentDue ? ('warning' as const) : ('success' as const),
-      hint: nextPaymentDue ? 'למסך תשלומים' : 'צפייה בחיובים',
+      icon: CreditCard,
+      badge: finance?.summary.unpaidInvoices || undefined,
+      accent: nextPaymentDue ? 'warning' : 'primary',
+      priority: 'primary',
+      previewValue: finance ? formatCurrency(finance.summary.currentBalance) : undefined,
     },
     {
-      id: 'signal-requests',
-      label: 'קריאות',
-      value: openTickets.length,
-      href: openTickets.length ? '/resident/requests?view=history' : '/create-call',
-      tone: openTickets.length ? ('warning' as const) : ('success' as const),
-      hint: openTickets.length ? 'למעקב עכשיו' : 'פתח קריאה',
+      id: 'request-new',
+      label: 'בקשה חדשה',
+      description: 'פתיחה מהירה',
+      href: '/resident/requests?view=new',
+      icon: ClipboardList,
+      accent: 'primary',
     },
     {
-      id: 'signal-updates',
+      id: 'request-history',
+      label: 'מעקב בקשות',
+      description: openTickets.length ? 'פתח מעקב' : 'היסטוריה',
+      href: '/resident/requests?view=history',
+      icon: Ticket,
+      badge: openTickets.length || undefined,
+      accent: openTickets.length ? 'warning' : 'neutral',
+    },
+    {
+      id: 'building',
+      label: primaryBuilding?.name || 'הבניין שלי',
+      description: primaryBuilding?.address || 'תמיכה',
+      href: '/resident/building',
+      icon: Building2,
+      accent: 'neutral',
+    },
+    {
+      id: 'updates',
       label: 'עדכונים',
-      value: unreadNotifications.length,
+      description: unreadNotifications.length ? `${unreadNotifications.length} חדשים` : 'הכול נקרא',
       href: '/notifications',
-      tone: unreadNotifications.length ? ('info' as const) : ('default' as const),
-      hint: unreadNotifications.length ? 'פתח מרכז עדכונים' : 'כל ההתראות נקראו',
+      icon: Bell,
+      badge: unreadNotifications.length || undefined,
+      accent: unreadNotifications.length ? 'info' : 'neutral',
+      priority: 'utility',
+    },
+    {
+      id: 'documents',
+      label: 'מסמכים',
+      description: 'חוזים וקבלה',
+      href: '/documents',
+      icon: FileText,
+      accent: 'neutral',
+      priority: 'utility',
     },
   ];
-  const updatesPreview = newestNotification?.message || 'פתח מרכז עדכונים';
-
-  useEffect(() => {
-    if (!loading && context) {
-      setResumeState({ screen: 'resident', href: '/resident/account', label: 'האזור האישי', role: role || 'RESIDENT', userId });
-    }
-  }, [loading, context, role, userId]);
-
-  useEffect(() => {
-    const token = getAccessToken();
-    if (!token) return;
-
-    websocketService.connect(token);
-    setLiveConnected(websocketService.isConnected());
-
-    const handleNewNotification = (event: { notification?: AccountContext['notifications'][number] }) => {
-      if (!event.notification) return;
-      setContext((current) => {
-        if (!current) return current;
-        const nextNotifications = [
-          event.notification!,
-          ...current.notifications.filter((item) => item.id !== event.notification!.id),
-        ];
-
-        return {
-          ...current,
-          notifications: nextNotifications,
-        };
-      });
-      setLastUpdatedAt(Date.now());
-    };
-
-    websocketService.on('new_notification', handleNewNotification);
-
-    const statusTimer = window.setInterval(() => {
-      setLiveConnected(websocketService.isConnected());
-    }, 5000);
-
-    return () => {
-      websocketService.off('new_notification', handleNewNotification);
-      window.clearInterval(statusTimer);
-    };
-  }, []);
-
-  if (loading) return <DetailPanelSkeleton />;
-  if (error || !context) {
-    return (
-      <InlineErrorPanel
-        title="האזור האישי לא נטען"
-        description={error || 'לא נמצאו נתונים'}
-        onRetry={() => void loadAccount()}
-      />
-    );
-  }
-
-  const trendState = finance
-    ? buildResidentTrendState({
-        currentBalance: finance.summary.currentBalance,
-        unpaidInvoices: finance.summary.unpaidInvoices,
-        overdueInvoices: finance.summary.overdueInvoices,
-        openTickets: openTickets.length,
-        unreadNotifications: unreadNotifications.length,
-        latestLedgerAmount: finance.invoices[0]?.amount ?? null,
-        locale,
-      })
-    : null;
 
   return (
-    <div dir="rtl" className="mx-auto w-full max-w-md space-y-4 pb-24 text-right sm:max-w-4xl sm:space-y-5">
+    <div dir="rtl" className="mx-auto w-full max-w-md space-y-4 pb-24 text-right sm:max-w-4xl sm:space-y-6">
       {showResume ? (
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, y: 12 }}
@@ -411,18 +370,17 @@ export default function ResidentAccountPage() {
           subtitle={undefined}
           badge={<div className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white">חשבון דייר</div>}
           floatingCard={
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/72">
                     {primaryBuilding?.name || labels.home}
                   </div>
-                  <h1 className="mt-1 text-[30px] font-black leading-[1.02] tracking-[-0.02em] text-foreground">{residentName}</h1>
-                  <p className="mt-1 text-[14px] leading-6 text-secondary-foreground">{heroSubline}</p>
-                  {heroSupportLine ? <p className="mt-1 text-[13px] leading-5 text-secondary-foreground/90">{heroSupportLine}</p> : null}
+                  <h1 className="mt-1 text-[26px] font-black leading-[1.02] tracking-[-0.02em] text-foreground">{residentName}</h1>
+                  <p className="mt-1 text-[13px] leading-6 text-secondary-foreground">{heroSubline}</p>
                 </div>
-                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-4 border-white bg-[radial-gradient(circle_at_30%_30%,rgba(255,244,220,0.96),rgba(221,174,80,0.94)_38%,rgba(101,70,28,1)_100%)] text-white shadow-[0_18px_34px_rgba(207,146,50,0.28)]">
-                  <UserRound className="h-10 w-10" strokeWidth={1.8} />
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 border-white bg-[radial-gradient(circle_at_30%_30%,rgba(255,244,220,0.96),rgba(221,174,80,0.94)_38%,rgba(101,70,28,1)_100%)] text-white shadow-[0_12px_24px_rgba(207,146,50,0.18)]">
+                  <UserRound className="h-9 w-9" strokeWidth={1.8} />
                 </div>
               </div>
 
@@ -430,7 +388,7 @@ export default function ResidentAccountPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-[11px] font-semibold tracking-[0.16em] text-secondary-foreground">{spotlight.label}</div>
-                    <div className="mt-2 text-[38px] font-black leading-none text-foreground">
+                    <div className="mt-2 text-[34px] font-black leading-none text-foreground">
                       <bdi>{spotlight.value}</bdi>
                     </div>
                   </div>
@@ -439,24 +397,7 @@ export default function ResidentAccountPage() {
                     label={nextPaymentDue ? 'לתשלום' : 'מבט מהיר'}
                   />
                 </div>
-                <div className="mt-2 text-[15px] leading-6 text-secondary-foreground">{spotlight.description}</div>
-              </div>
-
-              <div className="grid gap-2.5 sm:grid-cols-3">
-                <HeroSignalChip
-                  key={residentSignals[0].id}
-                  label={residentSignals[0].label}
-                  value={residentSignals[0].value}
-                  href={residentSignals[0].href}
-                  hint={residentSignals[0].hint}
-                  tone={residentSignals[0].tone}
-                  className="sm:col-span-1"
-                />
-                <div className="grid grid-cols-2 gap-2.5 sm:col-span-2">
-                  {residentSignals.slice(1).map((signal) => (
-                    <HeroSignalChip key={signal.id} label={signal.label} value={signal.value} href={signal.href} hint={signal.hint} tone={signal.tone} />
-                  ))}
-                </div>
+                <div className="mt-2 text-[13px] leading-5 text-secondary-foreground">{spotlight.description}</div>
               </div>
             </div>
           }
@@ -465,33 +406,12 @@ export default function ResidentAccountPage() {
           <div className="space-y-2.5">
             <Link
               href={residentPrimaryAction.href}
-              className="gold-sheen-button flex min-h-[56px] w-full items-center justify-center gap-2 rounded-full px-4 text-base font-semibold"
+              className="gold-sheen-button flex min-h-[56px] w-full items-center justify-center gap-2 rounded-full px-4 text-base font-semibold shadow-raised"
               data-accent-sheen="true"
             >
               {residentPrimaryAction.ctaLabel}
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.85} />
             </Link>
-            <div className="grid grid-cols-2 gap-2.5">
-              <Button
-                size="lg"
-                variant="outline"
-                className="min-h-[52px] rounded-full border-primary/14 bg-white/76 text-foreground hover:bg-white"
-                asChild
-              >
-                <Link href="/resident/requests?view=new">בקשה חדשה</Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="min-h-[52px] rounded-full border-primary/14 bg-white/76 text-foreground hover:bg-white"
-                asChild
-              >
-                <Link href={openTickets.length ? '/resident/requests?view=history' : '/payments/resident'}>
-                  {openTickets.length ? 'הקריאות שלי' : 'אמצעי תשלום'}
-                  {openTickets.length ? <Ticket className="me-2 h-4 w-4" strokeWidth={1.85} /> : <CreditCard className="me-2 h-4 w-4" strokeWidth={1.85} />}
-                </Link>
-              </Button>
-            </div>
           </div>
         </ResidentHero>
       </motion.section>
@@ -505,7 +425,22 @@ export default function ResidentAccountPage() {
           lastUpdatedAt={lastUpdatedAt}
           unreadCount={unreadNotifications.length}
         />
-        {trendState ? (
+      </motion.section>
+
+      <motion.section
+        {...residentScreenMotion(motionReduced, 0.1)}
+        className="px-1"
+      >
+        <MobileActionHub
+          title="פעולות ושירותים"
+          subtitle="כל מה שצריך בגישה מהירה"
+          items={hubItems}
+          layout="hierarchy"
+        />
+      </motion.section>
+
+      {trendState ? (
+        <motion.section {...residentScreenMotion(motionReduced, 0.15)} className="hidden md:block">
           <ResidentTrendCard
             title={trendState.title}
             subtitle={trendState.subtitle}
@@ -515,166 +450,10 @@ export default function ResidentAccountPage() {
             insight={trendState.insight}
             tone={trendState.tone}
             summaryItems={trendState.summaryItems}
-            className="hidden md:block"
           />
-        ) : null}
-      </motion.section>
-
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-4">
-          <motion.section
-            {...residentScreenMotion(motionReduced, 0.1)}
-            className="rounded-[28px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-4 pb-4 pt-4 shadow-[0_18px_36px_rgba(44,28,9,0.06)]"
-          >
-            <div className="mb-3">
-              <h2 className="text-[17px] font-semibold text-foreground">המשך מהיר</h2>
-            </div>
-            <div className="space-y-2">
-              {continuationItems.map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className={cn(
-                      'flex items-center justify-between gap-3 rounded-[22px] border px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-primary/18 hover:shadow-[0_12px_24px_rgba(44,28,9,0.06)]',
-                      item.accent === 'primary'
-                        ? 'gold-sheen-surface border-primary/14'
-                        : item.accent === 'warning'
-                          ? 'border-warning/18 bg-[linear-gradient(180deg,rgba(255,251,240,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
-                          : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.94)_100%)]',
-                    )}
-                    data-accent-sheen={item.accent === 'primary' ? 'true' : undefined}
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] border border-primary/12 bg-primary/8 text-primary">
-                        <Icon className="h-5 w-5" strokeWidth={1.85} />
-                      </span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[14px] font-semibold text-foreground">{item.label}</span>
-                          {item.badge !== undefined ? (
-                            <span className="rounded-full border border-primary/12 bg-primary/8 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                              {item.badge}
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="mt-0.5 line-clamp-1 text-[12px] leading-5 text-secondary-foreground">{item.description}</div>
-                      </div>
-                    </div>
-                    <ArrowUpRight className="icon-directional h-4 w-4 shrink-0 text-primary" strokeWidth={1.8} />
-                  </Link>
-                );
-              })}
-            </div>
-          </motion.section>
-        </div>
-
-        <div className="space-y-4">
-          <motion.section
-            {...residentScreenMotion(motionReduced, 0.15)}
-            className="rounded-[24px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
-          >
-            <CompactSectionHeader
-              icon={<Bell className="h-4 w-4" strokeWidth={1.8} />}
-              title="עדכונים"
-              subtitle={unreadNotificationsSummary}
-              actionLabel="פתח"
-              actionHref="/notifications"
-            />
-            <div className="rounded-[18px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-3">
-              <div className="flex items-start gap-2.5">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/8 text-primary">
-                  <Bell className="h-4 w-4" strokeWidth={1.8} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[15px] font-semibold text-foreground">
-                    {unreadNotifications.length ? labels.updatesReady.replace('{{count}}', String(unreadNotifications.length)) : labels.updatesClear}
-                  </div>
-                  <div className="mt-0.5 line-clamp-2 text-[13px] leading-5 text-secondary-foreground">{updatesPreview}</div>
-                </div>
-              </div>
-            </div>
-          </motion.section>
-
-          <motion.section
-            {...residentScreenMotion(motionReduced, 0.2)}
-            className="rounded-[24px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
-          >
-            <CompactSectionHeader
-              icon={<Building2 className="h-4 w-4" strokeWidth={1.8} />}
-              title={primaryBuilding ? 'הבניין שלי' : 'קשר ומידע'}
-              subtitle={primaryBuilding?.name || 'תמיכה וניהול'}
-              actionLabel={primaryBuilding ? 'פתח' : 'תמיכה'}
-              actionHref={primaryBuilding ? '/resident/building' : '/support'}
-            />
-            {primaryBuilding ? (
-              <div className="grid grid-cols-2 gap-2">
-                <Link href="/resident/building" className="rounded-[20px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-3 transition hover:-translate-y-0.5 hover:border-primary/18">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/8 text-primary">
-                    <MapPinned className="h-4 w-4" strokeWidth={1.8} />
-                  </div>
-                  <div className="mt-2 text-[15px] font-semibold text-foreground">{primaryBuilding.name}</div>
-                  <div className="mt-0.5 line-clamp-2 text-[12px] leading-5 text-secondary-foreground">{primaryBuilding.address}</div>
-                </Link>
-                <Link href="/support" className="rounded-[20px] border border-subtle-border bg-white/82 p-3 transition hover:-translate-y-0.5 hover:border-primary/18">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/8 text-primary">
-                    <MessageCircle className="h-4 w-4" strokeWidth={1.8} />
-                  </div>
-                  <div className="mt-2 text-[15px] font-semibold text-foreground">תמיכה</div>
-                  <div className="mt-0.5 line-clamp-2 text-[12px] leading-5 text-secondary-foreground">{newestNotification?.title || 'צור קשר'}</div>
-                </Link>
-              </div>
-            ) : (
-              <EmptyState type="action" size="sm" title="אין מידע משלים" description="כשהבניין או פרטי התמיכה ייטענו, נראה אותם כאן." action={{ label: 'רענן', onClick: () => void loadAccount() }} />
-            )}
-          </motion.section>
-        </div>
-      </div>
+        </motion.section>
+      ) : null}
     </div>
-  );
-}
-
-function HeroSignalChip({
-  label,
-  value,
-  href,
-  hint,
-  tone = 'default',
-  className,
-}: {
-  label: string;
-  value: string | number;
-  href: string;
-  hint: string;
-  tone?: 'default' | 'warning' | 'success' | 'info';
-  className?: string;
-}) {
-  const toneClass =
-    tone === 'warning'
-      ? 'border-warning/18 bg-[linear-gradient(180deg,rgba(255,248,236,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
-      : tone === 'success'
-        ? 'border-success/18 bg-[linear-gradient(180deg,rgba(244,252,247,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
-        : tone === 'info'
-          ? 'border-info/18 bg-[linear-gradient(180deg,rgba(242,248,255,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
-          : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.94)_100%)]';
-
-  return (
-    <Link
-      href={href}
-      className={cn(
-        'rounded-[20px] border px-3 py-3 shadow-[0_12px_24px_rgba(44,28,9,0.06)] transition hover:-translate-y-0.5 hover:border-primary/18',
-        toneClass,
-        className,
-      )}
-    >
-      <div className="text-[11px] font-semibold text-primary/72">{label}</div>
-      <div className="mt-1.5 text-[24px] font-black tabular-nums text-foreground">
-        <bdi>{value}</bdi>
-      </div>
-      <div className="mt-1 text-[11px] text-secondary-foreground">{hint}</div>
-    </Link>
   );
 }
 
@@ -683,38 +462,6 @@ function HeroStatusBadge({ icon, label }: { icon: React.ReactNode; label: string
     <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary">
       {icon}
       <span>{label}</span>
-    </div>
-  );
-}
-
-function CompactSectionHeader({
-  icon,
-  title,
-  subtitle,
-  actionLabel,
-  actionHref,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-  actionLabel: string;
-  actionHref: string;
-}) {
-  return (
-    <div className="mb-3 flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2 text-[16px] font-semibold text-foreground">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/8 text-primary">{icon}</span>
-          <span>{title}</span>
-        </div>
-        <div className="mt-1 truncate text-[12px] text-secondary-foreground">{subtitle}</div>
-      </div>
-      <Button variant="outline" size="sm" className="shrink-0 rounded-full px-3 text-[12px]" asChild>
-        <Link href={actionHref}>
-          {actionLabel}
-          <ArrowUpRight className="icon-directional ms-1 h-3.5 w-3.5" strokeWidth={1.8} />
-        </Link>
-      </Button>
     </div>
   );
 }
