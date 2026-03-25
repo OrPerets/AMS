@@ -142,13 +142,13 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
       <nav
         ref={navRef}
         className={cn(
-          'fixed inset-x-0 bottom-0 z-40 border-t border-white/35 bg-[linear-gradient(180deg,rgba(255,252,247,0.9)_0%,rgba(246,241,231,0.98)_100%)] shadow-[0_-18px_40px_rgba(44,28,9,0.08)] backdrop-blur-xl safe-pb thumb-zone md:hidden',
+          'fixed inset-x-0 bottom-0 z-40 border-t border-white/35 bg-[linear-gradient(180deg,rgba(255,252,247,0.88)_0%,rgba(246,241,231,0.96)_100%)] shadow-[0_-10px_28px_rgba(44,28,9,0.06)] backdrop-blur-xl safe-pb thumb-zone md:hidden',
           className,
         )}
         role="navigation"
         aria-label={t('bottomNav.label')}
       >
-        <div className="grid grid-cols-5 gap-1.5 px-2 py-2">
+        <div className="grid grid-cols-5 gap-1 px-2 py-1.5">
           {primaryItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -158,7 +158,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                 href={item.href}
                 onClick={() => saveRecentItem(item.href)}
                 className={cn(
-                  'relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
+                  'relative flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
                   active ? 'text-primary' : 'text-muted-foreground',
                 )}
                 aria-current={active ? 'page' : undefined}
@@ -171,7 +171,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                   />
                 ) : null}
-                <span className={cn('relative z-10 flex h-8 w-8 items-center justify-center rounded-xl transition-colors', active ? 'bg-white/76 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.68)]' : 'text-muted-foreground')}>
+                <span className={cn('relative z-10 flex h-[30px] w-[30px] items-center justify-center rounded-xl transition-colors', active ? 'bg-white/72 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]' : 'text-muted-foreground')}>
                   <Icon className={cn('h-[18px] w-[18px]', active && 'scale-105')} strokeWidth={1.75} />
                 </span>
                 <span className="relative z-10 w-full text-center leading-tight">
@@ -184,7 +184,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
           <button
             type="button"
             className={cn(
-              'relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
+              'relative flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
               moreOpen || isMoreRouteActive ? 'text-primary' : 'text-muted-foreground',
             )}
             onClick={() => setMoreOpen((current) => !current)}
@@ -195,7 +195,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
             {moreOpen || isMoreRouteActive ? (
               <span className="gold-active-pill gold-current-pulse absolute inset-0 rounded-2xl" />
             ) : null}
-            <span className={cn('relative z-10 flex h-8 w-8 items-center justify-center rounded-xl transition-colors', moreOpen || isMoreRouteActive ? 'bg-white/76 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.68)]' : 'text-muted-foreground')}>
+            <span className={cn('relative z-10 flex h-[30px] w-[30px] items-center justify-center rounded-xl transition-colors', moreOpen || isMoreRouteActive ? 'bg-white/72 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]' : 'text-muted-foreground')}>
               <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
               {unreadNotifications > 0 ? (
                 <motion.span

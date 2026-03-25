@@ -109,7 +109,7 @@ export default function ResidentRequestsPage() {
   const [formTouched, setFormTouched] = useState<Record<string, boolean>>({});
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [formStep, setFormStep] = useState<1 | 2>(1);
+  const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
   const [composerOpen, setComposerOpen] = useState(false);
   const [draftAttachment, setDraftAttachment] = useState<File | null>(null);
   const [submittedRequestKey, setSubmittedRequestKey] = useState<string | null>(null);
@@ -135,7 +135,7 @@ export default function ResidentRequestsPage() {
     if (!router.isReady) return;
     const nextView = router.query.view === 'new' ? 'new' : 'history';
     setView(nextView);
-    setComposerOpen(false);
+    setComposerOpen(nextView === 'new');
     setFormStep(1);
   }, [router.isReady, router.query.view]);
 
@@ -284,8 +284,9 @@ export default function ResidentRequestsPage() {
   const selectedTypeDescription = getRequestExpectations(form.requestType);
   const submittedTypeDescription = getRequestExpectations(submittedRequestType || form.requestType);
   const stepSummaries = [
-    { id: 1, label: 'סוג בקשה' },
-    { id: 2, label: 'פרטים ואישור' },
+    { id: 1, label: 'סוג' },
+    { id: 2, label: 'פרטים' },
+    { id: 3, label: 'אישור' },
   ] as const;
   const fieldLabels = {
     subject: 'נושא',
@@ -293,7 +294,7 @@ export default function ResidentRequestsPage() {
     requestedDate: 'תאריך מבוקש',
   };
 
-  function openComposer(nextStep: 1 | 2 = 1) {
+  function openComposer(nextStep: 1 | 2 | 3 = 1) {
     setComposerOpen(true);
     setFormStep(nextStep);
     setSubmitError(null);
@@ -305,9 +306,18 @@ export default function ResidentRequestsPage() {
     setComposerOpen(false);
   }
 
-  function advanceComposer(nextStep: 1 | 2) {
+  function advanceComposer(nextStep: 1 | 2 | 3) {
     triggerHaptic('light');
     setFormStep(nextStep);
+  }
+
+  function advanceToReview() {
+    setFormSubmitted(true);
+    if (formErrors.subject || formErrors.message || formErrors.requestedDate) {
+      toast({ title: 'יש להשלים את השדות הנדרשים לפני האישור', variant: 'destructive' });
+      return;
+    }
+    advanceComposer(3);
   }
 
   return (
@@ -395,15 +405,16 @@ export default function ResidentRequestsPage() {
         bodyClassName="pt-0"
       >
         <div className="grid grid-cols-2 gap-2.5">
-          <Button
-            size="lg"
-            className="min-h-[54px] rounded-full"
+          <button
+            type="button"
+            className="gold-sheen-button flex min-h-[54px] w-full items-center justify-center gap-2 rounded-full px-4 text-base font-semibold"
+            data-accent-sheen="true"
             onClick={() => {
               void router.replace('/resident/requests?view=new', undefined, { shallow: true });
             }}
           >
             בקשה חדשה
-          </Button>
+          </button>
           <Button asChild variant="outline" size="lg" className="min-h-[54px] rounded-full border-primary/14 bg-white/76 text-foreground hover:bg-white">
             <Link href="/create-call">קריאת תחזוקה</Link>
           </Button>
@@ -546,24 +557,36 @@ export default function ResidentRequestsPage() {
           else setComposerOpen(true);
         }}
         title="בקשה חדשה"
-        description="פרטים ושליחה"
+        description={formStep === 1 ? 'בחר מסלול' : formStep === 2 ? 'מלא פרטים קצרים' : 'בדיקה לפני שליחה'}
         tone="light"
+        size="full"
+        className="max-h-[100dvh] rounded-none md:max-h-[88dvh] md:rounded-t-[30px]"
         headerClassName="text-right"
         bodyClassName="text-right"
         footer={(onClose) => (
           <div className="w-full space-y-2">
             {formStep === 1 ? (
-              <Button type="button" size="lg" className="w-full" onClick={() => advanceComposer(2)}>
+              <button type="button" className="gold-sheen-button flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-base font-semibold" data-accent-sheen="true" onClick={() => advanceComposer(2)}>
                 המשך לפרטים
-              </Button>
+              </button>
             ) : null}
             {formStep === 2 ? (
               <>
-                <Button type="button" size="lg" className="w-full" onClick={submitRequest} disabled={submitting}>
-                  {submitting ? 'שולח...' : 'שלח בקשה'}
-                </Button>
-                <Button type="button" variant="outline" className="w-full rounded-full" onClick={() => advanceComposer(1)}>
+                <button type="button" className="gold-sheen-button flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-base font-semibold" data-accent-sheen="true" onClick={advanceToReview}>
+                  המשך לאישור
+                </button>
+                <Button type="button" variant="outline" className="w-full rounded-full min-h-[52px]" onClick={() => advanceComposer(1)}>
                   חזרה לסוג הבקשה
+                </Button>
+              </>
+            ) : null}
+            {formStep === 3 ? (
+              <>
+                <button type="button" className="gold-sheen-button flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-base font-semibold" data-accent-sheen="true" onClick={submitRequest} disabled={submitting}>
+                  {submitting ? 'שולח...' : 'שלח בקשה'}
+                </button>
+                <Button type="button" variant="outline" className="w-full rounded-full min-h-[52px]" onClick={() => advanceComposer(2)}>
+                  חזרה לפרטים
                 </Button>
               </>
             ) : null}
@@ -751,15 +774,32 @@ export default function ResidentRequestsPage() {
               <div className="space-y-3 rounded-[24px] border border-subtle-border bg-background/90 p-4">
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">לפני שליחה</div>
+                  <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.nextStep}</div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <ReviewTile label="נושא" value={form.subject || 'לא הוזן'} />
+                  <ReviewTile label="צפי טיפול" value={selectedTypeDescription.responseWindow} />
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {formStep === 3 ? (
+            <div className="space-y-4">
+              <div className="space-y-3 rounded-[24px] border border-subtle-border bg-background/90 p-4">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">לפני שליחה</div>
                   <div className="mt-1 text-lg font-semibold text-foreground">{selectedTypeDescription.nextStep}</div>
                   <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.responseWindow}</div>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
+                  <ReviewTile label="סוג" value={activeType.label} />
                   <ReviewTile label="נושא" value={form.subject || 'לא הוזן'} />
                   <ReviewTile label="צפי טיפול" value={selectedTypeDescription.responseWindow} />
                   <ReviewTile label="מטפל" value={selectedTypeDescription.owner} />
                   <ReviewTile label="קובץ עזר" value={draftAttachment?.name || 'ללא קובץ'} />
+                  {form.requestedDate ? <ReviewTile label="תאריך" value={form.requestedDate} /> : null}
                 </div>
 
                 <div className="rounded-[22px] border border-subtle-border bg-background px-4 py-3 text-sm leading-6 text-secondary-foreground">
@@ -920,11 +960,12 @@ function RequestTypePicker({
               onClick={() => selectItem(item.value)}
               aria-pressed={selected}
               className={cn(
-                'touch-target group w-full rounded-[22px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(250,247,241,0.94)_100%)] p-3.5 text-right shadow-[0_16px_34px_rgba(44,28,9,0.07)] transition-[transform,border-color,box-shadow,background] duration-200 active:scale-[0.99]',
+                'touch-target group w-full rounded-[22px] border p-3.5 text-right shadow-[0_16px_34px_rgba(44,28,9,0.07)] transition-[transform,border-color,box-shadow,background] duration-200 active:scale-[0.99]',
                 selected
-                  ? 'border-primary/28 shadow-[0_20px_38px_rgba(188,136,20,0.16)] ring-1 ring-primary/12'
-                  : 'border-subtle-border hover:border-primary/18 hover:shadow-[0_18px_36px_rgba(44,28,9,0.1)]',
+                  ? 'gold-sheen-surface border-primary/28 shadow-[0_20px_38px_rgba(188,136,20,0.16)] ring-1 ring-primary/12'
+                  : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(250,247,241,0.94)_100%)] hover:border-primary/18 hover:shadow-[0_18px_36px_rgba(44,28,9,0.1)]',
               )}
+              data-accent-sheen={selected ? 'true' : undefined}
             >
               <div className="flex items-start justify-between gap-3">
                 <span
@@ -950,7 +991,7 @@ function RequestTypePicker({
               </div>
 
                 <div className="mt-4">
-                  <div className={cn('text-[15px] font-bold leading-6', selected ? 'text-primary' : 'text-foreground')}>
+                  <div className={cn('text-[15px] font-bold leading-6', selected ? 'text-foreground' : 'text-foreground')}>
                     {item.label}
                   </div>
                   <div className="mt-1 text-[12px] leading-5 text-secondary-foreground">{item.description}</div>
@@ -969,8 +1010,8 @@ function RequestFlowProgress({
   currentStep,
   items,
 }: {
-  currentStep: 1 | 2;
-  items: ReadonlyArray<{ id: 1 | 2; label: string }>;
+  currentStep: 1 | 2 | 3;
+  items: ReadonlyArray<{ id: 1 | 2 | 3; label: string }>;
 }) {
   return (
     <div className="rounded-[22px] border border-subtle-border bg-background/90 p-3">

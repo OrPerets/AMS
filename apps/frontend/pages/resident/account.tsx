@@ -271,6 +271,7 @@ export default function ResidentAccountPage() {
       accent: 'neutral' as const,
     },
   ];
+  const continuationItems = actionItems.slice(0, 3);
 
   const userId = getCurrentUserId();
   const role = getEffectiveRole();
@@ -461,13 +462,15 @@ export default function ResidentAccountPage() {
           }
           bodyClassName="pt-0"
         >
-          <div className="space-y-3">
-            <Button size="lg" className="min-h-[56px] w-full rounded-full text-base" asChild>
-              <Link href={residentPrimaryAction.href}>
-                {residentPrimaryAction.ctaLabel}
-                <ArrowUpRight className="icon-directional me-2 h-4 w-4" strokeWidth={1.85} />
-              </Link>
-            </Button>
+          <div className="space-y-2.5">
+            <Link
+              href={residentPrimaryAction.href}
+              className="gold-sheen-button flex min-h-[56px] w-full items-center justify-center gap-2 rounded-full px-4 text-base font-semibold"
+              data-accent-sheen="true"
+            >
+              {residentPrimaryAction.ctaLabel}
+              <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.85} />
+            </Link>
             <div className="grid grid-cols-2 gap-2.5">
               <Button
                 size="lg"
@@ -483,9 +486,9 @@ export default function ResidentAccountPage() {
                 className="min-h-[52px] rounded-full border-primary/14 bg-white/76 text-foreground hover:bg-white"
                 asChild
               >
-                <Link href="/resident/profile">
-                  הפרופיל שלי
-                  <UserRound className="me-2 h-4 w-4" strokeWidth={1.85} />
+                <Link href={openTickets.length ? '/resident/requests?view=history' : '/payments/resident'}>
+                  {openTickets.length ? 'הקריאות שלי' : 'אמצעי תשלום'}
+                  {openTickets.length ? <Ticket className="me-2 h-4 w-4" strokeWidth={1.85} /> : <CreditCard className="me-2 h-4 w-4" strokeWidth={1.85} />}
                 </Link>
               </Button>
             </div>
@@ -512,6 +515,7 @@ export default function ResidentAccountPage() {
             insight={trendState.insight}
             tone={trendState.tone}
             summaryItems={trendState.summaryItems}
+            className="hidden md:block"
           />
         ) : null}
       </motion.section>
@@ -520,13 +524,13 @@ export default function ResidentAccountPage() {
         <div className="space-y-4">
           <motion.section
             {...residentScreenMotion(motionReduced, 0.1)}
-            className="rounded-[30px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-4 pb-4 pt-4 shadow-[0_18px_40px_rgba(44,28,9,0.06)]"
+            className="rounded-[28px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-4 pb-4 pt-4 shadow-[0_18px_36px_rgba(44,28,9,0.06)]"
           >
             <div className="mb-3">
-              <h2 className="text-[18px] font-semibold text-foreground">מה ממשיכים עכשיו</h2>
+              <h2 className="text-[17px] font-semibold text-foreground">המשך מהיר</h2>
             </div>
-            <div className="space-y-2.5">
-              {actionItems.map((item) => {
+            <div className="space-y-2">
+              {continuationItems.map((item) => {
                 const Icon = item.icon;
 
                 return (
@@ -534,7 +538,7 @@ export default function ResidentAccountPage() {
                     key={item.id}
                     href={item.href}
                     className={cn(
-                      'flex items-center justify-between gap-3 rounded-[24px] border px-3.5 py-3.5 transition hover:-translate-y-0.5 hover:border-primary/18 hover:shadow-[0_12px_24px_rgba(44,28,9,0.06)]',
+                      'flex items-center justify-between gap-3 rounded-[22px] border px-3.5 py-3 transition hover:-translate-y-0.5 hover:border-primary/18 hover:shadow-[0_12px_24px_rgba(44,28,9,0.06)]',
                       item.accent === 'primary'
                         ? 'gold-sheen-surface border-primary/14'
                         : item.accent === 'warning'
@@ -549,14 +553,14 @@ export default function ResidentAccountPage() {
                       </span>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[15px] font-semibold text-foreground">{item.label}</span>
+                          <span className="text-[14px] font-semibold text-foreground">{item.label}</span>
                           {item.badge !== undefined ? (
                             <span className="rounded-full border border-primary/12 bg-primary/8 px-2 py-0.5 text-[11px] font-semibold text-primary">
                               {item.badge}
                             </span>
                           ) : null}
                         </div>
-                        <div className="mt-0.5 text-[12px] leading-5 text-secondary-foreground">{item.description}</div>
+                        <div className="mt-0.5 line-clamp-1 text-[12px] leading-5 text-secondary-foreground">{item.description}</div>
                       </div>
                     </div>
                     <ArrowUpRight className="icon-directional h-4 w-4 shrink-0 text-primary" strokeWidth={1.8} />
@@ -570,7 +574,7 @@ export default function ResidentAccountPage() {
         <div className="space-y-4">
           <motion.section
             {...residentScreenMotion(motionReduced, 0.15)}
-            className="rounded-[26px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
+            className="rounded-[24px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
           >
             <CompactSectionHeader
               icon={<Bell className="h-4 w-4" strokeWidth={1.8} />}
@@ -579,7 +583,7 @@ export default function ResidentAccountPage() {
               actionLabel="פתח"
               actionHref="/notifications"
             />
-            <div className="rounded-[20px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-3">
+            <div className="rounded-[18px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-3">
               <div className="flex items-start gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/8 text-primary">
                   <Bell className="h-4 w-4" strokeWidth={1.8} />
@@ -596,7 +600,7 @@ export default function ResidentAccountPage() {
 
           <motion.section
             {...residentScreenMotion(motionReduced, 0.2)}
-            className="rounded-[26px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
+            className="rounded-[24px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-3.5 pb-3.5 pt-3.5 shadow-[0_12px_24px_rgba(44,28,9,0.05)]"
           >
             <CompactSectionHeader
               icon={<Building2 className="h-4 w-4" strokeWidth={1.8} />}
@@ -676,7 +680,7 @@ function HeroSignalChip({
 
 function HeroStatusBadge({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-semibold text-white">
+    <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary">
       {icon}
       <span>{label}</span>
     </div>

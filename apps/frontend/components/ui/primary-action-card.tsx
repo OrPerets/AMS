@@ -44,7 +44,7 @@ export function PrimaryActionCard({
       animate={hold.isHolding && !reducedMotion ? { y: -3, scale: 1.01 } : { y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'overflow-hidden rounded-[24px] border border-s-4 p-3.5 text-right transition-[transform,box-shadow,filter] duration-300 sm:rounded-[28px] sm:p-4',
+        'overflow-hidden rounded-[22px] border border-s-4 p-3 text-right transition-[transform,box-shadow,filter] duration-300 sm:rounded-[26px] sm:p-3.5',
         visualStyle === 'default' &&
           'border-primary/12 border-s-primary bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(247,250,255,0.94)_100%)] shadow-[0_18px_40px_rgba(15,23,42,0.10)]',
         visualStyle === 'resident' &&
@@ -63,14 +63,14 @@ export function PrimaryActionCard({
       )}
       {...hold.holdProps}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 flex-1 space-y-2">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1 space-y-1.5">
           {eyebrow ? (
             <div className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', visualStyle === 'admin' ? 'text-white/68' : 'text-secondary-foreground')}>
               {eyebrow}
             </div>
           ) : null}
-          <div className="flex items-start gap-2.5">
+          <div className="flex items-start gap-2">
             <Icon
               className={cn(
                 'mt-0.5 h-4 w-4 shrink-0',
@@ -83,10 +83,10 @@ export function PrimaryActionCard({
               aria-hidden="true"
             />
             <div className="min-w-0">
-              <div className={cn('text-[15px] font-semibold leading-6 sm:text-base', visualStyle === 'admin' ? 'text-inverse-text' : 'text-foreground')}>
+              <div className={cn('text-[15px] font-semibold leading-5 sm:text-base', visualStyle === 'admin' ? 'text-inverse-text' : 'text-foreground')}>
                 {title}
               </div>
-              <div className={cn('text-[13px] leading-5 sm:line-clamp-2', visualStyle === 'admin' ? 'text-white/74' : 'text-secondary-foreground')}>
+              <div className={cn('line-clamp-2 text-[12px] leading-4.5 sm:text-[13px] sm:leading-5', visualStyle === 'admin' ? 'text-white/74' : 'text-secondary-foreground')}>
                 {description}
               </div>
             </div>
@@ -98,7 +98,7 @@ export function PrimaryActionCard({
             <Link
               href={href}
               className={cn(
-                'inline-flex min-h-[46px] w-full items-center justify-center gap-1 rounded-2xl px-4 py-2.5 text-center text-sm font-semibold sm:min-h-[48px] sm:w-auto',
+                'inline-flex min-h-[42px] w-full items-center justify-center gap-1 rounded-2xl px-3.5 py-2 text-center text-sm font-semibold sm:min-h-[46px] sm:w-auto',
                 visualStyle === 'admin'
                   ? 'gold-sheen-button'
                   : 'gold-sheen-button',
@@ -113,7 +113,7 @@ export function PrimaryActionCard({
               type="button"
               onClick={onClick}
               className={cn(
-                'inline-flex min-h-[46px] w-full items-center justify-center gap-1 rounded-2xl px-4 py-2.5 text-center text-sm font-semibold sm:min-h-[48px] sm:w-auto',
+                'inline-flex min-h-[42px] w-full items-center justify-center gap-1 rounded-2xl px-3.5 py-2 text-center text-sm font-semibold sm:min-h-[46px] sm:w-auto',
                 visualStyle === 'admin'
                   ? 'gold-sheen-button'
                   : 'gold-sheen-button',
@@ -126,7 +126,7 @@ export function PrimaryActionCard({
           )}
         </div>
       </div>
-      {secondaryAction ? <div className="mt-3 flex justify-stretch sm:justify-end">{secondaryAction}</div> : null}
+      {secondaryAction ? <div className="mt-2.5 flex justify-stretch sm:justify-end">{secondaryAction}</div> : null}
     </motion.div>
   );
 

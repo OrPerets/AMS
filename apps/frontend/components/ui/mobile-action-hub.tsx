@@ -103,10 +103,10 @@ function ActionTile({
         selected={isSelected}
         className={cn(
           'group block rounded-2xl border bg-card/96 p-2.5 text-center shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target sm:rounded-[24px] sm:p-3.5',
-          layout === 'grid' && 'min-h-[88px] sm:min-h-[96px]',
-          layout === 'hierarchy' && priority === 'primary' && 'min-h-[100px] text-start sm:min-h-[120px]',
-          layout === 'hierarchy' && priority === 'secondary' && 'min-h-[88px]',
-          layout === 'hierarchy' && priority === 'utility' && 'min-h-[76px] bg-muted-surface/85 shadow-elevation-1',
+          layout === 'grid' && 'min-h-[80px] sm:min-h-[90px]',
+          layout === 'hierarchy' && priority === 'primary' && 'min-h-[92px] text-start sm:min-h-[110px]',
+          layout === 'hierarchy' && priority === 'secondary' && 'min-h-[80px]',
+          layout === 'hierarchy' && priority === 'utility' && 'min-h-[72px] bg-muted-surface/85 shadow-elevation-1',
           isSelected && 'gold-sheen-surface gold-current-pulse border-primary/35 ring-1 ring-primary/10',
           !item.href && !item.onClick && 'pointer-events-none',
         )}
@@ -137,18 +137,18 @@ function ActionTile({
 
           <div className={cn('mt-2 flex-1', layout === 'hierarchy' && priority === 'primary' && 'w-full')}>
             {item.previewValue !== undefined ? (
-              <div className={cn('mb-1.5 text-[1.35rem] font-black leading-none tabular-nums', isSelected ? 'text-primary' : 'text-foreground')}>
+              <div className={cn('mb-1.5 text-[1.35rem] font-black leading-none tabular-nums', isSelected ? 'text-foreground' : 'text-foreground')}>
                 <bdi>{item.previewValue}</bdi>
               </div>
             ) : null}
-            <div className={cn(priority === 'primary' ? 'text-[16px]' : 'text-[15px] sm:text-sm', 'font-semibold leading-5 text-foreground', isSelected && 'text-primary')}>
+            <div className={cn(priority === 'primary' ? 'text-[15px]' : 'text-[14px] sm:text-sm', 'font-semibold leading-5 text-foreground')}>
               {item.label}
             </div>
             {item.description ? (
               <div
                 className={cn(
                   'mt-1 text-secondary-foreground',
-                  priority === 'utility' ? 'line-clamp-1 text-[11px] leading-4' : 'line-clamp-2 text-[12px] leading-4.5 sm:line-clamp-1 sm:leading-5',
+                  priority === 'utility' ? 'line-clamp-1 text-[11px] leading-4' : 'line-clamp-1 text-[11px] leading-4.5 sm:text-[12px] sm:leading-5',
                 )}
               >
                 {item.description}
@@ -163,7 +163,7 @@ function ActionTile({
             ) : null}
           </div>
 
-          {(item.href || item.onClick) && item.description ? (
+          {(item.href || item.onClick) && item.description && priority === 'primary' ? (
             <div className={cn('mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-primary sm:mt-2', layout === 'hierarchy' && priority === 'primary' && 'justify-start')}>
               <ArrowUpRight className="icon-directional h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} />
             </div>
@@ -197,7 +197,7 @@ export function MobileActionHub({
         <div className="flex items-end justify-between gap-3 text-right">
           <div>
             {title ? <h2 className="text-[15px] font-semibold text-foreground">{title}</h2> : null}
-            {subtitle ? <p className="mt-1 text-[12px] leading-5 text-secondary-foreground">{subtitle}</p> : null}
+            {subtitle ? <p className="mt-0.5 text-[11px] leading-4.5 text-secondary-foreground">{subtitle}</p> : null}
           </div>
         </div>
       ) : null}

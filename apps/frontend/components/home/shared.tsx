@@ -99,7 +99,7 @@ export function RoleHomeShell({
   const quickActionsGrid = <HomeQuickActionsGrid items={quickActions} roleKey={roleKey} />;
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-2">
       <CompactStatusStrip
         roleLabel={roleLabel}
         icon={icon}
@@ -179,13 +179,13 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
   if (roleKey === 'PM' || roleKey === 'ADMIN') {
     return (
       <MobileActionHub
-        title={roleKey === 'ADMIN' ? 'פעולות בקרה' : 'פעולות ניהול'}
-        subtitle={roleKey === 'ADMIN' ? 'סיכון, בקרה ויומן בלי לרדת למסכים משניים.' : 'תיעדוף קריאות, בניינים ויומן התפעול בתצוגה אחת.'}
+          title={roleKey === 'ADMIN' ? 'פעולות בקרה' : 'פעולות ניהול'}
+        subtitle={roleKey === 'ADMIN' ? 'מוקד הפעולה הבא.' : 'המשימות הקרובות במקום אחד.'}
         layout="hierarchy"
         items={sorted.slice(0, 4).map((item, index) => ({
           id: item.id,
           label: item.title,
-          description: `${item.subtitle} · ${item.value}`,
+          description: item.subtitle,
           href: item.href,
           icon: item.icon,
           previewValue: item.previewValue,
@@ -247,7 +247,7 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
                   {item.microViz?.length ? (
                     <MiniSparkline data={item.microViz} tone={item.tone} className="mt-2 h-7" />
                   ) : null}
-                  <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] leading-4 text-secondary-foreground">
+                  <div className="mt-1 flex items-center justify-between gap-2 text-[11px] leading-4 text-secondary-foreground">
                     <span>{item.subtitle}</span>
                     <span className="inline-flex items-center gap-1 font-semibold text-primary">
                       פתח

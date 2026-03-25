@@ -263,8 +263,8 @@ export function ResidentPaymentMethodsPanel({
                   </div>
                   <div className="mt-2 text-sm leading-6 text-white/66">
                     {defaultMethod
-                      ? 'הכרטיס הראשי מוכן לחיוב הבא, ואפשר להחליף אותו או לשמור כרטיס נוסף בלי לצאת מהמובייל.'
-                      : 'נפתח מסלול חדש להוספת כרטיס ישירות מהמובייל, בלי לעבור דרך תמיכה.'}
+                      ? 'מוכן לחיוב הבא. אפשר להחליף או להוסיף כרטיס.'
+                      : 'הוספת כרטיס חדש באופן מאובטח, ישירות מהמובייל.'}
                   </div>
                 </div>
                 <Badge variant={defaultMethod ? 'success' : 'outline'}>{primaryBuilding ? `דייר · ${primaryBuilding}` : 'חשבון דייר'}</Badge>
@@ -312,7 +312,7 @@ export function ResidentPaymentMethodsPanel({
             items={[
               {
                 id: 'methods-primary',
-                label: 'כרטיס ראשי',
+                label: 'ראשי לתשלום',
                 value: defaultMethod ? `•••• ${defaultMethod.last4 || '••••'}` : 'טרם הוגדר',
                 tone: defaultMethod ? 'success' : 'warning',
               },
@@ -431,7 +431,7 @@ export function ResidentPaymentMethodsPanel({
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">כרטיס חדש</div>
-                      <div className="mt-1 text-lg font-semibold text-foreground">נשמר ישירות לחשבון</div>
+                      <div className="mt-1 text-lg font-semibold text-foreground">כרטיס חדש למסלול התשלום</div>
                       <div className="mt-1 text-sm leading-6 text-secondary-foreground">זמין מיד לתשלום</div>
                     </div>
                     <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-primary/10 text-primary">
@@ -507,9 +507,9 @@ export function ResidentPaymentMethodsPanel({
                   <Switch checked={markAsDefault} onCheckedChange={setMarkAsDefault} aria-label="שמירה כברירת מחדל" />
                 </div>
 
-                <Button size="lg" className="min-h-[52px] w-full" onClick={() => validateStepOne() && setStep(2)}>
+                <button type="button" className="gold-sheen-button flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-base font-semibold" data-accent-sheen="true" onClick={() => validateStepOne() && setStep(2)}>
                   המשך לאישור
-                </Button>
+                </button>
               </motion.div>
             ) : null}
 
@@ -545,10 +545,10 @@ export function ResidentPaymentMethodsPanel({
                   אחרי האישור הכרטיס יתווסף לרשימה.
                 </div>
 
-                <Button size="lg" className="min-h-[52px] w-full" loading={addPending} onClick={() => void handleSaveCard()}>
-                  אישור ושמירת כרטיס
-                </Button>
-                <Button variant="outline" size="sm" className="w-full rounded-full" onClick={() => setStep(1)}>
+                <button type="button" className="gold-sheen-button flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-base font-semibold" data-accent-sheen="true" disabled={addPending} onClick={() => void handleSaveCard()}>
+                  {addPending ? 'שומר...' : 'אישור ושמירת כרטיס'}
+                </button>
+                <Button variant="outline" size="sm" className="w-full rounded-full min-h-[52px]" onClick={() => setStep(1)}>
                   חזרה לעריכה
                 </Button>
               </motion.div>
@@ -570,9 +570,9 @@ export function ResidentPaymentMethodsPanel({
                   <div className="mt-4 text-lg font-semibold text-foreground">הכרטיס נשמר</div>
                   <div className="mt-2 max-w-[18rem] text-sm leading-6 text-secondary-foreground">זמין עכשיו במסך התשלומים.</div>
                 </div>
-                <Button size="lg" className="min-h-[52px] w-full" onClick={() => setDrawerOpen(false)}>
+                <button type="button" className="gold-sheen-button flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-base font-semibold" data-accent-sheen="true" onClick={() => setDrawerOpen(false)}>
                   חזרה לשיטות התשלום
-                </Button>
+                </button>
               </motion.div>
             ) : null}
           </AnimatePresence>
@@ -618,18 +618,19 @@ function MethodTile({
       className={cn(
         'rounded-[22px] border p-4 transition',
         disabled
-          ? 'border-white/8 bg-white/4 text-white/36'
+          ? 'border-subtle-border bg-background/50 text-muted-foreground'
           : active
-            ? 'border-[rgba(224,182,89,0.28)] bg-[rgba(224,182,89,0.14)] text-inverse-text'
-            : 'border-white/10 bg-white/6 text-white/70',
+            ? 'gold-sheen-surface border-primary/28 ring-1 ring-primary/10'
+            : 'border-subtle-border bg-background/80 text-secondary-foreground hover:border-primary/18',
       )}
+      data-accent-sheen={active ? 'true' : undefined}
     >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold">{title}</div>
-          <div className="mt-1 text-xs">{subtitle}</div>
+          <div className={cn("text-sm font-semibold", active ? "text-primary" : "text-foreground")}>{title}</div>
+          <div className={cn("mt-1 text-xs", active ? "text-primary/80" : "text-muted-foreground")}>{subtitle}</div>
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-black/10">{icon}</div>
+        <div className={cn("flex h-10 w-10 items-center justify-center rounded-[14px]", active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>{icon}</div>
       </div>
     </div>
   );
