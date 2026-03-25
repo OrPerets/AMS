@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { CalendarDays, FileText, Move, ParkingCircle, PhoneCall, Sparkles } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, CheckCircle2, FileText, Move, ParkingCircle, PhoneCall, Sparkles } from 'lucide-react';
 import { authFetch, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
 import { cn } from '../../lib/utils';
@@ -15,9 +15,12 @@ import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { MobileContextBar } from '../../components/ui/mobile-context-bar';
 import { MobileCardSkeleton } from '../../components/ui/page-states';
 import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
+import { GlassSurface } from '../../components/ui/glass-surface';
 import { MobileInsightWidget } from '../../components/ui/mobile-insight-widget';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 import { PullToRefreshIndicator } from '../../components/ui/pull-to-refresh-indicator';
+import { QuickActionTile } from '../../components/ui/quick-action-tile';
+import { ResidentListCard } from '../../components/ui/resident-list-card';
 import { SectionHeader } from '../../components/ui/section-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { StatusBadge } from '../../components/ui/status-badge';
@@ -519,34 +522,24 @@ export default function ResidentRequestsPage() {
 
           <div className="grid grid-cols-2 gap-3">
             {requestTypes.map((item) => {
-              const Icon = item.icon;
               const selected = item.value === form.requestType;
               return (
-                <button
+                <div
                   key={item.value}
-                  type="button"
-                  onClick={() => {
-                    setForm((current) => ({ ...current, requestType: item.value }));
-                    openComposer(2);
-                  }}
-                  className={cn(
-                    'rounded-[24px] border p-3.5 text-right shadow-[0_16px_34px_rgba(44,28,9,0.07)] transition hover:-translate-y-0.5 hover:border-primary/18',
-                    selected
-                      ? 'gold-sheen-surface border-primary/28'
-                      : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(250,247,241,0.94)_100%)]',
-                  )}
-                  data-accent-sheen={selected ? 'true' : undefined}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-primary/12 bg-primary/8 text-primary">
-                      <Icon className="h-4.5 w-4.5" strokeWidth={1.8} />
-                    </span>
-                    <span className="rounded-full border border-primary/10 bg-primary/6 px-2.5 py-1 text-[11px] font-semibold text-primary">
-                      {item.description}
-                    </span>
-                  </div>
-                  <div className="mt-3 text-[14px] font-semibold text-foreground">{item.label}</div>
-                </button>
+                  <QuickActionTile
+                    title={item.label}
+                    subtitle={item.description}
+                    icon={item.icon}
+                    onClick={() => {
+                      setForm((current) => ({ ...current, requestType: item.value }));
+                      openComposer(2);
+                    }}
+                    stateLabel={selected ? 'נבחר' : undefined}
+                    tone={selected ? 'default' : 'info'}
+                    className="min-h-[156px]"
+                  />
+                </div>
               );
             })}
           </div>
@@ -560,7 +553,7 @@ export default function ResidentRequestsPage() {
           else setComposerOpen(true);
         }}
         title="בקשה חדשה"
-        description={formStep === 1 ? 'בחר סוג' : formStep === 2 ? 'פרטים' : 'אישור'}
+        description={formStep === 1 ? 'בחר סוג בקשה' : formStep === 2 ? 'פרטים' : 'אישור'}
         tone="light"
         size="full"
         className="max-h-[100dvh] rounded-none md:max-h-[88dvh] md:rounded-t-[30px]"
@@ -776,7 +769,7 @@ export default function ResidentRequestsPage() {
 
               <div className="space-y-3 rounded-[24px] border border-subtle-border bg-background/90 p-4">
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">בדיקה</div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">לפני שליחה</div>
                   <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.nextStep}</div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -791,7 +784,7 @@ export default function ResidentRequestsPage() {
             <div className="space-y-4">
               <div className="space-y-3 rounded-[24px] border border-subtle-border bg-background/90 p-4">
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">אישור</div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">לפני שליחה</div>
                   <div className="mt-1 text-lg font-semibold text-foreground">{selectedTypeDescription.nextStep}</div>
                   <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.responseWindow}</div>
                 </div>
@@ -823,7 +816,7 @@ export default function ResidentRequestsPage() {
       </AmsDrawer>
 
       {view === 'history' ? (
-      <div className="space-y-6 rounded-[30px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-4 shadow-[0_16px_34px_rgba(44,28,9,0.07)] sm:p-6">
+      <GlassSurface strength="strong" className="space-y-6 rounded-[30px] p-4 sm:p-6">
           <SectionHeader title="מעקב" subtitle={undefined} meta={`${history.length} פריטים`} />
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -923,7 +916,7 @@ export default function ResidentRequestsPage() {
               </section>
             </div>
           )}
-      </div>
+      </GlassSurface>
       ) : null}
     </div>
   );
@@ -1075,41 +1068,39 @@ function ReviewTile({ label, value }: { label: string; value: string }) {
 function RequestHistoryList({ items, locale }: { items: RequestHistoryItem[]; locale: string }) {
   return (
     <div className="space-y-3">
-      {items.map((item) => (
-        <div key={item.requestKey} className="rounded-[22px] border border-subtle-border/90 bg-white/88 p-3.5 transition hover:border-primary/14 hover:bg-white">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">{item.requestKey}</span>
-                  <StatusBadge label={getResidentRequestStatusLabel(item.status)} tone={getResidentRequestStatusTone(item.status)} className="px-1.5 py-0 h-4 text-[9px]" />
-                </div>
-                <div className="text-[14px] font-bold text-foreground leading-tight">{item.subject.replace(/^[A-Z_]+:\s*/, '')}</div>
-                <div className="mt-0.5 text-[12px] leading-tight text-secondary-foreground line-clamp-1">{item.message}</div>
-              </div>
+      {items.map((item, index) => (
+        <div key={item.requestKey} className="space-y-2">
+          <ResidentListCard
+            title={item.subject.replace(/^[A-Z_]+:\s*/, '')}
+            subtitle={item.message}
+            icon={item.requestType === 'MOVING' ? Move : item.requestType === 'PARKING' ? ParkingCircle : item.requestType === 'DOCUMENT' ? FileText : item.requestType === 'CONTACT_UPDATE' ? PhoneCall : Sparkles}
+            accent={item.status === 'SUBMITTED' || item.status === 'IN_REVIEW' ? 'warning' : 'success'}
+            delay={index * 0.04}
+            meta={<StatusBadge label={getResidentRequestStatusLabel(item.status)} tone={getResidentRequestStatusTone(item.status)} className="px-1.5 py-0 h-4 text-[9px]" />}
+            endSlot={
               <div className="flex flex-col items-end gap-1 shrink-0">
                 <div className="text-[10px] font-bold text-muted-foreground/60">{formatDate(new Date(item.updatedAt || item.createdAt), locale)}</div>
                 <StatusBadge label={getRequestTypeLabel(item.requestType)} tone="neutral" className="px-1.5 py-0 h-4 text-[9px]" />
               </div>
+            }
+          />
+
+          {item.statusNotes ? (
+            <GlassSurface className="rounded-[20px] px-3 py-2.5">
+              <div className="mb-1 flex items-center gap-1.5 text-[12px] font-bold text-primary">
+                <Sparkles className="h-3.5 w-3.5" strokeWidth={2.5} />
+                עדכון
+              </div>
+              <div className="text-[12px] leading-5 text-secondary-foreground">{item.statusNotes}</div>
+            </GlassSurface>
+          ) : null}
+
+          {item.requestedDate ? (
+            <div className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-warning">
+              <CalendarDays className="h-3.5 w-3.5" strokeWidth={2.5} />
+              <span>יעד: {formatDate(item.requestedDate, locale)}</span>
             </div>
-
-            {item.statusNotes ? (
-              <div className="rounded-[18px] border border-primary/10 bg-primary/5 px-3 py-2 text-[12px] leading-5 text-secondary-foreground">
-                <div className="mb-1 flex items-center gap-1.5 font-bold text-primary">
-                  <Sparkles className="h-3.5 w-3.5" strokeWidth={2.5} />
-                  עדכון
-                </div>
-                {item.statusNotes}
-              </div>
-            ) : null}
-
-            {item.requestedDate ? (
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-warning">
-                <CalendarDays className="h-3.5 w-3.5" strokeWidth={2.5} />
-                <span>יעד: {formatDate(item.requestedDate, locale)}</span>
-              </div>
-            ) : null}
-          </div>
+          ) : null}
         </div>
       ))}
     </div>

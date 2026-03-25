@@ -7,9 +7,11 @@ import { authFetch, getAccessToken, getCurrentUserId, getEffectiveRole } from '.
 import { cn, formatCurrency, formatDate, getTicketStatusTone } from '../../lib/utils';
 import { Button } from '../../components/ui/button';
 import { EmptyState } from '../../components/ui/empty-state';
+import { GlassSurface } from '../../components/ui/glass-surface';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
-import { MobileActionHub, type MobileActionHubItem } from '../../components/ui/mobile-action-hub';
+import { QuickActionTile } from '../../components/ui/quick-action-tile';
+import { ResidentListCard } from '../../components/ui/resident-list-card';
 import { ResidentHero } from '../../components/resident/resident-hero';
 import { ResidentFreshnessStrip } from '../../components/resident/resident-freshness-strip';
 import { ResidentTrendCard } from '../../components/resident/resident-trend-card';
@@ -125,6 +127,7 @@ export default function ResidentAccountPage() {
   const primaryUnit = context?.units[0] ?? null;
   const primaryBuilding = primaryUnit?.building ?? null;
   const residentName = context?.user?.email?.split('@')[0] || 'דייר';
+  const locale = 'he';
   const openTickets = useMemo(() => (context?.tickets ?? []).filter((ticket) => ticket.status !== 'RESOLVED'), [context?.tickets]);
   const unreadNotifications = useMemo(() => (context?.notifications ?? []).filter((item) => !item.read), [context?.notifications]);
   const recentDocuments = useMemo(() => [...(context?.documents ?? [])].slice(0, 2), [context?.documents]);
@@ -159,7 +162,6 @@ export default function ResidentAccountPage() {
         }
       : null,
   ].filter(Boolean) as Array<{ id: string; label: string; meta: string; detail: string; href: string }>;
-  const locale = 'he';
   const labels = {
     home: 'האזור האישי',
     updatesReady: '{{count}} עדכונים חדשים מחכים לך',
@@ -270,61 +272,41 @@ export default function ResidentAccountPage() {
             tone: unreadNotifications.length ? ('default' as const) : ('success' as const),
           };
 
-  const hubItems: MobileActionHubItem[] = [
-    {
-      id: 'pay',
-      label: nextPaymentDue ? 'שלם עכשיו' : 'מרכז תשלומים',
-      description: nextPaymentDue ? 'חיוב פתוח' : 'יתרה וקבלות',
-      href: '/payments/resident',
-      icon: CreditCard,
-      badge: finance?.summary.unpaidInvoices || undefined,
-      accent: nextPaymentDue ? 'warning' : 'primary',
-      priority: 'primary',
-      previewValue: finance ? formatCurrency(finance.summary.currentBalance) : undefined,
-    },
+  const quickActions = [
     {
       id: 'request-new',
-      label: 'בקשה חדשה',
-      description: 'פתיחה מהירה',
+      title: 'בקשה חדשה',
+      subtitle: 'פתיחה מהירה לצוות',
       href: '/resident/requests?view=new',
       icon: ClipboardList,
-      accent: 'primary',
-    },
-    {
-      id: 'request-history',
-      label: 'מעקב בקשות',
-      description: openTickets.length ? 'בטיפול' : 'היסטוריה',
-      href: '/resident/requests?view=history',
-      icon: Ticket,
-      badge: openTickets.length || undefined,
-      accent: openTickets.length ? 'warning' : 'neutral',
-    },
-    {
-      id: 'building',
-      label: primaryBuilding?.name || 'הבניין שלי',
-      description: primaryBuilding?.address || 'פרטים ושירותים',
-      href: '/resident/building',
-      icon: Building2,
-      accent: 'neutral',
-    },
-    {
-      id: 'updates',
-      label: 'עדכונים',
-      description: unreadNotifications.length ? `${unreadNotifications.length} חדשים` : 'שקט',
-      href: '/notifications',
-      icon: Bell,
-      badge: unreadNotifications.length || undefined,
-      accent: unreadNotifications.length ? 'info' : 'neutral',
-      priority: 'utility',
+      tone: 'default' as const,
+      stateLabel: 'מומלץ',
     },
     {
       id: 'documents',
-      label: 'מסמכים',
-      description: 'חוזים וקבלות',
+      title: 'מסמכים',
+      subtitle: newestDocument ? newestDocument.name : 'חוזים, קבלות ועדכונים',
       href: '/documents',
       icon: FileText,
-      accent: 'neutral',
-      priority: 'utility',
+      tone: 'info' as const,
+      badge: recentDocuments.length || null,
+    },
+    {
+      id: 'support',
+      title: 'תקשורת',
+      subtitle: unreadNotifications.length ? `${unreadNotifications.length} עדכונים מחכים` : 'התראות ושיחות פתוחות',
+      href: '/notifications',
+      icon: Bell,
+      tone: unreadNotifications.length ? ('warning' as const) : ('default' as const),
+      badge: unreadNotifications.length || null,
+    },
+    {
+      id: 'building',
+      title: 'הבניין שלי',
+      subtitle: primaryBuilding?.address || 'פרטים, שירותים ואנשי קשר',
+      href: '/resident/building',
+      icon: Building2,
+      tone: 'success' as const,
     },
   ];
 
@@ -489,11 +471,27 @@ export default function ResidentAccountPage() {
       </motion.section>
 
       <motion.section {...residentScreenMotion(motionReduced, 0.1)} className="px-1">
-        <MobileActionHub
-          title="פעולות מהירות"
-          items={hubItems}
-          layout="hierarchy"
-        />
+        <div className="space-y-3">
+          <div className="px-1 text-right">
+            <div className="text-base font-semibold text-foreground">פעולות מהירות</div>
+            <div className="mt-0.5 text-xs text-secondary-foreground">הקיצורים החשובים לדייר, בלי לעבור בין מסכים.</div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {quickActions.map((item, index) => (
+              <QuickActionTile
+                key={item.id}
+                title={item.title}
+                subtitle={item.subtitle}
+                href={item.href}
+                icon={item.icon}
+                tone={item.tone}
+                badge={item.badge}
+                stateLabel={item.stateLabel}
+                delay={index * 0.04}
+              />
+            ))}
+          </div>
+        </div>
       </motion.section>
 
       <motion.section {...residentScreenMotion(motionReduced, 0.15)} className="space-y-3">
@@ -504,30 +502,29 @@ export default function ResidentAccountPage() {
         </div>
 
         {continuationItems.length ? (
-          <div className="overflow-hidden rounded-[28px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] shadow-[0_16px_36px_rgba(44,28,9,0.07)]">
-            <div className="flex items-center justify-between border-b border-subtle-border/70 px-4 py-3">
+          <GlassSurface strength="strong" className="rounded-[30px] p-4">
+            <div className="mb-3 flex items-end justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold text-foreground">להמשך מהיר</div>
+                <div className="text-base font-semibold text-foreground">בקשות ועדכונים פעילים</div>
+                <div className="mt-0.5 text-xs text-secondary-foreground">הדברים שעדיין דורשים מעקב או קריאה.</div>
               </div>
-              <Link href={continuationItems[0].href} className="text-xs font-semibold text-primary">
-                פתח
-              </Link>
             </div>
-            <div className="divide-y divide-subtle-border/70">
-              {continuationItems.map((item) => (
-                <Link key={item.id} href={item.href} className="flex items-center justify-between gap-3 px-4 py-3.5 transition hover:bg-primary/5">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-semibold text-foreground">{item.label}</span>
-                      <span className="rounded-full border border-primary/12 bg-primary/8 px-2 py-0.5 text-[10px] font-semibold text-primary">{item.meta}</span>
-                    </div>
-                    <div className="mt-1 line-clamp-1 text-[12px] text-secondary-foreground">{item.detail}</div>
-                  </div>
-                  <ArrowUpRight className="icon-directional h-4 w-4 shrink-0 text-primary" strokeWidth={1.8} />
-                </Link>
+            <div className="space-y-3">
+              {continuationItems.map((item, index) => (
+                <ResidentListCard
+                  key={item.id}
+                  href={item.href}
+                  title={item.label}
+                  subtitle={item.detail}
+                  icon={item.id.startsWith('ticket') ? Ticket : item.id.startsWith('notification') ? Bell : FileText}
+                  accent={item.id.startsWith('ticket') ? 'warning' : 'info'}
+                  meta={<span className="rounded-full border border-primary/12 bg-primary/8 px-2 py-0.5 text-[10px] font-semibold text-primary">{item.meta}</span>}
+                  endSlot={<ArrowUpRight className="icon-directional h-4 w-4 shrink-0 text-primary" strokeWidth={1.8} />}
+                  delay={index * 0.04}
+                />
               ))}
             </div>
-          </div>
+          </GlassSurface>
         ) : null}
 
         {trendState ? (

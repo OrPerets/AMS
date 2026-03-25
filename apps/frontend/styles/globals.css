@@ -677,6 +677,34 @@
     @apply rounded-[24px] border;
   }
 
+  .glass-surface {
+    border: 1px solid hsl(var(--subtle-border) / 0.78);
+    background:
+      linear-gradient(180deg, hsl(var(--background) / 0.78), hsl(var(--surface-tint) / 0.94));
+    box-shadow:
+      0 18px 38px -28px rgb(44 28 9 / 0.16),
+      inset 0 1px 0 rgb(255 255 255 / 0.72);
+    backdrop-filter: blur(20px);
+  }
+
+  .glass-surface-strong {
+    border: 1px solid hsl(var(--subtle-border) / 0.88);
+    background:
+      linear-gradient(180deg, hsl(var(--background) / 0.88), hsl(var(--surface-tint) / 0.98));
+    box-shadow:
+      0 26px 58px -34px rgb(44 28 9 / 0.2),
+      inset 0 1px 0 rgb(255 255 255 / 0.8);
+    backdrop-filter: blur(24px);
+  }
+
+  .glass-sticky-chrome {
+    border-color: hsl(var(--subtle-border) / 0.68);
+    background:
+      linear-gradient(180deg, hsl(var(--background) / 0.84), hsl(var(--surface-tint) / 0.94));
+    box-shadow: 0 14px 34px -26px rgb(44 28 9 / 0.18);
+    backdrop-filter: blur(22px);
+  }
+
   .mobile-touch-strip {
     @apply min-h-[52px] rounded-[18px];
   }

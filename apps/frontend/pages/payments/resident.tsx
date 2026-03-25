@@ -7,9 +7,11 @@ import { cn, formatCurrency, formatDate, humanizeEnum } from '../../lib/utils';
 import { toast } from '../../components/ui/use-toast';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { EmptyState } from '../../components/ui/empty-state';
+import { GlassSurface } from '../../components/ui/glass-surface';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
+import { ResidentListCard } from '../../components/ui/resident-list-card';
 import { Switch } from '../../components/ui/switch';
 import { AmsDrawer } from '../../components/ui/ams-drawer';
 import { AmsTabs } from '../../components/ui/ams-tabs';
@@ -387,7 +389,7 @@ export default function ResidentPaymentsPage() {
         <ResidentHero
           eyebrow="תשלומים"
           eyebrowIcon={<ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.85} />}
-          title="תשלומים"
+          title="מרכז תשלומים"
           subtitle={undefined}
           badge={<div className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white">חשבון דייר</div>}
           floatingCard={
@@ -471,7 +473,7 @@ export default function ResidentPaymentsPage() {
           unreadCount={finance.summary.unreadNotifications}
         />
 
-        <div className="rounded-[30px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.99)_0%,rgba(249,245,238,0.94)_100%)] p-4 shadow-[0_18px_36px_rgba(44,28,9,0.07)]">
+        <GlassSurface strength="strong" className="rounded-[30px] p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">לתשלום</div>
@@ -520,7 +522,7 @@ export default function ResidentPaymentsPage() {
               </Button>
             </div>
           </div>
-        </div>
+        </GlassSurface>
       </motion.section>
 
       <div id="resident-payments-tabs">
@@ -578,14 +580,7 @@ export default function ResidentPaymentsPage() {
                 <div className="space-y-2">
                   {finance.ledger.length ? (
                     historyEntries.map((entry, index) => (
-                      <motion.div
-                        key={entry.id}
-                        initial={reducedMotion ? false : { opacity: 0, y: 14 }}
-                        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-                        transition={{ duration: 0.24, delay: reducedMotion ? 0 : index * 0.03, ease: 'easeOut' }}
-                      >
-                        <LedgerRow entry={entry} locale={locale} />
-                      </motion.div>
+                      <LedgerRow key={entry.id} entry={entry} locale={locale} delay={index * 0.03} />
                     ))
                   ) : (
                     <EmptyState type="empty" size="sm" title="אין היסטוריה עדיין" description="התשלום הראשון יופיע כאן." />
@@ -600,6 +595,20 @@ export default function ResidentPaymentsPage() {
               icon: <CreditCard className="h-4 w-4" strokeWidth={1.75} />,
               content: (
                 <div className="space-y-3">
+                  {primaryMethod ? (
+                    <GlassSurface className="rounded-[26px] p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/72">כרטיס ראשי</div>
+                          <div className="mt-2 text-lg font-semibold text-foreground">{primaryMethod.brand || 'כרטיס שמור'} •••• {primaryMethod.last4 || '••••'}</div>
+                          <div className="mt-1 text-sm text-secondary-foreground">
+                            {primaryMethod.expMonth && primaryMethod.expYear ? `בתוקף עד ${String(primaryMethod.expMonth).padStart(2, '0')}/${String(primaryMethod.expYear).slice(-2)}` : 'מוכן לחיוב'}
+                          </div>
+                        </div>
+                        <Badge variant="success">פעיל לתשלום</Badge>
+                      </div>
+                    </GlassSurface>
+                  ) : null}
                   <ResidentPaymentMethodsPanel
                     paymentMethods={paymentMethods}
                     autopayEnabled={autopayEnabled}
@@ -1010,16 +1019,31 @@ function InvoiceShowcaseCard({
       : invoice.status === 'PAID'
         ? 'text-success'
         : 'text-foreground';
+  const iconAccent =
+    invoice.status === 'OVERDUE' ? 'warning' : invoice.status === 'PAID' ? 'success' : 'default';
 
   return (
-    <div className="overflow-hidden rounded-[24px] border border-subtle-border/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.99)_0%,rgba(249,245,238,0.94)_100%)] text-right shadow-[0_8px_18px_rgba(44,28,9,0.05)]">
+    <GlassSurface className="overflow-hidden rounded-[28px] text-right">
       <button
         type="button"
         onClick={isPayable ? onPay : onToggle}
         className="flex w-full items-center justify-between gap-3 p-3.5 text-right"
         aria-expanded={isPayable ? undefined : expanded}
       >
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span
+            className={cn(
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]',
+              iconAccent === 'warning'
+                ? 'border-warning/18 bg-warning/10 text-warning'
+                : iconAccent === 'success'
+                  ? 'border-success/18 bg-success/10 text-success'
+                  : 'border-primary/14 bg-primary/10 text-primary',
+            )}
+          >
+            {invoice.status === 'PAID' ? <CheckCircle2 className="h-5 w-5" strokeWidth={2} /> : <Receipt className="h-5 w-5" strokeWidth={2} />}
+          </span>
+          <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-[14px] font-bold text-foreground">{invoice.description}</span>
             <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'OVERDUE' ? 'destructive' : 'outline'} className="text-[10px] px-2 py-0">
@@ -1030,6 +1054,7 @@ function InvoiceShowcaseCard({
             <CalendarClock className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span>{formatDate(invoice.dueDate, locale)}</span>
           </div>
+        </div>
         </div>
         <div className="flex items-center gap-3">
           <div className={`text-[18px] font-black tabular-nums ${amountToneClass}`}>
@@ -1083,37 +1108,33 @@ function InvoiceShowcaseCard({
           </div>
         </div>
       ) : null}
-    </div>
+    </GlassSurface>
   );
 }
 
 function LedgerRow({
   entry,
   locale,
+  delay = 0,
 }: {
   entry: ResidentFinance['ledger'][number];
   locale: string;
+  delay?: number;
 }) {
   const isPositive = entry.amount >= 0;
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[20px] border border-subtle-border/90 bg-white/88 px-3.5 py-3 text-right transition hover:border-primary/16">
-      <div className="flex min-w-0 items-center gap-3">
-        <span
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-            isPositive ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'
-          }`}
-        >
-          {isPositive ? <CheckCircle2 className="h-4 w-4" strokeWidth={2} /> : <Receipt className="h-4 w-4" strokeWidth={2} />}
-        </span>
-        <div className="min-w-0">
-          <div className="truncate text-[14px] font-semibold text-foreground leading-tight">{entry.summary}</div>
-          <div className="mt-0.5 text-[11px] text-secondary-foreground">{formatDate(entry.createdAt, locale)}</div>
+    <ResidentListCard
+      title={entry.summary}
+      subtitle={formatDate(entry.createdAt, locale)}
+      icon={isPositive ? CheckCircle2 : Receipt}
+      accent={isPositive ? 'success' : 'default'}
+      delay={delay}
+      endSlot={
+        <div className={cn('text-[15px] font-black tabular-nums', isPositive ? 'text-success' : 'text-foreground')}>
+          <bdi>{formatCurrency(entry.amount)}</bdi>
         </div>
-      </div>
-      <div className={`text-[15px] font-black tabular-nums ${isPositive ? 'text-success' : 'text-foreground'}`}>
-        <bdi>{formatCurrency(entry.amount)}</bdi>
-      </div>
-    </div>
+      }
+    />
   );
 }

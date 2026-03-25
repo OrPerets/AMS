@@ -142,7 +142,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
       <nav
         ref={navRef}
         className={cn(
-          'fixed inset-x-0 bottom-0 z-40 border-t border-white/35 bg-[linear-gradient(180deg,rgba(255,252,247,0.88)_0%,rgba(246,241,231,0.96)_100%)] shadow-[0_-10px_28px_rgba(44,28,9,0.06)] backdrop-blur-xl safe-pb thumb-zone md:hidden',
+          'glass-sticky-chrome fixed inset-x-0 bottom-0 z-40 border-t safe-pb thumb-zone md:hidden',
           className,
         )}
         role="navigation"

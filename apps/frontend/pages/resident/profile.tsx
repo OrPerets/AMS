@@ -22,6 +22,8 @@ import { authFetch, logout } from '../../lib/auth';
 import { isValidEmail } from '../../lib/utils';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { ResidentHero } from '../../components/resident/resident-hero';
+import { residentScreenMotion } from '../../components/resident/motion';
+import { ResidentListCard } from '../../components/ui/resident-list-card';
 import { toast } from '../../components/ui/use-toast';
 
 type AccountContext = {
@@ -246,9 +248,7 @@ export default function ResidentProfilePage() {
   return (
     <div dir="rtl" className="mx-auto w-full max-w-md space-y-4 pb-24 text-right sm:max-w-3xl sm:space-y-5">
       <motion.section
-        initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.34, ease: 'easeOut' }}
+        {...residentScreenMotion(Boolean(reducedMotion))}
       >
         <ResidentHero
           eyebrow={labels.heroHint}
@@ -286,11 +286,9 @@ export default function ResidentProfilePage() {
       </motion.section>
 
       <motion.section
-        initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.05, ease: 'easeOut' }}
+        {...residentScreenMotion(Boolean(reducedMotion), 0.05)}
       >
-        <Card className="border border-divider/60 bg-white/92 shadow-[0_18px_42px_rgba(44,28,9,0.08)]">
+        <Card className="glass-surface-strong rounded-[30px]">
           <CardHeader className="flex w-full flex-col items-end gap-1 px-4 pt-4 text-right sm:px-5">
             <h2 className="w-full text-right text-base font-semibold text-foreground">{labels.statusCardTitle}</h2>
             {labels.statusCardSubtitle ? <p className="w-full text-right text-sm text-default-500">{labels.statusCardSubtitle}</p> : null}
@@ -304,11 +302,9 @@ export default function ResidentProfilePage() {
       </motion.section>
 
       <motion.section
-        initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.1, ease: 'easeOut' }}
+        {...residentScreenMotion(Boolean(reducedMotion), 0.1)}
       >
-        <Card className="border border-divider/60 bg-white/94 shadow-[0_18px_42px_rgba(44,28,9,0.08)]">
+        <Card className="glass-surface-strong rounded-[30px]">
           <CardHeader className="flex w-full flex-col items-end gap-1 px-4 pt-4 text-right sm:px-5">
             <h2 className="w-full text-right text-base font-semibold text-foreground">{labels.quickActionsTitle}</h2>
             {labels.quickActionsSubtitle ? <p className="w-full text-right text-sm text-default-500">{labels.quickActionsSubtitle}</p> : null}
@@ -323,11 +319,9 @@ export default function ResidentProfilePage() {
 
       <motion.section
         id="profile-form"
-        initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.15, ease: 'easeOut' }}
+        {...residentScreenMotion(Boolean(reducedMotion), 0.15)}
       >
-        <Card className="border border-divider/60 bg-white/94 shadow-[0_18px_42px_rgba(44,28,9,0.08)]">
+        <Card className="glass-surface-strong rounded-[30px]">
           <CardHeader className="flex w-full flex-col items-end gap-1 px-4 pt-4 text-right sm:px-5">
             <h2 className="w-full text-right text-base font-semibold text-foreground">{labels.personalSectionTitle}</h2>
             {labels.personalSectionSubtitle ? <p className="w-full text-right text-sm text-default-500">{labels.personalSectionSubtitle}</p> : null}
@@ -402,11 +396,9 @@ export default function ResidentProfilePage() {
       </motion.section>
 
       <motion.section
-        initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.2, ease: 'easeOut' }}
+        {...residentScreenMotion(Boolean(reducedMotion), 0.2)}
       >
-        <Card className="border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.95)_100%)] shadow-[0_18px_42px_rgba(44,28,9,0.08)]">
+        <Card className="glass-surface-strong rounded-[30px]">
           <CardHeader className="flex w-full flex-col items-end gap-1 px-4 pt-4 text-right sm:px-5">
             <h2 className="w-full text-right text-base font-semibold text-foreground">{labels.accountSectionTitle}</h2>
             {labels.accountSectionSubtitle ? <p className="w-full text-right text-sm text-default-500">{labels.accountSectionSubtitle}</p> : null}
@@ -421,9 +413,7 @@ export default function ResidentProfilePage() {
       </motion.section>
 
       <motion.div
-        initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.24, ease: 'easeOut' }}
+        {...residentScreenMotion(Boolean(reducedMotion), 0.24)}
       >
         <Button
           color="danger"
@@ -513,33 +503,42 @@ function MetricTile({ icon, label, value }: { icon: ReactNode; label: string; va
 }
 
 function MenuRow({ item }: { item: MenuItem }) {
-  const toneClass =
-    item.accent === 'warning'
-      ? 'border-warning/16 bg-warning/8 text-warning'
-      : item.accent === 'primary'
-        ? 'border-primary/16 bg-primary/10 text-primary'
-        : 'border-divider/70 bg-muted/55 text-foreground';
-
-  const content = (
-    <div className="group flex min-h-[76px] items-center gap-3 rounded-[24px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-4 py-3 shadow-[0_14px_28px_rgba(44,28,9,0.05)] transition duration-200 hover:-translate-y-0.5 hover:border-primary/20">
-      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] border ${toneClass}`}>
-        {item.icon}
-      </span>
-      <div className="min-w-0 flex-1 text-right">
-        <div className="text-sm font-semibold text-foreground">{item.label}</div>
-        <div className="mt-1 text-xs leading-5 text-default-500">{item.description}</div>
-      </div>
-      <ChevronLeft className="h-4 w-4 shrink-0 text-default-400 transition group-hover:-translate-x-0.5 group-hover:text-primary" strokeWidth={1.85} />
-    </div>
-  );
-
   if (item.href) {
-    return <Link href={item.href}>{content}</Link>;
+    return (
+      <ResidentListCard
+        href={item.href}
+        title={item.label}
+        subtitle={item.description}
+        icon={resolveMenuIcon(item.id)}
+        accent={item.accent === 'warning' ? 'warning' : item.accent === 'primary' ? 'default' : 'info'}
+        endSlot={<ChevronLeft className="h-4 w-4 shrink-0 text-default-400" strokeWidth={1.85} />}
+      />
+    );
   }
 
   return (
-    <button type="button" onClick={item.onPress} className="w-full text-right">
-      {content}
-    </button>
+    <ResidentListCard
+      onClick={item.onPress}
+      title={item.label}
+      subtitle={item.description}
+      icon={resolveMenuIcon(item.id)}
+      accent={item.accent === 'warning' ? 'warning' : item.accent === 'primary' ? 'default' : 'info'}
+      endSlot={<ChevronLeft className="h-4 w-4 shrink-0 text-default-400" strokeWidth={1.85} />}
+    />
   );
+}
+
+function resolveMenuIcon(id: string) {
+  switch (id) {
+    case 'details':
+      return UserRound;
+    case 'payments':
+      return WalletCards;
+    case 'building':
+      return Building2;
+    case 'requests':
+      return Ticket;
+    default:
+      return Settings2;
+  }
 }

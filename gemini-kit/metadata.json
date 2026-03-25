@@ -1,5 +1,8 @@
 {
-  "name": "Amit Excellence Property Management",
-  "description": "A premium, multi-role property management platform for residents, managers, and staff.",
-  "requestFramePermissions": []
+  "name": "LuxProperty Management",
+  "description": "A premium, multi-role property and building management application with a focus on intuitive resident experience and high-end design.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
 }

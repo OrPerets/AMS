@@ -41,13 +41,13 @@ export function ResidentHero({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-[34px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,251,244,0.99)_0%,rgba(255,255,255,0.97)_42%,rgba(249,243,234,0.98)_100%)] shadow-[0_34px_80px_rgba(44,28,9,0.14)]',
+        'glass-surface-strong overflow-hidden rounded-[34px] shadow-[0_34px_80px_rgba(44,28,9,0.14)]',
         className,
       )}
     >
       <div
         className={cn(
-          'resident-profile-hero-surface relative px-5 pb-12 pt-5 text-white',
+          'resident-profile-hero-surface relative px-5 pb-14 pt-6 text-white',
           shellClassName,
         )}
       >
@@ -73,7 +73,7 @@ export function ResidentHero({
         <div className="relative px-5 pb-5">
           <div
             className={cn(
-              '-mt-10 rounded-[30px] border border-primary/14 bg-white/95 p-4 shadow-[0_26px_56px_rgba(44,28,9,0.14)] backdrop-blur-sm',
+              'glass-surface -mt-10 rounded-[30px] p-4 shadow-[0_26px_56px_rgba(44,28,9,0.14)]',
               floatingCardClassName,
             )}
           >

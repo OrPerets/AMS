@@ -56,7 +56,7 @@ export function AmsDrawer({
         wrapper: placement === 'bottom' ? 'items-end' : undefined,
         base: cn(
           lightTone
-            ? 'border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.99)_0%,rgba(248,244,237,0.98)_100%)] text-foreground shadow-[0_26px_70px_-44px_rgba(44,28,9,0.38)]'
+            ? 'glass-surface-strong text-foreground shadow-[0_26px_70px_-44px_rgba(44,28,9,0.38)]'
             : 'drawer-premium-surface text-inverse-text',
           placement === 'bottom' && 'm-0 max-h-[88dvh] rounded-t-[30px] rounded-b-none',
           placement !== 'bottom' && 'rounded-[28px]',
