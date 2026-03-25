@@ -144,6 +144,11 @@ export default function ResidentAccountPage() {
     [finance?.invoices],
   );
 
+  const userId = getCurrentUserId();
+  const role = getEffectiveRole();
+  const resumeState = useMemo(() => getResumeState('resident', userId, role), [userId, role]);
+  const showResume = !!(resumeState && resumeState.href !== '/resident/account' && resumeState.href !== router.asPath);
+
   const residentPrimaryAction = (() => {
     if (nextPaymentDue) {
       return {
@@ -202,7 +207,6 @@ export default function ResidentAccountPage() {
   const heroSubline = primaryUnit
     ? `דירה ${primaryUnit.number}${primaryBuilding?.name ? ` · ${primaryBuilding.name}` : ''}`
     : 'חשבון דייר פעיל';
-  const heroSupportLine = primaryBuilding?.address || '';
   const spotlight = nextPaymentDue
     ? {
         label: nextPaymentDue.status === 'OVERDUE' ? 'לתשלום מיידי' : 'חיוב קרוב',
@@ -236,43 +240,6 @@ export default function ResidentAccountPage() {
             progress: unreadNotifications.length ? 44 : 100,
             tone: unreadNotifications.length ? ('default' as const) : ('success' as const),
           };
-  const actionItems = [
-    {
-      id: 'pay',
-      label: nextPaymentDue ? 'שלם עכשיו' : 'מרכז תשלומים',
-      description: nextPaymentDue ? residentPrimaryAction.description : 'יתרה, קבלות וכרטיסים',
-      href: '/payments/resident',
-      icon: CreditCard,
-      badge: finance?.summary.unpaidInvoices ? finance.summary.unpaidInvoices : undefined,
-      accent: nextPaymentDue ? ('warning' as const) : ('primary' as const),
-    },
-    {
-      id: 'request',
-      label: 'בקשה חדשה',
-      description: 'פתיחה מהירה',
-      href: '/resident/requests?view=new',
-      icon: ClipboardList,
-      accent: 'primary' as const,
-    },
-    {
-      id: 'call',
-      label: openTickets.length ? 'מעקב קריאות' : 'קריאת תחזוקה',
-      description: openTickets.length ? 'פתח מעקב' : 'דיווח מהיר',
-      href: openTickets.length ? '/resident/requests?view=history' : '/create-call',
-      icon: Ticket,
-      badge: openTickets.length || undefined,
-      accent: openTickets.length ? ('warning' as const) : ('neutral' as const),
-    },
-    {
-      id: 'contact',
-      label: primaryBuilding ? 'הבניין שלי' : 'צור קשר',
-      description: primaryBuilding?.name || 'תמיכה',
-      href: primaryBuilding ? '/resident/building' : '/support',
-      icon: primaryBuilding ? Building2 : MessageCircle,
-      accent: 'neutral' as const,
-    },
-  ];
-  const continuationItems = actionItems.slice(0, 3);
 
   const hubItems: MobileActionHubItem[] = [
     {
@@ -331,6 +298,71 @@ export default function ResidentAccountPage() {
       priority: 'utility',
     },
   ];
+
+  useEffect(() => {
+    if (!loading && context) {
+      setResumeState({ screen: 'resident', href: '/resident/account', label: 'האזור האישי', role: role || 'RESIDENT', userId });
+    }
+  }, [loading, context, role, userId]);
+
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) return;
+
+    websocketService.connect(token);
+    setLiveConnected(websocketService.isConnected());
+
+    const handleNewNotification = (event: { notification?: AccountContext['notifications'][number] }) => {
+      if (!event.notification) return;
+      setContext((current) => {
+        if (!current) return current;
+        const nextNotifications = [
+          event.notification!,
+          ...current.notifications.filter((item) => item.id !== event.notification!.id),
+        ];
+
+        return {
+          ...current,
+          notifications: nextNotifications,
+        };
+      });
+      setLastUpdatedAt(Date.now());
+    };
+
+    websocketService.on('new_notification', handleNewNotification);
+
+    const statusTimer = window.setInterval(() => {
+      setLiveConnected(websocketService.isConnected());
+    }, 5000);
+
+    return () => {
+      websocketService.off('new_notification', handleNewNotification);
+      window.clearInterval(statusTimer);
+    };
+  }, []);
+
+  if (loading) return <DetailPanelSkeleton />;
+  if (error || !context) {
+    return (
+      <InlineErrorPanel
+        title="האזור האישי לא נטען"
+        description={error || 'לא נמצאו נתונים'}
+        onRetry={() => void loadAccount()}
+      />
+    );
+  }
+
+  const trendState = finance
+    ? buildResidentTrendState({
+        currentBalance: finance.summary.currentBalance,
+        unpaidInvoices: finance.summary.unpaidInvoices,
+        overdueInvoices: finance.summary.overdueInvoices,
+        openTickets: openTickets.length,
+        unreadNotifications: unreadNotifications.length,
+        latestLedgerAmount: finance.invoices[0]?.amount ?? null,
+        locale,
+      })
+    : null;
 
   return (
     <div dir="rtl" className="mx-auto w-full max-w-md space-y-4 pb-24 text-right sm:max-w-4xl sm:space-y-6">
