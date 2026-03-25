@@ -386,6 +386,7 @@ export default function CreateCall() {
         onOpenChange={setLocationDrawerOpen}
         title="בחירת מיקום"
         description="אפשר לעדכן בניין ודירה בלי להעמיס על המסך הראשי."
+        tone="light"
         scrollBehavior="outside"
         footer={(onClose) => (
           <div className="w-full space-y-2">
@@ -404,7 +405,7 @@ export default function CreateCall() {
         )}
       >
         <div className="space-y-4 pb-2">
-          <div className="overflow-hidden rounded-2xl border border-white/12 bg-black/20">
+          <div className="overflow-hidden rounded-2xl border border-subtle-border bg-muted/30">
             <iframe
               key={mapQuery}
               title="מפת הבניין"
@@ -414,7 +415,7 @@ export default function CreateCall() {
               referrerPolicy="no-referrer-when-downgrade"
             />
           </div>
-          <div className="text-xs text-white/80">
+          <div className="text-xs text-secondary-foreground">
             {activeBuilding ? `תצוגת מפה עבור ${activeBuilding.address}` : 'בחר בניין כדי למקד את המפה.'}
           </div>
           <Input
@@ -426,7 +427,7 @@ export default function CreateCall() {
           <select
             value={selectedBuilding}
             onChange={(e) => setSelectedBuilding(Number(e.target.value) || '')}
-            className="flex h-12 w-full rounded-2xl border border-white/20 bg-white/14 px-3 py-2 text-sm text-white ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black/20"
+            className="flex h-12 w-full rounded-2xl border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             required
           >
             <option value="" className="text-slate-900">
@@ -443,7 +444,7 @@ export default function CreateCall() {
             <select
               value={selectedUnit}
               onChange={(e) => setSelectedUnit(Number(e.target.value) || '')}
-              className="flex h-12 w-full rounded-2xl border border-white/20 bg-white/14 px-3 py-2 text-sm text-white ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black/20"
+              className="flex h-12 w-full rounded-2xl border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               required
             >
               <option value="" className="text-slate-900">
