@@ -130,6 +130,35 @@ export default function ResidentAccountPage() {
   const recentDocuments = useMemo(() => [...(context?.documents ?? [])].slice(0, 2), [context?.documents]);
   const newestDocument = recentDocuments[0] ?? null;
   const newestNotification = unreadNotifications[0] ?? null;
+  const continuationItems = [
+    openTickets[0]
+      ? {
+          id: `ticket-${openTickets[0].id}`,
+          label: `קריאה #${openTickets[0].id}`,
+          meta: getTicketStatusTone(openTickets[0].status) === 'danger' ? 'דורש תשומת לב' : 'בטיפול',
+          detail: openTickets[0].description?.trim() || `${openTickets[0].unit.building.name} · דירה ${openTickets[0].unit.number}`,
+          href: '/resident/requests?view=history',
+        }
+      : null,
+    newestNotification
+      ? {
+          id: `notification-${newestNotification.id}`,
+          label: newestNotification.title,
+          meta: unreadNotifications.length > 1 ? `${unreadNotifications.length} עדכונים` : 'עדכון חדש',
+          detail: newestNotification.message,
+          href: '/notifications',
+        }
+      : null,
+    newestDocument
+      ? {
+          id: `document-${newestDocument.id}`,
+          label: newestDocument.name,
+          meta: 'מסמך זמין',
+          detail: formatDate(newestDocument.uploadedAt, locale),
+          href: '/documents',
+        }
+      : null,
+  ].filter(Boolean) as Array<{ id: string; label: string; meta: string; detail: string; href: string }>;
   const locale = 'he';
   const labels = {
     home: 'האזור האישי',
@@ -245,7 +274,7 @@ export default function ResidentAccountPage() {
     {
       id: 'pay',
       label: nextPaymentDue ? 'שלם עכשיו' : 'מרכז תשלומים',
-      description: nextPaymentDue ? nextPaymentDue.description : 'יתרה, קבלות וכרטיסים',
+      description: nextPaymentDue ? 'חיוב פתוח' : 'יתרה וקבלות',
       href: '/payments/resident',
       icon: CreditCard,
       badge: finance?.summary.unpaidInvoices || undefined,
@@ -264,7 +293,7 @@ export default function ResidentAccountPage() {
     {
       id: 'request-history',
       label: 'מעקב בקשות',
-      description: openTickets.length ? 'פתח מעקב' : 'היסטוריה',
+      description: openTickets.length ? 'בטיפול' : 'היסטוריה',
       href: '/resident/requests?view=history',
       icon: Ticket,
       badge: openTickets.length || undefined,
@@ -273,7 +302,7 @@ export default function ResidentAccountPage() {
     {
       id: 'building',
       label: primaryBuilding?.name || 'הבניין שלי',
-      description: primaryBuilding?.address || 'תמיכה',
+      description: primaryBuilding?.address || 'פרטים ושירותים',
       href: '/resident/building',
       icon: Building2,
       accent: 'neutral',
@@ -281,7 +310,7 @@ export default function ResidentAccountPage() {
     {
       id: 'updates',
       label: 'עדכונים',
-      description: unreadNotifications.length ? `${unreadNotifications.length} חדשים` : 'הכול נקרא',
+      description: unreadNotifications.length ? `${unreadNotifications.length} חדשים` : 'שקט',
       href: '/notifications',
       icon: Bell,
       badge: unreadNotifications.length || undefined,
@@ -291,7 +320,7 @@ export default function ResidentAccountPage() {
     {
       id: 'documents',
       label: 'מסמכים',
-      description: 'חוזים וקבלה',
+      description: 'חוזים וקבלות',
       href: '/documents',
       icon: FileText,
       accent: 'neutral',
@@ -459,32 +488,65 @@ export default function ResidentAccountPage() {
         />
       </motion.section>
 
-      <motion.section
-        {...residentScreenMotion(motionReduced, 0.1)}
-        className="px-1"
-      >
+      <motion.section {...residentScreenMotion(motionReduced, 0.1)} className="px-1">
         <MobileActionHub
-          title="פעולות ושירותים"
-          subtitle="כל מה שצריך בגישה מהירה"
+          title="פעולות מהירות"
+          subtitle="מה שצריך עכשיו"
           items={hubItems}
           layout="hierarchy"
         />
       </motion.section>
 
-      {trendState ? (
-        <motion.section {...residentScreenMotion(motionReduced, 0.15)} className="hidden md:block">
-          <ResidentTrendCard
-            title={trendState.title}
-            subtitle={trendState.subtitle}
-            metricLabel={trendState.metricLabel}
-            metricValue={trendState.metricValue}
-            points={trendState.points}
-            insight={trendState.insight}
-            tone={trendState.tone}
-            summaryItems={trendState.summaryItems}
-          />
-        </motion.section>
-      ) : null}
+      <motion.section {...residentScreenMotion(motionReduced, 0.15)} className="space-y-3">
+        <div className="grid grid-cols-3 gap-2.5">
+          <LaunchMetric label="יתרה" value={formatCurrency(finance?.summary.currentBalance ?? 0)} tone={finance?.summary.currentBalance ? 'warning' : 'success'} />
+          <LaunchMetric label="פתוחים" value={finance?.summary.unpaidInvoices ?? 0} tone={finance?.summary.unpaidInvoices ? 'warning' : 'default'} />
+          <LaunchMetric label="קריאות" value={openTickets.length} tone={openTickets.length ? 'default' : 'success'} />
+        </div>
+
+        {continuationItems.length ? (
+          <div className="overflow-hidden rounded-[28px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] shadow-[0_16px_36px_rgba(44,28,9,0.07)]">
+            <div className="flex items-center justify-between border-b border-subtle-border/70 px-4 py-3">
+              <div>
+                <div className="text-sm font-semibold text-foreground">להמשך מהיר</div>
+                <div className="mt-0.5 text-[11px] text-secondary-foreground">פריט אחד לפתוח, ואז ממשיכים</div>
+              </div>
+              <Link href={continuationItems[0].href} className="text-xs font-semibold text-primary">
+                פתח
+              </Link>
+            </div>
+            <div className="divide-y divide-subtle-border/70">
+              {continuationItems.map((item) => (
+                <Link key={item.id} href={item.href} className="flex items-center justify-between gap-3 px-4 py-3.5 transition hover:bg-primary/5">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-semibold text-foreground">{item.label}</span>
+                      <span className="rounded-full border border-primary/12 bg-primary/8 px-2 py-0.5 text-[10px] font-semibold text-primary">{item.meta}</span>
+                    </div>
+                    <div className="mt-1 line-clamp-1 text-[12px] text-secondary-foreground">{item.detail}</div>
+                  </div>
+                  <ArrowUpRight className="icon-directional h-4 w-4 shrink-0 text-primary" strokeWidth={1.8} />
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {trendState ? (
+          <div className="hidden md:block">
+            <ResidentTrendCard
+              title={trendState.title}
+              subtitle={trendState.subtitle}
+              metricLabel={trendState.metricLabel}
+              metricValue={trendState.metricValue}
+              points={trendState.points}
+              insight={trendState.insight}
+              tone={trendState.tone}
+              summaryItems={trendState.summaryItems}
+            />
+          </div>
+        ) : null}
+      </motion.section>
     </div>
   );
 }
@@ -494,6 +556,34 @@ function HeroStatusBadge({ icon, label }: { icon: React.ReactNode; label: string
     <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/10 px-3 py-1.5 text-[11px] font-semibold text-primary">
       {icon}
       <span>{label}</span>
+    </div>
+  );
+}
+
+function LaunchMetric({
+  label,
+  value,
+  tone = 'default',
+}: {
+  label: string;
+  value: string | number;
+  tone?: 'default' | 'warning' | 'success';
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-[22px] border px-3 py-3 text-right shadow-[0_10px_22px_rgba(44,28,9,0.05)]',
+        tone === 'warning'
+          ? 'border-warning/18 bg-[linear-gradient(180deg,rgba(255,251,241,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
+          : tone === 'success'
+            ? 'border-success/18 bg-[linear-gradient(180deg,rgba(245,252,247,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
+            : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)]',
+      )}
+    >
+      <div className="text-[10px] font-semibold text-secondary-foreground">{label}</div>
+      <div className="mt-1.5 truncate text-[15px] font-black text-foreground">
+        <bdi>{value}</bdi>
+      </div>
     </div>
   );
 }

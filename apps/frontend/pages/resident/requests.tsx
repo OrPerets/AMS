@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -421,6 +422,12 @@ export default function ResidentRequestsPage() {
         </div>
       </ResidentHero>
 
+      <div className="grid grid-cols-3 gap-2.5">
+        <QuickRequestMetric label="פתוחות" value={openRequests.length} tone={openRequests.length ? 'warning' : 'success'} />
+        <QuickRequestMetric label="הושלמו" value={closedRequests.length} />
+        <QuickRequestMetric label="מסלולים" value={requestTypes.length} />
+      </div>
+
       {view === 'history' && openRequests[0] ? (
         <PrimaryActionCard
           eyebrow="בטיפול עכשיו"
@@ -499,55 +506,51 @@ export default function ResidentRequestsPage() {
       ) : null}
 
       {view === 'new' ? (
-        <>
-          <Card variant="elevated">
-            <CardContent className="space-y-4 p-4">
-              <SectionHeader
-                title="בקשה חדשה"
-                subtitle={undefined}
-                meta={`${requestTypes.length} מסלולים`}
-                actions={
-                  <Button size="sm" className="rounded-full px-4" onClick={() => openComposer(1)}>
-                    פתח פרטים
-                  </Button>
-                }
-              />
-              <div className="grid grid-cols-2 gap-3">
-                {requestTypes.map((item) => {
-                  const Icon = item.icon;
-                  const selected = item.value === form.requestType;
-                  return (
-                    <button
-                      key={item.value}
-                      type="button"
-                      onClick={() => {
-                        setForm((current) => ({ ...current, requestType: item.value }));
-                        openComposer(2);
-                      }}
-                      className={cn(
-                        'rounded-[22px] border p-3.5 text-right shadow-[0_16px_34px_rgba(44,28,9,0.07)] transition hover:-translate-y-0.5 hover:border-primary/18',
-                        selected
-                          ? 'gold-sheen-surface border-primary/28'
-                          : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(250,247,241,0.94)_100%)]',
-                      )}
-                      data-accent-sheen={selected ? 'true' : undefined}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <span className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-primary/12 bg-primary/8 text-primary">
-                          <Icon className="h-4.5 w-4.5" strokeWidth={1.8} />
-                        </span>
-                        <span className="rounded-full border border-primary/10 bg-primary/6 px-2.5 py-1 text-[11px] font-semibold text-primary">
-                          {item.description}
-                        </span>
-                      </div>
-                      <div className="mt-3 text-[14px] font-semibold text-foreground">{item.label}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </>
+        <section className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div>
+              <div className="text-sm font-semibold text-foreground">בחר מסלול</div>
+              <div className="mt-0.5 text-[11px] text-secondary-foreground">כניסה מהירה לבקשה החדשה</div>
+            </div>
+            <Button size="sm" className="rounded-full px-4" onClick={() => openComposer(1)}>
+              פתח מסלול
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {requestTypes.map((item) => {
+              const Icon = item.icon;
+              const selected = item.value === form.requestType;
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => {
+                    setForm((current) => ({ ...current, requestType: item.value }));
+                    openComposer(2);
+                  }}
+                  className={cn(
+                    'rounded-[24px] border p-3.5 text-right shadow-[0_16px_34px_rgba(44,28,9,0.07)] transition hover:-translate-y-0.5 hover:border-primary/18',
+                    selected
+                      ? 'gold-sheen-surface border-primary/28'
+                      : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(250,247,241,0.94)_100%)]',
+                  )}
+                  data-accent-sheen={selected ? 'true' : undefined}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-primary/12 bg-primary/8 text-primary">
+                      <Icon className="h-4.5 w-4.5" strokeWidth={1.8} />
+                    </span>
+                    <span className="rounded-full border border-primary/10 bg-primary/6 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                      {item.description}
+                    </span>
+                  </div>
+                  <div className="mt-3 text-[14px] font-semibold text-foreground">{item.label}</div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
       ) : null}
 
       <AmsDrawer
@@ -820,8 +823,7 @@ export default function ResidentRequestsPage() {
       </AmsDrawer>
 
       {view === 'history' ? (
-      <Card variant="elevated">
-        <CardContent className="space-y-6 p-6">
+      <div className="space-y-6 rounded-[30px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-4 shadow-[0_16px_34px_rgba(44,28,9,0.07)] sm:p-6">
           <SectionHeader title="מעקב" subtitle="סטטוס קצר וברור" meta={`${history.length} פריטים`} />
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -921,9 +923,36 @@ export default function ResidentRequestsPage() {
               </section>
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
       ) : null}
+    </div>
+  );
+}
+
+function QuickRequestMetric({
+  label,
+  value,
+  tone = 'default',
+}: {
+  label: string;
+  value: string | number;
+  tone?: 'default' | 'warning' | 'success';
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-[22px] border px-3 py-3 text-right shadow-[0_10px_22px_rgba(44,28,9,0.05)]',
+        tone === 'warning'
+          ? 'border-warning/18 bg-[linear-gradient(180deg,rgba(255,251,241,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
+          : tone === 'success'
+            ? 'border-success/18 bg-[linear-gradient(180deg,rgba(245,252,247,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
+            : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)]',
+      )}
+    >
+      <div className="text-[10px] font-semibold text-secondary-foreground">{label}</div>
+      <div className="mt-1.5 text-[15px] font-black text-foreground">
+        <bdi>{value}</bdi>
+      </div>
     </div>
   );
 }

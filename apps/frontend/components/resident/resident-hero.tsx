@@ -41,13 +41,13 @@ export function ResidentHero({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-[32px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,251,245,0.98)_0%,rgba(255,255,255,0.96)_45%,rgba(250,245,237,0.98)_100%)] shadow-[0_28px_70px_rgba(44,28,9,0.12)]',
+        'overflow-hidden rounded-[34px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,251,244,0.99)_0%,rgba(255,255,255,0.97)_42%,rgba(249,243,234,0.98)_100%)] shadow-[0_34px_80px_rgba(44,28,9,0.14)]',
         className,
       )}
     >
       <div
         className={cn(
-          'resident-profile-hero-surface relative px-5 pb-10 pt-5 text-white',
+          'resident-profile-hero-surface relative px-5 pb-12 pt-5 text-white',
           shellClassName,
         )}
       >
@@ -73,7 +73,7 @@ export function ResidentHero({
         <div className="relative px-5 pb-5">
           <div
             className={cn(
-              '-mt-8 rounded-[30px] border border-primary/14 bg-white/94 p-4 shadow-[0_22px_48px_rgba(44,28,9,0.12)] backdrop-blur-sm',
+              '-mt-10 rounded-[30px] border border-primary/14 bg-white/95 p-4 shadow-[0_26px_56px_rgba(44,28,9,0.14)] backdrop-blur-sm',
               floatingCardClassName,
             )}
           >
@@ -90,13 +90,16 @@ export function ResidentHero({
 function ResidentHeroPattern() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute -right-10 top-0 h-36 w-36 rounded-full bg-[radial-gradient(circle,rgba(255,236,185,0.48),rgba(255,236,185,0)_70%)]" />
+      <div className="absolute -left-6 bottom-8 h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.18),rgba(255,255,255,0)_72%)]" />
       <div className="absolute -right-6 top-4 h-24 w-24 rounded-[2rem] bg-white/10" />
       <div className="absolute right-20 top-0 h-20 w-20 rounded-b-full rounded-t-[1.5rem] bg-primary/80" />
       <div className="absolute left-8 top-6 h-16 w-16 rounded-full border-[14px] border-white/18 border-b-transparent border-l-transparent" />
       <div className="absolute left-20 top-16 h-28 w-28 rounded-full bg-white/10" />
       <div className="absolute bottom-6 left-0 h-16 w-32 rounded-r-full bg-white/10" />
       <div className="absolute bottom-0 right-14 h-20 w-20 rounded-t-full bg-white/14" />
-      <div className="absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.08))]" />
+      <div className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),transparent)]" />
+      <div className="absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.1))]" />
     </div>
   );
 }
