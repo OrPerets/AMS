@@ -223,7 +223,7 @@ const AppLayout = () => {
 
 
       {/* Bottom Navigation */}
-      <nav className="bg-white/80 backdrop-blur-xl border-t border-neutral-100 px-6 py-4 flex justify-between items-center z-40">
+      <nav className="bg-white/90 backdrop-blur-xl border-t border-neutral-100 px-2 py-3 flex justify-around items-center z-40 pb-8">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -232,14 +232,20 @@ const AppLayout = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="relative flex flex-col items-center gap-1 group"
+              className="relative flex flex-col items-center gap-1.5 min-w-[64px] transition-all duration-300"
             >
               <div className={cn(
                 "p-2 rounded-xl transition-all duration-300",
-                isActive ? "bg-neutral-900 text-white scale-110 shadow-lg shadow-neutral-900/20" : "text-neutral-400 group-hover:text-neutral-600"
+                isActive ? "bg-neutral-900 text-white scale-110 shadow-lg shadow-neutral-900/20" : "text-neutral-400 hover:text-neutral-600"
               )}>
                 <Icon className="w-5 h-5" />
               </div>
+              <span className={cn(
+                "text-[9px] font-bold uppercase tracking-widest transition-all duration-300",
+                isActive ? "text-neutral-900 opacity-100" : "text-neutral-400 opacity-0"
+              )}>
+                {tab.label}
+              </span>
               {isActive && (
                 <motion.div 
                   layoutId="activeTab"

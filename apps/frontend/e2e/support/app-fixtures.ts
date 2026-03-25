@@ -11,6 +11,17 @@ export type MockScenario = {
   financeFailures?: number;
   settingsFailures?: number;
   financeDelayMs?: number;
+  residentPaymentMethods?: Array<{
+    id: number;
+    provider: string;
+    brand?: string | null;
+    last4?: string | null;
+    expMonth?: number | null;
+    expYear?: number | null;
+    isDefault: boolean;
+    networkTokenized: boolean;
+  }>;
+  residentAutopayEnabled?: boolean;
 };
 
 function createToken(payload: Record<string, unknown>) {
@@ -66,6 +77,11 @@ export async function mockApi(page: Page, scenario: MockScenario = {}) {
   let dashboardFailuresRemaining = scenario.dashboardFailures ?? 0;
   let financeFailuresRemaining = scenario.financeFailures ?? 0;
   let settingsFailuresRemaining = scenario.settingsFailures ?? 0;
+  let residentPaymentMethods =
+    scenario.residentPaymentMethods?.map((method) => ({ ...method })) ?? [
+      { id: 1, provider: 'tranzila', brand: 'Visa', last4: '4242', expMonth: 12, expYear: 2028, isDefault: true, networkTokenized: true },
+    ];
+  let residentAutopayEnabled = scenario.residentAutopayEnabled ?? true;
 
   await page.route('**/api/v1/**', async (route) => {
     const url = new URL(route.request().url());
@@ -610,14 +626,63 @@ export async function mockApi(page: Page, scenario: MockScenario = {}) {
       });
     }
 
-    if (pathname === '/api/v1/payments/methods') {
+    if (pathname.match(/\/api\/v1\/invoices\/\d+\/pay$/) && method === 'POST') {
       return route.fulfill({
-        json: [{ id: 1, provider: 'tranzila', brand: 'Visa', last4: '4242', expMonth: 12, expYear: 2028, isDefault: true, networkTokenized: true }],
+        status: 200,
+        json: {
+          redirectUrl: 'https://payments.example/checkout-session',
+        },
       });
     }
 
-    if (pathname === '/api/v1/payments/autopay') {
-      return route.fulfill({ json: { autopayEnabled: true } });
+    if (pathname === '/api/v1/payments/methods' && method === 'GET') {
+      return route.fulfill({
+        json: residentPaymentMethods,
+      });
+    }
+
+    if (pathname === '/api/v1/payments/methods' && method === 'POST') {
+      const body = route.request().postDataJSON() as Record<string, unknown>;
+      const nextMethod = {
+        id: residentPaymentMethods.length ? Math.max(...residentPaymentMethods.map((method) => method.id)) + 1 : 1,
+        provider: String(body.provider ?? 'tranzila'),
+        brand: body.brand ? String(body.brand) : null,
+        last4: body.last4 ? String(body.last4) : null,
+        expMonth: body.expMonth ? Number(body.expMonth) : null,
+        expYear: body.expYear ? Number(body.expYear) : null,
+        isDefault: Boolean(body.isDefault ?? residentPaymentMethods.length === 0),
+        networkTokenized: Boolean(body.networkTokenized),
+      };
+      residentPaymentMethods = [
+        nextMethod,
+        ...residentPaymentMethods.map((method) => ({ ...method, isDefault: nextMethod.isDefault ? false : method.isDefault })),
+      ];
+      return route.fulfill({ status: 201, json: nextMethod });
+    }
+
+    if (pathname.match(/\/api\/v1\/payments\/methods\/\d+\/default$/) && method === 'PATCH') {
+      const id = Number(pathname.split('/').at(-2));
+      residentPaymentMethods = residentPaymentMethods.map((method) => ({ ...method, isDefault: method.id === id }));
+      return route.fulfill({ status: 200, json: residentPaymentMethods.find((method) => method.id === id) });
+    }
+
+    if (pathname.match(/\/api\/v1\/payments\/methods\/\d+\/remove$/) && method === 'PATCH') {
+      const id = Number(pathname.split('/').at(-2));
+      residentPaymentMethods = residentPaymentMethods.filter((method) => method.id !== id);
+      if (residentPaymentMethods.length > 0 && !residentPaymentMethods.some((method) => method.isDefault)) {
+        residentPaymentMethods[0] = { ...residentPaymentMethods[0], isDefault: true };
+      }
+      return route.fulfill({ status: 200, json: { ok: true } });
+    }
+
+    if (pathname === '/api/v1/payments/autopay' && method === 'GET') {
+      return route.fulfill({ json: { autopayEnabled: residentAutopayEnabled } });
+    }
+
+    if (pathname === '/api/v1/payments/autopay' && method === 'PATCH') {
+      const body = route.request().postDataJSON() as { enabled?: boolean };
+      residentAutopayEnabled = Boolean(body.enabled);
+      return route.fulfill({ status: 200, json: { autopayEnabled: residentAutopayEnabled } });
     }
 
     if (pathname === '/api/v1/communications/resident-requests') {

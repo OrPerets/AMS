@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpLeft, CalendarClock, CheckCircle2, ChevronDown, CreditCard, Download, Receipt, ShieldCheck, WalletCards } from 'lucide-react';
 import { authFetch, downloadAuthenticatedFile, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { cn, formatCurrency, formatDate, humanizeEnum } from '../../lib/utils';
@@ -15,6 +15,7 @@ import { Badge } from '../../components/ui/badge';
 import { Switch } from '../../components/ui/switch';
 import { AmsDrawer } from '../../components/ui/ams-drawer';
 import { AmsTabs } from '../../components/ui/ams-tabs';
+import { ResidentPaymentMethodsPanel, translateResidentCardBrand, type ResidentPaymentMethod } from '../../components/resident/payment-methods-panel';
 import { ResidentHero } from '../../components/resident/resident-hero';
 import { useLocale } from '../../lib/providers';
 import { triggerHaptic } from '../../lib/mobile';
@@ -24,17 +25,6 @@ type AccountContext = {
   user: { id: number; email: string };
   residentId: number | null;
   units: Array<{ id: number; number: string; building: { name: string } }>;
-};
-
-type PaymentMethod = {
-  id: number;
-  provider: string;
-  brand?: string | null;
-  last4?: string | null;
-  expMonth?: number | null;
-  expYear?: number | null;
-  isDefault: boolean;
-  networkTokenized: boolean;
 };
 
 type ResidentFinance = {
@@ -69,32 +59,20 @@ function translateInvoiceStatus(status: string) {
   return labels[status] || humanizeEnum(status);
 }
 
-function translateCardBrand(value?: string | null) {
-  const labels: Record<string, string> = {
-    visa: 'ויזה',
-    mastercard: 'מאסטרקארד',
-    isracard: 'ישראכרט',
-    tranzila: 'טרנזילה',
-    stripe: 'סטרייפ',
-  };
-  if (!value) return 'כרטיס שמור';
-  return labels[value.toLowerCase()] || value;
-}
-
 export default function ResidentPaymentsPage() {
   const router = useRouter();
   const { locale } = useLocale();
   const reducedMotion = useReducedMotion();
   const [context, setContext] = useState<AccountContext | null>(null);
   const [finance, setFinance] = useState<ResidentFinance | null>(null);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<ResidentPaymentMethod[]>([]);
   const [autopayEnabled, setAutopayEnabled] = useState(false);
   const [processingInvoiceId, setProcessingInvoiceId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'open' | 'history' | 'methods'>('open');
   const [paymentDrawerInvoiceId, setPaymentDrawerInvoiceId] = useState<number | null>(null);
-  const [paymentFlowStep, setPaymentFlowStep] = useState<1 | 2>(1);
+  const [paymentFlowStep, setPaymentFlowStep] = useState<1 | 2 | 3>(1);
   const [expandedInvoiceIds, setExpandedInvoiceIds] = useState<number[]>([]);
 
   useEffect(() => {
@@ -156,10 +134,15 @@ export default function ResidentPaymentsPage() {
       const result = await response.json();
 
       if (result.redirectUrl) {
-        window.location.href = result.redirectUrl;
+        setPaymentFlowStep(3);
+        triggerHaptic('success');
+        window.setTimeout(() => {
+          window.location.href = result.redirectUrl;
+        }, reducedMotion ? 120 : 650);
         return;
       }
 
+      setPaymentFlowStep(3);
       toast({
         title: 'נדרש אימות נוסף',
         description: 'נפתח בקרוב טופס תשלום מאובטח להשלמת העסקה.',
@@ -189,6 +172,91 @@ export default function ResidentPaymentsPage() {
     } catch (nextError) {
       console.error(nextError);
       toast({ title: 'עדכון חיוב אוטומטי נכשל', variant: 'destructive' });
+    }
+  }
+
+  async function addPaymentMethod(payload: {
+    provider: string;
+    token: string;
+    brand?: string;
+    last4?: string;
+    expMonth?: number;
+    expYear?: number;
+    networkTokenized?: boolean;
+    isDefault?: boolean;
+  }) {
+    try {
+      const response = await authFetch('/api/v1/payments/methods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      setPaymentMethods((current) => {
+        const nextMethod: ResidentPaymentMethod = {
+          id: Date.now(),
+          provider: payload.provider,
+          brand: payload.brand,
+          last4: payload.last4,
+          expMonth: payload.expMonth,
+          expYear: payload.expYear,
+          networkTokenized: Boolean(payload.networkTokenized),
+          isDefault: payload.isDefault ?? current.length === 0,
+        };
+        return [nextMethod, ...current.map((method) => ({ ...method, isDefault: nextMethod.isDefault ? false : method.isDefault }))];
+      });
+      triggerHaptic('success');
+      toast({
+        title: 'הכרטיס נשמר',
+        description: 'אמצעי התשלום החדש זמין עכשיו במסלול התשלום.',
+      });
+      await loadPage();
+    } catch (nextError) {
+      console.error(nextError);
+      toast({ title: 'שמירת כרטיס נכשלה', variant: 'destructive' });
+      throw nextError;
+    }
+  }
+
+  async function setDefaultCard(id: number) {
+    try {
+      const response = await authFetch(`/api/v1/payments/methods/${id}/default`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      setPaymentMethods((current) => current.map((method) => ({ ...method, isDefault: method.id === id })));
+      toast({ title: 'הכרטיס הראשי עודכן' });
+      await loadPage();
+    } catch (nextError) {
+      console.error(nextError);
+      toast({ title: 'עדכון ברירת המחדל נכשל', variant: 'destructive' });
+      throw nextError;
+    }
+  }
+
+  async function removeCard(id: number) {
+    try {
+      const response = await authFetch(`/api/v1/payments/methods/${id}/remove`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      setPaymentMethods((current) => {
+        const nextMethods = current.filter((method) => method.id !== id);
+        if (nextMethods.length > 0 && !nextMethods.some((method) => method.isDefault)) {
+          nextMethods[0] = { ...nextMethods[0], isDefault: true };
+        }
+        return [...nextMethods];
+      });
+      toast({ title: 'הכרטיס הוסר' });
+      await loadPage();
+    } catch (nextError) {
+      console.error(nextError);
+      toast({ title: 'מחיקת הכרטיס נכשלה', variant: 'destructive' });
+      throw nextError;
     }
   }
 
@@ -225,7 +293,8 @@ export default function ResidentPaymentsPage() {
   const invoiceStack = openInvoices.slice(0, 3);
   const paymentProcessSteps = [
     { step: 1 as const, title: 'סקירה', subtitle: selectedInvoice ? 'חיוב ואמצעי תשלום' : 'בחירת חיוב' },
-    { step: 2 as const, title: 'אישור', subtitle: 'מעבר למסלול הסליקה' },
+    { step: 2 as const, title: 'אישור', subtitle: 'בדיקה אחרונה לפני חיוב' },
+    { step: 3 as const, title: 'מעבר', subtitle: 'פותחים את המסלול המאובטח' },
   ];
 
   function toggleInvoice(invoiceId: number) {
@@ -234,15 +303,15 @@ export default function ResidentPaymentsPage() {
     );
   }
 
-  function openPaymentFlow(invoiceId: number, step: 1 | 2 = 1) {
+  function openPaymentFlow(invoiceId: number, step: 1 | 2 | 3 = 1) {
     setPaymentDrawerInvoiceId(invoiceId);
     setPaymentFlowStep(step);
     triggerHaptic('light');
   }
 
-  function advancePaymentFlow(step: 1 | 2) {
+  function advancePaymentFlow(step: 1 | 2 | 3) {
     setPaymentFlowStep(step);
-    triggerHaptic(step === 2 ? 'warning' : 'light');
+    triggerHaptic(step === 2 ? 'warning' : step === 3 ? 'success' : 'light');
   }
 
   return (
@@ -432,43 +501,16 @@ export default function ResidentPaymentsPage() {
               icon: <CreditCard className="h-4 w-4" strokeWidth={1.75} />,
               content: (
                 <div className="space-y-3">
-                <div className="gold-sheen-surface overflow-hidden rounded-[28px] p-4 shadow-[0_18px_36px_rgba(44,28,9,0.08)]" data-accent-sheen="true">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/72">מצב חשבון</div>
-                      <div className="mt-1 font-semibold text-foreground">חיוב אוטומטי</div>
-                      <div className="mt-1 text-sm text-secondary-foreground">תשלום עתידי דרך הכרטיס הראשי השמור בחשבון.</div>
-                    </div>
-                    <Switch checked={autopayEnabled} onCheckedChange={(checked) => void toggleAutopay(checked)} aria-label="הפעלת חיוב אוטומטי" />
-                  </div>
-                </div>
-
-                {paymentMethods.length ? (
-                  paymentMethods.map((method) => (
-                    <div key={method.id} className="rounded-[26px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] p-4 shadow-[0_14px_28px_rgba(44,28,9,0.05)]">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/68">כרטיס שמור</div>
-                          <div className="mt-1 font-semibold text-foreground">
-                            {translateCardBrand(method.brand || method.provider)} •••• {method.last4 || '••••'}
-                          </div>
-                          <div className="mt-1 text-sm text-secondary-foreground">
-                            תוקף {method.expMonth || '--'}/{method.expYear || '--'}
-                          </div>
-                        </div>
-                        {method.isDefault ? <Badge variant="success">ראשי</Badge> : null}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <EmptyState
-                    type="action"
-                    size="sm"
-                    title="אין כרטיס שמור"
-                    description="אפשר לפנות לתמיכה או להיכנס למסך שיטות תשלום."
-                    action={{ label: 'שיטות תשלום', onClick: () => void router.push('/resident/payment-methods'), variant: 'outline' }}
+                  <ResidentPaymentMethodsPanel
+                    paymentMethods={paymentMethods}
+                    autopayEnabled={autopayEnabled}
+                    primaryBuilding={primaryBuilding}
+                    onToggleAutopay={toggleAutopay}
+                    onAddPaymentMethod={addPaymentMethod}
+                    onSetDefault={setDefaultCard}
+                    onRemove={removeCard}
+                    embedded
                   />
-                )}
                 </div>
               ),
             },
@@ -487,7 +529,7 @@ export default function ResidentPaymentsPage() {
         title="תשלום מאובטח"
         description={
           selectedInvoice
-            ? `${selectedInvoice.description} · ${formatCurrency(selectedInvoice.amount)} · שלב ${paymentFlowStep} מתוך 2`
+            ? `${selectedInvoice.description} · ${formatCurrency(selectedInvoice.amount)} · שלב ${paymentFlowStep} מתוך 3`
             : 'סקירה קצרה ואז מעבר למסלול התשלום המאובטח.'
         }
         headerClassName="text-right"
@@ -505,7 +547,7 @@ export default function ResidentPaymentsPage() {
                     onClose();
                     setPaymentDrawerInvoiceId(null);
                     setPaymentFlowStep(1);
-                    void router.push('/resident/payment-methods');
+                    void router.push('/resident/payment-methods?addCard=1');
                     return;
                   }
                   advancePaymentFlow(2);
@@ -532,76 +574,146 @@ export default function ResidentPaymentsPage() {
                 </Button>
               </>
             ) : null}
-            <Button variant="outline" size="sm" className="w-full rounded-full" onClick={onClose}>
-              בטל
-            </Button>
+            {paymentFlowStep === 3 ? (
+              <Button variant="outline" size="sm" className="w-full rounded-full" onClick={onClose}>
+                סגור
+              </Button>
+            ) : null}
+            {paymentFlowStep !== 3 ? (
+              <Button variant="outline" size="sm" className="w-full rounded-full" onClick={onClose}>
+                בטל
+              </Button>
+            ) : null}
           </div>
         )}
       >
         {selectedInvoice ? (
           <div dir="rtl" className="space-y-3 text-right">
             <PaymentFlowProgress currentStep={paymentFlowStep} items={paymentProcessSteps} />
+            <AnimatePresence initial={false} mode="wait">
+              {paymentFlowStep === 1 ? (
+                <motion.div
+                  key="resident-payment-review"
+                  initial={reducedMotion ? false : { opacity: 0, y: 16 }}
+                  animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+                  exit={reducedMotion ? undefined : { opacity: 0, y: -10 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                  className="space-y-3"
+                >
+                  <div className="overflow-hidden rounded-[24px] border border-[rgba(224,182,89,0.22)] bg-[linear-gradient(180deg,rgba(224,182,89,0.16)_0%,rgba(255,255,255,0.05)_100%)] p-4 shadow-[0_18px_36px_rgba(44,28,9,0.08)]">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#f0d48b]/72">תשלום נבחר</div>
+                        <div className="mt-2 text-lg font-semibold text-inverse-text">{selectedInvoice.description}</div>
+                        <div className="mt-1 text-sm text-white/66">{translateInvoiceStatus(selectedInvoice.status)} · עד {formatDate(selectedInvoice.dueDate, locale)}</div>
+                      </div>
+                      <Badge variant={selectedInvoice.status === 'OVERDUE' ? 'warning' : 'outline'}>{selectedInvoice.status === 'OVERDUE' ? 'בפיגור' : 'מוכן לאישור'}</Badge>
+                    </div>
+                    <div className="mt-4 text-[34px] font-black leading-none tracking-[-0.03em] text-inverse-text">
+                      <bdi>{formatCurrency(selectedInvoice.amount)}</bdi>
+                    </div>
+                  </div>
 
-            {paymentFlowStep === 1 ? (
-              <>
-                <div className="grid grid-cols-2 gap-2">
-                  <QuickMetric label="סכום" value={formatCurrency(selectedInvoice.amount)} />
-                  <QuickMetric label="מועד" value={formatDate(selectedInvoice.dueDate, locale)} />
-                </div>
-                <div className="rounded-[22px] border border-white/10 bg-white/6 p-3.5">
-                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-white/48">סקירת חיוב</div>
-                  <div className="mt-2 text-sm font-semibold text-inverse-text">{selectedInvoice.description}</div>
-                  <div className="mt-1 text-xs leading-5 text-white/64">
-                    {selectedInvoice.status === 'OVERDUE'
-                      ? 'החיוב הזה בפיגור, לכן הוא מופיע כפעולה הראשית במסך.'
-                      : 'זהו החיוב הבא במסלול שלך. אם הכול תקין, ממשיכים ישר לאישור.'}
+                  <div className="grid grid-cols-3 gap-2">
+                    <DrawerSignal label="סטטוס" value={translateInvoiceStatus(selectedInvoice.status)} />
+                    <DrawerSignal label="קבלה" value={selectedInvoice.receiptNumber || 'אחרי תשלום'} />
+                    <DrawerSignal label="דרך" value={primaryMethod ? 'כרטיס שמור' : 'נדרש כרטיס'} />
                   </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <DrawerSignal label="סטטוס" value={translateInvoiceStatus(selectedInvoice.status)} />
-                  <DrawerSignal label="קבלה" value={selectedInvoice.receiptNumber || 'תונפק אחרי תשלום'} />
-                  <DrawerSignal label="דרך" value={primaryMethod ? 'כרטיס שמור' : 'נדרש כרטיס'} />
-                </div>
-                <div className="rounded-[22px] border border-white/10 bg-white/6 p-3.5">
-                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-white/48">אמצעי תשלום</div>
-                  <div className="mt-2 text-sm font-semibold text-inverse-text">
-                    {primaryMethod
-                      ? `${translateCardBrand(primaryMethod.brand || primaryMethod.provider)} •••• ${primaryMethod.last4 || '••••'}`
-                      : 'לא נמצא כרטיס ראשי'}
-                  </div>
-                  <div className="mt-1 text-xs leading-5 text-white/64">
-                    {primaryMethod
-                      ? 'זה הכרטיס שישמש לתשלום. אפשר להחליף רק אם צריך.'
-                      : 'אין כרגע כרטיס ברירת מחדל, ולכן צריך לעבור למסך שיטות תשלום לפני אישור העסקה.'}
-                  </div>
-                </div>
-                <div className="flex items-start justify-between gap-4 rounded-[22px] border border-white/10 bg-white/6 p-3.5">
-                  <div>
-                    <div className="font-semibold text-inverse-text">חיוב אוטומטי</div>
-                    <div className="text-sm text-white/64">אפשר להדליק או לעצור בלי לצאת ממסך התשלום.</div>
-                  </div>
-                  <Switch checked={autopayEnabled} onCheckedChange={(checked) => void toggleAutopay(checked)} aria-label="הפעלת חיוב אוטומטי במסך תשלום" />
-                </div>
-              </>
-            ) : null}
 
-            {paymentFlowStep === 2 ? (
-              <>
-                <div className="rounded-[22px] border border-[rgba(224,182,89,0.22)] bg-[linear-gradient(180deg,rgba(224,182,89,0.16)_0%,rgba(255,255,255,0.04)_100%)] px-3.5 py-3 text-sm text-white/78">
-                  לחיצה על אישור תעביר למסלול התשלום המאובטח של AMS. פרטי הכרטיס לא נשמרים במסך הזה.
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <QuickMetric label="חיוב" value={selectedInvoice.description} />
-                  <QuickMetric label="כרטיס" value={primaryMethod ? `•••• ${primaryMethod.last4 || '••••'}` : 'לא הוגדר'} />
-                </div>
-                <div className="rounded-[22px] border border-white/10 bg-white/6 p-3.5">
-                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-white/48">לפני אישור</div>
-                  <div className="mt-2 text-sm leading-6 text-white/72">
-                    הסכום הסופי הוא <bdi>{formatCurrency(selectedInvoice.amount)}</bdi>, מועד החיוב הוא {formatDate(selectedInvoice.dueDate, locale)}, והמערכת תפתח עבורך את אישור הסליקה מול הספק המאובטח.
+                  <MethodChoiceTile
+                    title={primaryMethod ? `${translateResidentCardBrand(primaryMethod.brand || primaryMethod.provider)} •••• ${primaryMethod.last4 || '••••'}` : 'אין כרטיס ראשי'}
+                    subtitle={
+                      primaryMethod
+                        ? autopayEnabled
+                          ? 'הכרטיס הראשי משמש גם למסלול האוטומטי.'
+                          : 'זה הכרטיס שישמש לתשלום הידני הבא.'
+                        : 'יש לעבור למסך שיטות תשלום כדי להוסיף כרטיס לפני אישור.'
+                    }
+                    badge={primaryMethod ? (autopayEnabled ? 'ראשי + אוטומטי' : 'ראשי') : 'חסר'}
+                    active={Boolean(primaryMethod)}
+                  />
+
+                  <div className="flex items-start justify-between gap-4 rounded-[22px] border border-white/10 bg-white/6 p-3.5">
+                    <div>
+                      <div className="font-semibold text-inverse-text">חיוב אוטומטי</div>
+                      <div className="text-sm text-white/64">אפשר להדליק או לעצור בלי לצאת ממסך התשלום.</div>
+                    </div>
+                    <Switch checked={autopayEnabled} onCheckedChange={(checked) => void toggleAutopay(checked)} aria-label="הפעלת חיוב אוטומטי במסך תשלום" />
                   </div>
-                </div>
-              </>
-            ) : null}
+                </motion.div>
+              ) : null}
+
+              {paymentFlowStep === 2 ? (
+                <motion.div
+                  key="resident-payment-confirm"
+                  initial={reducedMotion ? false : { opacity: 0, y: 16 }}
+                  animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+                  exit={reducedMotion ? undefined : { opacity: 0, y: -10 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                  className="space-y-3"
+                >
+                  <div className="rounded-[22px] border border-[rgba(224,182,89,0.22)] bg-[linear-gradient(180deg,rgba(224,182,89,0.16)_0%,rgba(255,255,255,0.04)_100%)] px-3.5 py-3 text-sm text-white/78">
+                    אישור עכשיו יעביר אותך למסלול התשלום המאובטח של AMS. פרטי הכרטיס לא נשמרים במסך הזה.
+                  </div>
+                  <div className="rounded-[24px] border border-white/10 bg-white/6 p-4">
+                    <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.16em] text-white/48">
+                      <span>סיכום סופי</span>
+                      <span>לפני אישור</span>
+                    </div>
+                    <div className="mt-4 space-y-3">
+                      <div className="flex items-center justify-between text-sm text-white/70">
+                        <span>{selectedInvoice.description}</span>
+                        <bdi className="font-semibold text-inverse-text">{formatCurrency(selectedInvoice.amount)}</bdi>
+                      </div>
+                      <div className="flex items-center justify-between text-sm text-white/70">
+                        <span>מועד חיוב</span>
+                        <span className="font-semibold text-inverse-text">{formatDate(selectedInvoice.dueDate, locale)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm text-white/70">
+                        <span>אמצעי תשלום</span>
+                        <span className="font-semibold text-inverse-text">{primaryMethod ? `•••• ${primaryMethod.last4 || '••••'}` : 'לא הוגדר'}</span>
+                      </div>
+                    </div>
+                    <div className="gold-divider-line mt-4 h-px w-full" />
+                    <div className="mt-4 flex items-center justify-between">
+                      <span className="text-sm text-white/70">סה״כ</span>
+                      <bdi className="text-2xl font-black text-[#f0d48b]">{formatCurrency(selectedInvoice.amount)}</bdi>
+                    </div>
+                  </div>
+                  <MethodChoiceTile
+                    title={primaryMethod ? `${translateResidentCardBrand(primaryMethod.brand || primaryMethod.provider)} •••• ${primaryMethod.last4 || '••••'}` : 'אין כרטיס'}
+                    subtitle="אפשר לחזור שלב אחד אחורה אם צריך לעדכן את אמצעי התשלום לפני החיוב."
+                    badge="מוכן לחיוב"
+                    active
+                  />
+                </motion.div>
+              ) : null}
+
+              {paymentFlowStep === 3 ? (
+                <motion.div
+                  key="resident-payment-redirect"
+                  initial={reducedMotion ? false : { opacity: 0, scale: 0.96 }}
+                  animate={reducedMotion ? undefined : { opacity: 1, scale: 1 }}
+                  exit={reducedMotion ? undefined : { opacity: 0 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                  className="space-y-4"
+                >
+                  <div className="flex flex-col items-center justify-center rounded-[26px] border border-[rgba(224,182,89,0.22)] bg-[linear-gradient(180deg,rgba(224,182,89,0.18)_0%,rgba(255,255,255,0.05)_100%)] px-5 py-8 text-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(224,182,89,0.18)] text-[#f0d48b]">
+                      <CheckCircle2 className="h-8 w-8" strokeWidth={1.9} />
+                    </div>
+                    <div className="mt-4 text-lg font-semibold text-inverse-text">מעבירים אותך למסלול המאובטח</div>
+                    <div className="mt-2 max-w-[18rem] text-sm leading-6 text-white/64">
+                      הסכום אומת והמערכת פותחת את אישור הסליקה עבור {selectedInvoice.description}.
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <QuickMetric label="סה״כ" value={formatCurrency(selectedInvoice.amount)} />
+                    <QuickMetric label="כרטיס" value={primaryMethod ? `•••• ${primaryMethod.last4 || '••••'}` : 'לא הוגדר'} />
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </div>
         ) : null}
       </AmsDrawer>
@@ -692,6 +804,35 @@ function DrawerSignal({ label, value }: { label: string; value: string }) {
     <div className="rounded-[18px] border border-white/10 bg-white/6 px-3 py-2.5 text-right">
       <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/48">{label}</div>
       <div className="mt-1 text-[13px] font-semibold text-inverse-text">{value}</div>
+    </div>
+  );
+}
+
+function MethodChoiceTile({
+  title,
+  subtitle,
+  badge,
+  active,
+}: {
+  title: string;
+  subtitle: string;
+  badge: string;
+  active: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-[22px] border p-3.5',
+        active ? 'border-[rgba(224,182,89,0.24)] bg-[rgba(224,182,89,0.12)]' : 'border-white/10 bg-white/6',
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold text-inverse-text">{title}</div>
+          <div className="mt-1 text-xs leading-5 text-white/64">{subtitle}</div>
+        </div>
+        <div className="rounded-full border border-white/12 bg-white/8 px-2.5 py-1 text-[10px] font-semibold text-white/74">{badge}</div>
+      </div>
     </div>
   );
 }

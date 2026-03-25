@@ -1,59 +1,42 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { CreditCard, ShieldCheck } from 'lucide-react';
+import { useRouter } from 'next/router';
+import { CreditCard } from 'lucide-react';
 import { authFetch } from '../../lib/auth';
-import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { EmptyState } from '../../components/ui/empty-state';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
 import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
-import { Switch } from '../../components/ui/switch';
 import { toast } from '../../components/ui/use-toast';
 import { triggerHaptic } from '../../lib/mobile';
+import { ResidentPaymentMethodsPanel, translateResidentCardBrand, type ResidentPaymentMethod } from '../../components/resident/payment-methods-panel';
 
 type AccountContext = {
   units: Array<{ id: number; number: string; building: { name: string } }>;
 };
 
-type PaymentMethod = {
-  id: number;
-  provider: string;
-  brand?: string | null;
-  last4?: string | null;
-  expMonth?: number | null;
-  expYear?: number | null;
-  isDefault: boolean;
-  networkTokenized: boolean;
-};
-
-function translateCardBrand(value?: string | null) {
-  const labels: Record<string, string> = {
-    visa: 'ויזה',
-    mastercard: 'מאסטרקארד',
-    ישראכרט: 'ישראכרט',
-    isracard: 'ישראכרט',
-    amex: 'אמריקן אקספרס',
-    diners: 'דיינרס',
-    tranzila: 'טרנזילה',
-    stripe: 'סטרייפ',
-  };
-  if (!value) return 'כרטיס שמור';
-  return labels[value.toLowerCase()] || value;
-}
-
 export default function ResidentPaymentMethodsPage() {
+  const router = useRouter();
   const [context, setContext] = useState<AccountContext | null>(null);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<ResidentPaymentMethod[]>([]);
   const [autopayEnabled, setAutopayEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [autoOpenAddFlow, setAutoOpenAddFlow] = useState(false);
 
   useEffect(() => {
     void loadPage();
   }, []);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (router.query.addCard === '1') {
+      setAutoOpenAddFlow(true);
+      void router.replace('/resident/payment-methods', undefined, { shallow: true });
+    }
+  }, [router.isReady, router.query.addCard]);
 
   async function loadPage() {
     try {
@@ -84,6 +67,33 @@ export default function ResidentPaymentMethodsPage() {
     }
   }
 
+  async function addPaymentMethod(payload: {
+    provider: string;
+    token: string;
+    brand?: string;
+    last4?: string;
+    expMonth?: number;
+    expYear?: number;
+    networkTokenized?: boolean;
+    isDefault?: boolean;
+  }) {
+    const response = await authFetch('/api/v1/payments/methods', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      toast({ title: 'שמירת כרטיס נכשלה', variant: 'destructive' });
+      throw new Error(await response.text());
+    }
+    await loadPage();
+    triggerHaptic('success');
+    toast({
+      title: 'הכרטיס נשמר',
+      description: 'אמצעי התשלום החדש נוסף לחשבון הדייר.',
+    });
+  }
+
   async function setDefaultCard(id: number) {
     const response = await authFetch(`/api/v1/payments/methods/${id}/default`, {
       method: 'PATCH',
@@ -95,6 +105,7 @@ export default function ResidentPaymentMethodsPage() {
       return;
     }
     await loadPage();
+    toast({ title: 'הכרטיס הראשי עודכן' });
   }
 
   async function removeCard(id: number) {
@@ -108,6 +119,7 @@ export default function ResidentPaymentMethodsPage() {
       return;
     }
     await loadPage();
+    toast({ title: 'הכרטיס הוסר' });
   }
 
   async function toggleAutopay(enabled: boolean) {
@@ -150,11 +162,11 @@ export default function ResidentPaymentMethodsPage() {
 
         <PrimaryActionCard
           eyebrow="כרטיס ראשי"
-          title={defaultMethod ? `${translateCardBrand(defaultMethod.brand || defaultMethod.provider)} •••• ${defaultMethod.last4 || '••••'}` : 'אין עדיין כרטיס שמור'}
-          description={defaultMethod ? 'אפשר לעדכן ברירת מחדל, להסיר כרטיסים או להפעיל חיוב אוטומטי במסך הזה.' : 'כדי להוסיף כרטיס חדש אפשר ליצור קשר עם צוות הגבייה.'}
-          ctaLabel={defaultMethod ? 'עבור לתשלומים' : 'פנה לתמיכה'}
-          href={defaultMethod ? '/payments/resident' : '/support'}
-          tone={defaultMethod ? 'default' : 'warning'}
+          title={defaultMethod ? `${translateResidentCardBrand(defaultMethod.brand || defaultMethod.provider)} •••• ${defaultMethod.last4 || '••••'}` : 'הוסף כרטיס ראשון'}
+          description={defaultMethod ? 'אפשר לעדכן ברירת מחדל, להסיר כרטיסים ולהפעיל חיוב אוטומטי מתוך המסלול החדש.' : 'פתחנו מסלול קצר להוספת כרטיס חדש ישירות מהמובייל.'}
+          ctaLabel={defaultMethod ? 'עבור לתשלומים' : 'הוסף כרטיס'}
+          href={defaultMethod ? '/payments/resident' : '/resident/payment-methods?addCard=1'}
+          tone="default"
         />
       </div>
 
@@ -170,64 +182,22 @@ export default function ResidentPaymentMethodsPage() {
       <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
         <Card variant="elevated">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-              חיוב אוטומטי ואמצעי תשלום
-            </CardTitle>
-            <CardDescription>איך הכרטיס נשמר ומתי המערכת תחייב אוטומטית.</CardDescription>
+            <CardTitle>חיוב אוטומטי ואמצעי תשלום</CardTitle>
+            <CardDescription>ניהול כרטיסים שמורים מתוך המובייל, עם מסלול קצר להוספת כרטיס חדש.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-[22px] border border-subtle-border bg-muted/30 p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="font-semibold text-foreground">חיוב אוטומטי</div>
-                  <div className="text-sm leading-6 text-muted-foreground">
-                    כשהאפשרות פעילה, חשבוניות עתידיות יחויבו דרך הכרטיס הראשי שנשמר אצל ספק הסליקה.
-                  </div>
-                  <div className="text-xs text-tertiary">אפשר להשהות בכל רגע. פרטי הכרטיס המלאים אינם נשמרים במסך הזה.</div>
-                </div>
-                <Switch checked={autopayEnabled} onCheckedChange={(checked) => void toggleAutopay(checked)} aria-label="הפעלת חיוב אוטומטי" />
-              </div>
-            </div>
-
-            {paymentMethods.length ? (
-              <div className="space-y-3">
-                {paymentMethods.map((method) => (
-                  <div key={method.id} className="rounded-[22px] border border-subtle-border bg-background p-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="space-y-1">
-                        <div className="font-semibold text-foreground">
-                          {translateCardBrand(method.brand || method.provider)} •••• {method.last4 || '••••'}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          תוקף {method.expMonth || '--'}/{method.expYear || '--'}{method.networkTokenized ? ' · נשמר בצורה מאובטחת' : ''}
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {method.isDefault ? (
-                          <Badge variant="success">כרטיס ראשי</Badge>
-                        ) : (
-                          <Button size="sm" variant="outline" onClick={() => void setDefaultCard(method.id)}>
-                            קבע כברירת מחדל
-                          </Button>
-                        )}
-                        <Button size="sm" variant="outline" onClick={() => void removeCard(method.id)}>
-                          הסר
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                type="action"
-                size="sm"
-                title="עדיין אין כרטיס שמור"
-                description="כדי להפעיל חיוב אוטומטי בצורה מאובטחת נדרש קודם להוסיף אמצעי תשלום דרך הטופס המאובטח של צוות הגבייה."
-                action={{ label: 'פתח פנייה לצוות', onClick: () => window.location.assign('/support'), variant: 'outline' }}
-              />
-            )}
+            <ResidentPaymentMethodsPanel
+              paymentMethods={paymentMethods}
+              autopayEnabled={autopayEnabled}
+              primaryBuilding={primaryBuilding}
+              autoOpenAddFlow={autoOpenAddFlow}
+              onAutoOpenHandled={() => setAutoOpenAddFlow(false)}
+              onToggleAutopay={toggleAutopay}
+              onAddPaymentMethod={addPaymentMethod}
+              onSetDefault={setDefaultCard}
+              onRemove={removeCard}
+              embedded
+            />
           </CardContent>
         </Card>
 
