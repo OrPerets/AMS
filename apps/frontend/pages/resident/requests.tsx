@@ -20,7 +20,6 @@ import { PullToRefreshIndicator } from '../../components/ui/pull-to-refresh-indi
 import { SectionHeader } from '../../components/ui/section-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { StatusBadge } from '../../components/ui/status-badge';
-import { AmsDisclosure } from '../../components/ui/ams-disclosure';
 import { AmsDrawer } from '../../components/ui/ams-drawer';
 import { AmsSegmentedChoice } from '../../components/ui/ams-segmented-choice';
 import { AmsTabs } from '../../components/ui/ams-tabs';
@@ -110,7 +109,7 @@ export default function ResidentRequestsPage() {
   const [formTouched, setFormTouched] = useState<Record<string, boolean>>({});
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
+  const [formStep, setFormStep] = useState<1 | 2>(1);
   const [composerOpen, setComposerOpen] = useState(false);
   const [draftAttachment, setDraftAttachment] = useState<File | null>(null);
   const [submittedRequestKey, setSubmittedRequestKey] = useState<string | null>(null);
@@ -288,8 +287,7 @@ export default function ResidentRequestsPage() {
   const submittedTypeDescription = getRequestExpectations(submittedRequestType || form.requestType);
   const stepSummaries = [
     { id: 1, label: 'סוג בקשה' },
-    { id: 2, label: 'פרטים' },
-    { id: 3, label: 'אישור' },
+    { id: 2, label: 'פרטים ואישור' },
   ] as const;
   const fieldLabels = {
     subject: 'נושא',
@@ -297,7 +295,7 @@ export default function ResidentRequestsPage() {
     requestedDate: 'תאריך מבוקש',
   };
 
-  function openComposer(nextStep: 1 | 2 | 3 = 1) {
+  function openComposer(nextStep: 1 | 2 = 1) {
     setComposerOpen(true);
     setFormStep(nextStep);
     setSubmitError(null);
@@ -308,18 +306,9 @@ export default function ResidentRequestsPage() {
     setComposerOpen(false);
   }
 
-  function advanceComposer(nextStep: 1 | 2 | 3) {
+  function advanceComposer(nextStep: 1 | 2) {
     triggerHaptic('light');
     setFormStep(nextStep);
-  }
-
-  function continueToConfirmation() {
-    setFormSubmitted(true);
-    if (formErrors.subject || formErrors.message || (form.requestType === 'MOVING' && formErrors.requestedDate)) {
-      toast({ title: 'יש להשלים את שדות החובה לפני האישור', variant: 'destructive' });
-      return;
-    }
-    advanceComposer(3);
   }
 
   return (
@@ -503,31 +492,11 @@ export default function ResidentRequestsPage() {
 
       {view === 'new' ? (
         <>
-          <PrimaryActionCard
-            eyebrow="שלושה שלבים קצרים"
-            title="פתיחת בקשה ברורה ומהירה"
-            description="סוג הבקשה, הפרטים החשובים, ואז אישור קצר עם צפי הטיפול לפני השליחה."
-            ctaLabel="פתח מסלול בקשה"
-            onClick={() => {
-              setSubmittedRequestKey(null);
-              setSubmittedRequestType(null);
-              openComposer(1);
-            }}
-            tone="default"
-            visualStyle="resident"
-            secondaryAction={
-              <div className="flex flex-wrap items-center gap-2 text-xs text-secondary-foreground">
-                <span>זמן תגובה: {selectedTypeDescription.responseWindow}</span>
-                <span>מטפל: {selectedTypeDescription.owner}</span>
-              </div>
-            }
-          />
-
           <Card variant="elevated">
             <CardContent className="space-y-4 p-4">
               <SectionHeader
-                title="מה אפשר לפתוח מכאן"
-                subtitle="כל המסלולים זמינים באותו מסך, עם הסברים קצרים לפני כניסה."
+                title="פתח בקשה חדשה"
+                subtitle="בוחרים מסלול, מוסיפים רק את הפרטים החשובים, ושולחים."
                 meta={`${requestTypes.length} מסלולים`}
               />
               <div className="grid gap-3 min-[390px]:grid-cols-2">
@@ -578,7 +547,7 @@ export default function ResidentRequestsPage() {
           else setComposerOpen(true);
         }}
         title="בקשה חדשה"
-        description="מסלול קצר לדיירים עם שלבים ברורים וצפי טיפול לפני השליחה."
+        description="בחירת מסלול, כמה פרטים חשובים, ושליחה מהירה עם צפי טיפול."
         headerClassName="text-right"
         bodyClassName="text-right"
         footer={(onClose) => (
@@ -590,21 +559,11 @@ export default function ResidentRequestsPage() {
             ) : null}
             {formStep === 2 ? (
               <>
-                <Button type="button" size="lg" className="w-full" onClick={continueToConfirmation}>
-                  מעבר לאישור
+                <Button type="button" size="lg" className="w-full" onClick={submitRequest} disabled={submitting}>
+                  {submitting ? 'שולח...' : 'שלח בקשה'}
                 </Button>
                 <Button type="button" variant="outline" className="w-full rounded-full" onClick={() => advanceComposer(1)}>
                   חזרה לסוג הבקשה
-                </Button>
-              </>
-            ) : null}
-            {formStep === 3 ? (
-              <>
-                <Button type="button" size="lg" className="w-full" onClick={submitRequest} disabled={submitting}>
-                  {submitting ? 'שולח...' : 'אישור ושליחה'}
-                </Button>
-                <Button type="button" variant="outline" className="w-full rounded-full" onClick={() => advanceComposer(2)}>
-                  ערוך פרטים
                 </Button>
               </>
             ) : null}
@@ -788,6 +747,25 @@ export default function ResidentRequestsPage() {
                 onFileSelect={setDraftAttachment}
               />
 
+              <div className="space-y-3 rounded-[24px] border border-white/10 bg-white/6 p-4">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-white/56">לפני שליחה</div>
+                  <div className="mt-1 text-lg font-semibold text-inverse-text">{selectedTypeDescription.nextStep}</div>
+                  <div className="mt-1 text-sm leading-6 text-white/72">{selectedTypeDescription.afterSubmit}</div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <ReviewTile label="נושא" value={form.subject || 'לא הוזן'} />
+                  <ReviewTile label="צפי טיפול" value={selectedTypeDescription.responseWindow} />
+                  <ReviewTile label="מטפל" value={selectedTypeDescription.owner} />
+                  <ReviewTile label="קובץ עזר" value={draftAttachment?.name || 'ללא קובץ'} />
+                </div>
+
+                <div className="rounded-[22px] border border-subtle-border bg-background px-4 py-3 text-sm leading-6 text-secondary-foreground">
+                  {form.message || 'לא הוזנו פרטים.'}
+                </div>
+              </div>
+
               {submitError ? (
                 <InlineErrorPanel
                   title="לא הצלחנו לשלוח את הבקשה"
@@ -795,46 +773,6 @@ export default function ResidentRequestsPage() {
                   onRetry={submitRequest}
                 />
               ) : null}
-            </div>
-          ) : null}
-
-          {formStep === 3 ? (
-            <div className="space-y-4">
-              <div className="rounded-[24px] border border-white/10 bg-white/6 p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-white/56">לפני שליחה</div>
-                <div className="mt-1 text-lg font-semibold text-inverse-text">{activeType.label}</div>
-                <div className="mt-1 text-sm leading-6 text-white/72">{selectedTypeDescription.afterSubmit}</div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <ReviewTile label="נושא" value={form.subject || 'לא הוזן'} />
-                <ReviewTile label="צפי טיפול" value={selectedTypeDescription.responseWindow} />
-                <ReviewTile label="מטפל" value={selectedTypeDescription.owner} />
-                <ReviewTile label="קובץ עזר" value={draftAttachment?.name || 'ללא קובץ'} />
-              </div>
-
-              <div className="rounded-[22px] border border-subtle-border bg-background px-4 py-3 text-sm leading-6 text-secondary-foreground">
-                {form.message || 'לא הוזנו פרטים.'}
-              </div>
-
-              <AmsDisclosure
-                selectionMode="single"
-                defaultExpandedKeys={['after-submit']}
-                items={[
-                  {
-                    key: 'after-submit',
-                    title: 'מה קורה אחרי השליחה',
-                    subtitle: selectedTypeDescription.nextStep,
-                    content: (
-                      <div className="space-y-2">
-                        <div>מטפל: {selectedTypeDescription.owner}</div>
-                        <div>זמן תגובה משוער: {selectedTypeDescription.responseWindow}</div>
-                        <div>{selectedTypeDescription.afterSubmit}</div>
-                      </div>
-                    ),
-                  },
-                ]}
-              />
             </div>
           ) : null}
         </div>
@@ -1073,8 +1011,8 @@ function RequestFlowProgress({
   currentStep,
   items,
 }: {
-  currentStep: 1 | 2 | 3;
-  items: ReadonlyArray<{ id: 1 | 2 | 3; label: string }>;
+  currentStep: 1 | 2;
+  items: ReadonlyArray<{ id: 1 | 2; label: string }>;
 }) {
   return (
     <div className="rounded-[22px] border border-white/10 bg-white/6 p-3">
