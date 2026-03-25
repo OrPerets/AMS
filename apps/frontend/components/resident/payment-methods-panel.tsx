@@ -48,7 +48,7 @@ type ResidentPaymentMethodsPanelProps = {
 type AddCardStep = 1 | 2 | 3;
 
 const inputClassName =
-  'h-12 rounded-[18px] border-white/10 bg-white/6 text-right text-inverse-text placeholder:text-white/38 focus-visible:ring-[rgba(224,182,89,0.35)] focus-visible:ring-offset-0';
+  'h-12 rounded-[18px] border-subtle-border bg-white text-right text-foreground placeholder:text-muted-foreground focus-visible:ring-[rgba(224,182,89,0.28)] focus-visible:ring-offset-0';
 
 function inferBrand(cardNumber: string) {
   const sanitized = cardNumber.replace(/\D/g, '');
@@ -367,7 +367,8 @@ export function ResidentPaymentMethodsPanel({
         isOpen={drawerOpen}
         onOpenChange={setDrawerOpen}
         title="הוספת כרטיס חדש"
-        description={step === 1 ? 'בחירת מסלול ותצוגה מוקדמת לפני שמירה.' : step === 2 ? 'בדיקה מהירה ואישור לכרטיס הראשי.' : 'הכרטיס נשמר בהצלחה.'}
+        description={step === 1 ? 'פרטים קצרים לפני שמירה.' : step === 2 ? 'בדיקה אחרונה.' : 'הכרטיס נשמר.'}
+        tone="light"
       >
         <div dir="rtl" className="space-y-4 text-right">
           <PaymentFlowRail currentStep={step} />
@@ -382,14 +383,14 @@ export function ResidentPaymentMethodsPanel({
                 transition={{ duration: 0.22, ease: 'easeOut' }}
                 className="space-y-4"
               >
-                <div className="overflow-hidden rounded-[24px] border border-[rgba(224,182,89,0.2)] bg-[linear-gradient(180deg,rgba(224,182,89,0.14)_0%,rgba(255,255,255,0.04)_100%)] p-4">
+                <div className="overflow-hidden rounded-[24px] border border-primary/16 bg-[linear-gradient(180deg,rgba(255,249,240,0.98)_0%,rgba(255,255,255,0.96)_100%)] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#f0d48b]/72">נתיב תשלום</div>
-                      <div className="mt-1 text-lg font-semibold text-inverse-text">כרטיס חדש למסלול התשלום</div>
-                      <div className="mt-1 text-sm leading-6 text-white/64">הכרטיס יופיע במסך התשלום ויוכל להפוך לברירת המחדל מיד אחרי השמירה.</div>
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">כרטיס חדש</div>
+                      <div className="mt-1 text-lg font-semibold text-foreground">נשמר ישירות לחשבון</div>
+                      <div className="mt-1 text-sm leading-6 text-secondary-foreground">מופיע מיד במסך התשלומים.</div>
                     </div>
-                    <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-[rgba(224,182,89,0.14)] text-[#f0d48b]">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-primary/10 text-primary">
                       <WalletCards className="h-5 w-5" strokeWidth={1.85} />
                     </div>
                   </div>
@@ -402,11 +403,11 @@ export function ResidentPaymentMethodsPanel({
 
                 <div className="grid gap-3">
                   <label className="space-y-2">
-                    <span className="text-sm font-medium text-inverse-text">שם בעל הכרטיס</span>
+                    <span className="text-sm font-medium text-foreground">שם בעל הכרטיס</span>
                     <Input value={holderName} onChange={(event) => setHolderName(event.target.value)} placeholder="לדוגמה: Or Peretz" className={inputClassName} dir="ltr" />
                   </label>
                   <label className="space-y-2">
-                    <span className="text-sm font-medium text-inverse-text">מספר כרטיס</span>
+                    <span className="text-sm font-medium text-foreground">מספר כרטיס</span>
                     <Input
                       value={cardNumber}
                       onChange={(event) => setCardNumber(formatCardNumber(event.target.value))}
@@ -417,7 +418,7 @@ export function ResidentPaymentMethodsPanel({
                     />
                   </label>
                   <label className="space-y-2">
-                    <span className="text-sm font-medium text-inverse-text">תוקף</span>
+                    <span className="text-sm font-medium text-foreground">תוקף</span>
                     <Input
                       value={expiry}
                       onChange={(event) => setExpiry(formatExpiry(event.target.value))}
@@ -429,12 +430,12 @@ export function ResidentPaymentMethodsPanel({
                   </label>
                 </div>
 
-                {cardError ? <div className="rounded-[18px] border border-destructive/30 bg-destructive/12 px-3.5 py-3 text-sm text-destructive-foreground">{cardError}</div> : null}
+                {cardError ? <div className="rounded-[18px] border border-destructive/20 bg-destructive/10 px-3.5 py-3 text-sm text-destructive">{cardError}</div> : null}
 
-                <div className="flex items-start justify-between gap-4 rounded-[22px] border border-white/10 bg-white/6 p-3.5">
+                <div className="flex items-start justify-between gap-4 rounded-[22px] border border-subtle-border bg-background/90 p-3.5">
                   <div>
-                    <div className="font-semibold text-inverse-text">שמור כברירת מחדל</div>
-                    <div className="text-sm text-white/60">הכרטיס ישמש לחיוב הבא ולמסלול האוטומטי אם הוא פעיל.</div>
+                    <div className="font-semibold text-foreground">שמור כברירת מחדל</div>
+                    <div className="text-sm text-secondary-foreground">ישמש לחיוב הבא אם החיוב האוטומטי פעיל.</div>
                   </div>
                   <Switch checked={markAsDefault} onCheckedChange={setMarkAsDefault} aria-label="שמירה כברירת מחדל" />
                 </div>
@@ -454,14 +455,14 @@ export function ResidentPaymentMethodsPanel({
                 transition={{ duration: 0.22, ease: 'easeOut' }}
                 className="space-y-4"
               >
-                <div className="overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.02)_100%)] p-4">
+                <div className="overflow-hidden rounded-[24px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#f0d48b]/72">אישור שמירה</div>
-                      <div className="mt-2 text-lg font-semibold text-inverse-text">
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">אישור</div>
+                      <div className="mt-2 text-lg font-semibold text-foreground">
                         {translateResidentCardBrand(inferredBrand)} •••• {last4 || '••••'}
                       </div>
-                      <div className="mt-1 text-sm text-white/60">
+                      <div className="mt-1 text-sm text-secondary-foreground">
                         {holderName || 'שם בעל הכרטיס'} · תוקף {expiry || '--/--'}
                       </div>
                     </div>
@@ -473,14 +474,14 @@ export function ResidentPaymentMethodsPanel({
                   </div>
                 </div>
 
-                <div className="rounded-[22px] border border-[rgba(224,182,89,0.22)] bg-[linear-gradient(180deg,rgba(224,182,89,0.16)_0%,rgba(255,255,255,0.04)_100%)] px-3.5 py-3 text-sm leading-6 text-white/76">
-                  אחרי האישור, הכרטיס יתווסף לרשימת אמצעי התשלום במסך הזה ויהיה זמין לחיוב הבא במסלול התשלום.
+                <div className="rounded-[22px] border border-primary/16 bg-primary/6 px-3.5 py-3 text-sm leading-6 text-secondary-foreground">
+                  אחרי האישור הכרטיס יתווסף לרשימה ויהיה זמין לתשלום הבא.
                 </div>
 
                 <Button size="lg" className="min-h-[52px] w-full" loading={addPending} onClick={() => void handleSaveCard()}>
                   אישור ושמירת כרטיס
                 </Button>
-                <Button variant="outline" size="sm" className="w-full rounded-full border-white/12 bg-white/6 text-white/78 hover:bg-white/10 hover:text-white" onClick={() => setStep(1)}>
+                <Button variant="outline" size="sm" className="w-full rounded-full" onClick={() => setStep(1)}>
                   חזרה לעריכה
                 </Button>
               </motion.div>
@@ -499,8 +500,8 @@ export function ResidentPaymentMethodsPanel({
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success/18 text-success">
                     <CheckCircle2 className="h-8 w-8" strokeWidth={1.9} />
                   </div>
-                  <div className="mt-4 text-lg font-semibold text-inverse-text">הכרטיס נשמר</div>
-                  <div className="mt-2 max-w-[18rem] text-sm leading-6 text-white/64">הוא נוסף לאזור התשלומים, ויופיע מיידית במסלול החיוב של הדייר.</div>
+                  <div className="mt-4 text-lg font-semibold text-foreground">הכרטיס נשמר</div>
+                  <div className="mt-2 max-w-[18rem] text-sm leading-6 text-secondary-foreground">זמין עכשיו במסך התשלומים.</div>
                 </div>
                 <Button size="lg" className="min-h-[52px] w-full" onClick={() => setDrawerOpen(false)}>
                   חזרה לשיטות התשלום
@@ -584,13 +585,13 @@ function PaymentFlowRail({ currentStep }: { currentStep: AddCardStep }) {
             key={item.step}
             className={cn(
               'rounded-[18px] border px-3 py-2.5',
-              active || complete ? 'border-[rgba(224,182,89,0.28)] bg-[rgba(224,182,89,0.12)]' : 'border-white/10 bg-white/6',
+              active || complete ? 'border-primary/18 bg-primary/8' : 'border-subtle-border bg-background/90',
             )}
           >
-            <div className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', active || complete ? 'text-[#f0d48b]' : 'text-white/42')}>
+            <div className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', active || complete ? 'text-primary' : 'text-muted-foreground')}>
               {complete ? 'בוצע' : `שלב ${item.step}`}
             </div>
-            <div className="mt-1 text-sm font-semibold text-inverse-text">{item.title}</div>
+            <div className="mt-1 text-sm font-semibold text-foreground">{item.title}</div>
           </div>
         );
       })}
@@ -600,9 +601,9 @@ function PaymentFlowRail({ currentStep }: { currentStep: AddCardStep }) {
 
 function DrawerMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[18px] border border-white/10 bg-white/6 px-3 py-3 text-right">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/42">{label}</div>
-      <div className="mt-1 text-sm font-semibold text-inverse-text">{value}</div>
+    <div className="rounded-[18px] border border-subtle-border bg-background/90 px-3 py-3 text-right">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-foreground">{value}</div>
     </div>
   );
 }

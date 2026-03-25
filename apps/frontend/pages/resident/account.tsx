@@ -171,9 +171,9 @@ export default function ResidentAccountPage() {
 
     if (newestNotification) {
       return {
-        eyebrow: 'עדכון חדש',
-        title: newestNotification.title,
-        description: newestNotification.message,
+        eyebrow: 'מרכז עדכונים',
+        title: unreadNotifications.length > 1 ? `${unreadNotifications.length} עדכונים חדשים` : newestNotification.title,
+        description: unreadNotifications.length > 1 ? 'כל ההתראות והאישורים מרוכזים במסך אחד.' : newestNotification.message,
         ctaLabel: 'פתח עדכונים',
         href: '/notifications',
         tone: 'default' as const,
@@ -225,7 +225,7 @@ export default function ResidentAccountPage() {
             value: unreadNotifications.length,
             description: unreadNotifications.length ? 'עדכונים חדשים מחכים לעיון.' : 'אין כרגע משהו דחוף לטפל בו.',
             progress: unreadNotifications.length ? 44 : 100,
-        tone: unreadNotifications.length ? ('default' as const) : ('success' as const),
+            tone: unreadNotifications.length ? ('default' as const) : ('success' as const),
           };
   const actionItems = [
     {
@@ -297,7 +297,7 @@ export default function ResidentAccountPage() {
       hint: unreadNotifications.length ? 'פתח מרכז עדכונים' : 'כל ההתראות נקראו',
     },
   ];
-  const updatesPreview = newestNotification?.message || 'כל ההתראות, האישורים והעדכונים האחרונים מרוכזים במסך אחד.';
+  const updatesPreview = newestNotification?.message || 'כל העדכונים מרוכזים במקום אחד.';
 
   useEffect(() => {
     if (!loading && context) {
@@ -445,33 +445,6 @@ export default function ResidentAccountPage() {
         </ResidentHero>
       </motion.section>
 
-      <motion.section
-        initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-        animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-        transition={{ duration: 0.34, delay: reducedMotion ? 0 : 0.04, ease: 'easeOut' }}
-        className="grid gap-3"
-      >
-        <div className="rounded-[26px] border border-divider/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)] px-4 py-4 shadow-[0_12px_24px_rgba(44,28,9,0.05)]">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-[11px] font-semibold tracking-[0.16em] text-primary/70">היום במסך</div>
-              <div className="mt-1 text-[18px] font-semibold text-foreground">
-                {newestNotification?.title || newestDocument?.name || (primaryBuilding ? primaryBuilding.name : 'החשבון מעודכן')}
-              </div>
-              <div className="mt-1 text-[13px] leading-5 text-secondary-foreground">
-                {newestNotification?.message || (newestDocument ? `מסמך חדש עלה ב-${formatDate(newestDocument.uploadedAt, locale)}.` : primaryBuilding?.address || 'אין כרגע משהו דחוף, אז אפשר להתקדם ישירות לפעולה שצריך.')}
-              </div>
-            </div>
-            <Button variant="outline" size="sm" className="shrink-0 rounded-full px-3 text-[12px]" asChild>
-              <Link href={newestNotification ? '/notifications' : newestDocument ? '/documents' : primaryBuilding ? '/resident/building' : '/resident/requests?view=new'}>
-                פתח
-                <ArrowUpRight className="icon-directional ms-1 h-3.5 w-3.5" strokeWidth={1.8} />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </motion.section>
-
       <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-4">
           <motion.section
@@ -482,7 +455,7 @@ export default function ResidentAccountPage() {
           >
             <div className="mb-3">
               <h2 className="text-[18px] font-semibold text-foreground">המשך מהיר</h2>
-              <div className="mt-1 text-[12px] text-secondary-foreground">מעט מסלולים, כל אחד עושה דבר אחד ברור.</div>
+              <div className="mt-1 text-[12px] text-secondary-foreground">מסלולים קצרים וברורים.</div>
             </div>
             <div className="space-y-2.5">
               {actionItems.map((item) => {
@@ -547,7 +520,7 @@ export default function ResidentAccountPage() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="text-[15px] font-semibold text-foreground">
-                    {newestNotification?.title || (unreadNotifications.length ? labels.updatesReady.replace('{{count}}', String(unreadNotifications.length)) : labels.updatesClear)}
+                    {unreadNotifications.length ? labels.updatesReady.replace('{{count}}', String(unreadNotifications.length)) : labels.updatesClear}
                   </div>
                   <div className="mt-0.5 text-[13px] leading-5 text-secondary-foreground">
                     {updatesPreview}
@@ -614,26 +587,26 @@ function HeroSignalChip({
 }) {
   const toneClass =
     tone === 'warning'
-      ? 'border-warning/18 bg-warning/10'
+      ? 'border-warning/18 bg-[linear-gradient(180deg,rgba(255,248,236,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
       : tone === 'success'
-        ? 'border-success/18 bg-success/10'
+        ? 'border-success/18 bg-[linear-gradient(180deg,rgba(244,252,247,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
         : tone === 'info'
-          ? 'border-info/18 bg-info/10'
-          : 'border-white/12 bg-white/8';
+          ? 'border-info/18 bg-[linear-gradient(180deg,rgba(242,248,255,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
+          : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.94)_100%)]';
 
   return (
     <Link
       href={href}
       className={cn(
-        'rounded-[20px] border px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-sm transition hover:-translate-y-0.5',
+        'rounded-[20px] border px-3 py-3 shadow-[0_12px_24px_rgba(44,28,9,0.06)] transition hover:-translate-y-0.5 hover:border-primary/18',
         toneClass,
       )}
     >
-      <div className="text-[11px] font-semibold text-white/68">{label}</div>
-      <div className="mt-1.5 text-[22px] font-black tabular-nums text-white">
+      <div className="text-[11px] font-semibold text-primary/72">{label}</div>
+      <div className="mt-1.5 text-[24px] font-black tabular-nums text-foreground">
         <bdi>{value}</bdi>
       </div>
-      <div className="mt-1 text-[11px] text-white/70">{hint}</div>
+      <div className="mt-1 text-[11px] text-secondary-foreground">{hint}</div>
     </Link>
   );
 }

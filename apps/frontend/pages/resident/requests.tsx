@@ -114,7 +114,7 @@ export default function ResidentRequestsPage() {
   const [draftAttachment, setDraftAttachment] = useState<File | null>(null);
   const [submittedRequestKey, setSubmittedRequestKey] = useState<string | null>(null);
   const [submittedRequestType, setSubmittedRequestType] = useState<string | null>(null);
-  const [view, setView] = useState<'new' | 'history'>('new');
+  const [view, setView] = useState<'new' | 'history'>('history');
 
   const activeType = requestTypes.find((item) => item.value === form.requestType)!;
   const { pullDistance, isRefreshing } = usePullToRefresh({
@@ -133,12 +133,10 @@ export default function ResidentRequestsPage() {
 
   useEffect(() => {
     if (!router.isReady) return;
-    const nextView = router.query.view === 'history' ? 'history' : 'new';
+    const nextView = router.query.view === 'new' ? 'new' : 'history';
     setView(nextView);
-    if (nextView === 'new') {
-      setComposerOpen(true);
-      setFormStep(1);
-    }
+    setComposerOpen(false);
+    setFormStep(1);
   }, [router.isReady, router.query.view]);
 
   useEffect(() => {
@@ -299,6 +297,7 @@ export default function ResidentRequestsPage() {
     setComposerOpen(true);
     setFormStep(nextStep);
     setSubmitError(null);
+    setView('new');
     triggerHaptic('light');
   }
 
@@ -380,8 +379,7 @@ export default function ResidentRequestsPage() {
                 hint={`${selectedTypeDescription.responseWindow} · ${selectedTypeDescription.owner}`}
                 tone="default"
                 onClick={() => {
-                  setView('new');
-                  openComposer(1);
+                  void router.replace('/resident/requests?view=new', undefined, { shallow: true });
                 }}
                 sparkline={[
                   form.requestType === 'MOVING' ? 82 : 24,
@@ -397,10 +395,13 @@ export default function ResidentRequestsPage() {
         bodyClassName="pt-0"
       >
         <div className="grid grid-cols-2 gap-2.5">
-          <Button size="lg" className="min-h-[54px] rounded-full" onClick={() => {
-            setView('new');
-            openComposer(1);
-          }}>
+          <Button
+            size="lg"
+            className="min-h-[54px] rounded-full"
+            onClick={() => {
+              void router.replace('/resident/requests?view=new', undefined, { shallow: true });
+            }}
+          >
             בקשה חדשה
           </Button>
           <Button asChild variant="outline" size="lg" className="min-h-[54px] rounded-full border-primary/14 bg-white/76 text-foreground hover:bg-white">
@@ -435,11 +436,8 @@ export default function ResidentRequestsPage() {
         onSelectionChange={(key) => {
           const nextView = key as 'new' | 'history';
           setView(nextView);
-          if (nextView === 'new') {
-            openComposer(1);
-          } else {
-            setComposerOpen(false);
-          }
+          setComposerOpen(false);
+          void router.replace(`/resident/requests?view=${nextView}`, undefined, { shallow: true });
         }}
         items={[
           { key: 'new', title: 'בקשה חדשה' },
@@ -476,8 +474,7 @@ export default function ResidentRequestsPage() {
                 onClick={() => {
                   setSubmittedRequestKey(null);
                   setSubmittedRequestType(null);
-                  setView('new');
-                  openComposer(1);
+                  void router.replace('/resident/requests?view=new', undefined, { shallow: true });
                 }}
               >
                 בקשה נוספת
@@ -495,11 +492,16 @@ export default function ResidentRequestsPage() {
           <Card variant="elevated">
             <CardContent className="space-y-4 p-4">
               <SectionHeader
-                title="פתח בקשה חדשה"
-                subtitle="בוחרים מסלול, מוסיפים רק את הפרטים החשובים, ושולחים."
+                title="בקשה חדשה"
+                subtitle="בחר מסלול והמשך לפרטים."
                 meta={`${requestTypes.length} מסלולים`}
+                actions={
+                  <Button size="sm" className="rounded-full px-4" onClick={() => openComposer(1)}>
+                    פתח פרטים
+                  </Button>
+                }
               />
-              <div className="grid gap-3 min-[390px]:grid-cols-2">
+              <div className="grid grid-cols-2 gap-3">
                 {requestTypes.map((item) => {
                   const Icon = item.icon;
                   const selected = item.value === form.requestType;
@@ -509,10 +511,10 @@ export default function ResidentRequestsPage() {
                       type="button"
                       onClick={() => {
                         setForm((current) => ({ ...current, requestType: item.value }));
-                        openComposer(1);
+                        openComposer(2);
                       }}
                       className={cn(
-                        'rounded-[24px] border p-4 text-right shadow-[0_16px_34px_rgba(44,28,9,0.07)] transition hover:-translate-y-0.5 hover:border-primary/18',
+                        'rounded-[22px] border p-3.5 text-right shadow-[0_16px_34px_rgba(44,28,9,0.07)] transition hover:-translate-y-0.5 hover:border-primary/18',
                         selected
                           ? 'gold-sheen-surface border-primary/28'
                           : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(250,247,241,0.94)_100%)]',
@@ -527,10 +529,8 @@ export default function ResidentRequestsPage() {
                           {item.description}
                         </span>
                       </div>
-                      <div className="mt-3 text-[15px] font-semibold text-foreground">{item.label}</div>
-                      <div className="mt-1 text-[12px] leading-5 text-secondary-foreground">
-                        {getRequestExpectations(item.value).description}
-                      </div>
+                      <div className="mt-3 text-[14px] font-semibold text-foreground">{item.label}</div>
+                      <div className="mt-1 text-[11px] leading-5 text-secondary-foreground">{item.description}</div>
                     </button>
                   );
                 })}
@@ -547,7 +547,7 @@ export default function ResidentRequestsPage() {
           else setComposerOpen(true);
         }}
         title="בקשה חדשה"
-        description="בחירת מסלול, כמה פרטים חשובים, ושליחה מהירה עם צפי טיפול."
+        description="פרטים קצרים ושליחה."
         tone="light"
         headerClassName="text-right"
         bodyClassName="text-right"
@@ -592,6 +592,7 @@ export default function ResidentRequestsPage() {
               onSelect={(value) => {
                 setForm((current) => ({ ...current, requestType: value }));
                 setSubmittedRequestKey(null);
+                advanceComposer(2);
               }}
             />
           ) : null}
@@ -905,10 +906,10 @@ function RequestTypePicker({
     <section className="space-y-3" aria-label="בחר סוג בקשה">
       <div className="text-right">
         <h2 className="text-[15px] font-semibold text-foreground">בחר סוג בקשה</h2>
-        <p className="mt-1 text-[12px] leading-5 text-secondary-foreground">בחירה אחת וממשיכים</p>
+        <p className="mt-1 text-[12px] leading-5 text-secondary-foreground">לחיצה מעבירה מיד לפרטים</p>
       </div>
 
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:hidden">
+      <div className="grid grid-cols-2 gap-3">
         {items.map((item) => {
           const Icon = item.icon;
           const selected = item.value === selectedValue;
@@ -921,49 +922,7 @@ function RequestTypePicker({
               onClick={() => selectItem(item.value)}
               aria-pressed={selected}
               className={cn(
-                'touch-target mobile-segmented-shell flex min-w-[132px] shrink-0 items-center gap-2 rounded-[20px] border px-3 py-3 text-right transition-[transform,border-color,box-shadow,background] duration-200 active:scale-[0.99]',
-                selected
-                  ? 'gold-active-pill gold-current-pulse border-primary/22 text-foreground'
-                  : 'border-subtle-border text-secondary-foreground',
-              )}
-            >
-              <span
-                className={cn(
-                  'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] border',
-                  selected
-                    ? 'border-primary/16 bg-primary/10 text-primary'
-                    : 'border-subtle-border bg-background/88 text-foreground/72',
-                )}
-              >
-                <Icon className="h-4.5 w-4.5" strokeWidth={1.75} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className={cn('block truncate text-sm font-semibold', selected ? 'text-foreground' : 'text-foreground')}>
-                  {item.label}
-                </span>
-                <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
-                  {item.description}
-                </span>
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="hidden grid-cols-1 gap-3 min-[390px]:grid-cols-2 sm:grid">
-        {items.map((item) => {
-          const Icon = item.icon;
-          const selected = item.value === selectedValue;
-
-          return (
-            <button
-              key={item.value}
-              type="button"
-              onMouseDown={() => selectItem(item.value)}
-              onClick={() => selectItem(item.value)}
-              aria-pressed={selected}
-              className={cn(
-                'touch-target group w-full rounded-[26px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(250,247,241,0.94)_100%)] p-4 text-right shadow-[0_16px_34px_rgba(44,28,9,0.07)] transition-[transform,border-color,box-shadow,background] duration-200 active:scale-[0.99]',
+                'touch-target group w-full rounded-[22px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(250,247,241,0.94)_100%)] p-3.5 text-right shadow-[0_16px_34px_rgba(44,28,9,0.07)] transition-[transform,border-color,box-shadow,background] duration-200 active:scale-[0.99]',
                 selected
                   ? 'border-primary/28 shadow-[0_20px_38px_rgba(188,136,20,0.16)] ring-1 ring-primary/12'
                   : 'border-subtle-border hover:border-primary/18 hover:shadow-[0_18px_36px_rgba(44,28,9,0.1)]',
@@ -972,17 +931,17 @@ function RequestTypePicker({
               <div className="flex items-start justify-between gap-3">
                 <span
                   className={cn(
-                    'inline-flex min-h-[34px] items-center rounded-full border px-3 py-1 text-[12px] font-semibold',
+                    'inline-flex min-h-[30px] items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold',
                     selected
                       ? 'border-primary/18 bg-primary/10 text-primary'
                       : 'border-subtle-border bg-background/88 text-secondary-foreground',
                   )}
                 >
-                  {selected ? 'נבחר' : 'בחר'}
+                  {selected ? 'נבחר' : 'פתח'}
                 </span>
                 <span
                   className={cn(
-                    'inline-flex h-12 w-12 items-center justify-center rounded-[18px] border',
+                    'inline-flex h-11 w-11 items-center justify-center rounded-[16px] border',
                     selected
                       ? 'border-primary/14 bg-primary/10 text-primary'
                       : 'border-subtle-border bg-background/88 text-foreground/72',
@@ -992,14 +951,14 @@ function RequestTypePicker({
                 </span>
               </div>
 
-              <div className="mt-5">
-                <div className={cn('text-[17px] font-bold leading-6', selected ? 'text-primary' : 'text-foreground')}>
-                  {item.label}
+                <div className="mt-4">
+                  <div className={cn('text-[15px] font-bold leading-6', selected ? 'text-primary' : 'text-foreground')}>
+                    {item.label}
+                  </div>
+                  <div className="mt-1 text-[12px] leading-5 text-secondary-foreground">{item.description}</div>
                 </div>
-                <div className="mt-2 text-[14px] leading-6 text-secondary-foreground">{item.description}</div>
-              </div>
 
-              <div className="mt-4 text-[13px] font-semibold text-primary">פתיחה</div>
+              <div className="mt-3 text-[12px] font-semibold text-primary">המשך</div>
             </button>
           );
         })}
