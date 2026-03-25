@@ -548,6 +548,7 @@ export default function ResidentRequestsPage() {
         }}
         title="בקשה חדשה"
         description="בחירת מסלול, כמה פרטים חשובים, ושליחה מהירה עם צפי טיפול."
+        tone="light"
         headerClassName="text-right"
         bodyClassName="text-right"
         footer={(onClose) => (
@@ -570,7 +571,7 @@ export default function ResidentRequestsPage() {
             <Button
               type="button"
               variant="ghost"
-              className="w-full rounded-full text-white/72 hover:bg-white/8"
+              className="w-full rounded-full text-secondary-foreground hover:bg-muted/70"
               onClick={() => {
                 onClose();
                 closeComposer();
@@ -597,10 +598,10 @@ export default function ResidentRequestsPage() {
 
           {formStep === 2 ? (
             <div className="space-y-4">
-              <div className="rounded-[24px] border border-white/10 bg-white/6 p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-white/56">נבחר עכשיו</div>
-                <div className="mt-1 text-lg font-semibold text-inverse-text">{activeType.label}</div>
-                <div className="mt-1 text-sm leading-6 text-white/72">{selectedTypeDescription.description}</div>
+              <div className="rounded-[24px] border border-subtle-border bg-background/90 p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">נבחר עכשיו</div>
+                <div className="mt-1 text-lg font-semibold text-foreground">{activeType.label}</div>
+                <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.description}</div>
               </div>
 
               <FormErrorSummary errors={visibleFormErrors} fieldLabels={fieldLabels} />
@@ -747,11 +748,11 @@ export default function ResidentRequestsPage() {
                 onFileSelect={setDraftAttachment}
               />
 
-              <div className="space-y-3 rounded-[24px] border border-white/10 bg-white/6 p-4">
+              <div className="space-y-3 rounded-[24px] border border-subtle-border bg-background/90 p-4">
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-white/56">לפני שליחה</div>
-                  <div className="mt-1 text-lg font-semibold text-inverse-text">{selectedTypeDescription.nextStep}</div>
-                  <div className="mt-1 text-sm leading-6 text-white/72">{selectedTypeDescription.afterSubmit}</div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">לפני שליחה</div>
+                  <div className="mt-1 text-lg font-semibold text-foreground">{selectedTypeDescription.nextStep}</div>
+                  <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.afterSubmit}</div>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -1015,7 +1016,7 @@ function RequestFlowProgress({
   items: ReadonlyArray<{ id: 1 | 2; label: string }>;
 }) {
   return (
-    <div className="rounded-[22px] border border-white/10 bg-white/6 p-3">
+    <div className="rounded-[22px] border border-subtle-border bg-background/90 p-3">
       <div className="flex items-center justify-between gap-2">
         {items.map((item, index) => {
           const isActive = item.id === currentStep;
@@ -1030,17 +1031,17 @@ function RequestFlowProgress({
                     ? 'gold-sheen-button border-primary/30 text-primary-foreground'
                     : isComplete
                       ? 'border-primary/16 bg-primary/10 text-primary'
-                      : 'border-white/12 bg-white/8 text-white/72',
+                      : 'border-subtle-border bg-background text-muted-foreground',
                 )}
               >
                 {item.id}
               </div>
               <div className="min-w-0 flex-1">
-                <div className={cn('truncate text-[12px] font-semibold', isActive ? 'text-inverse-text' : 'text-white/72')}>
+                <div className={cn('truncate text-[12px] font-semibold', isActive ? 'text-foreground' : 'text-muted-foreground')}>
                   {item.label}
                 </div>
                 {index < items.length - 1 ? (
-                  <div className={cn('mt-1 h-px w-full', isComplete ? 'gold-divider-line' : 'bg-white/10')} />
+                  <div className={cn('mt-1 h-px w-full', isComplete ? 'gold-divider-line' : 'bg-border')} />
                 ) : null}
               </div>
             </div>

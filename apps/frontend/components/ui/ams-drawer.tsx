@@ -20,6 +20,7 @@ type AmsDrawerProps = {
   hideCloseButton?: boolean;
   backdrop?: 'opaque' | 'blur' | 'transparent';
   scrollBehavior?: 'inside' | 'outside';
+  tone?: 'dark' | 'light';
 };
 
 export function AmsDrawer({
@@ -37,7 +38,10 @@ export function AmsDrawer({
   hideCloseButton = false,
   backdrop = 'blur',
   scrollBehavior = 'inside',
+  tone = 'dark',
 }: AmsDrawerProps) {
+  const lightTone = tone === 'light';
+
   return (
     <Drawer
       isOpen={isOpen}
@@ -48,10 +52,12 @@ export function AmsDrawer({
       scrollBehavior={scrollBehavior}
       shouldBlockScroll
       classNames={{
-        backdrop: 'bg-black/50 backdrop-blur-sm',
+        backdrop: lightTone ? 'bg-black/30 backdrop-blur-[2px]' : 'bg-black/50 backdrop-blur-sm',
         wrapper: placement === 'bottom' ? 'items-end' : undefined,
         base: cn(
-          'drawer-premium-surface text-inverse-text',
+          lightTone
+            ? 'border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.99)_0%,rgba(248,244,237,0.98)_100%)] text-foreground shadow-[0_26px_70px_-44px_rgba(44,28,9,0.38)]'
+            : 'drawer-premium-surface text-inverse-text',
           placement === 'bottom' && 'm-0 max-h-[88dvh] rounded-t-[30px] rounded-b-none',
           placement !== 'bottom' && 'rounded-[28px]',
           className,
@@ -85,17 +91,22 @@ export function AmsDrawer({
             </div>
             {(title || description || !hideCloseButton) ? (
               <DrawerHeader>
-                <div className="flex items-start justify-between gap-3 border-b border-white/8 pb-3">
+                <div className={cn('flex items-start justify-between gap-3 border-b pb-3', lightTone ? 'border-subtle-border/90' : 'border-white/8')}>
                   <div className="min-w-0">
-                    {title ? <h2 className="text-base font-semibold text-inverse-text">{title}</h2> : null}
-                    {description ? <p className="mt-1 text-sm leading-6 text-white/70">{description}</p> : null}
+                    {title ? <h2 className={cn('text-base font-semibold', lightTone ? 'text-foreground' : 'text-inverse-text')}>{title}</h2> : null}
+                    {description ? <p className={cn('mt-1 text-sm leading-6', lightTone ? 'text-secondary-foreground' : 'text-white/70')}>{description}</p> : null}
                     <div className="gold-divider-line mt-3 h-px w-full" />
                   </div>
                   {!hideCloseButton ? (
                     <button
                       type="button"
                       onClick={onClose}
-                      className="touch-target inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-white/6 text-white/74 transition hover:bg-white/10"
+                      className={cn(
+                        'touch-target inline-flex h-10 w-10 items-center justify-center rounded-full border transition',
+                        lightTone
+                          ? 'border-subtle-border bg-background text-secondary-foreground hover:bg-muted/80'
+                          : 'border-white/12 bg-white/6 text-white/74 hover:bg-white/10',
+                      )}
                       aria-label="Close drawer"
                     >
                       <X className="h-4 w-4" strokeWidth={1.75} />
