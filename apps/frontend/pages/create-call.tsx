@@ -393,7 +393,12 @@ export default function CreateCall() {
             <Button size="lg" className="min-h-[52px] w-full" onClick={onClose}>
               אישור מיקום
             </Button>
-            <Button variant="outline" size="sm" className="w-full rounded-full" onClick={onClose}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full rounded-full border-white/30 bg-white/10 text-white hover:bg-white/18"
+              onClick={onClose}
+            >
               בטל
             </Button>
           </div>
@@ -417,6 +422,7 @@ export default function CreateCall() {
             placeholder="חיפוש לפי כתובת או שם בניין"
             value={buildingQuery}
             onChange={(e) => setBuildingQuery(e.target.value)}
+            className="bg-white text-slate-900 placeholder:text-slate-500"
           />
           <select
             value={selectedBuilding}
