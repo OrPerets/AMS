@@ -45,8 +45,8 @@ test.describe('mobile polish smoke', () => {
 
       await page.goto('/home', { waitUntil: 'domcontentloaded' });
       if (scenario.role === 'RESIDENT') {
-        await expect(page.getByRole('heading', { name: /תמונת חשבון מהירה|Quick account view/i }).first()).toBeVisible();
-        await expect(page.getByText(/פעיל עכשיו|Needs attention now/i).first()).toBeVisible();
+        await expect(page.getByRole('heading', { name: /האזור האישי/i }).first()).toBeVisible();
+        await expect(page.getByText(/מה צריך עכשיו/i).first()).toBeVisible();
       } else {
         await expect(page.getByRole('heading', { name: /תיבת מנהל נכס|Priority inbox/i }).first()).toBeVisible();
         await expect(page.getByText(/מה דורש טיפול עכשיו|requires action now/i).first()).toBeVisible();
@@ -69,7 +69,7 @@ test.describe('mobile polish smoke', () => {
       await page.goto(scenario.role === 'RESIDENT' ? '/resident/account' : '/buildings', { waitUntil: 'domcontentloaded' });
       if (scenario.role === 'RESIDENT') {
         await expect(page.getByRole('link', { name: /הבניין שלי/ }).first()).toBeVisible();
-        await expect(page.getByText(/החשבון מעודכן|לתשלום/).first()).toBeVisible();
+        await expect(page.getByText(/האזור האישי|שלם עכשיו/).first()).toBeVisible();
       } else {
         await expect(page.getByRole('heading', { name: 'ניהול בניינים' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'צפה' }).first()).toBeVisible();

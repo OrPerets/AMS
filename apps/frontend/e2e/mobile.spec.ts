@@ -51,7 +51,7 @@ test.describe('mobile support smoke', () => {
     await setSession(page, 'RESIDENT');
 
     await page.goto('/resident/account');
-    await expect(page.getByText(/פעיל עכשיו|Needs attention now/i).first()).toBeVisible();
+    await expect(page.getByText(/מה צריך עכשיו/i).first()).toBeVisible();
     await expect(page.getByText(/שלם עכשיו|Pay now/i).first()).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });

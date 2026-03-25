@@ -17,7 +17,7 @@ const scenarios: CaptureScenario[] = [
     file: 'resident-account-mobile.png',
     role: 'RESIDENT',
     route: '/resident/account',
-    readyText: /תמונת חשבון מהירה|Quick account view/i,
+    readyText: /האזור האישי/,
   },
   {
     file: 'admin-home-mobile.png',

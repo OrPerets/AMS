@@ -10,6 +10,7 @@ import { EmptyState } from '../../components/ui/empty-state';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { DetailPanelSkeleton } from '../../components/ui/page-states';
 import { MobileInsightWidget } from '../../components/ui/mobile-insight-widget';
+import { ResidentHero } from '../../components/resident/resident-hero';
 import { getResumeState, setResumeState } from '../../lib/engagement';
 import { trackResumeClick } from '../../lib/analytics';
 
@@ -411,20 +412,13 @@ export default function ResidentAccountPage() {
         animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
         transition={{ duration: 0.34, ease: 'easeOut' }}
       >
-        <div className="resident-profile-hero-surface relative rounded-[32px] border px-4 pb-4 pt-4 text-white sm:px-5 sm:pb-5 sm:pt-5">
-          <AccountHeroPattern />
-          <div className="relative z-10 space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-1 text-[11px] font-semibold tracking-[0.24em] text-white/82">
-                <Sparkles className="h-3.5 w-3.5 text-white" strokeWidth={1.9} />
-                מרכז השליטה האישי
-              </div>
-              <div className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white">
-                חשבון דייר
-              </div>
-            </div>
-
-            <div className="relative rounded-[30px] border border-white/55 bg-[linear-gradient(180deg,rgba(255,251,245,0.98)_0%,rgba(255,255,255,0.94)_100%)] p-4 shadow-[0_22px_48px_rgba(44,28,9,0.12)] backdrop-blur-sm">
+        <ResidentHero
+          eyebrow="מרכז השליטה האישי"
+          title={labels.home}
+          subtitle="פעולה ברורה אחת למעלה, וכל המשך הדרך מסודר מתחתיה."
+          badge={<div className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white">חשבון דייר</div>}
+          floatingCard={
+            <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/72">
@@ -439,7 +433,7 @@ export default function ResidentAccountPage() {
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-[1.1fr_0.9fr]">
+              <div className="grid gap-3 sm:grid-cols-[1.1fr_0.9fr]">
                 <div className="gold-sheen-surface rounded-[26px] p-4" data-accent-sheen="true">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -474,28 +468,35 @@ export default function ResidentAccountPage() {
                 />
               </div>
 
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                {residentSignals.map((signal) => (
+              <div className="grid grid-cols-2 gap-2.5">
+                {residentSignals.slice(0, 2).map((signal) => (
                   <HeroSignalChip key={signal.id} label={signal.label} value={signal.value} href={signal.href} hint={signal.hint} tone={signal.tone} />
                 ))}
               </div>
             </div>
-
+          }
+          bodyClassName="pt-0"
+        >
+          <div className="space-y-3">
+            <Button size="lg" className="min-h-[56px] w-full rounded-full text-base" asChild>
+              <Link href={residentPrimaryAction.href}>
+                {residentPrimaryAction.ctaLabel}
+                <ArrowUpRight className="icon-directional me-2 h-4 w-4" strokeWidth={1.85} />
+              </Link>
+            </Button>
             <div className="grid grid-cols-2 gap-2.5">
               <Button
                 size="lg"
-                className="min-h-[54px] rounded-full"
+                variant="outline"
+                className="min-h-[52px] rounded-full border-primary/14 bg-white/76 text-foreground hover:bg-white"
                 asChild
               >
-                <Link href={residentPrimaryAction.href}>
-                  {residentPrimaryAction.ctaLabel}
-                  <ArrowUpRight className="icon-directional me-2 h-4 w-4" strokeWidth={1.85} />
-                </Link>
+                <Link href="/resident/requests?view=new">בקשה חדשה</Link>
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="min-h-[54px] rounded-full border-primary/14 bg-white/76 text-foreground hover:bg-white"
+                className="min-h-[52px] rounded-full border-primary/14 bg-white/76 text-foreground hover:bg-white"
                 asChild
               >
                 <Link href="/resident/profile">
@@ -505,7 +506,7 @@ export default function ResidentAccountPage() {
               </Button>
             </div>
           </div>
-        </div>
+        </ResidentHero>
       </motion.section>
 
       <motion.section
@@ -610,17 +611,6 @@ export default function ResidentAccountPage() {
           </motion.section>
         </div>
       </div>
-    </div>
-  );
-}
-
-function AccountHeroPattern() {
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute -left-8 top-4 h-24 w-24 rounded-full border border-white/10" />
-      <div className="absolute right-10 top-0 h-20 w-20 rounded-b-[30px] rounded-t-full bg-white/6" />
-      <div className="absolute bottom-0 left-6 h-16 w-28 rounded-t-full bg-warning/20 blur-2xl" />
-      <div className="absolute bottom-4 right-4 h-14 w-14 rounded-[18px] bg-white/8" />
     </div>
   );
 }
