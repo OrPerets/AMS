@@ -13,7 +13,6 @@ import {
   Plus,
   RefreshCw,
   Navigation,
-  Building2,
   Leaf,
   ShieldCheck,
   ClipboardList,
@@ -307,6 +306,14 @@ export default function Jobs() {
           ctaLabel="התחל טיפול"
           href={nextJob ? `/work-orders/${nextJob.id}` : '/tech/jobs'}
           tone={todayStats.urgent > 0 ? 'danger' : 'warning'}
+          density="compact"
+          supportingContent={
+            <div className="grid grid-cols-3 gap-2">
+              <TechPulseTile label="ETA" value={nextJob ? (getTimeRemaining(nextJob.dueTime) || 'בתור') : 'חופשי'} tone={todayStats.urgent > 0 ? 'warning' : 'default'} />
+              <TechPulseTile label="Kit" value={nextJob?.ticket.category || 'כללי'} tone="default" />
+              <TechPulseTile label="Next" value={nextJob ? 'יציאה לשטח' : 'המתן לשיוך'} tone={nextJob ? 'success' : 'default'} />
+            </div>
+          }
           secondaryAction={
             <Button asChild size="sm" variant="outline" className="w-full justify-between">
               <Link href="/tickets?mine=true">עדכן סטטוס</Link>
@@ -314,10 +321,33 @@ export default function Jobs() {
           }
         />
 
+        {todayStats.urgent > 0 ? (
+          <TechAlertRail
+            urgentCount={todayStats.urgent}
+            overdueCount={orders.filter((order) => getTimeRemaining(order.dueTime) === 'פג תוקף').length}
+          />
+        ) : null}
+
+        <MobilePriorityInbox
+          title="תור העבודות להיום"
+          subtitle="המשימה הבאה מופיעה ראשונה כדי להיכנס ישר לעבודה."
+          items={queueItems}
+          emptyTitle="אין משימות שטח להיום"
+          emptyDescription="יום שקט. אפשר לעבור לתוכנית הגינון או לרענן שוב בהמשך."
+          compact
+          maxItems={2}
+        />
+
+        <GlassRouteReadinessCard
+          nextJob={nextJob}
+          todayStats={todayStats}
+        />
+
         <MobileActionHub
           mobileHomeEffect
-          title="מעברים מהירים"
-          subtitle="כל היעדים החשובים בפעולה אחת."
+          title="כלי שטח"
+          subtitle="פעולה מהירה בלי לאבד את התור."
+          density="compact"
           items={[
             {
               id: 'jobs',
@@ -346,30 +376,14 @@ export default function Jobs() {
               accent: 'neutral',
             },
             {
-              id: 'management',
-              label: 'מרכז ניהול',
-              description: 'מסך הבית הניהולי',
-              icon: Building2,
-              href: '/home',
-              accent: 'info',
-            },
-            {
               id: 'status',
               label: 'עדכון סטטוס',
               description: 'קריאות שלי בלבד',
               icon: ClipboardList,
               href: '/tickets?mine=true',
-              accent: 'neutral',
+              accent: 'info',
             },
           ]}
-        />
-
-        <MobilePriorityInbox
-          title="תור העבודות להיום"
-          subtitle="המשימות מסודרות לפי חומרה ו-SLA כדי להיכנס ישר לעבודה הבאה."
-          items={queueItems}
-          emptyTitle="אין משימות שטח להיום"
-          emptyDescription="יום שקט. אפשר לעבור לתוכנית הגינון או לרענן שוב בהמשך."
         />
       </div>
 
@@ -582,5 +596,86 @@ export default function Jobs() {
         </div>
       )}
     </div>
+  );
+}
+
+function TechAlertRail({
+  urgentCount,
+  overdueCount,
+}: {
+  urgentCount: number;
+  overdueCount: number;
+}) {
+  return (
+    <div className="rounded-[20px] border border-destructive/18 bg-[linear-gradient(180deg,rgba(255,244,242,0.98)_0%,rgba(255,255,255,0.94)_100%)] px-3.5 py-3 shadow-[0_12px_28px_rgba(170,43,28,0.08)]">
+      <div className="flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+          <AlertTriangle className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1 text-right">
+          <div className="text-sm font-semibold text-foreground">מוקד חריגות אחד למסך</div>
+          <div className="mt-0.5 text-[12px] leading-5 text-secondary-foreground">
+            {urgentCount} משימות דחופות{overdueCount ? ` · ${overdueCount} חרגו מזמן היעד` : ''}. פתח את הפריט הראשון והמשך משם.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TechPulseTile({
+  label,
+  value,
+  tone = 'default',
+}: {
+  label: string;
+  value: string;
+  tone?: 'default' | 'warning' | 'success';
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-[16px] border px-2.5 py-2 text-right',
+        tone === 'warning'
+          ? 'border-warning/18 bg-warning/8'
+          : tone === 'success'
+            ? 'border-success/18 bg-success/8'
+            : 'border-subtle-border bg-background/72',
+      )}
+    >
+      <div className="text-[10px] font-semibold text-secondary-foreground">{label}</div>
+      <div className="mt-1 truncate text-[12px] font-semibold text-foreground">{value}</div>
+    </div>
+  );
+}
+
+function GlassRouteReadinessCard({
+  nextJob,
+  todayStats,
+}: {
+  nextJob: WorkOrder | undefined;
+  todayStats: { total: number; assigned: number; inProgress: number; urgent: number };
+}) {
+  return (
+    <Card className="rounded-[22px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.97)_0%,rgba(248,244,236,0.92)_100%)] shadow-[0_14px_30px_rgba(44,28,9,0.06)]">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 text-right">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground">Route readiness</div>
+            <div className="mt-1 text-[16px] font-semibold text-foreground">
+              {nextJob ? nextJob.location?.building || 'היעד הבא מוכן' : 'אין יציאה מיידית לשטח'}
+            </div>
+            <div className="mt-1 text-[12px] leading-5 text-secondary-foreground">
+              {nextJob
+                ? `${nextJob.ticket.category || 'משימת שירות'} · ${nextJob.estimatedDuration ? `${nextJob.estimatedDuration} דקות` : 'משך לא צוין'}`
+                : 'אפשר לעדכן סטטוס, לרענן שוב או לעבור למסלולים משלימים.'}
+            </div>
+          </div>
+          <span className="rounded-full border border-primary/14 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary">
+            {todayStats.inProgress ? `${todayStats.inProgress} בביצוע` : `${todayStats.assigned} ממתינות`}
+          </span>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

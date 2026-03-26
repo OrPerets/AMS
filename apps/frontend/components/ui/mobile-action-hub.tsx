@@ -73,10 +73,12 @@ function ActionTile({
   item,
   mobileHomeEffect,
   layout,
+  density,
 }: {
   item: MobileActionHubItem;
   mobileHomeEffect: boolean;
   layout: 'grid' | 'hierarchy';
+  density: 'default' | 'compact';
 }) {
   const reducedMotion = useReducedMotion();
   const depthRef = useMobileDepthEffect(mobileHomeEffect);
@@ -102,11 +104,12 @@ function ActionTile({
         onClick={item.onClick}
         selected={isSelected}
         className={cn(
-          'group block rounded-2xl border bg-card/96 p-2.5 text-center shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target sm:rounded-[24px] sm:p-3.5',
-          layout === 'grid' && 'min-h-[80px] sm:min-h-[90px]',
-          layout === 'hierarchy' && priority === 'primary' && 'min-h-[92px] text-start sm:min-h-[110px]',
-          layout === 'hierarchy' && priority === 'secondary' && 'min-h-[80px]',
-          layout === 'hierarchy' && priority === 'utility' && 'min-h-[72px] bg-muted-surface/85 shadow-elevation-1',
+          'group block rounded-2xl border bg-card/96 text-center shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target',
+          density === 'compact' ? 'rounded-[18px] p-2 sm:rounded-[20px] sm:p-2.5' : 'p-2.5 sm:rounded-[24px] sm:p-3.5',
+          layout === 'grid' && (density === 'compact' ? 'min-h-[74px] sm:min-h-[82px]' : 'min-h-[80px] sm:min-h-[90px]'),
+          layout === 'hierarchy' && priority === 'primary' && (density === 'compact' ? 'min-h-[84px] text-start sm:min-h-[96px]' : 'min-h-[92px] text-start sm:min-h-[110px]'),
+          layout === 'hierarchy' && priority === 'secondary' && (density === 'compact' ? 'min-h-[74px]' : 'min-h-[80px]'),
+          layout === 'hierarchy' && priority === 'utility' && (density === 'compact' ? 'min-h-[68px] bg-muted-surface/85 shadow-elevation-1' : 'min-h-[72px] bg-muted-surface/85 shadow-elevation-1'),
           isSelected && 'gold-sheen-surface gold-current-pulse border-primary/35 ring-1 ring-primary/10',
           !item.href && !item.onClick && 'pointer-events-none',
         )}
@@ -117,11 +120,17 @@ function ActionTile({
             <span
               className={cn(
                 'flex items-center justify-center rounded-xl border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]',
-                layout === 'hierarchy' && priority === 'utility' ? 'h-8 w-8' : 'h-10 w-10',
+                layout === 'hierarchy' && priority === 'utility'
+                  ? density === 'compact'
+                    ? 'h-7.5 w-7.5'
+                    : 'h-8 w-8'
+                  : density === 'compact'
+                    ? 'h-9 w-9'
+                    : 'h-10 w-10',
                 toneClasses(item.accent),
               )}
             >
-              <Icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.75} />
+              <Icon className={cn(density === 'compact' ? 'h-3.5 w-3.5 sm:h-4 sm:w-4' : 'h-4 w-4 sm:h-5 sm:w-5')} strokeWidth={1.75} />
             </span>
             {item.badge !== undefined && item.badge !== '' ? (
               <span className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
@@ -137,18 +146,22 @@ function ActionTile({
 
           <div className={cn('mt-2 flex-1', layout === 'hierarchy' && priority === 'primary' && 'w-full')}>
             {item.previewValue !== undefined ? (
-              <div className={cn('mb-1.5 text-[1.35rem] font-black leading-none tabular-nums', isSelected ? 'text-foreground' : 'text-foreground')}>
+              <div className={cn(density === 'compact' ? 'mb-1 text-[1.2rem]' : 'mb-1.5 text-[1.35rem]', 'font-black leading-none tabular-nums', isSelected ? 'text-foreground' : 'text-foreground')}>
                 <bdi>{item.previewValue}</bdi>
               </div>
             ) : null}
-            <div className={cn(priority === 'primary' ? 'text-[15px]' : 'text-[14px] sm:text-sm', 'font-semibold leading-5 text-foreground')}>
+            <div className={cn(priority === 'primary' ? (density === 'compact' ? 'text-[14px]' : 'text-[15px]') : density === 'compact' ? 'text-[13px] sm:text-[13px]' : 'text-[14px] sm:text-sm', 'font-semibold leading-5 text-foreground')}>
               {item.label}
             </div>
             {item.description ? (
               <div
                 className={cn(
                   'mt-1 text-secondary-foreground',
-                  priority === 'utility' ? 'line-clamp-1 text-[11px] leading-4' : 'line-clamp-1 text-[11px] leading-4.5 sm:text-[12px] sm:leading-5',
+                  priority === 'utility'
+                    ? 'line-clamp-1 text-[11px] leading-4'
+                    : density === 'compact'
+                      ? 'line-clamp-1 text-[10px] leading-4.5 sm:text-[11px]'
+                      : 'line-clamp-1 text-[11px] leading-4.5 sm:text-[12px] sm:leading-5',
                 )}
               >
                 {item.description}
@@ -182,6 +195,7 @@ export function MobileActionHub({
   mobileHomeEffect = false,
   gridClassName,
   layout = 'grid',
+  density = 'default',
 }: {
   title: React.ReactNode;
   subtitle?: React.ReactNode;
@@ -190,6 +204,7 @@ export function MobileActionHub({
   mobileHomeEffect?: boolean;
   gridClassName?: string;
   layout?: 'grid' | 'hierarchy';
+  density?: 'default' | 'compact';
 }) {
   return (
     <section className={cn('space-y-3', className)} aria-label={typeof title === 'string' ? title : undefined}>
@@ -216,7 +231,7 @@ export function MobileActionHub({
               layout === 'hierarchy' && (item.priority ?? (item.emphasize ? 'primary' : 'secondary')) === 'primary' && 'col-span-2',
             )}
           >
-            <ActionTile item={item} mobileHomeEffect={mobileHomeEffect} layout={layout} />
+            <ActionTile item={item} mobileHomeEffect={mobileHomeEffect} layout={layout} density={density} />
           </div>
         ))}
       </div>

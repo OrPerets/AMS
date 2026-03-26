@@ -16,7 +16,6 @@ import { MobileContextBar } from '../../components/ui/mobile-context-bar';
 import { MobileCardSkeleton } from '../../components/ui/page-states';
 import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
 import { GlassSurface } from '../../components/ui/glass-surface';
-import { MobileInsightWidget } from '../../components/ui/mobile-insight-widget';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 import { PullToRefreshIndicator } from '../../components/ui/pull-to-refresh-indicator';
 import { QuickActionTile } from '../../components/ui/quick-action-tile';
@@ -29,7 +28,6 @@ import { AmsSegmentedChoice } from '../../components/ui/ams-segmented-choice';
 import { AmsTabs } from '../../components/ui/ams-tabs';
 import { Textarea } from '../../components/ui/textarea';
 import { toast } from '../../components/ui/use-toast';
-import { ResidentHero } from '../../components/resident/resident-hero';
 import { usePullToRefresh } from '../../hooks/use-pull-to-refresh';
 import { triggerHaptic } from '../../lib/mobile';
 import { showRequestSubmitted } from '../../lib/success-feedback';
@@ -351,85 +349,74 @@ export default function ResidentRequestsPage() {
         />
       </div>
 
-      <ResidentHero
-        eyebrow="בקשות"
-        title="בקשות דייר"
-        subtitle={undefined}
-        badge={<div className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white">שירות עצמי</div>}
-        floatingCard={
-          <div className="space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">
-                  {openRequests[0] ? 'בטיפול' : 'השלב הבא'}
-                </div>
-                <div className="mt-1 text-[26px] font-black leading-[1.04] text-foreground">
-                  {openRequests[0] ? openRequests[0].subject.replace(/^[A-Z_]+:\s*/, '') : activeType.label}
-                </div>
-                <div className="mt-2 text-[14px] leading-6 text-secondary-foreground">
-                  {openRequests[0]
-                    ? openRequests[0].statusNotes || t('residentRequests.priority.waitingReason')
-                    : selectedTypeDescription.responseWindow}
-                </div>
-              </div>
-              <StatusBadge
-                label={openRequests[0] ? getResidentRequestStatusLabel(openRequests[0].status) : 'פתיחה מהירה'}
-                tone={openRequests[0] ? getResidentRequestStatusTone(openRequests[0].status) : 'finance'}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <MobileInsightWidget
-                title="מעקב חי"
-                value={openRequests.length}
-                hint={openRequests[0] ? openRequests[0].subject.replace(/^[A-Z_]+:\s*/, '') : 'אין בקשה פתוחה כרגע'}
-                tone={openRequests.length ? 'warning' : 'success'}
-                href="/resident/requests?view=history"
-                sparkline={[openRequests.length, closedRequests.length, history.length]}
-                pulse={openRequests.length > 0}
-              />
-              <MobileInsightWidget
-                title="הבקשה הבאה"
-                value={activeType.label}
-                hint={selectedTypeDescription.responseWindow}
-                tone="default"
-                onClick={() => {
-                  void router.replace('/resident/requests?view=new', undefined, { shallow: true });
-                }}
-                sparkline={[
-                  form.requestType === 'MOVING' ? 82 : 24,
-                  form.requestType === 'PARKING' ? 72 : 28,
-                  form.requestType === 'DOCUMENT' ? 54 : 18,
-                  form.requestType === 'CONTACT_UPDATE' ? 42 : 16,
-                  form.requestType === 'GENERAL' ? 34 : 14,
-                ]}
-              />
+      <GlassSurface strength="strong" className="rounded-[28px] p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary-foreground">Resident requests</div>
+            <div className="mt-1 text-[25px] font-black leading-[1.04] text-foreground">בקשות דייר</div>
+            <div className="mt-1.5 text-[13px] leading-5 text-secondary-foreground">
+              {openRequests[0]
+                ? openRequests[0].statusNotes || t('residentRequests.priority.waitingReason')
+                : 'בחר מסלול אחד והמשך ישירות לפרטי הבקשה.'}
             </div>
           </div>
-        }
-        bodyClassName="pt-0"
-      >
-        <div className="grid grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            className="gold-sheen-button flex min-h-[54px] w-full items-center justify-center gap-2 rounded-full px-4 text-base font-semibold"
-            data-accent-sheen="true"
-            onClick={() => {
-              void router.replace('/resident/requests?view=new', undefined, { shallow: true });
-            }}
-          >
-            בקשה חדשה
-          </button>
-          <Button asChild variant="outline" size="lg" className="min-h-[54px] rounded-full border-primary/14 bg-white/76 text-foreground hover:bg-white">
-            <Link href="/create-call">תחזוקה</Link>
-          </Button>
+          <StatusBadge
+            label={openRequests[0] ? getResidentRequestStatusLabel(openRequests[0].status) : 'פתיחה מהירה'}
+            tone={openRequests[0] ? getResidentRequestStatusTone(openRequests[0].status) : 'finance'}
+          />
         </div>
-      </ResidentHero>
 
-      <div className="grid grid-cols-3 gap-2.5">
-        <QuickRequestMetric label="פתוחות" value={openRequests.length} tone={openRequests.length ? 'warning' : 'success'} />
-        <QuickRequestMetric label="הושלמו" value={closedRequests.length} />
-        <QuickRequestMetric label="מסלולים" value={requestTypes.length} />
-      </div>
+        <div className="mt-4 rounded-[22px] border border-subtle-border bg-background/88 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">
+                {openRequests[0] ? 'בטיפול' : 'השלב הבא'}
+              </div>
+              <div className="mt-1 text-[20px] font-black leading-[1.08] text-foreground">
+                {openRequests[0] ? openRequests[0].subject.replace(/^[A-Z_]+:\s*/, '') : activeType.label}
+              </div>
+              <div className="mt-1.5 text-[12px] leading-5 text-secondary-foreground">
+                {openRequests[0] ? 'אפשר לעבור ישירות למעקב או לפתוח בקשה חדשה.' : selectedTypeDescription.responseWindow}
+              </div>
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground">
+              {openRequests.length ? `${openRequests.length} פתוחות` : `${requestTypes.length} מסלולים`}
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              className="gold-sheen-button flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold"
+              data-accent-sheen="true"
+              onClick={() => {
+                void router.replace('/resident/requests?view=new', undefined, { shallow: true });
+              }}
+            >
+              בקשה חדשה
+            </button>
+            <Button asChild variant="outline" size="lg" className="min-h-[52px] rounded-full border-primary/14 bg-white/76 text-foreground hover:bg-white">
+              <Link href={openRequests.length ? '/resident/requests?view=history' : '/create-call'}>
+                {openRequests.length ? 'פתח מעקב' : 'תחזוקה'}
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </GlassSurface>
+
+      <AmsTabs
+        ariaLabel="Resident requests"
+        selectedKey={view}
+        onSelectionChange={(key) => {
+          const nextView = key as 'new' | 'history';
+          setView(nextView);
+          setComposerOpen(false);
+          void router.replace(`/resident/requests?view=${nextView}`, undefined, { shallow: true });
+        }}
+        items={[
+          { key: 'new', title: 'בקשה חדשה' },
+          { key: 'history', title: 'מעקב', badge: openRequests.length || null },
+        ]}
+      />
 
       {view === 'history' && openRequests[0] ? (
         <PrimaryActionCard
@@ -450,21 +437,6 @@ export default function ResidentRequestsPage() {
           }
         />
       ) : null}
-
-      <AmsTabs
-        ariaLabel="Resident requests"
-        selectedKey={view}
-        onSelectionChange={(key) => {
-          const nextView = key as 'new' | 'history';
-          setView(nextView);
-          setComposerOpen(false);
-          void router.replace(`/resident/requests?view=${nextView}`, undefined, { shallow: true });
-        }}
-        items={[
-          { key: 'new', title: 'בקשה חדשה' },
-          { key: 'history', title: 'מעקב', badge: openRequests.length || null },
-        ]}
-      />
 
       {submittedRequestKey ? (
         <Card variant="featured">
@@ -513,7 +485,7 @@ export default function ResidentRequestsPage() {
           <div className="flex items-center justify-between px-1">
             <div>
               <div className="text-sm font-semibold text-foreground">בחר מסלול</div>
-              <div className="mt-0.5 text-[11px] text-secondary-foreground">בחירה והמשך</div>
+              <div className="mt-0.5 text-[11px] text-secondary-foreground">המסלול הנכון יקצר את זמן הטיפול.</div>
             </div>
             <Button size="sm" className="rounded-full px-4" onClick={() => openComposer(1)}>
               פתח מסלול
@@ -918,34 +890,6 @@ export default function ResidentRequestsPage() {
           )}
       </GlassSurface>
       ) : null}
-    </div>
-  );
-}
-
-function QuickRequestMetric({
-  label,
-  value,
-  tone = 'default',
-}: {
-  label: string;
-  value: string | number;
-  tone?: 'default' | 'warning' | 'success';
-}) {
-  return (
-    <div
-      className={cn(
-        'rounded-[22px] border px-3 py-3 text-right shadow-[0_10px_22px_rgba(44,28,9,0.05)]',
-        tone === 'warning'
-          ? 'border-warning/18 bg-[linear-gradient(180deg,rgba(255,251,241,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
-          : tone === 'success'
-            ? 'border-success/18 bg-[linear-gradient(180deg,rgba(245,252,247,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
-            : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)]',
-      )}
-    >
-      <div className="text-[10px] font-semibold text-secondary-foreground">{label}</div>
-      <div className="mt-1.5 text-[15px] font-black text-foreground">
-        <bdi>{value}</bdi>
-      </div>
     </div>
   );
 }

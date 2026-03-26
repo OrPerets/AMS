@@ -71,9 +71,8 @@ test.describe('sprint 10 mobile breakpoint coverage', () => {
       await closeNavigationOverlayIfOpen(page);
       await expect(page.getByText(/בקשת דייר חדשה|בקשות דייר/).first()).toBeVisible();
       await page.getByRole('tab', { name: /בקשה חדשה/ }).click();
-      await page.getByRole('button', { name: /פתח פרטים/ }).click();
-      await expect(page.getByRole('dialog')).toBeVisible();
       await page.getByRole('button', { name: /חניה.*שינוי או תקלה/ }).click();
+      await expect(page.getByRole('dialog')).toBeVisible();
       await expect(page.getByRole('button', { name: /שינוי הקצאה/ }).first()).toBeVisible();
       await expect(page.getByLabel('מספר רכב')).toBeVisible();
       await page.keyboard.press('Escape');

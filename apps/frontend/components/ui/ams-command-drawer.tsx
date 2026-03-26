@@ -33,6 +33,7 @@ type AmsCommandDrawerProps = {
   onQueryChange: (value: string) => void;
   queryPlaceholder?: string;
   topActions?: AmsCommandDrawerItem[];
+  priorityItems?: AmsCommandDrawerItem[];
   recentItems?: AmsCommandDrawerItem[];
   unreadCount?: number;
   sections: AmsCommandDrawerSection[];
@@ -50,6 +51,7 @@ export function AmsCommandDrawer({
   onQueryChange,
   queryPlaceholder = 'חפש יעד, פעולה או מסך',
   topActions = [],
+  priorityItems = [],
   recentItems = [],
   unreadCount = 0,
   sections,
@@ -93,7 +95,7 @@ export function AmsCommandDrawer({
         {topActions.length ? (
           <div className="space-y-2">
             <div className="flex items-center justify-between px-1">
-              <h3 className={cn('text-[11px] font-semibold uppercase tracking-[0.18em]', lightTone ? 'text-secondary-foreground' : 'text-white/56')}>Top actions</h3>
+              <h3 className={cn('text-[11px] font-semibold uppercase tracking-[0.18em]', lightTone ? 'text-secondary-foreground' : 'text-white/56')}>מומלץ עכשיו</h3>
               <span className={cn('inline-flex items-center gap-1 text-[10px] font-medium', lightTone ? 'text-muted-foreground' : 'text-white/45')}>
                 <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} />
                 עכשיו
@@ -102,6 +104,23 @@ export function AmsCommandDrawer({
             <div className="grid grid-cols-2 gap-2">
               {topActions.slice(0, 4).map((item) => (
                 <CommandTile
+                  key={item.id}
+                  item={item}
+                  active={Boolean(isActive?.(item.href))}
+                  onNavigate={onNavigate}
+                  lightTone={lightTone}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {priorityItems.length && !normalizedQuery ? (
+          <div className="space-y-2">
+            <h3 className={cn('px-1 text-[11px] font-semibold uppercase tracking-[0.18em]', lightTone ? 'text-secondary-foreground' : 'text-white/56')}>דורש פעולה</h3>
+            <div className="space-y-1.5">
+              {priorityItems.map((item) => (
+                <CommandLink
                   key={item.id}
                   item={item}
                   active={Boolean(isActive?.(item.href))}
@@ -134,7 +153,7 @@ export function AmsCommandDrawer({
 
         {recentItems.length && !normalizedQuery ? (
           <div className="space-y-2">
-            <h3 className={cn('px-1 text-[11px] font-semibold uppercase tracking-[0.18em]', lightTone ? 'text-secondary-foreground' : 'text-white/56')}>Recently used</h3>
+            <h3 className={cn('px-1 text-[11px] font-semibold uppercase tracking-[0.18em]', lightTone ? 'text-secondary-foreground' : 'text-white/56')}>אחרונים</h3>
             <div className="space-y-1.5">
               {recentItems.map((item) => (
                 <CommandLink

@@ -37,7 +37,7 @@ export function GardensWorkerPlanner() {
         setDraft([]);
         return;
       }
-      const detail = await getMyGardensPlan(current.month);
+      const detail: MyGardensPlan = await getMyGardensPlan(current.month);
       setPlan(detail);
       setDraft(
         detail.assignments.map((assignment) => ({

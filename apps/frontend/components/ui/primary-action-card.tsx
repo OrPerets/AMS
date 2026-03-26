@@ -16,9 +16,11 @@ export function PrimaryActionCard({
   onClick,
   tone = 'default',
   secondaryAction,
+  supportingContent,
   className,
   mobileHomeEffect = false,
   visualStyle = 'default',
+  density = 'default',
 }: {
   eyebrow?: string;
   title: string;
@@ -28,9 +30,11 @@ export function PrimaryActionCard({
   onClick?: () => void;
   tone?: PrimaryActionTone;
   secondaryAction?: React.ReactNode;
+  supportingContent?: React.ReactNode;
   className?: string;
   mobileHomeEffect?: boolean;
   visualStyle?: 'default' | 'resident' | 'pm' | 'admin';
+  density?: 'default' | 'compact';
 }) {
   const reducedMotion = useReducedMotion();
   const Icon = tone === 'success' ? CheckCircle2 : CircleAlert;
@@ -44,7 +48,8 @@ export function PrimaryActionCard({
       animate={hold.isHolding && !reducedMotion ? { y: -3, scale: 1.01 } : { y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'overflow-hidden rounded-[22px] border border-s-4 p-3 text-right transition-[transform,box-shadow,filter] duration-300 sm:rounded-[26px] sm:p-3.5',
+        'overflow-hidden border border-s-4 text-right transition-[transform,box-shadow,filter] duration-300',
+        density === 'compact' ? 'rounded-[20px] p-3 sm:rounded-[22px] sm:p-3' : 'rounded-[22px] p-3 sm:rounded-[26px] sm:p-3.5',
         visualStyle === 'default' &&
           'border-primary/12 border-s-primary bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(247,250,255,0.94)_100%)] shadow-[0_18px_40px_rgba(15,23,42,0.10)]',
         visualStyle === 'resident' &&
@@ -83,10 +88,21 @@ export function PrimaryActionCard({
               aria-hidden="true"
             />
             <div className="min-w-0">
-              <div className={cn('text-[15px] font-semibold leading-5 sm:text-base', visualStyle === 'admin' ? 'text-inverse-text' : 'text-foreground')}>
+              <div
+                className={cn(
+                  density === 'compact' ? 'text-[14px] leading-5 sm:text-[15px]' : 'text-[15px] leading-5 sm:text-base',
+                  'font-semibold',
+                  visualStyle === 'admin' ? 'text-inverse-text' : 'text-foreground',
+                )}
+              >
                 {title}
               </div>
-              <div className={cn('line-clamp-2 text-[12px] leading-4.5 sm:text-[13px] sm:leading-5', visualStyle === 'admin' ? 'text-white/74' : 'text-secondary-foreground')}>
+              <div
+                className={cn(
+                  density === 'compact' ? 'line-clamp-1 text-[11px] leading-4.5 sm:text-[12px]' : 'line-clamp-2 text-[12px] leading-4.5 sm:text-[13px] sm:leading-5',
+                  visualStyle === 'admin' ? 'text-white/74' : 'text-secondary-foreground',
+                )}
+              >
                 {description}
               </div>
             </div>
@@ -98,7 +114,9 @@ export function PrimaryActionCard({
             <Link
               href={href}
               className={cn(
-                'inline-flex min-h-[42px] w-full items-center justify-center gap-1 rounded-2xl px-3.5 py-2 text-center text-sm font-semibold sm:min-h-[46px] sm:w-auto',
+                density === 'compact'
+                  ? 'inline-flex min-h-[40px] w-full items-center justify-center gap-1 rounded-[18px] px-3 py-2 text-center text-sm font-semibold sm:min-h-[42px] sm:w-auto'
+                  : 'inline-flex min-h-[42px] w-full items-center justify-center gap-1 rounded-2xl px-3.5 py-2 text-center text-sm font-semibold sm:min-h-[46px] sm:w-auto',
                 visualStyle === 'admin'
                   ? 'gold-sheen-button'
                   : 'gold-sheen-button',
@@ -113,7 +131,9 @@ export function PrimaryActionCard({
               type="button"
               onClick={onClick}
               className={cn(
-                'inline-flex min-h-[42px] w-full items-center justify-center gap-1 rounded-2xl px-3.5 py-2 text-center text-sm font-semibold sm:min-h-[46px] sm:w-auto',
+                density === 'compact'
+                  ? 'inline-flex min-h-[40px] w-full items-center justify-center gap-1 rounded-[18px] px-3 py-2 text-center text-sm font-semibold sm:min-h-[42px] sm:w-auto'
+                  : 'inline-flex min-h-[42px] w-full items-center justify-center gap-1 rounded-2xl px-3.5 py-2 text-center text-sm font-semibold sm:min-h-[46px] sm:w-auto',
                 visualStyle === 'admin'
                   ? 'gold-sheen-button'
                   : 'gold-sheen-button',
@@ -126,7 +146,8 @@ export function PrimaryActionCard({
           )}
         </div>
       </div>
-      {secondaryAction ? <div className="mt-2.5 flex justify-stretch sm:justify-end">{secondaryAction}</div> : null}
+      {supportingContent ? <div className={cn(density === 'compact' ? 'mt-2' : 'mt-2.5')}>{supportingContent}</div> : null}
+      {secondaryAction ? <div className={cn(density === 'compact' ? 'mt-2 flex justify-stretch sm:justify-end' : 'mt-2.5 flex justify-stretch sm:justify-end')}>{secondaryAction}</div> : null}
     </motion.div>
   );
 

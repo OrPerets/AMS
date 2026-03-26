@@ -93,40 +93,35 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
     title: item.title,
     href: item.href,
     icon: item.icon,
-    hint: item.hint,
-    badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
-  }));
-  const commandSections = [
-    {
-      id: 'inbox',
-      title: 'Inbox',
-      items:
-        unreadNotifications > 0
-          ? [
-              {
-                id: 'notifications',
-                title: t('nav.notifications'),
-                href: '/notifications',
-                icon: roleConfig.mobileMoreGroups.flatMap((group) => group.items).find((item) => item.href === '/notifications')?.icon ?? MoreHorizontal,
-                hint: 'התראות, אישורים ופעולות ממתינות',
-                badge: unreadNotifications > 9 ? '9+' : unreadNotifications,
-              },
-            ]
-          : [],
-    },
-    ...moreGroups.map((group) => ({
-      id: group.id,
-      title: group.title,
-      items: group.items.map((item) => ({
-        id: item.id,
-        title: item.title,
-        href: item.href,
-        icon: item.icon,
-        hint: item.hint,
-        badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
-      })),
+      hint: item.hint,
+      badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
+    }));
+  const allToolsItems = moreGroups.flatMap((group) =>
+    group.items.map((item) => ({
+      id: item.id,
+      title: item.title,
+      href: item.href,
+      icon: item.icon,
+      hint: item.hint,
+      badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
     })),
-  ].filter((section) => section.items.length);
+  );
+  const commandSections = allToolsItems.length
+    ? [
+        {
+          id: 'all-tools',
+          title: 'כל הכלים',
+          items: allToolsItems,
+        },
+      ]
+    : [];
+  const priorityItems = buildPriorityItems({
+    role: userRole,
+    primaryItems,
+    allToolsItems,
+    unreadNotifications,
+    t,
+  });
   const isActive = (href: string) => {
     const [path, query] = href.split('?');
     if (query) {
@@ -224,6 +219,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
         query={commandQuery}
         onQueryChange={setCommandQuery}
         topActions={topActionItems}
+        priorityItems={priorityItems}
         recentItems={recentNavItems.map(toCommandItem)}
         unreadCount={unreadNotifications}
         sections={commandSections.map((section) => ({
@@ -251,4 +247,68 @@ function toCommandItem(item: NavigationItem & { badge?: React.ReactNode }): AmsC
     hint: item.hint,
     badge: item.badge,
   };
+}
+
+function buildPriorityItems({
+  role,
+  primaryItems,
+  allToolsItems,
+  unreadNotifications,
+  t,
+}: {
+  role: string;
+  primaryItems: NavigationItem[];
+  allToolsItems: Array<NavigationItem & { badge?: React.ReactNode }>;
+  unreadNotifications: number;
+  t: (key: string, values?: Record<string, string | number>) => string;
+}) {
+  const byHref = new Map([...primaryItems, ...allToolsItems].map((item) => [item.href, item]));
+  const items: AmsCommandDrawerItem[] = [];
+
+  const addItem = (href: string, meta: string, badge?: React.ReactNode) => {
+    const item = byHref.get(href);
+    if (!item || items.some((candidate) => candidate.href === href)) return;
+    items.push({
+      id: `${item.id}-priority`,
+      title: item.title,
+      href: item.href,
+      icon: item.icon,
+      hint: item.hint,
+      badge,
+      meta,
+    });
+  };
+
+  if (unreadNotifications > 0) {
+    addItem('/notifications', 'לא נקראו', unreadNotifications > 9 ? '9+' : unreadNotifications);
+  }
+
+  switch (role) {
+    case 'ADMIN':
+      addItem('/tickets', 'תפעול');
+      addItem('/admin/approvals', 'ממתין');
+      break;
+    case 'PM':
+      addItem('/tickets', 'שיוך');
+      addItem('/operations/calendar', 'היום');
+      break;
+    case 'TECH':
+      addItem('/tech/jobs', 'הבא בתור');
+      addItem('/tickets?mine=true', 'עדכון');
+      break;
+    case 'ACCOUNTANT':
+      addItem('/payments', 'גבייה');
+      addItem('/finance/budgets', 'בדיקה');
+      break;
+    case 'RESIDENT':
+    default:
+      addItem('/payments/resident', 'לטיפול');
+      addItem('/resident/requests', 'מעקב');
+      break;
+  }
+
+  return items.slice(0, 3).map((item) => ({
+    ...item,
+    title: item.href === '/notifications' ? t('nav.notifications') : item.title,
+  }));
 }

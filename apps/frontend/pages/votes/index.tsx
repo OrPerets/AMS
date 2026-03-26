@@ -31,6 +31,14 @@ interface BuildingOption {
   name: string;
 }
 
+interface ResidentProfile {
+  resident?: {
+    units?: Array<{
+      building?: BuildingOption | null;
+    }>;
+  };
+}
+
 type VoteSection = {
   key: string;
   title: string;
@@ -70,11 +78,11 @@ export default function VotesPage() {
         throw new Error(await profileResponse.text());
       }
 
-      const profile = await profileResponse.json();
+      const profile = (await profileResponse.json()) as ResidentProfile;
       const residentBuildings = Array.isArray(profile?.resident?.units)
         ? profile.resident.units
-            .map((unit: any) => unit.building)
-            .filter(Boolean)
+            .map((unit) => unit.building)
+            .filter((building): building is BuildingOption => Boolean(building))
             .reduce<BuildingOption[]>((acc, building) => {
               if (acc.some((item) => item.id === building.id)) {
                 return acc;
@@ -92,9 +100,9 @@ export default function VotesPage() {
           throw new Error(await buildingsResponse.text());
         }
 
-        const buildings = await buildingsResponse.json();
+        const buildings = (await buildingsResponse.json()) as BuildingOption[];
         accessibleBuildings = Array.isArray(buildings)
-          ? buildings.map((building: any) => ({ id: building.id, name: building.name }))
+          ? buildings.map((building) => ({ id: building.id, name: building.name }))
           : [];
       }
 

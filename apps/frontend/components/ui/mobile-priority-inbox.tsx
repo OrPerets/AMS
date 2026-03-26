@@ -209,6 +209,8 @@ export function MobilePriorityInbox({
   emptyAction,
   className,
   emphasizeFirst = true,
+  maxItems = 3,
+  compact = false,
 }: {
   title?: string;
   subtitle?: string;
@@ -218,6 +220,8 @@ export function MobilePriorityInbox({
   emptyAction?: { label: string; href: string };
   className?: string;
   emphasizeFirst?: boolean;
+  maxItems?: number;
+  compact?: boolean;
 }) {
   const { t } = useLocale();
   const { isRTL } = useDirection();
@@ -225,7 +229,7 @@ export function MobilePriorityInbox({
   const resolvedTitle = title ?? t('mobilePriority.title');
   const resolvedEmptyTitle = emptyTitle ?? t('mobilePriority.emptyTitle');
   const resolvedEmptyDescription = emptyDescription ?? t('mobilePriority.emptyDescription');
-  const visibleItems = items.slice(0, 3);
+  const visibleItems = items.slice(0, maxItems);
   const swipeDirection = isRTL ? 1 : -1;
   const roleHint: 'resident' | 'admin' | 'operations' = router.pathname.startsWith('/resident')
     ? 'resident'
@@ -234,22 +238,22 @@ export function MobilePriorityInbox({
       : 'operations';
 
   return (
-    <Card variant="elevated" className={cn('overflow-hidden', className)}>
-      <CardHeader className="pb-3">
+    <Card variant="elevated" className={cn('overflow-hidden', compact && 'rounded-[24px]', className)}>
+      <CardHeader className={cn(compact ? 'pb-2.5 pt-4' : 'pb-3')}>
         <div className="flex items-center justify-between gap-3">
           <div>
             <CardTitle className="flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-primary" strokeWidth={1.75} />
               {resolvedTitle}
             </CardTitle>
-            {subtitle ? <p className="mt-1 text-[13px] leading-5 text-secondary-foreground">{subtitle}</p> : null}
+            {subtitle ? <p className={cn(compact ? 'mt-0.5 text-[12px] leading-4.5' : 'mt-1 text-[13px] leading-5', 'text-secondary-foreground')}>{subtitle}</p> : null}
           </div>
           <motion.div layout className="rounded-full border border-subtle-border bg-muted/35 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
             {t('common.itemsCount', { count: items.length })}
           </motion.div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2.5" role="list">
+      <CardContent className={cn(compact ? 'space-y-2 pb-4' : 'space-y-2.5', '')} role="list">
         {visibleItems.length ? (
           <AnimatePresence initial={false} mode="popLayout">
             {visibleItems.map((item, index) => (

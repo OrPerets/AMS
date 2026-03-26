@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowUpRight, Bell, Building2, ClipboardList, CreditCard, FileText, MapPinned, MessageCircle, ShieldCheck, Ticket, UserRound } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Bell, Building2, ClipboardList, CreditCard, FileText, ShieldCheck, Ticket, UserRound } from 'lucide-react';
 import { authFetch, getAccessToken, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { cn, formatCurrency, formatDate, getTicketStatusTone } from '../../lib/utils';
 import { Button } from '../../components/ui/button';
@@ -309,6 +309,37 @@ export default function ResidentAccountPage() {
       tone: 'success' as const,
     },
   ];
+  const paymentConfidenceItems = [
+    {
+      id: 'secure',
+      label: 'תשלום מאובטח',
+      value: 'מוצפן ומאומת',
+      icon: <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.8} />,
+    },
+    {
+      id: 'due-date',
+      label: nextPaymentDue ? 'מועד חיוב' : 'סטטוס חשבון',
+      value: nextPaymentDue ? formatDate(nextPaymentDue.dueDate, locale) : finance?.summary.currentBalance ? 'יתרה פתוחה' : 'הכול מעודכן',
+      icon: <CreditCard className="h-3.5 w-3.5" strokeWidth={1.8} />,
+    },
+    {
+      id: 'sync',
+      label: 'אישור ועדכון',
+      value: lastUpdatedAt ? 'קבלה ומעקב מידיים' : 'ממתין לסנכרון',
+      icon: <Bell className="h-3.5 w-3.5" strokeWidth={1.8} />,
+    },
+  ];
+  const residentTimeline = nextPaymentDue
+    ? [
+        { id: 'due', title: 'חיוב פתוח', detail: nextPaymentDue.description, state: nextPaymentDue.status === 'OVERDUE' ? 'warning' as const : 'default' as const },
+        { id: 'payment', title: 'תשלום ואישור', detail: 'לאחר התשלום תקבל קבלה והסטטוס יתעדכן מיד.', state: 'default' as const },
+        { id: 'followup', title: 'סגירת מעקב', detail: liveConnected ? 'החשבון מחובר להתראות חיות.' : 'החשבון יעדכן סטטוס בסנכרון הבא.', state: liveConnected ? 'success' as const : 'default' as const },
+      ]
+    : [
+        { id: 'clear', title: 'החשבון בשליטה', detail: 'אין כרגע חיוב דחוף פתוח.', state: 'success' as const },
+        { id: 'notifications', title: 'עדכונים', detail: unreadNotifications.length ? `${unreadNotifications.length} עדכונים מחכים לקריאה.` : 'אין עדכונים דחופים.', state: unreadNotifications.length ? 'default' as const : 'success' as const },
+        { id: 'support', title: 'שירות', detail: openTickets.length ? `יש ${openTickets.length} קריאות פתוחות למעקב.` : 'אפשר לפתוח בקשה חדשה בכל רגע.', state: openTickets.length ? 'warning' as const : 'default' as const },
+      ];
 
   useEffect(() => {
     if (!loading && context) {
@@ -430,14 +461,14 @@ export default function ResidentAccountPage() {
               <div className="gold-sheen-surface rounded-[26px] p-4" data-accent-sheen="true">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-[11px] font-semibold tracking-[0.16em] text-secondary-foreground">{spotlight.label}</div>
+                    <div className="text-[11px] font-semibold tracking-[0.16em] text-secondary-foreground">דופק החשבון</div>
                     <div className="mt-2 text-[34px] font-black leading-none text-foreground">
                       <bdi>{spotlight.value}</bdi>
                     </div>
                   </div>
                   <HeroStatusBadge
                     icon={nextPaymentDue ? <CreditCard className="h-4 w-4" strokeWidth={1.8} /> : <ShieldCheck className="h-4 w-4" strokeWidth={1.8} />}
-                    label={nextPaymentDue ? 'לתשלום' : 'מבט מהיר'}
+                    label={nextPaymentDue ? spotlight.label : 'מבט מהיר'}
                   />
                 </div>
                 <div className="mt-2 text-[13px] leading-5 text-secondary-foreground">{spotlight.description}</div>
@@ -455,6 +486,22 @@ export default function ResidentAccountPage() {
               {residentPrimaryAction.ctaLabel}
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.85} />
             </Link>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {paymentConfidenceItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex min-h-[44px] items-center gap-2 rounded-[18px] border border-primary/12 bg-white/72 px-3 py-2 text-right"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    {item.icon}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-semibold text-secondary-foreground">{item.label}</div>
+                    <div className="truncate text-[12px] font-semibold text-foreground">{item.value}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </ResidentHero>
       </motion.section>
@@ -468,6 +515,40 @@ export default function ResidentAccountPage() {
           lastUpdatedAt={lastUpdatedAt}
           unreadCount={unreadNotifications.length}
         />
+        <GlassSurface className="rounded-[26px] p-4">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-foreground">מסלול החשבון</div>
+              <div className="mt-0.5 text-[11px] text-secondary-foreground">ברור מה קורה עכשיו ומה קורה מיד אחרי הפעולה.</div>
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground">Client service</div>
+          </div>
+          <div className="mt-3 space-y-2.5">
+            {residentTimeline.map((item, index) => (
+              <div key={item.id} className="flex items-start gap-3">
+                <div className="flex flex-col items-center">
+                  <span
+                    className={cn(
+                      'flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold',
+                      item.state === 'warning'
+                        ? 'bg-warning/14 text-warning'
+                        : item.state === 'success'
+                          ? 'bg-success/14 text-success'
+                          : 'bg-primary/10 text-primary',
+                    )}
+                  >
+                    {index + 1}
+                  </span>
+                  {index < residentTimeline.length - 1 ? <span className="mt-1 h-6 w-px bg-border" /> : null}
+                </div>
+                <div className="min-w-0 pt-1">
+                  <div className="text-[13px] font-semibold text-foreground">{item.title}</div>
+                  <div className="mt-0.5 text-[12px] leading-5 text-secondary-foreground">{item.detail}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </GlassSurface>
       </motion.section>
 
       <motion.section {...residentScreenMotion(motionReduced, 0.1)} className="px-1">

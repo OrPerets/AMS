@@ -48,8 +48,8 @@ test.describe('mobile polish smoke', () => {
         await expect(page.getByRole('heading', { name: /האזור האישי/i }).first()).toBeVisible();
         await expect(page.getByText(/דופק החשבון/i).first()).toBeVisible();
       } else {
-        await expect(page.getByRole('heading', { name: /מרכז העבודה|תיבת מנהל נכס|Priority inbox/i }).first()).toBeVisible();
-        await expect(page.getByText(/הפעולות והסיכונים של היום|מה דורש טיפול עכשיו|requires action now/i).first()).toBeVisible();
+        await expect(page.getByRole('heading', { name: /מרכז העבודה/i }).first()).toBeVisible();
+        await expect(page.getByText(/מה דורש טיפול עכשיו|המהלך הבא/i).first()).toBeVisible();
       }
       await expectNoHorizontalOverflow(page);
       await captureToMobilePolish(page, testInfo, `home-${scenario.name}.png`);

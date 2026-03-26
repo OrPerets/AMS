@@ -85,6 +85,8 @@ export function RoleHomeShell({
   const icon = getRoleStatusIcon(roleKey);
   const tone = roleKey === 'ADMIN' ? 'admin' : roleKey === 'PM' ? 'pm' : roleKey === 'RESIDENT' ? 'resident' : 'default';
   const shellMode = roleKey === 'ADMIN' ? 'admin' : roleKey === 'PM' ? 'pm' : 'default';
+  const operatorMode = roleKey === 'ADMIN' || roleKey === 'PM' || roleKey === 'ACCOUNTANT' || roleKey === 'TECH';
+  const operationalPulseMetrics = statusMetrics.slice(0, 3);
   const inbox = (
     <MobilePriorityInbox
       title={inboxTitle}
@@ -94,12 +96,21 @@ export function RoleHomeShell({
       emptyDescription={emptyDescription}
       emptyAction={emptyAction}
       emphasizeFirst={roleKey !== 'ACCOUNTANT'}
+      maxItems={operatorMode ? 2 : 3}
+      compact={operatorMode}
     />
   );
   const quickActionsGrid = <HomeQuickActionsGrid items={quickActions} roleKey={roleKey} />;
 
   return (
     <div className="space-y-2">
+      {roleKey !== 'RESIDENT' ? (
+        <div className="px-1 text-right">
+          <h1 className="text-[18px] font-black tracking-[-0.02em] text-foreground">מרכז העבודה</h1>
+          <p className="mt-0.5 text-[12px] text-secondary-foreground">מה דורש טיפול עכשיו ומה המהלך הבא.</p>
+        </div>
+      ) : null}
+
       <CompactStatusStrip
         roleLabel={roleLabel}
         icon={icon}
@@ -115,7 +126,9 @@ export function RoleHomeShell({
       />
 
       {(roleKey === 'ADMIN' || roleKey === 'PM' || roleKey === 'ACCOUNTANT') && statusMetrics.length ? (
-        <MobileMetricStrip roleKey={roleKey} metrics={statusMetrics} quickActions={quickActions} />
+        <div className="hidden md:block">
+          <MobileMetricStrip roleKey={roleKey} metrics={statusMetrics} quickActions={quickActions} />
+        </div>
       ) : null}
 
       <PrimaryActionCard
@@ -127,6 +140,13 @@ export function RoleHomeShell({
         tone={primaryAction.tone}
         visualStyle={tone}
         mobileHomeEffect
+        density={operatorMode ? 'compact' : 'default'}
+        className={operatorMode ? 'shadow-[0_16px_34px_rgba(44,28,9,0.10)]' : undefined}
+        supportingContent={
+          roleKey === 'ADMIN' || roleKey === 'PM' || roleKey === 'ACCOUNTANT' ? (
+            <OperationalPulseRow metrics={operationalPulseMetrics} shellMode={shellMode} />
+          ) : null
+        }
         secondaryAction={
           primaryAction.secondaryAction ? (
             <Link
@@ -175,13 +195,15 @@ function sortByRecentUsage(items: HomeQuickAction[], roleKey: RoleKey): HomeQuic
 
 export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: HomeQuickAction[]; roleKey?: RoleKey }) {
   const sorted = sortByRecentUsage(items, roleKey);
+  const compactDensity = roleKey === 'PM' || roleKey === 'ADMIN' || roleKey === 'TECH';
 
   if (roleKey === 'PM' || roleKey === 'ADMIN') {
     return (
       <MobileActionHub
-          title={roleKey === 'ADMIN' ? 'פעולות בקרה' : 'פעולות ניהול'}
+        title={roleKey === 'ADMIN' ? 'פעולות בקרה' : 'פעולות ניהול'}
         subtitle={roleKey === 'ADMIN' ? 'מוקד הפעולה הבא.' : 'המשימות הקרובות במקום אחד.'}
         layout="hierarchy"
+        density="compact"
         items={sorted.slice(0, 4).map((item, index) => ({
           id: item.id,
           label: item.title,
@@ -211,7 +233,7 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
   }
 
   return (
-    <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-2.5">
       {sorted.slice(0, 4).map((item, index) => {
         const Icon = item.icon;
         const isLeading = index === 0 && (item.tone === 'warning' || item.tone === 'danger');
@@ -225,7 +247,8 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
             <Card
               variant="elevated"
               className={cn(
-                'h-full min-h-[88px] rounded-2xl border transition duration-200 hover:-translate-y-0.5 hover:shadow-card',
+                'h-full border transition duration-200 hover:-translate-y-0.5 hover:shadow-card',
+                compactDensity ? 'min-h-[80px] rounded-[20px]' : 'min-h-[88px] rounded-2xl',
                 'bg-[linear-gradient(180deg,rgba(255,255,255,0.97)_0%,rgba(248,244,236,0.92)_100%)]',
                 item.tone === 'warning' && 'border-warning/30 bg-warning/5',
                 item.tone === 'danger' && 'border-destructive/30 bg-destructive/5',
@@ -233,21 +256,21 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
                 isLeading && 'ring-2 ring-primary/20',
               )}
             >
-              <CardContent className="flex h-full flex-col justify-between p-3">
+              <CardContent className={cn('flex h-full flex-col justify-between', compactDensity ? 'p-2.5' : 'p-3')}>
                 <div className="flex items-start justify-between gap-2">
-                  <div className="text-[13px] font-semibold leading-5 text-foreground">{item.title}</div>
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <div className={cn(compactDensity ? 'text-[12px]' : 'text-[13px]', 'font-semibold leading-5 text-foreground')}>{item.title}</div>
+                  <span className={cn('flex shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary', compactDensity ? 'h-7 w-7' : 'h-8 w-8')}>
                     <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
                   </span>
                 </div>
                 <div>
-                  <div className="text-xl font-extrabold leading-none tabular-nums text-foreground">
+                  <div className={cn(compactDensity ? 'text-[1.05rem]' : 'text-xl', 'font-extrabold leading-none tabular-nums text-foreground')}>
                     <bdi>{item.previewValue ?? item.value}</bdi>
                   </div>
                   {item.microViz?.length ? (
                     <MiniSparkline data={item.microViz} tone={item.tone} className="mt-2 h-7" />
                   ) : null}
-                  <div className="mt-1 flex items-center justify-between gap-2 text-[11px] leading-4 text-secondary-foreground">
+                  <div className={cn(compactDensity ? 'text-[10px]' : 'text-[11px]', 'mt-1 flex items-center justify-between gap-2 leading-4 text-secondary-foreground')}>
                     <span>{item.subtitle}</span>
                     <span className="inline-flex items-center gap-1 font-semibold text-primary">
                       פתח
@@ -257,6 +280,73 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
                 </div>
               </CardContent>
             </Card>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+function OperationalPulseRow({
+  metrics,
+  shellMode,
+}: {
+  metrics: HomeStatusMetric[];
+  shellMode: 'default' | 'pm' | 'admin';
+}) {
+  if (!metrics.length) return null;
+
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {metrics.map((metric) => {
+        const content = (
+          <>
+            <span className={cn('block text-[10px] font-semibold', shellMode === 'admin' ? 'text-white/64' : 'text-secondary-foreground')}>
+              {metric.label}
+            </span>
+            <span
+              className={cn(
+                'mt-1 block text-[15px] font-black leading-none tabular-nums',
+                metric.tone === 'danger' && 'text-destructive',
+                metric.tone === 'warning' && 'text-warning',
+                metric.tone === 'success' && 'text-success',
+                (!metric.tone || metric.tone === 'default') && (shellMode === 'admin' ? 'text-inverse-text' : 'text-foreground'),
+              )}
+            >
+              <bdi>{metric.value}</bdi>
+            </span>
+            <span className={cn('mt-1 block truncate text-[10px]', shellMode === 'admin' ? 'text-white/56' : 'text-secondary-foreground')}>
+              {metric.trendLabel ?? metric.hint ?? 'פעיל עכשיו'}
+            </span>
+          </>
+        );
+
+        if (!metric.href) {
+          return (
+            <div
+              key={metric.id}
+              className={cn(
+                'rounded-[16px] border px-2.5 py-2 text-right',
+                shellMode === 'admin' ? 'border-white/10 bg-white/6' : 'border-subtle-border bg-background/72',
+              )}
+            >
+              {content}
+            </div>
+          );
+        }
+
+        return (
+          <Link
+            key={metric.id}
+            href={metric.href}
+            className={cn(
+              'rounded-[16px] border px-2.5 py-2 text-right transition-colors active:scale-[0.99]',
+              shellMode === 'admin'
+                ? 'border-white/10 bg-white/6 hover:bg-white/8'
+                : 'border-subtle-border bg-background/72 hover:bg-background/90',
+            )}
+          >
+            {content}
           </Link>
         );
       })}

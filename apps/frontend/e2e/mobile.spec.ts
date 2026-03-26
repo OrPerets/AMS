@@ -124,11 +124,10 @@ test.describe('mobile support smoke', () => {
     await setSession(page, 'TECH');
 
     await page.goto('/tech/jobs');
-    await expect(page.getByRole('heading', { name: 'מעברים מהירים' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'כלי שטח' })).toBeVisible();
     await expect(page.getByRole('link', { name: /דוח פיקוח/ }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /מרכז ניהול/ }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /^גינון/ }).last()).toBeVisible();
-    await expect(page.getByRole('link', { name: /דוח פיקוח/ }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /עדכון סטטוס/ }).first()).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 

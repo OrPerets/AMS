@@ -22,6 +22,7 @@ export function AdminMobileHome({ data }: { data: AdminMobileHomeData }) {
       emptyTitle="אין חריגות פתוחות"
       emptyDescription="הכול טופל. אפשר לעבור לבקרה, יומן או דוח שבועי."
       emptyAction={{ label: 'פתח לוח בקרה', href: '/admin/dashboard' }}
+      prioritizeInbox
     />
   );
 }
