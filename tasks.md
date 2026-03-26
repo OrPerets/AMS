@@ -163,13 +163,13 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Match non-resident clarity to resident-level quality using one unified shell.
 
 ### Todo
-- [ ] Create shell primitives with strict API (status strip, primary card, quick actions, inbox slice).
-- [ ] Refactor PM home to strict shell contract.
-- [ ] Refactor Admin home to strict shell contract.
-- [ ] Refactor Tech home to strict shell contract.
-- [ ] Align microcopy tone: short, task-oriented, no marketing style on work surfaces.
-- [ ] Enforce first-viewport rule in automated visual checks.
-- [ ] Add analytics events for top-card impression and first action click.
+- [x] Create shell primitives with strict API (status strip, primary card, quick actions, inbox slice).
+- [x] Refactor PM home to strict shell contract.
+- [x] Refactor Admin home to strict shell contract.
+- [x] Refactor Tech home to strict shell contract.
+- [x] Align microcopy tone: short, task-oriented, no marketing style on work surfaces.
+- [x] Enforce first-viewport rule in automated visual checks.
+- [x] Add analytics events for top-card impression and first action click.
 
 ### Exit Criteria
 - All three roles pass same shell checklist.
