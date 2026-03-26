@@ -225,17 +225,27 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Convert fragile page-centric structure into maintainable feature architecture.
 
 ### Todo
-- [ ] Define target frontend architecture RFC (feature folders + boundaries + dependency rules).
-- [ ] Split large files into controller/hook + UI components + adapters.
-- [ ] Introduce lint boundaries (no cross-feature imports outside public API).
-- [ ] Add shared domain enums/status mappers with typed exports.
-- [ ] Add codemods/scripts for safe migrations.
-- [ ] Document contribution conventions and PR checklist.
+- [x] Define target frontend architecture RFC (feature folders + boundaries + dependency rules).
+- [x] Split large files into controller/hook + UI components + adapters.
+- [x] Introduce lint boundaries (no cross-feature imports outside public API).
+- [x] Add shared domain enums/status mappers with typed exports.
+- [x] Add codemods/scripts for safe migrations.
+- [x] Document contribution conventions and PR checklist.
 
 ### Exit Criteria
-- Largest risky pages reduced in complexity and size.
-- Clear import boundaries enforced in CI.
-- New feature development path documented and adopted.
+- [x] Largest risky pages reduced in complexity and size.
+- [x] Clear import boundaries enforced in CI.
+- [x] New feature development path documented and adopted.
+
+### Sprint 5 Artifacts
+- `reports/sprint-5/architecture-rfc.md`
+- `apps/frontend/features/` (11 domain feature folders)
+- `apps/frontend/shared/domain/` (typed enums + status mappers)
+- `apps/frontend/shared/api/` (fetch helpers + response types)
+- `scripts/migrate-to-features.mjs` (scaffold, audit, validate)
+- `scripts/verify-feature-boundaries.mjs` (CI boundary checker)
+- `CONTRIBUTING.md` (conventions + PR checklist)
+- `eslint.config.mjs` (feature boundary lint rules)
 
 ---
 
@@ -243,17 +253,27 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Ensure frontend clarity is backed by stable, predictable backend contracts.
 
 ### Todo
-- [ ] Audit endpoint response shape consistency for mobile critical flows.
-- [ ] Introduce API schema tests (snapshot or contract-driven).
-- [ ] Standardize pagination/meta patterns.
-- [ ] Standardize server-side status enums and translation mapping.
-- [ ] Add resilience behavior for partial failures (graceful fallback modules).
-- [ ] Add SLOs for key endpoints used on role home screens.
+- [x] Audit endpoint response shape consistency for mobile critical flows.
+- [x] Introduce API schema tests (snapshot or contract-driven).
+- [x] Standardize pagination/meta patterns.
+- [x] Standardize server-side status enums and translation mapping.
+- [x] Add resilience behavior for partial failures (graceful fallback modules).
+- [x] Add SLOs for key endpoints used on role home screens.
 
 ### Exit Criteria
-- Contract diffs detected automatically in CI.
-- Fewer frontend defensive branches for shape mismatch.
-- Improved reliability metrics on critical dashboards.
+- [x] Contract diffs detected automatically in CI.
+- [x] Fewer frontend defensive branches for shape mismatch.
+- [x] Improved reliability metrics on critical dashboards.
+
+### Sprint 6 Artifacts
+- `reports/sprint-6/api-audit-report.md`
+- `reports/sprint-6/slo-definitions.md`
+- `apps/backend/src/common/dto/pagination.dto.ts` (PaginationQueryDto)
+- `apps/backend/src/common/dto/api-response.dto.ts` (PaginatedResponseDto, ListResponseDto)
+- `apps/backend/src/common/dto/status-enums.ts` (all domain status maps + translations)
+- `apps/backend/src/common/slo-tracking.interceptor.ts` (SLO tracking + metrics)
+- `apps/backend/src/common/__tests__/` (37 contract + snapshot tests)
+- `apps/frontend/shared/api/resilience.ts` (resilientFetch, resilientFetchAll, fetchWithRetry)
 
 ---
 

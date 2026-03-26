@@ -6,6 +6,7 @@ import * as express from 'express';
 import { join } from 'path';
 import type { NextFunction, Request, Response } from 'express';
 import { ApiExceptionFilter } from './common/api-exception.filter';
+import { SloTrackingInterceptor } from './common/slo-tracking.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -55,6 +56,7 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(new ApiExceptionFilter());
+  app.useGlobalInterceptors(new SloTrackingInterceptor());
 
   // Serve uploaded files statically
   const uploadsPath = join(__dirname, '..', 'uploads');

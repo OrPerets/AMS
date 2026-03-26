@@ -1,0 +1,159 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Status enum snapshot contracts CollectionStatusMap matches snapshot 1`] = `
+{
+  "CURRENT": {
+    "key": "CURRENT",
+    "label": "שוטף",
+    "labelEn": "Current",
+  },
+  "IN_COLLECTIONS": {
+    "key": "IN_COLLECTIONS",
+    "label": "בגבייה",
+    "labelEn": "In Collections",
+  },
+  "PAST_DUE": {
+    "key": "PAST_DUE",
+    "label": "חוב",
+    "labelEn": "Past Due",
+  },
+  "PROMISE_TO_PAY": {
+    "key": "PROMISE_TO_PAY",
+    "label": "הבטחה לתשלום",
+    "labelEn": "Promise to Pay",
+  },
+  "RESOLVED": {
+    "key": "RESOLVED",
+    "label": "נפתר",
+    "labelEn": "Resolved",
+  },
+}
+`;
+
+exports[`Status enum snapshot contracts InvoiceStatusMap matches snapshot 1`] = `
+{
+  "OVERDUE": {
+    "key": "OVERDUE",
+    "label": "פיגור",
+    "labelEn": "Overdue",
+  },
+  "PAID": {
+    "key": "PAID",
+    "label": "שולם",
+    "labelEn": "Paid",
+  },
+  "PENDING": {
+    "key": "PENDING",
+    "label": "ממתין",
+    "labelEn": "Pending",
+  },
+}
+`;
+
+exports[`Status enum snapshot contracts MaintenanceStatusMap matches snapshot 1`] = `
+{
+  "COMPLETED": {
+    "key": "COMPLETED",
+    "label": "הושלם",
+    "labelEn": "Completed",
+  },
+  "IN_PROGRESS": {
+    "key": "IN_PROGRESS",
+    "label": "בביצוע",
+    "labelEn": "In Progress",
+  },
+  "OVERDUE": {
+    "key": "OVERDUE",
+    "label": "באיחור",
+    "labelEn": "Overdue",
+  },
+  "PENDING": {
+    "key": "PENDING",
+    "label": "ממתין",
+    "labelEn": "Pending",
+  },
+  "SCHEDULED": {
+    "key": "SCHEDULED",
+    "label": "מתוזמן",
+    "labelEn": "Scheduled",
+  },
+}
+`;
+
+exports[`Status enum snapshot contracts TicketSeverityMap matches snapshot 1`] = `
+{
+  "HIGH": {
+    "key": "HIGH",
+    "label": "גבוה",
+    "labelEn": "High",
+    "rank": 2,
+  },
+  "NORMAL": {
+    "key": "NORMAL",
+    "label": "רגיל",
+    "labelEn": "Normal",
+    "rank": 1,
+  },
+  "URGENT": {
+    "key": "URGENT",
+    "label": "דחוף",
+    "labelEn": "Urgent",
+    "rank": 3,
+  },
+}
+`;
+
+exports[`Status enum snapshot contracts TicketStatusMap matches snapshot 1`] = `
+{
+  "ASSIGNED": {
+    "key": "ASSIGNED",
+    "label": "שויכה",
+    "labelEn": "Assigned",
+  },
+  "IN_PROGRESS": {
+    "key": "IN_PROGRESS",
+    "label": "בטיפול",
+    "labelEn": "In Progress",
+  },
+  "OPEN": {
+    "key": "OPEN",
+    "label": "פתוחה",
+    "labelEn": "Open",
+  },
+  "RESOLVED": {
+    "key": "RESOLVED",
+    "label": "נפתרה",
+    "labelEn": "Resolved",
+  },
+}
+`;
+
+exports[`Status enum snapshot contracts WorkOrderStatusMap matches snapshot 1`] = `
+{
+  "APPROVED": {
+    "key": "APPROVED",
+    "label": "אושר",
+    "labelEn": "Approved",
+  },
+  "COMPLETED": {
+    "key": "COMPLETED",
+    "label": "הושלם",
+    "labelEn": "Completed",
+  },
+  "INVOICED": {
+    "key": "INVOICED",
+    "label": "חשבונית",
+    "labelEn": "Invoiced",
+  },
+  "IN_PROGRESS": {
+    "key": "IN_PROGRESS",
+    "label": "בתהליך",
+    "labelEn": "In Progress",
+  },
+  "PENDING": {
+    "key": "PENDING",
+    "label": "ממתין",
+    "labelEn": "Pending",
+  },
+}
+`;
