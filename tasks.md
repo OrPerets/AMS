@@ -189,17 +189,17 @@ The current codebase already contains strong mobile intent (role-aware home blue
 5. Gardens entry surfaces for PM/Tech
 
 ### Todo
-- [ ] Apply section hierarchy template to each high-use page.
-- [ ] Replace oversized headers/hero blocks with compact context headers.
-- [ ] Normalize filters/search/action bar pattern.
-- [ ] Normalize list item structure (status, urgency, owner, due indicator).
-- [ ] Add empty/loading/error consistency kit.
-- [ ] Remove duplicate action CTAs competing for primary intent.
+- [x] Apply section hierarchy template to each high-use page.
+- [x] Replace oversized headers/hero blocks with compact context headers.
+- [x] Normalize filters/search/action bar pattern.
+- [x] Normalize list item structure (status, urgency, owner, due indicator).
+- [x] Add empty/loading/error consistency kit.
+- [x] Remove duplicate action CTAs competing for primary intent.
 
 ### Exit Criteria
-- Top 15 non-resident pages use shared mobile layout patterns.
-- Scroll depth before first interaction reduced materially.
-- QA score for clarity improved to target threshold.
+- [x] Top 15 non-resident pages use shared mobile layout patterns.
+- [x] Scroll depth before first interaction reduced materially.
+- [x] QA score for clarity improved to target threshold.
 
 ---
 

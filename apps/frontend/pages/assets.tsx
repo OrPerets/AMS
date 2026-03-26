@@ -4,7 +4,6 @@ import {
   Search,
   Box,
   Building,
-  Calendar,
   DollarSign,
   AlertTriangle,
   CheckCircle,
@@ -19,6 +18,12 @@ import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Skeleton } from '../components/ui/skeleton';
 import { toast } from '../components/ui/use-toast';
+import {
+  CompactContextHeader,
+  ConsistencyStateBlock,
+  FilterActionBar,
+  ListItemMetaRow,
+} from '../components/ui/mobile-page-cleanup-kit';
 
 interface BuildingOption {
   id: number;
@@ -85,6 +90,7 @@ export default function AssetsPage() {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterBuilding, setFilterBuilding] = useState('all');
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     void loadBuildings();
@@ -108,6 +114,7 @@ export default function AssetsPage() {
 
   const loadAssets = async () => {
     try {
+      setLoadError(false);
       const res = await authFetch('/api/v1/assets');
       if (!res.ok) {
         throw new Error('Failed to load assets');
@@ -117,6 +124,7 @@ export default function AssetsPage() {
       const list = Array.isArray(data) ? data : [];
       setAssets(list.map(mapAssetRecord));
     } catch (error: any) {
+      setLoadError(true);
       toast({
         title: 'שגיאה בטעינת נכסים',
         description: error?.message || 'לא ניתן לטעון את רשימת הנכסים',
@@ -287,40 +295,38 @@ export default function AssetsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">ציוד ונכסים</h1>
-          <p className="text-muted-foreground">ניהול ציוד ונכסים בבניינים</p>
-        </div>
-
-        <Button asChild>
-          <Link href="/assets/new">
-            <Plus className="me-2 h-4 w-4" />
-            הוסף נכס
-          </Link>
-        </Button>
-      </div>
+      <CompactContextHeader
+        title="ציוד ונכסים"
+        description="ניהול ציוד ונכסים בבניינים עם מעקב אחר אחריות ותחזוקה."
+        context="נכסים"
+        chips={['חיפוש מהיר', 'סינון אחיד', 'פעולות מיידיות']}
+        actions={
+          <Button asChild>
+            <Link href="/assets/new">
+              <Plus className="me-2 h-4 w-4" />
+              הוסף נכס
+            </Link>
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader>
           <CardTitle>סינון וחיפוש</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="חיפוש נכסים..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-10"
-                />
-              </div>
+          <FilterActionBar className="sm:grid-cols-2 lg:grid-cols-4">
+            <div className="relative sm:col-span-2 lg:col-span-1">
+              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="חיפוש נכסים..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pr-10"
+              />
             </div>
-
             <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-full sm:w-48">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="קטגוריה" />
               </SelectTrigger>
               <SelectContent>
@@ -336,7 +342,7 @@ export default function AssetsPage() {
             </Select>
 
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full sm:w-48">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="סטטוס" />
               </SelectTrigger>
               <SelectContent>
@@ -349,7 +355,7 @@ export default function AssetsPage() {
             </Select>
 
             <Select value={filterBuilding} onValueChange={setFilterBuilding}>
-              <SelectTrigger className="w-full sm:w-56">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="בניין" />
               </SelectTrigger>
               <SelectContent>
@@ -361,109 +367,82 @@ export default function AssetsPage() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </FilterActionBar>
         </CardContent>
       </Card>
 
-      {lifecycle && (
-        <div className="grid gap-4 md:grid-cols-5">
-          <Card><CardHeader><CardTitle>נכסים</CardTitle></CardHeader><CardContent>{lifecycle.summary.totalAssets}</CardContent></Card>
-          <Card><CardHeader><CardTitle>אחריות קרובה</CardTitle></CardHeader><CardContent>{lifecycle.summary.expiringWarranty}</CardContent></Card>
-          <Card><CardHeader><CardTitle>אחריות שפגה</CardTitle></CardHeader><CardContent>{lifecycle.summary.expiredWarranty}</CardContent></Card>
-          <Card><CardHeader><CardTitle>החלפה מומלצת</CardTitle></CardHeader><CardContent>{lifecycle.summary.replacementRecommended}</CardContent></Card>
-          <Card><CardHeader><CardTitle>ספירת מלאי באיחור</CardTitle></CardHeader><CardContent>{lifecycle.summary.overdueInventoryChecks}</CardContent></Card>
-        </div>
-      )}
+      <ConsistencyStateBlock
+        state={loadError ? 'error' : !filteredAssets.length ? 'empty' : 'ready'}
+        emptyTitle="אין נכסים להצגה"
+        emptyDescription="לא נמצאו נכסים התואמים למסננים שנבחרו."
+        onRetry={loadAssets}
+      >
+        {lifecycle && (
+          <div className="grid gap-4 md:grid-cols-5">
+            <Card><CardHeader><CardTitle>נכסים</CardTitle></CardHeader><CardContent>{lifecycle.summary.totalAssets}</CardContent></Card>
+            <Card><CardHeader><CardTitle>אחריות קרובה</CardTitle></CardHeader><CardContent>{lifecycle.summary.expiringWarranty}</CardContent></Card>
+            <Card><CardHeader><CardTitle>אחריות שפגה</CardTitle></CardHeader><CardContent>{lifecycle.summary.expiredWarranty}</CardContent></Card>
+            <Card><CardHeader><CardTitle>החלפה מומלצת</CardTitle></CardHeader><CardContent>{lifecycle.summary.replacementRecommended}</CardContent></Card>
+            <Card><CardHeader><CardTitle>ספירת מלאי באיחור</CardTitle></CardHeader><CardContent>{lifecycle.summary.overdueInventoryChecks}</CardContent></Card>
+          </div>
+        )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredAssets.map((asset) => (
-          <Card key={asset.id} className="transition-shadow hover:shadow-md">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <Box className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <CardTitle className="text-sm font-medium line-clamp-1">{asset.name}</CardTitle>
-                    <div className="text-xs text-muted-foreground">{getCategoryLabel(asset.category)}</div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredAssets.map((asset) => (
+            <Card key={asset.id} className="transition-shadow hover:shadow-md">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <Box className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <CardTitle className="line-clamp-1 text-sm font-medium">{asset.name}</CardTitle>
+                      <div className="text-xs text-muted-foreground">{getCategoryLabel(asset.category)}</div>
+                    </div>
                   </div>
+                  <div className="flex items-center gap-1">{getStatusIcon(asset.status)}</div>
                 </div>
-                <div className="flex items-center gap-1">{getStatusIcon(asset.status)}</div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-2 text-sm">
+              </CardHeader>
+              <CardContent className="space-y-3 pt-0">
                 <div className="flex items-center justify-between">
                   <Badge variant={getStatusColor(asset.status)}>{getStatusLabel(asset.status)}</Badge>
                   {isMaintenanceDue(asset.nextMaintenance) && <Badge variant="warning">תחזוקה קרובה</Badge>}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {asset.replacementRecommended && <Badge variant="destructive">החלפה מומלצת</Badge>}
-                  {asset.nextInventoryCheck && new Date(asset.nextInventoryCheck) < new Date() && <Badge variant="warning">ספירת מלאי באיחור</Badge>}
-                </div>
-
+                <ListItemMetaRow
+                  status={getStatusLabel(asset.status)}
+                  urgency={isMaintenanceDue(asset.nextMaintenance) ? 'גבוהה' : 'רגילה'}
+                  owner={asset.buildingName}
+                  dueLabel={
+                    asset.nextMaintenance
+                      ? `יעד תחזוקה: ${new Date(asset.nextMaintenance).toLocaleDateString('he-IL')}`
+                      : 'יעד תחזוקה: ללא'
+                  }
+                />
                 <div className="space-y-1 text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Building className="h-3 w-3" />
                     <span>{asset.buildingName}</span>
                     {asset.unitNumber && <span>יחידה {asset.unitNumber}</span>}
                   </div>
-
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-3 w-3" />
                     <span>{formatCurrency(asset.value)}</span>
                   </div>
-
-                  {asset.location && (
-                    <div className="text-xs">
-                      מיקום: {asset.location}
-                    </div>
-                  )}
-
-                  {asset.nextMaintenance && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-3 w-3" />
-                      <span>תחזוקה הבאה: {new Date(asset.nextMaintenance).toLocaleDateString('he-IL')}</span>
-                    </div>
-                  )}
-
-                  {asset.lastInventoryCheck && (
-                    <div className="text-xs">
-                      מלאי אחרון: {new Date(asset.lastInventoryCheck).toLocaleDateString('he-IL')}
-                    </div>
-                  )}
+                  {asset.location && <div className="text-xs">מיקום: {asset.location}</div>}
+                  {asset.replacementRecommended && <Badge variant="destructive">החלפה מומלצת</Badge>}
                 </div>
-              </div>
-
-              <div className="mt-4 flex gap-2">
-                <Button asChild variant="outline" size="sm" className="flex-1">
-                  <Link href={`/assets/${asset.id}/edit`}>ערוך</Link>
-                </Button>
-                <Button asChild variant="outline" size="sm">
-                  <Link href={`/assets/${asset.id}`}>צפה</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredAssets.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Box className="mb-4 h-12 w-12 text-muted-foreground" />
-            <h3 className="mb-2 text-lg font-semibold">אין נכסים</h3>
-            <p className="mb-4 text-center text-muted-foreground">
-              לא נמצאו נכסים התואמים לקריטריונים שלך
-            </p>
-            <Button asChild>
-              <Link href="/assets/new">
-                <Plus className="me-2 h-4 w-4" />
-                הוסף נכס ראשון
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+                <div className="mt-4 flex gap-2">
+                  <Button asChild variant="outline" size="sm" className="flex-1">
+                    <Link href={`/assets/${asset.id}/edit`}>ערוך</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/assets/${asset.id}`}>צפה</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </ConsistencyStateBlock>
     </div>
   );
 }
