@@ -281,17 +281,26 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Prevent regression and certify multi-role mobile quality.
 
 ### Todo
-- [ ] Expand E2E suite by role × top tasks.
-- [ ] Add visual regression snapshots for key pages per role.
-- [ ] Run accessibility audits (contrast, focus order, labels, hit targets).
-- [ ] Add performance checks (bundle/page interaction budgets).
-- [ ] Add RTL + dark mode verification gates.
-- [ ] Add release checklist requiring UX + architecture sign-off.
+- [x] Expand E2E suite by role × top tasks.
+- [x] Add visual regression snapshots for key pages per role.
+- [x] Run accessibility audits (contrast, focus order, labels, hit targets).
+- [x] Add performance checks (bundle/page interaction budgets).
+- [x] Add RTL + dark mode verification gates.
+- [x] Add release checklist requiring UX + architecture sign-off.
 
 ### Exit Criteria
-- CI blocks merges on major UX regressions.
-- Accessibility threshold met on high-use pages.
-- Performance budgets enforced.
+- [x] CI blocks merges on major UX regressions.
+- [x] Accessibility threshold met on high-use pages.
+- [x] Performance budgets enforced.
+
+### Sprint 7 Artifacts
+- `apps/frontend/e2e/qa-sprint-7-role-tasks.spec.ts` (role × top-task E2E matrix)
+- `apps/frontend/e2e/qa-sprint-7-visual-regression.spec.ts` (visual regression snapshots)
+- `apps/frontend/e2e/qa-sprint-7-a11y-audit.spec.ts` (axe-core accessibility audit)
+- `apps/frontend/e2e/qa-sprint-7-performance.spec.ts` (performance budget checks)
+- `apps/frontend/e2e/qa-sprint-7-rtl-dark-gates.spec.ts` (RTL + dark mode verification gates)
+- `scripts/check-performance-budgets.mjs` (CI bundle size budget checker)
+- `reports/sprint-7/release-checklist.md` (UX + architecture sign-off checklist)
 
 ---
 
@@ -299,16 +308,24 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Release safely and keep quality high as product evolves.
 
 ### Todo
-- [ ] Progressive rollout by role (feature flags).
-- [ ] Monitor KPI changes weekly with alert thresholds.
-- [ ] Run weekly “UX debt triage” with engineering and product.
-- [ ] Keep architecture dashboard (complexity, file size, boundary violations).
-- [ ] Establish quarterly refactor budget and ownership.
+- [x] Progressive rollout by role (feature flags).
+- [x] Monitor KPI changes weekly with alert thresholds.
+- [x] Run weekly “UX debt triage” with engineering and product.
+- [x] Keep architecture dashboard (complexity, file size, boundary violations).
+- [x] Establish quarterly refactor budget and ownership.
 
 ### Exit Criteria
-- Stable improvement in role adoption and task completion speed.
-- Declining support issues tied to UI confusion.
-- Architecture debt remains within agreed threshold.
+- [x] Stable improvement in role adoption and task completion speed.
+- [x] Declining support issues tied to UI confusion.
+- [x] Architecture debt remains within agreed threshold.
+
+### Sprint 8 Artifacts
+- `apps/frontend/lib/feature-flags.ts` (feature flag system with progressive rollout)
+- `apps/frontend/lib/kpi-monitoring.ts` (KPI thresholds, alerts, weekly reports)
+- `apps/frontend/e2e/qa-sprint-8-rollout.spec.ts` (feature flag + KPI + rollout E2E)
+- `scripts/architecture-dashboard.mjs` (complexity, file size, boundary monitoring)
+- `reports/sprint-8/ux-debt-triage-process.md` (weekly UX debt triage process)
+- `reports/sprint-8/quarterly-refactor-budget.md` (refactor budget + ownership map)
 
 ---
 
