@@ -9,35 +9,12 @@ import { cn } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
 import { getTokenPayload, normalizeRole } from '../../lib/auth';
 import { useRegisterBottomSurface } from '../../lib/bottom-surface';
-import { getNavigationModel, type NavigationGroup, type NavigationItem } from '../../lib/navigation';
+import { trackNavigationBacktrackChurn, trackNavigationMisclickLoop } from '../../lib/analytics';
+import { getNavigationModel, getRecentShortcutHrefs, recordRecentShortcut, validateMobileLabelConsistency, type NavigationItem } from '../../lib/navigation';
 import { AmsCommandDrawer, type AmsCommandDrawerItem } from '../ui/ams-command-drawer';
 
-const MAX_MORE_GROUPS = 3;
-const MAX_MORE_ITEMS_TOTAL = 12;
-
-function normalizeMoreGroups(groups: NavigationGroup[], primaryItems: NavigationItem[]): NavigationGroup[] {
-  const primaryHrefs = new Set(primaryItems.map((item) => item.href));
-  const seen = new Set<string>();
-  let remaining = MAX_MORE_ITEMS_TOTAL;
-
-  return groups.slice(0, MAX_MORE_GROUPS).reduce<NavigationGroup[]>((acc, group) => {
-    if (remaining <= 0) return acc;
-
-    const nextItems = group.items.filter((item) => {
-      if (remaining <= 0) return false;
-      if (primaryHrefs.has(item.href) || seen.has(item.href)) return false;
-      seen.add(item.href);
-      remaining -= 1;
-      return true;
-    });
-
-    if (nextItems.length) {
-      acc.push({ ...group, items: nextItems });
-    }
-
-    return acc;
-  }, []);
-}
+const MISCLICK_WINDOW_MS = 10_000;
+const CHURN_WINDOW_MS = 90_000;
 
 export default function MobileBottomNav({ className, unreadNotifications = 0 }: { className?: string; unreadNotifications?: number }) {
   const router = useRouter();
@@ -46,6 +23,9 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   const [moreOpen, setMoreOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [recentShortcuts, setRecentShortcuts] = useState<string[]>([]);
+  const navigationTrailRef = React.useRef<Array<{ path: string; timestamp: number }>>([]);
+  const lastTrackedChurnRef = React.useRef<string | null>(null);
   const { refCallback: navRef } = useRegisterBottomSurface('mobile-bottom-nav', 'essential');
 
   useEffect(() => {
@@ -59,19 +39,29 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
     setUserRole(normalizeRole(payload?.actAsRole || payload?.role) || 'RESIDENT');
   }, [router.pathname]);
 
+  useEffect(() => {
+    setRecentShortcuts(getRecentShortcutHrefs());
+  }, [router.asPath, moreOpen]);
+
   if (!mounted) return null;
 
   const roleConfig = getNavigationModel(userRole, t);
-  const primaryItems = roleConfig.mobilePrimary.slice(0, 4);
-  const moreGroups = normalizeMoreGroups(roleConfig.mobileMoreGroups, primaryItems);
+  const primaryItems = roleConfig.mobilePrimary;
+  const moreGroups = roleConfig.mobileMoreGroups;
+  if (process.env.NODE_ENV !== 'production') {
+    const issues = validateMobileLabelConsistency(roleConfig);
+    if (issues.length) {
+      console.warn('[navigation] Mobile label consistency issues detected', issues);
+    }
+  }
   const topActionItems = primaryItems.map((item) => ({
     id: item.id,
     title: item.title,
     href: item.href,
     icon: item.icon,
-      hint: item.hint,
-      badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
-    }));
+    hint: item.hint,
+    badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
+  }));
   const allToolsItems = moreGroups.flatMap((group) =>
     group.items.map((item) => ({
       id: item.id,
@@ -82,6 +72,9 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
       badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
     })),
   );
+  const recentItems = recentShortcuts
+    .map((href) => [...primaryItems, ...allToolsItems].find((item) => item.href === href))
+    .filter((item): item is NavigationItem & { badge?: React.ReactNode } => Boolean(item));
   const commandSections = allToolsItems.length
     ? [
         {
@@ -108,6 +101,43 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
 
   const isMoreRouteActive = moreGroups.some((group) => group.items.some((item) => isActive(item.href)));
 
+  const trackPotentialChurn = (nextPath: string) => {
+    const now = Date.now();
+    const trail = [...navigationTrailRef.current, { path: nextPath, timestamp: now }].filter(
+      (entry) => now - entry.timestamp <= CHURN_WINDOW_MS,
+    );
+    navigationTrailRef.current = trail;
+    if (trail.length < 4) return;
+    const lastFour = trail.slice(-4);
+    const [a, b, c, d] = lastFour.map((entry) => entry.path);
+    if (!(a === c && b === d && a !== b)) return;
+    const churnKey = `${a}|${b}`;
+    if (lastTrackedChurnRef.current === churnKey) return;
+    lastTrackedChurnRef.current = churnKey;
+    trackNavigationBacktrackChurn(userRole, a, b, 3, lastFour[3].timestamp - lastFour[0].timestamp);
+  };
+
+  const handleNavigate = (href: string) => {
+    const now = Date.now();
+    const currentPath = router.asPath;
+    if (href !== currentPath) {
+      recordRecentShortcut(href, now);
+    }
+
+    const previousEntry = navigationTrailRef.current[navigationTrailRef.current.length - 2];
+    if (previousEntry?.path === href) {
+      const elapsed = now - previousEntry.timestamp;
+      if (elapsed <= MISCLICK_WINDOW_MS) {
+        trackNavigationMisclickLoop(userRole, currentPath, href, elapsed);
+      }
+    }
+
+    trackPotentialChurn(href);
+    setRecentShortcuts(getRecentShortcutHrefs(now));
+    setMoreOpen(false);
+    setCommandQuery('');
+  };
+
   return (
     <>
       <nav
@@ -127,6 +157,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => handleNavigate(item.href)}
                 className={cn(
                   'relative flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-[20px] px-1 py-1 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
                   active ? 'text-primary' : 'text-muted-foreground',
@@ -194,16 +225,14 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
         onQueryChange={setCommandQuery}
         topActions={topActionItems}
         priorityItems={priorityItems}
+        recentItems={recentItems.map(toCommandItem)}
         unreadCount={unreadNotifications}
         sections={commandSections.map((section) => ({
           ...section,
           items: section.items.map(toCommandItem),
         }))}
         isActive={isActive}
-        onNavigate={(href) => {
-          setMoreOpen(false);
-          setCommandQuery('');
-        }}
+        onNavigate={handleNavigate}
       />
     </>
   );

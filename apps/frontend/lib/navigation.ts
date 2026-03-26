@@ -41,6 +41,12 @@ export type NavigationModel = {
   mobileMoreGroups: NavigationGroup[];
 };
 
+export const MOBILE_PRIMARY_TAB_COUNT = 4;
+export const MOBILE_MORE_MAX_GROUPS = 3;
+export const MOBILE_MORE_MAX_ITEMS = 12;
+export const RECENT_SHORTCUT_MAX_ITEMS = 4;
+export const RECENT_SHORTCUT_EXPIRY_MS = 1000 * 60 * 60 * 24 * 7;
+
 type Translator = (key: string, values?: Record<string, string | number>) => string;
 
 const supervisionItem: NavigationItem = {
@@ -514,9 +520,93 @@ function accountantModel(): NavigationModel {
 function combineModels(models: NavigationModel[]): NavigationModel {
   return {
     sidebarGroups: dedupeGroups(models.flatMap((model) => model.sidebarGroups)),
-    mobilePrimary: dedupeItems(models.flatMap((model) => model.mobilePrimary)).slice(0, 4),
+    mobilePrimary: dedupeItems(models.flatMap((model) => model.mobilePrimary)).slice(0, MOBILE_PRIMARY_TAB_COUNT),
     mobileMoreGroups: dedupeGroups(models.flatMap((model) => model.mobileMoreGroups)),
   };
+}
+
+function normalizeMobileNav(model: NavigationModel): NavigationModel {
+  const primary = dedupeItems(model.mobilePrimary).slice(0, MOBILE_PRIMARY_TAB_COUNT);
+  const primaryHrefs = new Set(primary.map((item) => item.href));
+  const seen = new Set<string>();
+  let remaining = MOBILE_MORE_MAX_ITEMS;
+  const moreGroups: NavigationGroup[] = [];
+
+  for (const group of model.mobileMoreGroups.slice(0, MOBILE_MORE_MAX_GROUPS)) {
+    if (remaining <= 0) break;
+    const items = group.items.filter((item) => {
+      if (remaining <= 0) return false;
+      if (primaryHrefs.has(item.href) || seen.has(item.href)) return false;
+      seen.add(item.href);
+      remaining -= 1;
+      return true;
+    });
+    if (items.length) moreGroups.push({ ...group, items });
+  }
+
+  return {
+    ...model,
+    mobilePrimary: primary,
+    mobileMoreGroups: moreGroups,
+  };
+}
+
+type StoredRecentShortcut = {
+  href: string;
+  timestamp: number;
+};
+
+const recentShortcutStorageKey = 'amit-recent-shortcuts-v1';
+
+function isBrowser() {
+  return typeof window !== 'undefined';
+}
+
+function readRecentShortcuts(now = Date.now()): StoredRecentShortcut[] {
+  if (!isBrowser()) return [];
+  try {
+    const raw = window.localStorage.getItem(recentShortcutStorageKey);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as StoredRecentShortcut[];
+    return parsed
+      .filter((entry) => entry?.href && typeof entry.timestamp === 'number' && now - entry.timestamp <= RECENT_SHORTCUT_EXPIRY_MS)
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, RECENT_SHORTCUT_MAX_ITEMS);
+  } catch {
+    return [];
+  }
+}
+
+function writeRecentShortcuts(shortcuts: StoredRecentShortcut[]) {
+  if (!isBrowser()) return;
+  window.localStorage.setItem(recentShortcutStorageKey, JSON.stringify(shortcuts.slice(0, RECENT_SHORTCUT_MAX_ITEMS)));
+}
+
+export function recordRecentShortcut(href: string, timestamp = Date.now()) {
+  if (!href || !isBrowser()) return;
+  const current = readRecentShortcuts(timestamp).filter((entry) => entry.href !== href);
+  writeRecentShortcuts([{ href, timestamp }, ...current]);
+}
+
+export function getRecentShortcutHrefs(now = Date.now()) {
+  return readRecentShortcuts(now).map((entry) => entry.href);
+}
+
+export function validateMobileLabelConsistency(model: NavigationModel): string[] {
+  const issues: string[] = [];
+  const titleByHref = new Map<string, string>();
+  const allItems = [...model.mobilePrimary, ...model.mobileMoreGroups.flatMap((group) => group.items)];
+  for (const item of allItems) {
+    const existing = titleByHref.get(item.href);
+    if (!existing) {
+      titleByHref.set(item.href, item.title);
+      continue;
+    }
+    if (existing !== item.title) {
+      issues.push(`Inconsistent title for ${item.href}: "${existing}" vs "${item.title}"`);
+    }
+  }
+  return issues;
 }
 
 export function isRoleAllowed(role: string | null | undefined, allowedRoles: AppRole[]) {
@@ -531,17 +621,17 @@ export function getNavigationModel(role: string | null | undefined, t: Translato
 
   switch (normalizedRole) {
     case 'ADMIN':
-      return adminModel(t);
+      return normalizeMobileNav(adminModel(t));
     case 'PM':
-      return pmModel(t);
+      return normalizeMobileNav(pmModel(t));
     case 'TECH':
-      return techModel(t);
+      return normalizeMobileNav(techModel(t));
     case 'ACCOUNTANT':
-      return accountantModel();
+      return normalizeMobileNav(accountantModel());
     case 'MASTER':
-      return combineModels([adminModel(t), pmModel(t), techModel(t), residentModel(t), accountantModel()]);
+      return normalizeMobileNav(combineModels([adminModel(t), pmModel(t), techModel(t), residentModel(t), accountantModel()]));
     case 'RESIDENT':
     default:
-      return residentModel(t);
+      return normalizeMobileNav(residentModel(t));
   }
 }
