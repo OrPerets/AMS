@@ -116,21 +116,28 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Lock scope with measurable baseline and ownership map.
 
 ### Todo
-- [ ] Create current-state UX audit board (all roles, top 20 pages by traffic/use).
-- [ ] Capture screenshots and annotate “clarity blockers” (first viewport + navigation + action discoverability).
-- [ ] Build route/role matrix (entry route, allowed tabs, primary actions, dead routes).
-- [ ] Define top KPIs and baseline collection:
+- [x] Create current-state UX audit board (all roles, top 20 pages by traffic/use).
+- [x] Capture screenshots and annotate “clarity blockers” (first viewport + navigation + action discoverability).
+- [x] Build route/role matrix (entry route, allowed tabs, primary actions, dead routes).
+- [x] Define top KPIs and baseline collection:
   - time to first meaningful action
   - taps to top action
   - abandoned navigation rate
   - support tickets by role/page confusion
-- [ ] Produce ownership map for large files and critical flows.
-- [ ] Freeze a “no new UI patterns without review” temporary rule.
+- [x] Produce ownership map for large files and critical flows.
+- [x] Freeze a “no new UI patterns without review” temporary rule.
 
 ### Deliverables
-- UX audit report with severity tags.
-- Role journey map with bottlenecks.
-- Baseline dashboard (analytics + QA findings).
+- [x] UX audit report with severity tags.
+- [x] Role journey map with bottlenecks.
+- [x] Baseline dashboard (analytics + QA findings).
+
+### Sprint 0 Artifacts
+- `reports/sprint-0/ux-audit-board.md`
+- `reports/sprint-0/route-role-matrix.md`
+- `reports/sprint-0/baseline-kpi-dashboard.md`
+- `reports/sprint-0/ownership-map.md`
+- `reports/sprint-0/temporary-ui-pattern-freeze.md`
 
 ---
 
