@@ -14,6 +14,7 @@ export function PrimaryActionCard({
   ctaLabel,
   href,
   onClick,
+  onCtaClick,
   tone = 'default',
   secondaryAction,
   supportingContent,
@@ -28,6 +29,7 @@ export function PrimaryActionCard({
   ctaLabel: string;
   href?: string;
   onClick?: () => void;
+  onCtaClick?: () => void;
   tone?: PrimaryActionTone;
   secondaryAction?: React.ReactNode;
   supportingContent?: React.ReactNode;
@@ -66,6 +68,7 @@ export function PrimaryActionCard({
         hold.isHolding && 'shadow-[0_18px_40px_rgba(15,23,42,0.14)] ring-1 ring-primary/10',
         className,
       )}
+      data-testid="primary-action-card"
       {...hold.holdProps}
     >
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
@@ -113,6 +116,7 @@ export function PrimaryActionCard({
           {href ? (
             <Link
               href={href}
+              onClick={onCtaClick}
               className={cn(
                 density === 'compact'
                   ? 'inline-flex min-h-[40px] w-full items-center justify-center gap-1 rounded-[18px] px-3 py-2 text-center text-sm font-semibold sm:min-h-[42px] sm:w-auto'
@@ -122,6 +126,7 @@ export function PrimaryActionCard({
                   : 'gold-sheen-button',
               )}
               data-accent-sheen="true"
+              data-testid="primary-action-cta"
             >
               {ctaLabel}
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.75} />
@@ -129,7 +134,10 @@ export function PrimaryActionCard({
           ) : (
             <button
               type="button"
-              onClick={onClick}
+              onClick={() => {
+                onCtaClick?.();
+                onClick?.();
+              }}
               className={cn(
                 density === 'compact'
                   ? 'inline-flex min-h-[40px] w-full items-center justify-center gap-1 rounded-[18px] px-3 py-2 text-center text-sm font-semibold sm:min-h-[42px] sm:w-auto'
@@ -139,6 +147,7 @@ export function PrimaryActionCard({
                   : 'gold-sheen-button',
               )}
               data-accent-sheen="true"
+              data-testid="primary-action-cta"
             >
               {ctaLabel}
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.75} />
