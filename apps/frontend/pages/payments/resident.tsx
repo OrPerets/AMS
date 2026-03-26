@@ -391,12 +391,12 @@ export default function ResidentPaymentsPage() {
           eyebrowIcon={<ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.85} />}
           title="מרכז תשלומים"
           subtitle={undefined}
-          badge={<div className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white">חשבון דייר</div>}
+          badge={<div className="rounded-full border border-primary/12 bg-white/76 px-3 py-1.5 text-xs font-semibold text-primary">חשבון דייר</div>}
           floatingCard={
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">{heroBalanceLabel}</div>
+                  <div className="text-[11px] font-semibold tracking-[0.12em] text-primary/72">{heroBalanceLabel}</div>
                   <div className="mt-2 text-[38px] font-black leading-none tracking-[-0.03em] text-foreground sm:text-[40px]">
                     <bdi>{formatCurrency(finance.summary.currentBalance)}</bdi>
                   </div>
@@ -426,8 +426,8 @@ export default function ResidentPaymentsPage() {
               className="gold-sheen-button flex min-h-[58px] w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold"
               data-accent-sheen="true"
             >
-              <ArrowUpLeft className="h-4 w-4" strokeWidth={1.9} />
-              {nextPaymentDue ? 'שלם עכשיו' : 'חזרה לחשבון'}
+              <ArrowUpLeft className="icon-directional h-4 w-4" strokeWidth={1.9} />
+              {nextPaymentDue ? 'שלם עכשיו' : 'היסטוריה'}
             </button>
 
             <div className="grid grid-cols-2 gap-2">
@@ -476,14 +476,14 @@ export default function ResidentPaymentsPage() {
         <GlassSurface strength="strong" className="rounded-[30px] p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">לתשלום</div>
+              <div className="text-[11px] font-semibold tracking-[0.12em] text-primary/72">לתשלום</div>
               <h2 className="mt-1 line-clamp-1 text-[20px] font-semibold text-foreground">
                 {selectedInvoice ? selectedInvoice.description : 'אין כרגע חיוב פתוח'}
               </h2>
               <div className="mt-1 text-[13px] leading-5 text-secondary-foreground">
                 {selectedInvoice
                   ? `${formatDate(selectedInvoice.dueDate, locale)} · ${translateInvoiceStatus(selectedInvoice.status)}`
-                  : 'קבלות וכרטיסים.'}
+                  : 'קבלות וכרטיסים'}
               </div>
             </div>
             <Badge variant={selectedInvoice ? 'warning' : 'outline'}>{selectedInvoice ? 'מוכן' : 'שקט'}</Badge>
@@ -527,7 +527,7 @@ export default function ResidentPaymentsPage() {
 
       <div id="resident-payments-tabs">
         <AmsTabs
-          ariaLabel="Resident payments"
+          ariaLabel="תשלומי דייר"
           selectedKey={activeTab}
           onSelectionChange={(key) => setActiveTab(key as 'open' | 'history' | 'methods')}
           className="w-full text-right"
@@ -567,7 +567,7 @@ export default function ResidentPaymentsPage() {
                       ))}
                     </div>
                   ) : (
-                    <EmptyState type="empty" size="sm" title="אין חיובים פתוחים" description="חיוב חדש יופיע כאן." />
+                    <EmptyState type="empty" size="sm" title="אין חיובים פתוחים" description="חיוב חדש יופיע כאן" />
                   )}
                 </div>
               ),
@@ -583,7 +583,7 @@ export default function ResidentPaymentsPage() {
                       <LedgerRow key={entry.id} entry={entry} locale={locale} delay={index * 0.03} />
                     ))
                   ) : (
-                    <EmptyState type="empty" size="sm" title="אין היסטוריה עדיין" description="התשלום הראשון יופיע כאן." />
+                    <EmptyState type="empty" size="sm" title="אין היסטוריה עדיין" description="התשלום הראשון יופיע כאן" />
                   )}
                 </div>
               ),
@@ -599,7 +599,7 @@ export default function ResidentPaymentsPage() {
                     <GlassSurface className="rounded-[26px] p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/72">כרטיס ראשי</div>
+                          <div className="text-[11px] font-semibold tracking-[0.12em] text-primary/72">כרטיס ראשי</div>
                           <div className="mt-2 text-lg font-semibold text-foreground">{primaryMethod.brand || 'כרטיס שמור'} •••• {primaryMethod.last4 || '••••'}</div>
                           <div className="mt-1 text-sm text-secondary-foreground">
                             {primaryMethod.expMonth && primaryMethod.expYear ? `בתוקף עד ${String(primaryMethod.expMonth).padStart(2, '0')}/${String(primaryMethod.expYear).slice(-2)}` : 'מוכן לחיוב'}
@@ -654,14 +654,14 @@ export default function ResidentPaymentsPage() {
                 className="gold-sheen-button flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-base font-semibold disabled:opacity-50"
                 data-accent-sheen="true"
                 disabled={!selectedInvoice}
-                  onClick={() => {
-                    if (!primaryMethod) {
-                      setActiveTab('methods');
-                      onClose();
-                      closePaymentFlow();
-                      void router.push('/resident/payment-methods?addCard=1');
-                      return;
-                    }
+                onClick={() => {
+                  if (!primaryMethod) {
+                    setMethodsAutoOpen(true);
+                    setActiveTab('methods');
+                    onClose();
+                    closePaymentFlow();
+                    return;
+                  }
                   advancePaymentFlow(2);
                 }}
               >
@@ -699,10 +699,10 @@ export default function ResidentPaymentsPage() {
                       return;
                     }
                     onClose();
-                    void router.push('/resident/account');
+                    closePaymentFlow();
                   }}
                 >
-                  {paymentRedirectUrl ? 'המשך למסלול המאובטח' : 'חזרה לאזור האישי'}
+                  {paymentRedirectUrl ? 'המשך למסלול המאובטח' : 'חזרה למסך התשלומים'}
                 </button>
                 <Button
                   variant="outline"
@@ -718,7 +718,7 @@ export default function ResidentPaymentsPage() {
               </>
             ) : null}
             {paymentFlowStep !== 3 ? (
-                <Button variant="ghost" size="sm" className="w-full rounded-full min-h-[52px] text-secondary-foreground" onClick={onClose}>
+              <Button variant="ghost" size="sm" className="min-h-[52px] w-full rounded-full text-secondary-foreground" onClick={onClose}>
                 בטל
               </Button>
             ) : null}
@@ -729,7 +729,7 @@ export default function ResidentPaymentsPage() {
           <div dir="rtl" className="space-y-4 text-right">
             <div className="flex items-center justify-between gap-3 rounded-[26px] border border-subtle-border bg-background/90 px-4 py-3">
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground">תשלום</div>
+                <div className="text-[11px] font-semibold tracking-[0.12em] text-secondary-foreground">תשלום</div>
                 <div className="mt-1 text-[17px] font-semibold text-foreground">{selectedInvoice.description}</div>
               </div>
               <button
@@ -752,9 +752,11 @@ export default function ResidentPaymentsPage() {
                   <div className="overflow-hidden rounded-[28px] border border-primary/14 bg-[linear-gradient(180deg,rgba(255,249,240,0.98)_0%,rgba(255,255,255,0.96)_100%)] p-5 shadow-[0_18px_36px_rgba(44,28,9,0.08)]">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/72">תשלום נבחר</div>
+                        <div className="text-[11px] font-semibold tracking-[0.12em] text-primary/72">תשלום נבחר</div>
                         <div className="mt-2 text-lg font-semibold text-foreground">{selectedInvoice.description}</div>
-                        <div className="mt-1 text-sm text-secondary-foreground">{translateInvoiceStatus(selectedInvoice.status)} · {formatDate(selectedInvoice.dueDate, locale)}</div>
+                        <div className="mt-1 text-sm text-secondary-foreground">
+                          {translateInvoiceStatus(selectedInvoice.status)} · <bdi>{formatDate(selectedInvoice.dueDate, locale)}</bdi>
+                        </div>
                       </div>
                       <Badge variant={selectedInvoice.status === 'OVERDUE' ? 'warning' : 'outline'}>{selectedInvoice.status === 'OVERDUE' ? 'בפיגור' : 'מוכן לאישור'}</Badge>
                     </div>
@@ -804,7 +806,7 @@ export default function ResidentPaymentsPage() {
                     אישור קצר לפני המעבר למסוף המאובטח.
                   </div>
                   <div className="rounded-[24px] border border-subtle-border bg-background/90 p-4">
-                    <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">
+                    <div className="flex items-center justify-between text-xs font-semibold text-secondary-foreground">
                       <span>סיכום סופי</span>
                       <span>לפני אישור</span>
                     </div>
@@ -815,7 +817,7 @@ export default function ResidentPaymentsPage() {
                       </div>
                       <div className="flex items-center justify-between text-sm text-secondary-foreground">
                         <span>מועד</span>
-                        <span className="font-semibold text-foreground">{formatDate(selectedInvoice.dueDate, locale)}</span>
+                        <bdi className="font-semibold text-foreground">{formatDate(selectedInvoice.dueDate, locale)}</bdi>
                       </div>
                       <div className="flex items-center justify-between text-sm text-secondary-foreground">
                         <span>כרטיס</span>
@@ -983,7 +985,7 @@ function PaymentFlowProgress({
               active || complete ? 'border-primary/18 bg-primary/8' : 'border-subtle-border bg-background/90',
             )}
           >
-            <div className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', active || complete ? 'text-primary' : 'text-muted-foreground')}>
+            <div className={cn('text-[10px] font-semibold', active || complete ? 'text-primary' : 'text-muted-foreground')}>
               {complete ? 'בוצע' : `שלב ${item.step}`}
             </div>
             <div className="mt-1 text-[13px] font-semibold text-foreground">{item.title}</div>
@@ -1052,7 +1054,7 @@ function InvoiceShowcaseCard({
           </div>
           <div className="mt-1 flex items-center gap-1.5 text-[11px] text-secondary-foreground">
             <CalendarClock className="h-3.5 w-3.5" strokeWidth={1.75} />
-            <span>{formatDate(invoice.dueDate, locale)}</span>
+            <bdi>{formatDate(invoice.dueDate, locale)}</bdi>
           </div>
         </div>
         </div>
@@ -1061,7 +1063,7 @@ function InvoiceShowcaseCard({
             <bdi>{formatCurrency(invoice.amount)}</bdi>
           </div>
           <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-subtle-border bg-white text-secondary-foreground">
-            {isPayable ? <ArrowUpLeft className="h-4 w-4" strokeWidth={2} /> : <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} strokeWidth={2} />}
+            {isPayable ? <ArrowUpLeft className="icon-directional h-4 w-4" strokeWidth={2} /> : <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} strokeWidth={2} />}
           </span>
         </div>
       </button>

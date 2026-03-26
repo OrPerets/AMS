@@ -511,7 +511,7 @@ function MenuRow({ item }: { item: MenuItem }) {
         subtitle={item.description}
         icon={resolveMenuIcon(item.id)}
         accent={item.accent === 'warning' ? 'warning' : item.accent === 'primary' ? 'default' : 'info'}
-        endSlot={<ChevronLeft className="h-4 w-4 shrink-0 text-default-400" strokeWidth={1.85} />}
+        endSlot={<ChevronLeft className="icon-directional h-4 w-4 shrink-0 text-default-400" strokeWidth={1.85} />}
       />
     );
   }
@@ -523,7 +523,7 @@ function MenuRow({ item }: { item: MenuItem }) {
       subtitle={item.description}
       icon={resolveMenuIcon(item.id)}
       accent={item.accent === 'warning' ? 'warning' : item.accent === 'primary' ? 'default' : 'info'}
-      endSlot={<ChevronLeft className="h-4 w-4 shrink-0 text-default-400" strokeWidth={1.85} />}
+      endSlot={<ChevronLeft className="icon-directional h-4 w-4 shrink-0 text-default-400" strokeWidth={1.85} />}
     />
   );
 }

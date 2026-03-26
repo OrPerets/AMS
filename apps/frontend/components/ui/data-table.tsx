@@ -463,7 +463,7 @@ export function DataTable<TData, TValue>({
               disabled={!table.getCanPreviousPage()}
             >
               <span className="sr-only">לעמוד הראשון</span>
-              <ChevronsRight className="h-4 w-4" />
+              <ChevronsRight className="icon-directional h-4 w-4" />
             </Button>
             <Button
               variant="outline"
@@ -472,7 +472,7 @@ export function DataTable<TData, TValue>({
               disabled={!table.getCanPreviousPage()}
             >
               <span className="sr-only">לעמוד הקודם</span>
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="icon-directional h-4 w-4" />
             </Button>
             <Button
               variant="outline"
@@ -481,7 +481,7 @@ export function DataTable<TData, TValue>({
               disabled={!table.getCanNextPage()}
             >
               <span className="sr-only">לעמוד הבא</span>
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="icon-directional h-4 w-4" />
             </Button>
             <Button
               variant="outline"
@@ -490,7 +490,7 @@ export function DataTable<TData, TValue>({
               disabled={!table.getCanNextPage()}
             >
               <span className="sr-only">לעמוד האחרון</span>
-              <ChevronsLeft className="h-4 w-4" />
+              <ChevronsLeft className="icon-directional h-4 w-4" />
             </Button>
           </div>
         </div>

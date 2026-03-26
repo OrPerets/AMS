@@ -352,12 +352,12 @@ export default function ResidentRequestsPage() {
       <GlassSurface strength="strong" className="rounded-[28px] p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary-foreground">Resident requests</div>
+            <div className="text-[11px] font-semibold tracking-[0.12em] text-primary/72">בקשות</div>
             <div className="mt-1 text-[25px] font-black leading-[1.04] text-foreground">בקשות דייר</div>
             <div className="mt-1.5 text-[13px] leading-5 text-secondary-foreground">
               {openRequests[0]
                 ? openRequests[0].statusNotes || t('residentRequests.priority.waitingReason')
-                : 'בחר מסלול אחד והמשך ישירות לפרטי הבקשה.'}
+                : 'בחר מסלול אחד והמשך.'}
             </div>
           </div>
           <StatusBadge
@@ -369,17 +369,17 @@ export default function ResidentRequestsPage() {
         <div className="mt-4 rounded-[22px] border border-subtle-border bg-background/88 p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">
+              <div className="text-[11px] font-semibold tracking-[0.12em] text-primary/72">
                 {openRequests[0] ? 'בטיפול' : 'השלב הבא'}
               </div>
               <div className="mt-1 text-[20px] font-black leading-[1.08] text-foreground">
                 {openRequests[0] ? openRequests[0].subject.replace(/^[A-Z_]+:\s*/, '') : activeType.label}
               </div>
               <div className="mt-1.5 text-[12px] leading-5 text-secondary-foreground">
-                {openRequests[0] ? 'אפשר לעבור ישירות למעקב או לפתוח בקשה חדשה.' : selectedTypeDescription.responseWindow}
+                {openRequests[0] ? 'אפשר לעבור למעקב או לפתוח בקשה חדשה.' : selectedTypeDescription.responseWindow}
               </div>
             </div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground">
+            <div className="text-[10px] font-semibold tracking-[0.12em] text-secondary-foreground">
               {openRequests.length ? `${openRequests.length} פתוחות` : `${requestTypes.length} מסלולים`}
             </div>
           </div>
@@ -404,7 +404,7 @@ export default function ResidentRequestsPage() {
       </GlassSurface>
 
       <AmsTabs
-        ariaLabel="Resident requests"
+        ariaLabel="בקשות דייר"
         selectedKey={view}
         onSelectionChange={(key) => {
           const nextView = key as 'new' | 'history';
@@ -485,7 +485,7 @@ export default function ResidentRequestsPage() {
           <div className="flex items-center justify-between px-1">
             <div>
               <div className="text-sm font-semibold text-foreground">בחר מסלול</div>
-              <div className="mt-0.5 text-[11px] text-secondary-foreground">המסלול הנכון יקצר את זמן הטיפול.</div>
+              <div className="mt-0.5 text-[11px] text-secondary-foreground">מסלול נכון יקצר טיפול.</div>
             </div>
             <Button size="sm" className="rounded-full px-4" onClick={() => openComposer(1)}>
               פתח מסלול
@@ -509,7 +509,7 @@ export default function ResidentRequestsPage() {
                     }}
                     stateLabel={selected ? 'נבחר' : undefined}
                     tone={selected ? 'default' : 'info'}
-                    className="min-h-[156px]"
+                    className="min-h-[128px]"
                   />
                 </div>
               );
@@ -525,7 +525,7 @@ export default function ResidentRequestsPage() {
           else setComposerOpen(true);
         }}
         title="בקשה חדשה"
-        description={formStep === 1 ? 'בחר סוג בקשה' : formStep === 2 ? 'פרטים' : 'אישור'}
+        description={formStep === 1 ? 'סוג' : formStep === 2 ? 'פרטים' : 'אישור'}
         tone="light"
         size="full"
         className="max-h-[100dvh] rounded-none md:max-h-[88dvh] md:rounded-t-[30px]"
@@ -590,7 +590,7 @@ export default function ResidentRequestsPage() {
           {formStep === 2 ? (
             <div className="space-y-4">
               <div className="rounded-[24px] border border-subtle-border bg-background/90 p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-foreground">נבחר עכשיו</div>
+                <div className="text-xs font-semibold tracking-[0.12em] text-secondary-foreground">נבחר עכשיו</div>
                 <div className="mt-1 text-lg font-semibold text-foreground">{activeType.label}</div>
                 <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.responseWindow}</div>
               </div>
@@ -945,11 +945,11 @@ function RequestTypePicker({
                   <Icon className="h-5 w-5" strokeWidth={2} />
                 </span>
                 <div className="min-w-0">
-                  <div className="text-[15px] font-bold text-foreground leading-tight">{item.label}</div>
-                  <div className="mt-1 text-[12px] text-secondary-foreground leading-tight">{item.description}</div>
+                  <div className="text-[15px] font-bold leading-tight text-foreground">{item.label}</div>
+                  <div className="mt-1 text-[12px] leading-tight text-secondary-foreground">{item.description}</div>
                 </div>
               </div>
-              <ArrowUpRight className={cn('h-4.5 w-4.5 transition-transform', selected ? 'text-primary' : 'text-muted-foreground/50')} strokeWidth={2} />
+              <ArrowUpRight className={cn('icon-directional h-4.5 w-4.5 transition-transform', selected ? 'text-primary' : 'text-muted-foreground/50')} strokeWidth={2} />
             </button>
           );
         })}
@@ -986,7 +986,7 @@ function RequestFlowProgress({
               >
                 {isComplete ? <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} /> : item.id}
               </div>
-              <span className={cn('text-[10px] font-bold uppercase tracking-wider truncate', isActive ? 'text-primary' : 'text-muted-foreground/60')}>
+              <span className={cn('text-[10px] font-bold tracking-[0.12em] truncate', isActive ? 'text-primary' : 'text-muted-foreground/60')}>
                 {item.label}
               </span>
             </div>
@@ -1023,7 +1023,7 @@ function RequestHistoryList({ items, locale }: { items: RequestHistoryItem[]; lo
             meta={<StatusBadge label={getResidentRequestStatusLabel(item.status)} tone={getResidentRequestStatusTone(item.status)} className="px-1.5 py-0 h-4 text-[9px]" />}
             endSlot={
               <div className="flex flex-col items-end gap-1 shrink-0">
-                <div className="text-[10px] font-bold text-muted-foreground/60">{formatDate(new Date(item.updatedAt || item.createdAt), locale)}</div>
+                <div className="text-[10px] font-bold text-muted-foreground/60"><bdi>{formatDate(new Date(item.updatedAt || item.createdAt), locale)}</bdi></div>
                 <StatusBadge label={getRequestTypeLabel(item.requestType)} tone="neutral" className="px-1.5 py-0 h-4 text-[9px]" />
               </div>
             }
@@ -1042,7 +1042,7 @@ function RequestHistoryList({ items, locale }: { items: RequestHistoryItem[]; lo
           {item.requestedDate ? (
             <div className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-warning">
               <CalendarDays className="h-3.5 w-3.5" strokeWidth={2.5} />
-              <span>יעד: {formatDate(item.requestedDate, locale)}</span>
+              <span>יעד: <bdi>{formatDate(item.requestedDate, locale)}</bdi></span>
             </div>
           ) : null}
         </div>

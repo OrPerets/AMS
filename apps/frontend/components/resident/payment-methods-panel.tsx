@@ -232,19 +232,19 @@ export function ResidentPaymentMethodsPanel({
         'group flex w-full items-center justify-between rounded-[24px] border border-dashed px-4 py-4 text-right transition',
         embedded
           ? 'border-primary/18 bg-[linear-gradient(180deg,rgba(255,251,240,0.92)_0%,rgba(255,255,255,0.92)_100%)] hover:-translate-y-0.5 hover:border-primary/28'
-          : 'border-white/12 bg-white/6 hover:border-[rgba(224,182,89,0.28)] hover:bg-white/8',
+          : 'border-primary/14 bg-[linear-gradient(180deg,rgba(255,250,242,0.96)_0%,rgba(255,255,255,0.94)_100%)] hover:-translate-y-0.5 hover:border-primary/28 hover:bg-white',
       )}
     >
       <div className="flex items-center gap-3">
-        <div className={cn('flex h-11 w-11 items-center justify-center rounded-[16px]', embedded ? 'bg-primary/10 text-primary' : 'bg-[rgba(224,182,89,0.14)] text-[#f0d48b]')}>
+        <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-primary/10 text-primary">
           <Plus className="h-4 w-4" strokeWidth={2} />
         </div>
         <div>
-          <div className={cn('text-sm font-semibold', embedded ? 'text-foreground' : 'text-inverse-text')}>הוסף כרטיס חדש</div>
-          <div className={cn('mt-1 text-xs', embedded ? 'text-secondary-foreground' : 'text-white/60')}>פתיחה מהירה</div>
+          <div className="text-sm font-semibold text-foreground">הוסף כרטיס חדש</div>
+          <div className="mt-1 text-xs text-secondary-foreground">הוספה מאובטחת</div>
         </div>
       </div>
-      <ChevronLeft className={cn('h-4 w-4 transition group-hover:-translate-x-0.5', embedded ? 'text-secondary-foreground' : 'text-white/48')} strokeWidth={1.9} />
+      <ChevronLeft className="icon-directional h-4 w-4 text-secondary-foreground transition group-hover:-translate-x-0.5" strokeWidth={1.9} />
     </button>
   );
 
@@ -253,18 +253,18 @@ export function ResidentPaymentMethodsPanel({
       <div className="space-y-3">
         {!embedded ? (
           <div className="md:hidden">
-            <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,18,20,0.98)_0%,rgba(34,24,11,0.98)_100%)] p-4 text-right text-inverse-text shadow-[0_22px_48px_rgba(16,12,7,0.26)]">
+            <div className="overflow-hidden rounded-[28px] border border-primary/14 bg-[linear-gradient(180deg,rgba(255,250,242,0.98)_0%,rgba(255,255,255,0.94)_58%,rgba(248,243,232,0.92)_100%)] p-4 text-right shadow-[0_22px_48px_rgba(84,58,15,0.12)]">
               <div className="absolute" />
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#f0d48b]/78">Payment lane</div>
-                  <div className="mt-2 text-xl font-black">
+                  <div className="text-[11px] font-semibold tracking-[0.12em] text-primary/72">כרטיס ראשי</div>
+                  <div className="mt-2 text-xl font-black text-foreground">
                     {defaultMethod ? `${translateResidentCardBrand(defaultMethod.brand || defaultMethod.provider)} •••• ${defaultMethod.last4 || '••••'}` : 'אין כרטיס ראשי'}
                   </div>
-                  <div className="mt-2 text-sm leading-6 text-white/66">
+                  <div className="mt-2 text-sm leading-6 text-secondary-foreground">
                     {defaultMethod
-                      ? 'מוכן לחיוב הבא. אפשר להחליף או להוסיף כרטיס.'
-                      : 'הוספת כרטיס חדש באופן מאובטח, ישירות מהמובייל.'}
+                      ? 'מוכן לחיוב הבא.'
+                      : 'הוסף כרטיס כדי להתחיל לשלם.'}
                   </div>
                 </div>
                 <Badge variant={defaultMethod ? 'success' : 'outline'}>{primaryBuilding ? `דייר · ${primaryBuilding}` : 'חשבון דייר'}</Badge>
@@ -287,17 +287,17 @@ export function ResidentPaymentMethodsPanel({
             'overflow-hidden rounded-[28px] border p-4 shadow-[0_18px_36px_rgba(44,28,9,0.06)]',
             embedded
               ? 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)]'
-              : 'border-white/10 bg-[linear-gradient(180deg,rgba(24,24,28,0.98)_0%,rgba(42,29,14,0.98)_100%)] text-inverse-text',
+              : 'border-primary/14 bg-[linear-gradient(180deg,rgba(255,250,242,0.98)_0%,rgba(255,255,255,0.94)_58%,rgba(248,243,232,0.92)_100%)]',
           )}
         >
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className={cn('flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]', embedded ? 'text-primary/72' : 'text-[#f0d48b]/72')}>
+              <div className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.12em] text-primary/72">
                 <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.85} />
                 מצב חיוב
               </div>
-              <div className={cn('mt-2 text-base font-semibold', embedded ? 'text-foreground' : 'text-inverse-text')}>חיוב אוטומטי</div>
-              <div className={cn('mt-1 text-sm leading-6', embedded ? 'text-secondary-foreground' : 'text-white/64')}>
+              <div className="mt-2 text-base font-semibold text-foreground">חיוב אוטומטי</div>
+              <div className="mt-1 text-sm leading-6 text-secondary-foreground">
                 החיוב הבא יעבור דרך הכרטיס הראשי.
               </div>
             </div>
@@ -306,9 +306,9 @@ export function ResidentPaymentMethodsPanel({
 
           <ResidentPaymentTrustStrip
             className="mt-3"
-            surface={embedded ? 'light' : 'dark'}
+            surface="light"
             eyebrow="מצב בטוח"
-            title="אותו כרטיס, אותה בהירות"
+            title="חיוב ברור"
             items={[
               {
                 id: 'methods-primary',
@@ -325,7 +325,7 @@ export function ResidentPaymentMethodsPanel({
               {
                 id: 'methods-secure',
                 label: 'אבטחה',
-                value: paymentMethods.some((method) => method.networkTokenized) ? 'Tokenized' : 'מוכן להצפנה',
+                value: paymentMethods.some((method) => method.networkTokenized) ? 'מוגן' : 'מאובטח',
                 tone: 'success',
               },
             ]}
@@ -348,19 +348,19 @@ export function ResidentPaymentMethodsPanel({
                       ? 'border-primary/20 bg-[linear-gradient(180deg,rgba(255,251,240,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
                       : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)]'
                     : method.isDefault
-                      ? 'border-[rgba(224,182,89,0.22)] bg-[linear-gradient(180deg,rgba(224,182,89,0.16)_0%,rgba(255,255,255,0.06)_100%)] text-inverse-text'
-                      : 'border-white/10 bg-white/6 text-inverse-text',
+                      ? 'border-primary/20 bg-[linear-gradient(180deg,rgba(255,251,240,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
+                      : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)]',
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className={cn('text-[11px] font-semibold uppercase tracking-[0.16em]', embedded ? 'text-primary/68' : 'text-[#f0d48b]/70')}>
+                    <div className="text-[11px] font-semibold tracking-[0.12em] text-primary/68">
                       {method.isDefault ? 'כרטיס ראשי' : 'כרטיס שמור'}
                     </div>
-                    <div className={cn('mt-1 text-base font-semibold', embedded ? 'text-foreground' : 'text-inverse-text')}>
+                    <div className="mt-1 text-base font-semibold text-foreground">
                       {translateResidentCardBrand(method.brand || method.provider)} •••• {method.last4 || '••••'}
                     </div>
-                    <div className={cn('mt-1 text-sm', embedded ? 'text-secondary-foreground' : 'text-white/60')}>
+                    <div className="mt-1 text-sm text-secondary-foreground">
                       תוקף {method.expMonth || '--'}/{method.expYear || '--'} {method.networkTokenized ? '· מאובטח' : ''}
                     </div>
                   </div>
@@ -379,7 +379,7 @@ export function ResidentPaymentMethodsPanel({
                       קבע כברירת מחדל
                     </Button>
                   )}
-                  <Button size="sm" variant="ghost" className={cn('rounded-full', embedded ? '' : 'text-white/72 hover:bg-white/10 hover:text-white')} loading={removePendingId === method.id} onClick={() => void handleRemove(method.id)}>
+                  <Button size="sm" variant="ghost" className="rounded-full text-secondary-foreground hover:bg-muted/70 hover:text-foreground" loading={removePendingId === method.id} onClick={() => void handleRemove(method.id)}>
                     <Trash2 className="ms-1 h-3.5 w-3.5" strokeWidth={1.85} />
                     הסר
                   </Button>
@@ -398,7 +398,7 @@ export function ResidentPaymentMethodsPanel({
             />
             <Button
               variant="ghost"
-              className={cn('w-full rounded-full', embedded ? '' : 'text-white/78 hover:bg-white/10 hover:text-white')}
+              className="w-full rounded-full text-secondary-foreground hover:bg-muted/70 hover:text-foreground"
               onClick={() => window.location.assign(supportHref)}
             >
               פנה לתמיכה
@@ -430,9 +430,9 @@ export function ResidentPaymentMethodsPanel({
                 <div className="overflow-hidden rounded-[24px] border border-primary/16 bg-[linear-gradient(180deg,rgba(255,249,240,0.98)_0%,rgba(255,255,255,0.96)_100%)] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">כרטיס חדש</div>
+                      <div className="text-[11px] font-semibold tracking-[0.12em] text-primary/72">כרטיס חדש</div>
                       <div className="mt-1 text-lg font-semibold text-foreground">כרטיס חדש למסלול התשלום</div>
-                      <div className="mt-1 text-sm leading-6 text-secondary-foreground">זמין מיד לתשלום</div>
+                      <div className="mt-1 text-sm leading-6 text-secondary-foreground">זמין מיד.</div>
                     </div>
                     <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-primary/10 text-primary">
                       <WalletCards className="h-5 w-5" strokeWidth={1.85} />
@@ -525,12 +525,12 @@ export function ResidentPaymentMethodsPanel({
                 <div className="overflow-hidden rounded-[24px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/72">אישור</div>
+                      <div className="text-[11px] font-semibold tracking-[0.12em] text-primary/72">אישור</div>
                       <div className="mt-2 text-lg font-semibold text-foreground">
                         {translateResidentCardBrand(inferredBrand)} •••• {last4 || '••••'}
                       </div>
                       <div className="mt-1 text-sm text-secondary-foreground">
-                        {holderName || 'שם בעל הכרטיס'} · תוקף {expiry || '--/--'}
+                        {holderName || 'שם בעל הכרטיס'} · תוקף <bdi>{expiry || '--/--'}</bdi>
                       </div>
                     </div>
                     <Badge variant="warning">הוספה מאובטחת</Badge>
@@ -542,7 +542,7 @@ export function ResidentPaymentMethodsPanel({
                 </div>
 
                 <div className="rounded-[22px] border border-primary/16 bg-primary/6 px-3.5 py-3 text-sm leading-6 text-secondary-foreground">
-                  אחרי האישור הכרטיס יתווסף לרשימה.
+                  הכרטיס יופיע מיד אחרי האישור.
                 </div>
 
                 <button type="button" className="gold-sheen-button flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-base font-semibold" data-accent-sheen="true" disabled={addPending} onClick={() => void handleSaveCard()}>
@@ -588,12 +588,12 @@ function MethodMetric({ label, value, tone = 'default' }: { label: string; value
       className={cn(
         'rounded-[20px] border px-3 py-3 text-right',
         tone === 'warning'
-          ? 'border-[rgba(224,182,89,0.22)] bg-[rgba(224,182,89,0.12)]'
-          : 'border-white/10 bg-white/6',
+          ? 'border-warning/18 bg-[linear-gradient(180deg,rgba(255,248,236,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
+          : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,245,238,0.94)_100%)]',
       )}
     >
-      <div className="text-[11px] font-semibold text-white/54">{label}</div>
-      <div className="mt-1 text-lg font-black text-inverse-text">
+      <div className="text-[11px] font-semibold text-secondary-foreground">{label}</div>
+      <div className="mt-1 text-lg font-black text-foreground">
         <bdi>{value}</bdi>
       </div>
     </div>
@@ -627,10 +627,10 @@ function MethodTile({
     >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className={cn("text-sm font-semibold", active ? "text-primary" : "text-foreground")}>{title}</div>
-          <div className={cn("mt-1 text-xs", active ? "text-primary/80" : "text-muted-foreground")}>{subtitle}</div>
+          <div className={cn('text-sm font-semibold', active ? 'text-primary' : 'text-foreground')}>{title}</div>
+          <div className={cn('mt-1 text-xs', active ? 'text-primary/80' : 'text-muted-foreground')}>{subtitle}</div>
         </div>
-        <div className={cn("flex h-10 w-10 items-center justify-center rounded-[14px]", active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>{icon}</div>
+        <div className={cn('flex h-10 w-10 items-center justify-center rounded-[14px]', active ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>{icon}</div>
       </div>
     </div>
   );
@@ -656,7 +656,7 @@ function PaymentFlowRail({ currentStep }: { currentStep: AddCardStep }) {
               active || complete ? 'border-primary/18 bg-primary/8' : 'border-subtle-border bg-background/90',
             )}
           >
-            <div className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', active || complete ? 'text-primary' : 'text-muted-foreground')}>
+            <div className={cn('text-[10px] font-semibold', active || complete ? 'text-primary' : 'text-muted-foreground')}>
               {complete ? 'בוצע' : `שלב ${item.step}`}
             </div>
             <div className="mt-1 text-sm font-semibold text-foreground">{item.title}</div>
@@ -670,7 +670,7 @@ function PaymentFlowRail({ currentStep }: { currentStep: AddCardStep }) {
 function DrawerMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[18px] border border-subtle-border bg-background/90 px-3 py-3 text-right">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
+      <div className="text-[10px] font-semibold text-muted-foreground">{label}</div>
       <div className="mt-1 text-sm font-semibold text-foreground">{value}</div>
     </div>
   );

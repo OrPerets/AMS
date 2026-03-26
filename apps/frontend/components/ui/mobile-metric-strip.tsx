@@ -106,7 +106,7 @@ export function MobileMetricStrip({
       <div className="flex items-end justify-between gap-3">
         <div>
           <h2 className="text-[15px] font-semibold text-foreground">{copy.title}</h2>
-          <p className="mt-1 text-[12px] leading-5 text-secondary-foreground">{copy.description}</p>
+          <p className="mt-1 hidden text-[12px] leading-5 text-secondary-foreground sm:block">{copy.description}</p>
         </div>
       </div>
 
@@ -117,7 +117,7 @@ export function MobileMetricStrip({
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground">{featuredMetric.label}</div>
+              <div className="text-[11px] font-semibold text-secondary-foreground">{featuredMetric.label}</div>
               <div className="mt-2 text-[2rem] font-black leading-none text-foreground tabular-nums">
                 <bdi>{featuredMetric.value}</bdi>
               </div>
@@ -126,7 +126,7 @@ export function MobileMetricStrip({
                 <span className={featuredTone.badge}>{featuredMetric.trendLabel ?? featuredMetric.hint ?? 'עדכון חי למסך הניהול'}</span>
               </div>
             </div>
-            {featuredMetric.href ? <ArrowUpRight className="h-4 w-4 shrink-0 text-primary opacity-70 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} /> : null}
+            {featuredMetric.href ? <ArrowUpRight className="icon-directional h-4 w-4 shrink-0 text-primary opacity-70 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} /> : null}
           </div>
           {featuredMetric.sparkline?.length ? <MiniSparkline data={featuredMetric.sparkline} tone={featuredMetric.tone} className="mt-3 h-8" /> : null}
           <Progress
@@ -149,7 +149,7 @@ export function MobileMetricStrip({
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary-foreground">{secondaryMetric.label}</div>
+                  <div className="text-[11px] font-semibold text-secondary-foreground">{secondaryMetric.label}</div>
                   <div className="mt-2 text-[1.7rem] font-black leading-none text-foreground tabular-nums">
                     <bdi>{secondaryMetric.value}</bdi>
                   </div>
@@ -158,7 +158,7 @@ export function MobileMetricStrip({
                     <span className={secondaryTone?.badge}>{secondaryMetric.trendLabel ?? secondaryMetric.hint ?? 'תנועה עדכנית במסלול הפעולה'}</span>
                   </div>
                 </div>
-                {secondaryMetric.href ? <ArrowUpRight className="h-4 w-4 shrink-0 text-primary opacity-70 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} /> : null}
+                {secondaryMetric.href ? <ArrowUpRight className="icon-directional h-4 w-4 shrink-0 text-primary opacity-70 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} /> : null}
               </div>
               {secondaryMetric.sparkline?.length ? <MiniSparkline data={secondaryMetric.sparkline} tone={secondaryMetric.tone} className="mt-3 h-7" /> : null}
             </MetricSurface>
@@ -172,7 +172,7 @@ export function MobileMetricStrip({
                   href={action.href}
                   className="rounded-[22px] border border-subtle-border bg-card/94 p-3 shadow-[0_14px_30px_rgba(44,28,9,0.06)]"
                 >
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary-foreground">{action.title}</div>
+                  <div className="text-[11px] font-semibold text-secondary-foreground">{action.title}</div>
                   <div className="mt-1 text-xl font-black leading-none text-foreground tabular-nums">
                     <bdi>{action.previewValue ?? action.value}</bdi>
                   </div>

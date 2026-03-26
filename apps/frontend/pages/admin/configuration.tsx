@@ -98,12 +98,12 @@ export default function AdminConfigurationPage() {
         kicker="מרכז שליטה אדמיני"
         eyebrow={<Badge variant="outline">תצורה</Badge>}
         title="מרכז הגדרות ותצורה"
-        description="מסך מרוכז לאזורים האדמיניים שעד עכשיו היו מפוזרים: מדיניות, תבניות, הרשאות וארכיטקטורת הווידג׳טים של הדשבורד."
+        description="כלי התצורה המרכזיים במקום אחד: מדיניות, תבניות והרשאות."
         aside={
-          <div className="space-y-3 text-white">
-            <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
-              <div className="text-xs tracking-[0.18em] text-white/68">שלב תצורה</div>
-              <div className="mt-2 text-base font-semibold">מרכז שליטה ברור עם מדיניות, תבניות והרשאות במקום אחד</div>
+          <div className="space-y-3">
+            <div className="rounded-[22px] border border-primary/12 bg-white/78 p-4 text-right shadow-[0_16px_34px_rgba(44,28,9,0.06)]">
+              <div className="text-xs font-semibold tracking-[0.12em] text-primary/72">שלב תצורה</div>
+              <div className="mt-2 text-base font-semibold text-foreground">מדיניות, תבניות והרשאות במסך אחד</div>
             </div>
           </div>
         }
@@ -149,7 +149,7 @@ export default function AdminConfigurationPage() {
                       <Button asChild size="sm" variant="outline">
                         <Link href={section.href}>
                           פתח אזור קשור
-                          <ArrowUpRight className="ms-2 h-4 w-4" />
+                          <ArrowUpRight className="icon-directional ms-2 h-4 w-4" />
                         </Link>
                       </Button>
                     </CardContent>

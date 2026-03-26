@@ -371,7 +371,7 @@ export default function Header({
                   className="flex w-full items-center justify-center gap-2 border-t px-4 py-3 text-sm font-medium text-primary hover:bg-muted/50 transition-colors"
                 >
                   {t('notifications.viewFullInbox')}
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  <ArrowRight className="icon-directional h-3.5 w-3.5" />
                 </button>
               </div>
             )}

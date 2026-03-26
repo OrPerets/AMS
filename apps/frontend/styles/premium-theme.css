@@ -325,6 +325,19 @@
     box-shadow: var(--surface-shadow-hero);
   }
 
+  .surface-hero-brand-light {
+    background:
+      radial-gradient(circle at top right, hsl(var(--gold-300) / 0.24), transparent 28%),
+      radial-gradient(circle at bottom left, hsl(var(--primary) / 0.09), transparent 30%),
+      linear-gradient(
+        180deg,
+        hsl(var(--gold-sheen-start) / 0.94) 0%,
+        hsl(var(--card) / 0.98) 58%,
+        hsl(var(--surface-tint) / 0.94) 100%
+      );
+    box-shadow: var(--surface-shadow-raised);
+  }
+
   .surface-hero-operational {
     background:
       radial-gradient(circle at top right, hsl(var(--gold-300) / 0.12), transparent 28%),
@@ -349,6 +362,24 @@
     box-shadow:
       0 28px 62px -34px rgb(26 17 9 / 0.4),
       inset 0 1px 0 rgb(255 255 255 / 0.12);
+  }
+
+  .resident-profile-hero-light {
+    position: relative;
+    overflow: hidden;
+    border-color: hsl(var(--primary) / 0.14);
+    background:
+      radial-gradient(circle at top right, hsl(var(--gold-300) / 0.28), transparent 28%),
+      radial-gradient(circle at bottom left, hsl(var(--primary) / 0.1), transparent 32%),
+      linear-gradient(
+        180deg,
+        hsl(var(--gold-sheen-start) / 0.9) 0%,
+        hsl(var(--card) / 0.98) 56%,
+        hsl(var(--surface-tint) / 0.94) 100%
+      );
+    box-shadow:
+      0 28px 62px -38px rgb(44 28 9 / 0.18),
+      inset 0 1px 0 rgb(255 255 255 / 0.62);
   }
 
   .dark-surface {
@@ -392,6 +423,18 @@
         linear-gradient(160deg, hsl(25 14% 16%), hsl(28 16% 18%) 54%, hsl(var(--gold-700) / 0.85) 100%);
     }
 
+    .surface-hero-brand-light {
+      background:
+        radial-gradient(circle at top right, hsl(var(--gold-300) / 0.2), transparent 32%),
+        radial-gradient(circle at bottom left, hsl(var(--primary) / 0.08), transparent 30%),
+        linear-gradient(
+          180deg,
+          hsl(var(--gold-sheen-start) / 0.9) 0%,
+          hsl(var(--card) / 0.98) 60%,
+          hsl(var(--surface-tint) / 0.94) 100%
+        );
+    }
+
     .surface-hero-operational {
       background:
         radial-gradient(circle at top right, hsl(var(--gold-300) / 0.09), transparent 28%),
@@ -409,6 +452,18 @@
       background:
         radial-gradient(circle at top right, rgb(243 185 91 / 0.24), transparent 30%),
         linear-gradient(160deg, rgb(35 26 18 / 0.98) 0%, rgb(76 52 19 / 0.94) 54%, rgb(182 128 44 / 0.88) 100%);
+    }
+
+    .resident-profile-hero-light {
+      background:
+        radial-gradient(circle at top right, hsl(var(--gold-300) / 0.24), transparent 30%),
+        radial-gradient(circle at bottom left, hsl(var(--primary) / 0.08), transparent 30%),
+        linear-gradient(
+          180deg,
+          hsl(var(--gold-sheen-start) / 0.9) 0%,
+          hsl(var(--card) / 0.98) 60%,
+          hsl(var(--surface-tint) / 0.94) 100%
+        );
     }
   }
 

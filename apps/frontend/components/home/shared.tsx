@@ -154,7 +154,7 @@ export function RoleHomeShell({
               className={cn(
                 'inline-flex min-h-[40px] items-center rounded-xl border px-3 py-2 text-xs font-semibold',
                 shellMode === 'admin'
-                  ? 'border-white/10 text-inverse-text'
+                  ? 'border-primary/12 text-foreground'
                   : 'border-subtle-border text-foreground',
               )}
             >
@@ -301,7 +301,7 @@ function OperationalPulseRow({
       {metrics.map((metric) => {
         const content = (
           <>
-            <span className={cn('block text-[10px] font-semibold', shellMode === 'admin' ? 'text-white/64' : 'text-secondary-foreground')}>
+            <span className={cn('block text-[10px] font-semibold', shellMode === 'admin' ? 'text-secondary-foreground' : 'text-secondary-foreground')}>
               {metric.label}
             </span>
             <span
@@ -310,12 +310,12 @@ function OperationalPulseRow({
                 metric.tone === 'danger' && 'text-destructive',
                 metric.tone === 'warning' && 'text-warning',
                 metric.tone === 'success' && 'text-success',
-                (!metric.tone || metric.tone === 'default') && (shellMode === 'admin' ? 'text-inverse-text' : 'text-foreground'),
+                (!metric.tone || metric.tone === 'default') && 'text-foreground',
               )}
             >
               <bdi>{metric.value}</bdi>
             </span>
-            <span className={cn('mt-1 block truncate text-[10px]', shellMode === 'admin' ? 'text-white/56' : 'text-secondary-foreground')}>
+            <span className="mt-1 block truncate text-[10px] text-secondary-foreground">
               {metric.trendLabel ?? metric.hint ?? 'פעיל עכשיו'}
             </span>
           </>
@@ -327,7 +327,7 @@ function OperationalPulseRow({
               key={metric.id}
               className={cn(
                 'rounded-[16px] border px-2.5 py-2 text-right',
-                shellMode === 'admin' ? 'border-white/10 bg-white/6' : 'border-subtle-border bg-background/72',
+                shellMode === 'admin' ? 'border-subtle-border bg-background/72' : 'border-subtle-border bg-background/72',
               )}
             >
               {content}
@@ -342,7 +342,7 @@ function OperationalPulseRow({
             className={cn(
               'rounded-[16px] border px-2.5 py-2 text-right transition-colors active:scale-[0.99]',
               shellMode === 'admin'
-                ? 'border-white/10 bg-white/6 hover:bg-white/8'
+                ? 'border-subtle-border bg-background/72 hover:bg-background/90'
                 : 'border-subtle-border bg-background/72 hover:bg-background/90',
             )}
           >

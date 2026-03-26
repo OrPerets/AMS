@@ -97,8 +97,8 @@ export function MobileRowActionsSheet({
                 key={action.id}
                 type="button"
                 className={cn(
-                  'flex min-h-[64px] w-full items-center gap-3 rounded-[24px] border border-white/10 bg-white/6 px-4 py-3 text-start transition hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-40',
-                  action.tone === 'warning' && 'border-warning/20 bg-warning/10',
+                  'flex min-h-[64px] w-full items-center gap-3 rounded-[24px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.94)_100%)] px-4 py-3 text-start transition hover:border-primary/18 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40',
+                  action.tone === 'warning' && 'border-warning/20 bg-[linear-gradient(180deg,rgba(255,248,236,0.98)_0%,rgba(255,255,255,0.94)_100%)]',
                   action.tone === 'primary' && 'gold-sheen-surface',
                 )}
                 data-accent-sheen={action.tone === 'primary' ? 'true' : undefined}
@@ -107,25 +107,25 @@ export function MobileRowActionsSheet({
               >
                 <span
                   className={cn(
-                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]',
+                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]',
                     action.tone === 'warning'
-                      ? 'border-warning/22 bg-warning/18 text-warning'
+                      ? 'border-warning/22 bg-warning/14 text-warning'
                       : 'border-primary/16 bg-primary/16 text-primary',
                   )}
                 >
                   <Icon className="h-4 w-4" strokeWidth={1.85} />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-white">{action.label}</span>
-                  {action.description ? <span className="mt-1 block text-xs leading-5 text-white/68">{action.description}</span> : null}
+                  <span className="block text-sm font-semibold text-foreground">{action.label}</span>
+                  {action.description ? <span className="mt-1 block text-xs leading-5 text-secondary-foreground">{action.description}</span> : null}
                 </span>
-                <ArrowUpRight className="h-4 w-4 shrink-0 text-white/46" strokeWidth={1.75} />
+                <ArrowUpRight className="icon-directional h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
               </button>
             );
           })}
 
           {destructiveActions.length ? (
-            <div className="border-t border-white/10 pt-3">
+            <div className="border-t border-subtle-border pt-3">
               {destructiveActions.map((action) => {
                 const Icon = resolveActionIcon(action);
                 return (
@@ -141,7 +141,7 @@ export function MobileRowActionsSheet({
                       <Icon className="h-4 w-4" strokeWidth={1.8} />
                       {action.label}
                     </span>
-                    <ExternalLink className="h-4 w-4 opacity-70" strokeWidth={1.7} />
+                    <ExternalLink className="icon-directional h-4 w-4 opacity-70" strokeWidth={1.7} />
                   </Button>
                 );
               })}

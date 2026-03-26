@@ -430,7 +430,7 @@ export default function ResidentAccountPage() {
             >
               <Link href={resumeState.href}>
                 המשך
-                <ArrowLeft className="ms-1.5 h-3.5 w-3.5" />
+                <ArrowLeft className="icon-directional ms-1.5 h-3.5 w-3.5" />
               </Link>
             </Button>
           </div>
@@ -442,7 +442,7 @@ export default function ResidentAccountPage() {
           eyebrow="מרכז השליטה האישי"
           title={labels.home}
           subtitle={undefined}
-          badge={<div className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white">חשבון דייר</div>}
+          badge={<div className="rounded-full border border-primary/12 bg-white/76 px-3 py-1.5 text-xs font-semibold text-primary">חשבון דייר</div>}
           floatingCard={
             <div className="space-y-4">
               <div className="flex items-center gap-4">

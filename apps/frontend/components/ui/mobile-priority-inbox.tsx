@@ -274,7 +274,7 @@ export function MobilePriorityInbox({
             {emptyAction ? (
               <Link href={emptyAction.href} className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:underline">
                 {emptyAction.label}
-                <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                <ArrowUpRight className="icon-directional h-3.5 w-3.5" strokeWidth={1.75} />
               </Link>
             ) : null}
           </motion.div>

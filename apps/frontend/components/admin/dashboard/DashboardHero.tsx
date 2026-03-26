@@ -53,15 +53,15 @@ export function DashboardHero({
   }, [greeting, reducedMotion]);
 
   return (
-    <section className="dark-surface surface-hero overflow-hidden rounded-2xl border border-white/10 text-white sm:rounded-[28px]">
+    <section className="surface-hero-brand-light overflow-hidden rounded-2xl border border-primary/14 text-foreground shadow-raised sm:rounded-[28px]">
       <div className="grid gap-4 p-3.5 sm:gap-5 sm:p-5 lg:grid-cols-[1.08fr_0.92fr] lg:gap-6 lg:p-6">
         <div className="space-y-3.5 sm:space-y-4">
           <div className="space-y-2.5 sm:space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="border-white/20 bg-white/10 text-[11px] text-white sm:text-xs">
+              <Badge variant="outline" className="border-primary/12 bg-white/70 text-[11px] text-primary sm:text-xs">
                 מרכז שליטה
               </Badge>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-200">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/18 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                 {data.filters.rangeLabel}
               </span>
@@ -75,48 +75,48 @@ export function DashboardHero({
                     animate={{ opacity: 1, y: 0, height: 20 }}
                     exit={{ opacity: 0, y: -8, height: 0, marginBottom: 0 }}
                     transition={{ duration: 0.32, ease: 'easeOut' }}
-                    className="overflow-hidden text-xs font-medium text-white/78 sm:text-sm"
+                    className="overflow-hidden text-xs font-medium text-secondary-foreground sm:text-sm"
                   >
                     {greeting}
                   </motion.p>
                 ) : null}
               </AnimatePresence>
               <h1 className="max-w-[12ch] text-[1.45rem] font-black leading-[1.06] tracking-[-0.02em] sm:text-[1.95rem] lg:text-[2.65rem]">לוח בקרה ניהולי</h1>
-              <p className="max-w-2xl text-[13px] leading-[1.55] text-white/80 sm:text-sm sm:leading-6">
+              <p className="max-w-2xl text-[13px] leading-[1.55] text-secondary-foreground sm:text-sm sm:leading-6">
                 {`${data.portfolioKpis.openTickets} קריאות פתוחות · ${data.portfolioKpis.slaBreaches} חריגות SLA · חוב `}
                 <strong>{new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 0 }).format(data.portfolioKpis.unpaidBalance)}</strong>
               </p>
             </div>
           </div>
 
-          <div className="rounded-[24px] border border-white/10 bg-white/6 p-3.5 shadow-[0_18px_40px_rgba(0,0,0,0.16)]">
+          <div className="rounded-[24px] border border-primary/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.94)_100%)] p-3.5 shadow-[0_18px_40px_rgba(84,58,15,0.10)]">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/56">Primary action</div>
-                <div className="mt-1 text-lg font-black leading-none text-white">פתח מוקד טיפול חי</div>
-                <div className="mt-1.5 text-xs leading-5 text-white/70">
-                  מסלול קצר לקריאות, יצוא דוח והמשך להגדרות בלי לעזוב את ההקשר.
+                <div className="text-[10px] font-semibold tracking-[0.12em] text-primary/72">פעולה מהירה</div>
+                <div className="mt-1 text-lg font-black leading-none text-foreground">פתח מוקד טיפול חי</div>
+                <div className="mt-1.5 text-xs leading-5 text-secondary-foreground">
+                  קריאות, דוח והגדרות במסלול קצר.
                 </div>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-right">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/48">SLA pressure</div>
+              <div className="rounded-2xl border border-primary/12 bg-white/76 px-3 py-2 text-right">
+                <div className="text-[10px] font-semibold tracking-[0.12em] text-secondary-foreground">לחץ SLA</div>
                 <div className="mt-1 text-xl font-black tabular-nums text-primary">{data.portfolioKpis.slaBreaches}</div>
               </div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-              <Button asChild size="sm" className="bg-white text-slate-950 hover:bg-slate-100 sm:h-10 sm:px-4">
+              <Button asChild size="sm" className="gold-sheen-button sm:h-10 sm:px-4">
                 <Link href="/tickets">צפה בקריאות</Link>
               </Button>
-              <Button asChild variant="outline" size="sm" className="border-white/20 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:px-4">
+              <Button asChild variant="outline" size="sm" className="border-primary/14 bg-white/78 text-foreground hover:bg-white sm:h-10 sm:px-4">
                 <a href={exportHref} target="_blank" rel="noreferrer">
                   הפק דוח
                   <ArrowUpRight className="icon-directional ms-1.5 h-3.5 w-3.5" strokeWidth={1.75} />
                 </a>
               </Button>
-              <Button asChild variant="outline" size="sm" className="border-white/20 bg-white/5 text-white hover:bg-white/10 sm:h-10 sm:px-4">
+              <Button asChild variant="outline" size="sm" className="border-primary/14 bg-white/78 text-foreground hover:bg-white sm:h-10 sm:px-4">
                 <Link href="/admin/configuration">הגדרות</Link>
               </Button>
-              <Button asChild variant="outline" size="sm" className="border-rose-300/30 bg-rose-500/10 text-white hover:bg-rose-500/20 sm:h-10 sm:px-4">
+              <Button asChild variant="outline" size="sm" className="border-rose-300/30 bg-rose-50 text-rose-700 hover:bg-rose-100 sm:h-10 sm:px-4">
                 <Link href="/admin/activity">אודיט</Link>
               </Button>
             </div>
@@ -124,14 +124,14 @@ export function DashboardHero({
         </div>
 
         <div className="sticky top-16 space-y-3 self-start sm:static">
-          <div className="rounded-2xl border border-white/10 bg-white/6 px-3 py-2 text-[11px] text-white/75">
+          <div className="rounded-2xl border border-primary/12 bg-white/76 px-3 py-2 text-[11px] text-secondary-foreground">
             {buildingId === 'all' ? t('adminDashboard.mobile.allBuildings') : t('adminDashboard.mobile.buildingLabel', { id: buildingId })} · {data.filters.rangeLabel}
           </div>
-          <FilterBar className="border-white/10 bg-black/15 sm:border-white/10 sm:bg-black/15">
+          <FilterBar className="border-primary/12 bg-white/76 sm:border-primary/12 sm:bg-white/76">
             <div className="space-y-1.5">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-white/60">בניין</p>
+              <p className="text-[11px] font-medium tracking-[0.12em] text-secondary-foreground">בניין</p>
               <Select value={buildingId} onValueChange={setBuildingId}>
-                <SelectTrigger className="h-9 border-white/10 bg-slate-950/30 text-xs text-white sm:text-sm">
+                <SelectTrigger className="h-9 border-primary/12 bg-white text-xs text-foreground sm:text-sm">
                   <SelectValue placeholder="כל הבניינים" />
                 </SelectTrigger>
                 <SelectContent>
@@ -146,7 +146,7 @@ export function DashboardHero({
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-white/60">טווח</p>
+              <p className="text-[11px] font-medium tracking-[0.12em] text-secondary-foreground">טווח</p>
               <AmsFilterTabs
                 ariaLabel="בחירת טווח זמן"
                 selectedKey={range}
@@ -170,7 +170,7 @@ export function DashboardHero({
               progress={occupancyRate}
               hint={`${data.portfolioKpis.occupiedUnits} מאוכלסות`}
               tone={occupancyRate >= 92 ? 'success' : occupancyRate >= 80 ? 'warning' : 'danger'}
-              variant="dark"
+              variant="light"
             />
             <AmsMetricProgress
               label="SLA"
@@ -178,7 +178,7 @@ export function DashboardHero({
               progress={Math.max(10, 100 - Math.min(data.portfolioKpis.slaBreaches * 18, 90))}
               hint="חריגות פתוחות"
               tone={data.portfolioKpis.slaBreaches > 0 ? 'danger' : 'success'}
-              variant="dark"
+              variant="light"
             />
             <AmsMetricProgress
               label="קצב סגירה"
@@ -186,7 +186,7 @@ export function DashboardHero({
               progress={Math.min(100, data.portfolioKpis.createdInRange ? (data.portfolioKpis.resolvedInRange / Math.max(data.portfolioKpis.createdInRange, 1)) * 100 : 100)}
               hint={`היום: ${data.portfolioKpis.resolvedToday}`}
               tone={data.portfolioKpis.resolvedInRange >= data.portfolioKpis.createdInRange ? 'success' : 'warning'}
-              variant="dark"
+              variant="light"
             />
             <AmsMetricProgress
               label="שימוש"
@@ -194,7 +194,7 @@ export function DashboardHero({
               progress={Math.min(100, Math.round((data.systemAdmin.stats.activeUsersInRange / Math.max(data.systemAdmin.stats.activityEventsInRange || 1, 1)) * 100 * 8))}
               hint={`${data.systemAdmin.stats.activityEventsInRange} אירועים`}
               tone="default"
-              variant="dark"
+              variant="light"
             />
           </div>
         </div>

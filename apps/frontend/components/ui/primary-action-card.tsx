@@ -57,7 +57,7 @@ export function PrimaryActionCard({
         visualStyle === 'pm' &&
           'border-[hsl(var(--subtle-border))] border-s-primary bg-[linear-gradient(180deg,rgba(249,246,240,0.98)_0%,rgba(255,255,255,0.94)_100%)] shadow-[0_18px_34px_rgba(44,28,9,0.08)]',
         visualStyle === 'admin' &&
-          'border-primary/18 border-s-primary bg-[linear-gradient(180deg,rgba(44,31,18,0.98)_0%,rgba(24,18,12,0.98)_100%)] text-inverse-text shadow-[0_24px_54px_rgba(20,12,6,0.34)]',
+          'border-primary/18 border-s-primary bg-[linear-gradient(180deg,rgba(255,249,240,0.98)_0%,rgba(255,255,255,0.94)_58%,rgba(248,243,232,0.92)_100%)] shadow-[0_24px_54px_rgba(84,58,15,0.12)]',
         tone === 'warning' && 'border-s-warning',
         tone === 'danger' && 'border-s-destructive',
         tone === 'success' && 'border-s-success',
@@ -71,7 +71,7 @@ export function PrimaryActionCard({
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1 space-y-1.5">
           {eyebrow ? (
-            <div className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', visualStyle === 'admin' ? 'text-white/68' : 'text-secondary-foreground')}>
+            <div className={cn('text-[10px] font-semibold tracking-[0.12em]', visualStyle === 'admin' ? 'text-primary/72' : 'text-secondary-foreground')}>
               {eyebrow}
             </div>
           ) : null}
@@ -92,7 +92,7 @@ export function PrimaryActionCard({
                 className={cn(
                   density === 'compact' ? 'text-[14px] leading-5 sm:text-[15px]' : 'text-[15px] leading-5 sm:text-base',
                   'font-semibold',
-                  visualStyle === 'admin' ? 'text-inverse-text' : 'text-foreground',
+                  'text-foreground',
                 )}
               >
                 {title}
@@ -100,7 +100,7 @@ export function PrimaryActionCard({
               <div
                 className={cn(
                   density === 'compact' ? 'line-clamp-1 text-[11px] leading-4.5 sm:text-[12px]' : 'line-clamp-2 text-[12px] leading-4.5 sm:text-[13px] sm:leading-5',
-                  visualStyle === 'admin' ? 'text-white/74' : 'text-secondary-foreground',
+                  'text-secondary-foreground',
                 )}
               >
                 {description}

@@ -45,7 +45,7 @@ export function AttentionGrid({ data }: { data: DashboardResponse }) {
                 <Button asChild size="sm" variant="outline" className="w-full border-current/20 bg-background/70 text-xs sm:text-sm transition-colors hover:bg-background">
                   <Link href={item.ctaHref}>
                     {item.ctaLabel}
-                    <ArrowUpRight className="ms-1.5 h-3.5 w-3.5" />
+                    <ArrowUpRight className="icon-directional ms-1.5 h-3.5 w-3.5" />
                   </Link>
                 </Button>
               </CardContent>

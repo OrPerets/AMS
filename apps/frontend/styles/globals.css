@@ -342,6 +342,21 @@
     direction: ltr;
   }
 
+  [dir="rtl"] :where(input:not([dir="ltr"]), textarea:not([dir="ltr"]), select:not([dir="ltr"]), [role="textbox"]:not([dir="ltr"])) {
+    direction: rtl;
+    text-align: start;
+  }
+
+  :where(th, td, caption) {
+    text-align: start;
+  }
+
+  .bidi-isolate,
+  [data-bidi="isolate"],
+  bdi {
+    unicode-bidi: isolate;
+  }
+
   /* Directional icon mirroring for navigation arrows */
   html[dir="rtl"] .icon-directional {
     transform: scaleX(-1);
