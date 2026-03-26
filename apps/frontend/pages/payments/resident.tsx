@@ -467,11 +467,11 @@ export default function ResidentPaymentsPage() {
       </motion.section>
 
       <motion.section {...residentScreenMotion(motionReduced, 0.06)} className="space-y-3">
-        <ResidentFreshnessStrip
+        {/* <ResidentFreshnessStrip
           connected={liveConnected}
           lastUpdatedAt={lastUpdatedAt}
           unreadCount={finance.summary.unreadNotifications}
-        />
+        /> */}
 
         <GlassSurface strength="strong" className="rounded-[30px] p-4">
           <div className="flex items-start justify-between gap-3">

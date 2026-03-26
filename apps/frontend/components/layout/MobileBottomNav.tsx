@@ -12,26 +12,8 @@ import { useRegisterBottomSurface } from '../../lib/bottom-surface';
 import { getNavigationModel, type NavigationGroup, type NavigationItem } from '../../lib/navigation';
 import { AmsCommandDrawer, type AmsCommandDrawerItem } from '../ui/ams-command-drawer';
 
-const RECENT_STORAGE_KEY = 'ams-mobile-nav-recent';
 const MAX_MORE_GROUPS = 3;
 const MAX_MORE_ITEMS_TOTAL = 12;
-
-function loadRecentItems(): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = window.localStorage.getItem(RECENT_STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.slice(0, 2) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveRecentItem(href: string) {
-  if (typeof window === 'undefined') return;
-  const next = [href, ...loadRecentItems().filter((item) => item !== href)].slice(0, 2);
-  window.localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(next));
-}
 
 function normalizeMoreGroups(groups: NavigationGroup[], primaryItems: NavigationItem[]): NavigationGroup[] {
   const primaryHrefs = new Set(primaryItems.map((item) => item.href));
@@ -64,14 +46,12 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   const [moreOpen, setMoreOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState('');
   const [mounted, setMounted] = useState(false);
-  const [recentItems, setRecentItems] = useState<string[]>([]);
   const { refCallback: navRef } = useRegisterBottomSurface('mobile-bottom-nav', 'essential');
 
   useEffect(() => {
     setMounted(true);
     const payload = getTokenPayload();
     setUserRole(normalizeRole(payload?.actAsRole || payload?.role) || 'RESIDENT');
-    setRecentItems(loadRecentItems());
   }, []);
 
   useEffect(() => {
@@ -84,10 +64,6 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   const roleConfig = getNavigationModel(userRole, t);
   const primaryItems = roleConfig.mobilePrimary.slice(0, 4);
   const moreGroups = normalizeMoreGroups(roleConfig.mobileMoreGroups, primaryItems);
-  const allCommandItems = [...primaryItems, ...moreGroups.flatMap((group) => group.items)];
-  const recentNavItems = allCommandItems.filter((item, index, items) => {
-    return recentItems.includes(item.href) && items.findIndex((candidate) => candidate.href === item.href) === index;
-  });
   const topActionItems = primaryItems.map((item) => ({
     id: item.id,
     title: item.title,
@@ -151,7 +127,6 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => saveRecentItem(item.href)}
                 className={cn(
                   'relative flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-[20px] px-1 py-1 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
                   active ? 'text-primary' : 'text-muted-foreground',
@@ -219,7 +194,6 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
         onQueryChange={setCommandQuery}
         topActions={topActionItems}
         priorityItems={priorityItems}
-        recentItems={recentNavItems.map(toCommandItem)}
         unreadCount={unreadNotifications}
         sections={commandSections.map((section) => ({
           ...section,
@@ -227,8 +201,6 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
         }))}
         isActive={isActive}
         onNavigate={(href) => {
-          saveRecentItem(href);
-          setRecentItems(loadRecentItems());
           setMoreOpen(false);
           setCommandQuery('');
         }}

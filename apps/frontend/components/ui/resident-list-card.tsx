@@ -46,13 +46,13 @@ export function ResidentListCard({
   const reducedMotion = useReducedMotion();
 
   const inner = (
-    <GlassSurface interactive className={cn('rounded-[28px] px-4 py-3.5 text-start', className)}>
-      <div className="flex items-start gap-3">
+    <GlassSurface interactive className={cn('rounded-[28px] px-4 py-3.5 text-right', className)}>
+      <div className="flex items-start gap-3 text-right">
         <span className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]', accentClass(accent))}>
           <Icon className="h-5 w-5" strokeWidth={1.8} />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-right">
             <div className="line-clamp-2 text-[14px] font-semibold text-foreground">{title}</div>
             {meta ? <div className="shrink-0">{meta}</div> : null}
           </div>
@@ -63,7 +63,7 @@ export function ResidentListCard({
     </GlassSurface>
   );
 
-  const wrapperClass = 'block text-start';
+  const wrapperClass = 'block text-right';
 
   return (
     <motion.div

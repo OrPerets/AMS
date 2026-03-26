@@ -29,8 +29,12 @@ export default function Document() {
                 }
 
                 function getInitialDirection() {
-                  const stored = localStorage.getItem('amit-direction');
-                  return stored || 'rtl';
+                  try {
+                    localStorage.removeItem('amit-direction');
+                    localStorage.removeItem('amit-locale');
+                    localStorage.removeItem('amit-regional-format');
+                  } catch (e) {}
+                  return 'rtl';
                 }
 
                 try {
@@ -39,7 +43,7 @@ export default function Document() {
 
                   document.documentElement.className = theme;
                   document.documentElement.setAttribute('dir', direction);
-                  document.documentElement.lang = direction === 'rtl' ? 'he' : 'en';
+                  document.documentElement.lang = 'he';
                 } catch (e) {
                   // Fallback to defaults
                   document.documentElement.className = 'light';

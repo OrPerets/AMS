@@ -310,24 +310,13 @@ export default function ResidentAccountPage() {
     },
   ];
   const paymentConfidenceItems = [
-    {
-      id: 'secure',
-      label: 'תשלום מאובטח',
-      value: 'מוצפן ומאומת',
-      icon: <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.8} />,
-    },
+   
     {
       id: 'due-date',
       label: nextPaymentDue ? 'מועד חיוב' : 'סטטוס חשבון',
       value: nextPaymentDue ? formatDate(nextPaymentDue.dueDate, locale) : finance?.summary.currentBalance ? 'יתרה פתוחה' : 'הכול מעודכן',
       icon: <CreditCard className="h-3.5 w-3.5" strokeWidth={1.8} />,
-    },
-    {
-      id: 'sync',
-      label: 'אישור ועדכון',
-      value: lastUpdatedAt ? 'קבלה ומעקב מידיים' : 'ממתין לסנכרון',
-      icon: <Bell className="h-3.5 w-3.5" strokeWidth={1.8} />,
-    },
+    }
   ];
   const residentTimeline = nextPaymentDue
     ? [
@@ -408,7 +397,7 @@ export default function ResidentAccountPage() {
 
   return (
     <div dir="rtl" className="mx-auto w-full max-w-md space-y-4 pb-24 text-right sm:max-w-4xl sm:space-y-6">
-      {showResume ? (
+      {/* {showResume ? (
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, y: 12 }}
           animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
@@ -435,7 +424,7 @@ export default function ResidentAccountPage() {
             </Button>
           </div>
         </motion.div>
-      ) : null}
+      ) : null} */}
 
       <motion.section {...residentScreenMotion(motionReduced)}>
         <ResidentHero
@@ -510,12 +499,12 @@ export default function ResidentAccountPage() {
         {...residentScreenMotion(motionReduced, 0.05)}
         className="space-y-3"
       >
-        <ResidentFreshnessStrip
+        {/* <ResidentFreshnessStrip
           connected={liveConnected}
           lastUpdatedAt={lastUpdatedAt}
           unreadCount={unreadNotifications.length}
-        />
-        <GlassSurface className="rounded-[26px] p-4">
+        /> */}
+        {/* <GlassSurface className="rounded-[26px] p-4">
           <div className="flex items-end justify-between gap-3">
             <div>
               <div className="text-sm font-semibold text-foreground">מסלול החשבון</div>
@@ -548,31 +537,7 @@ export default function ResidentAccountPage() {
               </div>
             ))}
           </div>
-        </GlassSurface>
-      </motion.section>
-
-      <motion.section {...residentScreenMotion(motionReduced, 0.1)} className="px-1">
-        <div className="space-y-3">
-          <div className="px-1 text-right">
-            <div className="text-base font-semibold text-foreground">פעולות מהירות</div>
-            <div className="mt-0.5 text-xs text-secondary-foreground">הקיצורים החשובים לדייר, בלי לעבור בין מסכים.</div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {quickActions.map((item, index) => (
-              <QuickActionTile
-                key={item.id}
-                title={item.title}
-                subtitle={item.subtitle}
-                href={item.href}
-                icon={item.icon}
-                tone={item.tone}
-                badge={item.badge}
-                stateLabel={item.stateLabel}
-                delay={index * 0.04}
-              />
-            ))}
-          </div>
-        </div>
+        </GlassSurface> */}
       </motion.section>
 
       <motion.section {...residentScreenMotion(motionReduced, 0.15)} className="space-y-3">
@@ -587,7 +552,6 @@ export default function ResidentAccountPage() {
             <div className="mb-3 flex items-end justify-between gap-3">
               <div>
                 <div className="text-base font-semibold text-foreground">בקשות ועדכונים פעילים</div>
-                <div className="mt-0.5 text-xs text-secondary-foreground">הדברים שעדיין דורשים מעקב או קריאה.</div>
               </div>
             </div>
             <div className="space-y-3">
@@ -623,6 +587,30 @@ export default function ResidentAccountPage() {
           </div>
         ) : null}
       </motion.section>
+      <motion.section {...residentScreenMotion(motionReduced, 0.1)} className="px-1">
+        <div className="space-y-3">
+          <div className="px-1 text-right">
+            <div className="text-base font-semibold text-foreground">פעולות מהירות</div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {quickActions.map((item, index) => (
+              <QuickActionTile
+                key={item.id}
+                title={item.title}
+                subtitle={item.subtitle}
+                href={item.href}
+                icon={item.icon}
+                tone={item.tone}
+                badge={item.badge}
+                stateLabel={item.stateLabel}
+                delay={index * 0.04}
+              />
+            ))}
+          </div>
+        </div>
+      </motion.section>
+
+   
     </div>
   );
 }

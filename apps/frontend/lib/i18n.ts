@@ -406,7 +406,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
     'settings.field.currentPassword': 'סיסמה נוכחית',
     'settings.field.newPassword': 'סיסמה חדשה',
     'settings.preference.explanation':
-      'התראות דפדפן או מובייל יישלחו רק אחרי מתן הרשאה במכשיר. אפשר להשאיר ערוץ כבוי ולהמשיך לקבל עדכונים דרך האפליקציה.',
+      'התראות דפדפן או מובייל יישלחו רק אחרי מתן הרשאה במכשיר.',
     'settings.preference.email': 'שליחת אימייל',
     'settings.preference.emailDesc': 'קבלת עדכונים לתיבת הדואר האלקטרוני.',
     'settings.preference.sms': 'שליחת SMS',

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bell, CheckCircle2, Globe, KeyRound, Save, ShieldCheck, Smartphone, UserRound } from 'lucide-react';
 import { authFetch } from '../lib/auth';
-import { type RegionalFormat, formatCurrency, formatDate, formatNumber, formatTime, regionalFormats } from '../lib/i18n';
+import { formatCurrency, formatDate, formatNumber, formatTime, regionalFormats } from '../lib/i18n';
 import { isValidEmail } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -36,8 +36,8 @@ type ChannelPref = { key: string; label: string; description: string };
 type TopicPref = { key: string; label: string; description: string };
 
 export default function SettingsPage() {
-  const { t, locale, setLocale, regionalFormat, setRegionalFormat } = useLocale();
-  const { direction, setDirection } = useDirection();
+  const { t, regionalFormat } = useLocale();
+  const { direction } = useDirection();
 
   const [profile, setProfile] = useState({ email: '', phone: '', pushToken: '' });
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '' });
@@ -47,24 +47,11 @@ export default function SettingsPage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [savingPreferences, setSavingPreferences] = useState(false);
-  const [savingLanguage, setSavingLanguage] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [profileTouched, setProfileTouched] = useState<Record<string, boolean>>({});
   const [passwordTouched, setPasswordTouched] = useState<Record<string, boolean>>({});
   const [profileSubmitted, setProfileSubmitted] = useState(false);
   const [passwordSubmitted, setPasswordSubmitted] = useState(false);
-
-  const [pendingLocale, setPendingLocale] = useState(locale);
-  const [pendingDirection, setPendingDirection] = useState(direction);
-  const [pendingRegional, setPendingRegional] = useState(regionalFormat);
-
-  useEffect(() => {
-    setPendingLocale(locale);
-    setPendingDirection(direction);
-    setPendingRegional(regionalFormat);
-  }, [locale, direction, regionalFormat]);
-
-  const languageDirty = pendingLocale !== locale || pendingDirection !== direction || pendingRegional !== regionalFormat;
 
   useEffect(() => {
     void loadSettings();
@@ -189,15 +176,6 @@ export default function SettingsPage() {
     }
   }
 
-  function saveLanguagePreferences() {
-    setSavingLanguage(true);
-    setLocale(pendingLocale);
-    setDirection(pendingDirection);
-    setRegionalFormat(pendingRegional);
-    toast({ title: t('settings.languageSavedToast') });
-    setSavingLanguage(false);
-  }
-
   function scrollToFirstError() {
     requestAnimationFrame(() => {
       const el = document.querySelector<HTMLElement>('[aria-invalid="true"]');
@@ -258,7 +236,7 @@ export default function SettingsPage() {
                 <StatusBadge label={direction === 'rtl' ? t('settings.direction.rtl') : t('settings.direction.ltr')} tone="active" />
               </div>
               <h1 className="text-xl font-bold text-foreground">{t('settings.heroTitle')}</h1>
-              <p className="text-sm text-secondary-foreground">עדכן פרופיל, אבטחה, התראות ושפה בלי לצאת ממסך אחד.</p>
+              <p className="text-sm text-secondary-foreground">עדכן פרופיל, אבטחה והתראות ממסך אחד.</p>
             </div>
             <Button variant="outline" size="sm" onClick={() => void loadSettings()}>
               {t('notifications.refresh')}
@@ -281,14 +259,14 @@ export default function SettingsPage() {
             <SettingsSummaryCard
               icon={<Globe className="h-4 w-4 text-primary" />}
               label={t('settings.section.languageTitle')}
-              value={pendingLocale === 'he' ? t('settings.language.he') : t('settings.language.en')}
-              description={regionalFormats[pendingRegional].label}
+              value={t('settings.language.he')}
+              description={`${t('settings.direction.rtl')} · ${regionalFormats[regionalFormat].label}`}
             />
             <SettingsSummaryCard
               icon={<ShieldCheck className="h-4 w-4 text-primary" />}
               label={t('settings.section.passwordTitle')}
               value={passwords.newPassword ? t('settings.unsavedChanges') : t('settings.meta.secured')}
-              description={languageDirty ? t('settings.unsavedChanges') : t('common.saved')}
+              description={t('common.saved')}
             />
           </div>
         </CardContent>
@@ -322,7 +300,6 @@ export default function SettingsPage() {
           <TabsTrigger value="language" className="gap-1.5 rounded-[18px]">
             <Globe className="h-3.5 w-3.5" />
             {t('settings.section.languageTitle')}
-            {languageDirty ? <span className="h-1.5 w-1.5 rounded-full bg-warning" /> : null}
           </TabsTrigger>
         </TabsList>
 
@@ -544,9 +521,9 @@ export default function SettingsPage() {
             <CardContent className="space-y-4 p-4 sm:p-5">
               <SectionHeader
                 title={t('settings.section.languageTitle')}
-                subtitle={t('settings.section.languageSubtitle')}
-                meta={languageDirty ? t('settings.unsavedChanges') : t('common.saved')}
-                actions={<StatusBadge label={languageDirty ? t('settings.unsavedChanges') : t('common.saved')} tone={languageDirty ? 'warning' : 'success'} />}
+                subtitle="הממשק מוצג כברירת מחדל בעברית, ב-RTL ובפורמט אזורי ישראלי."
+                meta={t('common.saved')}
+                actions={<StatusBadge label={t('common.saved')} tone="success" />}
               />
             </CardContent>
           </Card>
@@ -555,48 +532,20 @@ export default function SettingsPage() {
             <Card variant="elevated">
               <CardContent className="space-y-5 p-4 sm:p-5">
                 <FormField label={t('settings.field.language')} description={t('settings.field.languageHint')}>
-                  <div className="flex gap-2">
-                    <Button
-                      variant={pendingLocale === 'he' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => {
-                        setPendingLocale('he');
-                        setPendingDirection('rtl');
-                      }}
-                    >
-                      {t('settings.language.he')}
-                    </Button>
-                    <Button
-                      variant={pendingLocale === 'en' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => {
-                        setPendingLocale('en');
-                        setPendingDirection('ltr');
-                      }}
-                    >
-                      {t('settings.language.en')}
-                    </Button>
+                  <div className="rounded-[18px] border border-subtle-border bg-muted/24 px-4 py-3 text-sm font-medium text-foreground">
+                    {t('settings.language.he')}
                   </div>
                 </FormField>
 
                 <FormField label={t('settings.field.direction')} description={t('settings.field.directionHint')}>
-                  <div className="flex gap-2">
-                    <Button variant={pendingDirection === 'rtl' ? 'default' : 'outline'} size="sm" onClick={() => setPendingDirection('rtl')}>
-                      {t('settings.direction.rtl')}
-                    </Button>
-                    <Button variant={pendingDirection === 'ltr' ? 'default' : 'outline'} size="sm" onClick={() => setPendingDirection('ltr')}>
-                      {t('settings.direction.ltr')}
-                    </Button>
+                  <div className="rounded-[18px] border border-subtle-border bg-muted/24 px-4 py-3 text-sm font-medium text-foreground">
+                    {direction === 'rtl' ? t('settings.direction.rtl') : t('settings.direction.ltr')}
                   </div>
                 </FormField>
 
                 <FormField label={t('settings.field.regionalFormat')} description={t('settings.field.regionalFormatHint')}>
-                  <div className="flex flex-wrap gap-2">
-                    {(Object.entries(regionalFormats) as [RegionalFormat, { label: string }][]).map(([key, meta]) => (
-                      <Button key={key} variant={pendingRegional === key ? 'default' : 'outline'} size="sm" onClick={() => setPendingRegional(key)}>
-                        {meta.label}
-                      </Button>
-                    ))}
+                  <div className="rounded-[18px] border border-subtle-border bg-muted/24 px-4 py-3 text-sm font-medium text-foreground">
+                    {regionalFormats[regionalFormat].label}
                   </div>
                 </FormField>
               </CardContent>
@@ -612,19 +561,11 @@ export default function SettingsPage() {
 
                 <div className="rounded-[24px] border border-subtle-border bg-muted/24 p-4">
                   <div className="grid gap-3 text-sm text-muted-foreground">
-                    <div>{t('settings.formatPreviewDate', { value: formatDate(now, pendingRegional) })}</div>
-                    <div>{t('settings.formatPreviewTime', { value: formatTime(now, pendingRegional) })}</div>
-                    <div>{t('settings.formatPreviewNumber', { value: formatNumber(12345.67, pendingRegional) })}</div>
-                    <div>{t('settings.formatPreviewCurrency', { value: formatCurrency(12345.67, 'ILS', pendingRegional) })}</div>
+                    <div>{t('settings.formatPreviewDate', { value: formatDate(now, regionalFormat) })}</div>
+                    <div>{t('settings.formatPreviewTime', { value: formatTime(now, regionalFormat) })}</div>
+                    <div>{t('settings.formatPreviewNumber', { value: formatNumber(12345.67, regionalFormat) })}</div>
+                    <div>{t('settings.formatPreviewCurrency', { value: formatCurrency(12345.67, 'ILS', regionalFormat) })}</div>
                   </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-3">
-                  {languageDirty ? <span className="text-xs text-warning">{t('settings.unsavedChanges')}</span> : null}
-                  <Button onClick={saveLanguagePreferences} disabled={savingLanguage || !languageDirty}>
-                    <Save className="me-2 h-4 w-4" />
-                    {savingLanguage ? t('common.saving') : t('settings.action.saveLanguage')}
-                  </Button>
                 </div>
               </CardContent>
             </Card>

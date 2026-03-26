@@ -16,8 +16,6 @@ import {
   formatNumber,
   formatTime,
   getLocaleDirection,
-  getStoredLocale,
-  getStoredRegionalFormat,
   translate,
 } from './i18n';
 
@@ -172,35 +170,19 @@ export function DirectionProvider({
   defaultDirection = "rtl",
   storageKey = "amit-direction",
 }: DirectionProviderProps) {
-  const [direction, setDirection] = useState<Direction>(defaultDirection);
-  const [mounted, setMounted] = useState(false);
-
-  // Only run on client side
   useEffect(() => {
-    setMounted(true);
-    const storedDirection = localStorage.getItem(storageKey) as Direction;
-    if (storedDirection) {
-      setDirection(storedDirection);
-    }
+    if (typeof window === 'undefined') return;
+
+    const html = window.document.documentElement;
+    localStorage.removeItem(storageKey);
+    html.setAttribute('dir', defaultDirection);
+    html.lang = 'he';
   }, [storageKey]);
 
-  useEffect(() => {
-    if (!mounted) return;
-    
-    const html = window.document.documentElement;
-    html.setAttribute('dir', direction);
-    html.lang = direction === 'rtl' ? 'he' : 'en';
-  }, [direction, mounted]);
-
   const value = {
-    direction,
-    isRTL: direction === 'rtl',
-    setDirection: (newDirection: Direction) => {
-      if (mounted) {
-        localStorage.setItem(storageKey, newDirection);
-      }
-      setDirection(newDirection);
-    },
+    direction: defaultDirection,
+    isRTL: true,
+    setDirection: () => null,
   };
 
   return (
@@ -257,39 +239,25 @@ export function LocaleProvider({
   defaultLocale = "he",
   storageKey = "amit-locale",
 }: LocaleProviderProps) {
-  const [locale, setLocale] = useState<Locale>(defaultLocale);
-  const [regionalFormat, setRegionalFormatState] = useState<RegionalFormat>(
-    defaultLocale === 'en' ? 'en-US' : 'he-IL',
-  );
-  const [mounted, setMounted] = useState(false);
+  const [regionalFormat, setRegionalFormatState] = useState<RegionalFormat>('he-IL');
 
   useEffect(() => {
-    setMounted(true);
-    setLocale(getStoredLocale(defaultLocale));
-    setRegionalFormatState(getStoredRegionalFormat());
+    if (typeof window === 'undefined') return;
+
+    localStorage.removeItem(storageKey);
+    localStorage.removeItem('amit-regional-format');
+    setRegionalFormatState('he-IL');
   }, [storageKey]);
 
   const t = (key: string, params?: Record<string, string | number>): string => {
-    return translate(locale, key, params);
-  };
-
-  const setRegionalFormat = (format: RegionalFormat) => {
-    if (mounted) {
-      localStorage.setItem('amit-regional-format', format);
-    }
-    setRegionalFormatState(format);
+    return translate(defaultLocale, key, params);
   };
 
   const value: LocaleProviderState = {
-    locale,
-    setLocale: (newLocale: Locale) => {
-      if (mounted) {
-        localStorage.setItem(storageKey, newLocale);
-      }
-      setLocale(newLocale);
-    },
+    locale: defaultLocale,
+    setLocale: () => null,
     regionalFormat,
-    setRegionalFormat,
+    setRegionalFormat: () => null,
     t,
     fmtDate: (date) => formatDate(date, regionalFormat),
     fmtTime: (date) => formatTime(date, regionalFormat),

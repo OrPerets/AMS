@@ -404,7 +404,7 @@ export default function ResidentProfilePage() {
             {labels.accountSectionSubtitle ? <p className="w-full text-right text-sm text-default-500">{labels.accountSectionSubtitle}</p> : null}
           </CardHeader>
           <CardBody className="grid gap-3 px-4 pb-4 pt-2 text-right sm:grid-cols-2 sm:px-5">
-            <InfoRow icon={<UserRound className="h-4 w-4 text-default-400" />} label={labels.role} value="Resident" />
+            {/* <InfoRow icon={<UserRound className="h-4 w-4 text-default-400" />} label={labels.role} value="Resident" /> */}
             <InfoRow icon={<CreditCard className="h-4 w-4 text-default-400" />} label={labels.unit} value={primaryUnit ? `דירה ${primaryUnit.number}` : 'לא שויך'} />
             <InfoRow icon={<Building2 className="h-4 w-4 text-default-400" />} label={labels.building} value={primaryBuilding?.name || 'לא שויך'} />
             <InfoRow icon={<MapPinned className="h-4 w-4 text-default-400" />} label={labels.address} value={primaryBuilding?.address || 'אין כתובת זמינה'} />

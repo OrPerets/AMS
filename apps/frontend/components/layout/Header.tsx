@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Sun, Moon, Globe, ChevronLeft, ChevronRight, Bell, Command, Search, ArrowRight, AlertTriangle, Clock, Info, Home, Building2, Settings as SettingsIcon, Wrench, CreditCard, ClipboardList, Menu } from 'lucide-react';
+import { Sun, Moon, ChevronLeft, ChevronRight, Bell, Command, Search, ArrowRight, AlertTriangle, Clock, Info, Home, Building2, Settings as SettingsIcon, Wrench, CreditCard, ClipboardList, Menu } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { useTheme, useDirection, useLocale } from '../../lib/providers';
@@ -71,10 +71,9 @@ export default function Header({
   onCommandPaletteOpen,
 }: HeaderProps) {
   const { theme, setTheme } = useTheme();
-  const { direction, setDirection } = useDirection();
-  const { locale, setLocale, t } = useLocale();
+  const { direction } = useDirection();
+  const { locale, t } = useLocale();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -114,7 +113,6 @@ export default function Header({
   };
 
   useEffect(() => {
-    setMounted(true);
     loadNotifications();
 
     const handleNewNotification = (event: { notification?: any }) => {
@@ -143,11 +141,6 @@ export default function Header({
 
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
-  };
-
-  const toggleDirection = () => {
-    setDirection(direction === 'rtl' ? 'ltr' : 'rtl');
-    setLocale(locale === 'he' ? 'en' : 'he');
   };
 
   const topPreview = useMemo(() => {
@@ -277,21 +270,19 @@ export default function Header({
           </Button>
 
           {/* Theme toggle - desktop only */}
-          {mounted && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={toggleTheme}
-              className="hidden md:inline-flex sm:h-9 sm:w-9 shrink-0"
-            >
-              {theme === 'light' ? (
-                <Moon className="h-4 w-4" />
-              ) : (
-                <Sun className="h-4 w-4" />
-              )}
-              <span className="sr-only">{t('header.toggleTheme')}</span>
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={toggleTheme}
+            className="hidden md:inline-flex sm:h-9 sm:w-9 shrink-0"
+          >
+            {theme === 'light' ? (
+              <Moon className="h-4 w-4" />
+            ) : (
+              <Sun className="h-4 w-4" />
+            )}
+            <span className="sr-only">{t('header.toggleTheme')}</span>
+          </Button>
 
           {/* Notification bell — lightweight preview (desktop) */}
           <div className="relative hidden md:block" onClick={(e) => e.stopPropagation()}>
@@ -376,20 +367,6 @@ export default function Header({
               </div>
             )}
           </div>
-
-          {/* Direction/Language toggle - desktop only */}
-          {mounted && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={toggleDirection}
-              className="hidden shrink-0 md:inline-flex sm:h-9 sm:w-9"
-              aria-label={t('header.toggleLocale')}
-            >
-              <Globe className="h-4 w-4" />
-              <span className="sr-only">{t('header.toggleLocale')}</span>
-            </Button>
-          )}
 
           {/* User Menu */}
           <UserMenu />

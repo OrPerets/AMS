@@ -7,7 +7,6 @@ import { useRouter } from 'next/router';
 import {
   Settings,
   X,
-  Globe,
   Moon,
   Sun,
 } from 'lucide-react';
@@ -28,16 +27,14 @@ interface SidebarProps {
 
 export default function Sidebar({ className, open, onClose, collapsed }: SidebarProps) {
   const router = useRouter();
-  const { t, locale, setLocale } = useLocale();
-  const { direction, setDirection } = useDirection();
+  const { t } = useLocale();
+  const { direction } = useDirection();
   const { theme, setTheme } = useTheme();
   const [userRole, setUserRole] = useState<string>('RESIDENT');
-  const [mounted, setMounted] = useState(false);
   const mobileDrawerRef = React.useRef<HTMLElement | null>(null);
   const closeButtonRef = React.useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
-    setMounted(true);
     const payload = getTokenPayload();
     setUserRole(normalizeRole(payload?.actAsRole || payload?.role) || 'RESIDENT');
   }, []);
@@ -111,11 +108,6 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose, open]);
-
-  const toggleLocaleAndDirection = () => {
-    setDirection(direction === 'rtl' ? 'ltr' : 'rtl');
-    setLocale(locale === 'he' ? 'en' : 'he');
-  };
 
   return (
     <>
@@ -271,16 +263,10 @@ export default function Sidebar({ className, open, onClose, collapsed }: Sidebar
 
         <div className="border-t px-3 py-3 safe-pb">
           <div className="grid gap-2">
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-                {theme === 'light' ? <Moon className="me-1.5 h-3.5 w-3.5" /> : <Sun className="me-1.5 h-3.5 w-3.5" />}
-                {t('shell.theme')}
-              </Button>
-              <Button variant="outline" size="sm" className="justify-start text-xs" onClick={toggleLocaleAndDirection}>
-                <Globe className="me-1.5 h-3.5 w-3.5" />
-                {locale === 'he' ? 'אנגלית' : 'עברית'}
-              </Button>
-            </div>
+            <Button variant="outline" size="sm" className="justify-start text-xs" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+              {theme === 'light' ? <Moon className="me-1.5 h-3.5 w-3.5" /> : <Sun className="me-1.5 h-3.5 w-3.5" />}
+              {t('shell.theme')}
+            </Button>
             <Link
               href="/settings"
               onClick={onClose}
