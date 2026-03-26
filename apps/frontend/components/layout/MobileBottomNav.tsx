@@ -214,7 +214,6 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
         isOpen={moreOpen}
         onOpenChange={setMoreOpen}
         title={t('bottomNav.moreMenu')}
-        description="קיצורי דרך משלימים, בלי כפילויות מהסרגל התחתון."
         tone={userRole === 'RESIDENT' ? 'light' : 'dark'}
         query={commandQuery}
         onQueryChange={setCommandQuery}

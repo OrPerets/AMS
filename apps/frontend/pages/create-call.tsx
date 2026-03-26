@@ -385,7 +385,6 @@ export default function CreateCall() {
         isOpen={locationDrawerOpen}
         onOpenChange={setLocationDrawerOpen}
         title="בחירת מיקום"
-        description="אפשר לעדכן בניין ודירה בלי להעמיס על המסך הראשי."
         tone="light"
         scrollBehavior="outside"
         footer={(onClose) => (

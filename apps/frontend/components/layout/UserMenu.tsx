@@ -97,37 +97,38 @@ export default function UserMenu() {
           description={`${roleLabels[currentRole] || getUserRoleLabel(currentRole)}${isImpersonating ? ` · ${t('userMenu.impersonating')}` : ''}`}
           placement="bottom"
           size="lg"
+          tone="light"
         >
           <div className="space-y-3 pb-2">
             <Link
               href={profileHref}
-              className="flex min-h-[64px] items-center gap-3 rounded-[24px] border border-white/10 bg-white/6 px-4 py-3"
+              className="flex min-h-[64px] items-center gap-3 rounded-[24px] border border-subtle-border bg-muted/20 px-4 py-3"
               onClick={() => setMobileOpen(false)}
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/16 bg-primary/16 text-primary">
                 <User className="h-4 w-4" strokeWidth={1.85} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-white">{t('userMenu.profile')}</span>
-                <span className="mt-1 block text-xs leading-5 text-white/68">{displayName}</span>
+                <span className="block text-sm font-semibold text-foreground">{t('userMenu.profile')}</span>
+                <span className="mt-1 block text-xs leading-5 text-secondary-foreground">{displayName}</span>
               </span>
             </Link>
 
             <Link
               href="/settings"
-              className="flex min-h-[64px] items-center gap-3 rounded-[24px] border border-white/10 bg-white/6 px-4 py-3"
+              className="flex min-h-[64px] items-center gap-3 rounded-[24px] border border-subtle-border bg-muted/20 px-4 py-3"
               onClick={() => setMobileOpen(false)}
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/16 bg-primary/16 text-primary">
                 <Settings className="h-4 w-4" strokeWidth={1.85} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-white">{t('userMenu.settings')}</span>
-                <span className="mt-1 block text-xs leading-5 text-white/68">{t('shell.settings')}</span>
+                <span className="block text-sm font-semibold text-foreground">{t('userMenu.settings')}</span>
+                <span className="mt-1 block text-xs leading-5 text-secondary-foreground">{t('shell.settings')}</span>
               </span>
             </Link>
 
-            <div className="border-t border-white/10 pt-3">
+            <div className="border-t border-subtle-border pt-3">
               <Button variant="destructive" className="w-full justify-between rounded-[22px]" onClick={handleLogout}>
                 <span className="inline-flex items-center gap-2">
                   <LogOut className="h-4 w-4" strokeWidth={1.8} />
