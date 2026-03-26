@@ -1,13 +1,20 @@
 'use client';
 
 import type { FC } from 'react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { format, parseISO } from 'date-fns';
 
 export interface DayEntry {
   address: string;
   notes: string;
+}
+
+export interface DayBuildingOption {
+  id: number;
+  name: string;
+  location: string;
+  address?: string | null;
 }
 
 interface DayCellProps {
@@ -27,6 +34,10 @@ interface DayCellProps {
   readOnly?: boolean;
   /** Whether this is a weekend day */
   isWeekend?: boolean;
+  /** Available building choices for the assignment */
+  buildingOptions?: DayBuildingOption[];
+  /** Whether building choices are still loading */
+  buildingsLoading?: boolean;
 }
 
 const DayCell: FC<DayCellProps> = ({
@@ -37,23 +48,25 @@ const DayCell: FC<DayCellProps> = ({
   dataIndex,
   readOnly = false,
   isWeekend = false,
+  buildingOptions = [],
+  buildingsLoading = false,
 }) => {
   const day = Number(date.slice(-2));
   const [open, setOpen] = useState(false);
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
+  const [buildingQuery, setBuildingQuery] = useState('');
   const [isPressed, setIsPressed] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
   const touchStartTime = useRef<number>(0);
   const [mounted, setMounted] = useState(false);
-  
-  // Format date for Hebrew display
 
   useEffect(() => {
     if (open) {
       setAddress(value?.address ?? '');
       setNotes(value?.notes ?? '');
+      setBuildingQuery('');
     }
   }, [value, open]);
 
@@ -99,7 +112,9 @@ const DayCell: FC<DayCellProps> = ({
   }, [readOnly]);
 
   const save = (bulk?: 'weekdays' | 'weekends' | 'all') => {
-    const val = address || notes ? { address, notes } : null;
+    const trimmedAddress = address.trim();
+    const trimmedNotes = notes.trim();
+    const val = trimmedAddress ? { address: trimmedAddress, notes: trimmedNotes } : null;
     onChange(date, val, bulk);
     setOpen(false);
   };
@@ -144,9 +159,35 @@ const DayCell: FC<DayCellProps> = ({
   }, [open]);
 
   // Determine cell appearance based on state
-  const isEmpty = !value?.address && !value?.notes;
+  const isEmpty = !value?.address?.trim();
   const hasContent = !isEmpty;
   const isToday = date === new Date().toISOString().split('T')[0];
+  const normalizedAddress = address.trim();
+  const effectiveBuildingOptions = useMemo(() => {
+    const options = [...buildingOptions];
+    if (normalizedAddress && !options.some((option) => option.location === normalizedAddress)) {
+      options.unshift({
+        id: -1,
+        name: 'כתובת שמורה',
+        location: normalizedAddress,
+        address: normalizedAddress,
+      });
+    }
+    return options;
+  }, [buildingOptions, normalizedAddress]);
+  const filteredBuildingOptions = useMemo(() => {
+    const query = buildingQuery.trim();
+    if (!query) {
+      return effectiveBuildingOptions;
+    }
+
+    return effectiveBuildingOptions.filter((option) => {
+      const haystack = `${option.name} ${option.address || ''} ${option.location}`.toLowerCase();
+      return haystack.includes(query.toLowerCase());
+    });
+  }, [buildingQuery, effectiveBuildingOptions]);
+  const matchedBuilding = effectiveBuildingOptions.find((option) => option.location === normalizedAddress);
+  const allowManualFallback = !buildingsLoading && effectiveBuildingOptions.length === 0;
   
   return (
     <>
@@ -164,7 +205,7 @@ const DayCell: FC<DayCellProps> = ({
           ${readOnly ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:scale-105 active:scale-95'}
           ${isPressed && !readOnly ? 'scale-95' : ''}
           ${hasContent 
-            ? 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 shadow-sm hover:shadow-md' 
+            ? 'border-[hsl(var(--primary)/0.34)] bg-[linear-gradient(180deg,rgba(255,245,225,0.95)_0%,rgba(255,255,255,0.98)_100%)] shadow-sm hover:shadow-md' 
             : 'bg-background border-border hover:bg-muted/50'
           }
           ${isToday ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}
@@ -180,7 +221,7 @@ const DayCell: FC<DayCellProps> = ({
         {/* Day number */}
         <span className={`
           text-sm font-medium
-          ${hasContent ? 'text-blue-700' : 'text-foreground'}
+          ${hasContent ? 'text-primary' : 'text-foreground'}
           ${isToday ? 'font-bold' : ''}
         `}>
           {day}
@@ -188,7 +229,7 @@ const DayCell: FC<DayCellProps> = ({
         
         {/* Content indicator */}
         {hasContent && (
-          <div className="absolute bottom-1 right-1 w-2 h-2 bg-blue-500 rounded-full animate-bounce-in" />
+          <div className="absolute bottom-1 right-1 h-2 w-2 rounded-full bg-primary animate-bounce-in" />
         )}
         
         {/* Today indicator */}
@@ -226,21 +267,94 @@ const DayCell: FC<DayCellProps> = ({
                 <h2 id={`day-${date}-title`} className="text-lg font-bold text-blue-900 sm:text-xl">
                   יום {format(parseISO(date), 'dd/MM')}
                 </h2>
+                <p className="mt-1 text-sm text-blue-900/70">סמן בניין אחד ליום הזה, והוסף הערה רק אם צריך.</p>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5" id={`day-${date}-desc`}>
                 <div className="space-y-3 sm:space-y-4">
-                  <div>
-                    <label className="label text-right">כתובת</label>
-                    <input
-                      type="text"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="הכנס כתובת"
-                      className="input text-right placeholder:text-right"
-                      inputMode="text"
-                      autoComplete="street-address"
-                    />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <label className="label mb-0 text-right">בחירת בניין</label>
+                      {matchedBuilding ? (
+                        <span className="rounded-full border border-primary/16 bg-primary/8 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                          {matchedBuilding.name}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {effectiveBuildingOptions.length > 5 ? (
+                      <input
+                        type="search"
+                        value={buildingQuery}
+                        onChange={(e) => setBuildingQuery(e.target.value)}
+                        placeholder="חיפוש לפי שם בניין או כתובת"
+                        className="input text-right placeholder:text-right"
+                        inputMode="search"
+                      />
+                    ) : null}
+
+                    {buildingsLoading ? (
+                      <div className="space-y-2">
+                        {Array.from({ length: 3 }).map((_, index) => (
+                          <div key={index} className="h-16 animate-pulse rounded-[18px] border border-border/70 bg-muted/35" />
+                        ))}
+                      </div>
+                    ) : filteredBuildingOptions.length ? (
+                      <div className="max-h-64 space-y-2 overflow-y-auto pe-1">
+                        {filteredBuildingOptions.map((option) => {
+                          const selected = option.location === normalizedAddress;
+                          return (
+                            <button
+                              key={`${option.id}-${option.location}`}
+                              type="button"
+                              className={`w-full rounded-[20px] border px-4 py-3 text-right transition-all duration-200 ${
+                                selected
+                                  ? 'border-primary/34 bg-primary/8 shadow-[0_12px_26px_rgba(163,101,18,0.12)]'
+                                  : 'border-border/80 bg-background hover:border-primary/20 hover:bg-muted/30'
+                              }`}
+                              onClick={() => setAddress(option.location)}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-semibold text-foreground">{option.name}</div>
+                                  <div className="mt-1 text-xs leading-5 text-muted-foreground">
+                                    {option.address || option.location}
+                                  </div>
+                                </div>
+                                <span
+                                  className={`mt-0.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                                    selected
+                                      ? 'bg-primary text-primary-foreground'
+                                      : 'border border-border/70 bg-muted/30 text-muted-foreground'
+                                  }`}
+                                >
+                                  {selected ? 'נבחר' : 'בחר'}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : allowManualFallback ? (
+                      <div className="space-y-2">
+                        <div className="rounded-[18px] border border-dashed border-border/80 bg-muted/20 px-4 py-3 text-sm leading-6 text-muted-foreground">
+                          רשימת הבניינים לא נטענה כרגע. אפשר להזין כתובת ידנית כגיבוי כדי לא לעצור את ההגשה.
+                        </div>
+                        <input
+                          type="text"
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value)}
+                          placeholder="הזן כתובת ידנית"
+                          className="input text-right placeholder:text-right"
+                          inputMode="text"
+                          autoComplete="street-address"
+                        />
+                      </div>
+                    ) : (
+                      <div className="rounded-[18px] border border-dashed border-border/80 bg-muted/20 px-4 py-3 text-sm leading-6 text-muted-foreground">
+                        לא נמצאה התאמה לחיפוש הנוכחי. נסה מילה אחרת או נקה את החיפוש.
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -252,11 +366,12 @@ const DayCell: FC<DayCellProps> = ({
                       className="input text-right placeholder:text-right min-h-[84px] resize-y"
                       rows={3}
                     />
+                    <p className="help-text text-right">ההערה נשמרת יחד עם הבניין שנבחר עבור היום הזה.</p>
                   </div>
                 </div>
 
                 {/* Bulk Actions - show only if there is content */}
-                {(address.trim() || notes.trim()) && (
+                {normalizedAddress && (
                   <div className="pt-2">
                     <p className="text-xs text-muted-foreground text-center mb-3">החל על ימים נוספים</p>
                     <div className="space-y-2">
@@ -303,8 +418,13 @@ const DayCell: FC<DayCellProps> = ({
                   <button type="button" className="btn btn-secondary btn-lg w-full" onClick={() => setOpen(false)}>
                     בטל
                   </button>
-                  <button type="button" className="btn btn-primary btn-lg w-full" onClick={() => save()}>
-                    שמור
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-lg w-full"
+                    onClick={() => save()}
+                    disabled={!normalizedAddress}
+                  >
+                    שמור יום
                   </button>
                 </div>
               </div>

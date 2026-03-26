@@ -195,7 +195,7 @@ export default function RoleSelectionPage() {
               </CardHeader>
             </Card>
 
-            <Card variant="muted" className="mobile-entry-panel border-border/70">
+            {/* <Card variant="muted" className="mobile-entry-panel border-border/70">
               <CardHeader className="space-y-3">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <History className="h-4 w-4 text-primary" />
@@ -228,7 +228,7 @@ export default function RoleSelectionPage() {
                   </div>
                 ) : null}
               </CardContent>
-            </Card>
+            </Card> */}
           </section>
 
           <section className="grid gap-4 lg:grid-cols-3">

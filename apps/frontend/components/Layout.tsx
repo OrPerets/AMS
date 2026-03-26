@@ -128,7 +128,13 @@ export default function Layout({ children }: Props) {
   // Don't show layout on login page and landing page
   if (isPublicRoute) {
     return (
-      <div className={cn("min-h-screen bg-background text-foreground")}>
+      <div
+        dir={direction}
+        className={cn(
+          "min-h-screen bg-background text-foreground",
+          direction === 'rtl' ? 'text-right' : 'text-left',
+        )}
+      >
         <a href="#main-content" className="skip-link">{t('shell.skipToContent')}</a>
         <main id="main-content" tabIndex={-1}>
           {children}
@@ -150,6 +156,7 @@ export default function Layout({ children }: Props) {
 
   return (
     <div 
+      dir={direction}
       className={cn(
         "app-shell min-h-screen bg-background text-foreground",
         direction === 'rtl' ? 'rtl' : 'ltr'
@@ -193,7 +200,10 @@ export default function Layout({ children }: Props) {
           className="flex-1 min-h-0 overflow-x-hidden"
         >
           <div
-            className="container min-h-full max-w-full px-3 py-3 sm:px-6 sm:py-6 safe-pb"
+            className={cn(
+              "container min-h-full max-w-full px-3 py-3 sm:px-6 sm:py-6 safe-pb",
+              direction === 'rtl' ? 'text-right' : 'text-left',
+            )}
             style={
               totalOffset > 0
                 ? { paddingBottom: `max(calc(env(safe-area-inset-bottom, 0px) + 1rem), ${totalOffset + 20}px)` }

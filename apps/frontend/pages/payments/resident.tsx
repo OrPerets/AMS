@@ -384,7 +384,7 @@ export default function ResidentPaymentsPage() {
   }
 
   return (
-    <div dir="rtl" className="space-y-4 pb-4 text-right sm:space-y-6">
+    <div className="space-y-4 pb-4 text-right sm:space-y-6">
       <motion.section {...residentScreenMotion(motionReduced)}>
         <ResidentHero
           eyebrow="תשלומים"
@@ -726,7 +726,7 @@ export default function ResidentPaymentsPage() {
         )}
       >
         {selectedInvoice ? (
-          <div dir="rtl" className="space-y-4 text-right">
+          <div className="space-y-4 text-right">
             <div className="flex items-center justify-between gap-3 rounded-[26px] border border-subtle-border bg-background/90 px-4 py-3">
               <div>
                 <div className="text-[11px] font-semibold tracking-[0.12em] text-secondary-foreground">תשלום</div>

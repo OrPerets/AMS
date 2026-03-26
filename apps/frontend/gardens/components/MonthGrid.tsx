@@ -1,6 +1,6 @@
 import { parseISO, getDaysInMonth, format } from 'date-fns';
 import { he } from 'date-fns/locale';
-import DayCell, { DayEntry } from './DayCell';
+import DayCell, { DayBuildingOption, DayEntry } from './DayCell';
 
 // Hebrew weekday names with semantic meaning
 const weekdays = [
@@ -17,6 +17,7 @@ interface MonthGridProps {
   /** Month in YYYY-MM format */
   month: string;
   entries: Record<string, DayEntry>;
+  buildingOptions?: DayBuildingOption[];
   onChange: (
     date: string,
     value: DayEntry | null,
@@ -26,14 +27,18 @@ interface MonthGridProps {
   isLoading?: boolean;
   /** Optional read-only mode */
   readOnly?: boolean;
+  /** Optional building list loading state */
+  buildingsLoading?: boolean;
 }
 
 export default function MonthGrid({
   month,
   entries,
+  buildingOptions = [],
   onChange,
   isLoading = false,
   readOnly = false,
+  buildingsLoading = false,
 }: MonthGridProps) {
   const start = parseISO(`${month}-01`);
   const daysInMonth = getDaysInMonth(start);
@@ -166,6 +171,8 @@ export default function MonthGrid({
                   dataIndex={idx}
                   date={date}
                   value={entries[date]}
+                  buildingOptions={buildingOptions}
+                  buildingsLoading={buildingsLoading}
                   onChange={readOnly ? () => {} : onChange}
                   readOnly={readOnly}
                   isWeekend={[5, 6].includes(new Date(date).getDay())}
@@ -179,17 +186,22 @@ export default function MonthGrid({
       </div>
 
       {/* Progress indicator for filled days */}
-      {Object.keys(entries).length > 0 && (
+      {Object.values(entries).some((entry) => entry?.address?.trim()) && (
         <div className="mt-4 animate-slide-down">
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             <div className="flex-1 bg-muted rounded-full h-1.5 overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500 ease-out"
-                style={{ width: `${Math.min((Object.keys(entries).length / daysInMonth) * 100, 100)}%` }}
+                style={{
+                  width: `${Math.min(
+                    (Object.values(entries).filter((entry) => entry?.address?.trim()).length / daysInMonth) * 100,
+                    100,
+                  )}%`,
+                }}
               />
             </div>
             <span className="text-xs font-medium whitespace-nowrap">
-              {Object.keys(entries).length}/{daysInMonth} ימים
+              {Object.values(entries).filter((entry) => entry?.address?.trim()).length}/{daysInMonth} ימים
             </span>
           </div>
         </div>

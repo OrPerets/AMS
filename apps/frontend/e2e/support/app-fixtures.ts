@@ -50,9 +50,6 @@ export async function setSession(page: Page, role: SessionRole) {
   await page.addInitScript(([accessToken, refreshToken]) => {
     window.localStorage.setItem('accessToken', accessToken);
     window.localStorage.setItem('refreshToken', refreshToken);
-    window.localStorage.setItem('amit-direction', 'rtl');
-    window.localStorage.setItem('amit-theme', 'light');
-    window.localStorage.setItem('amit-locale', 'he');
     const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
     const onboardingKey = `amit-onboarding:v8:${payload.sub}:${payload.role}`;
     window.localStorage.setItem(onboardingKey, new Date().toISOString());

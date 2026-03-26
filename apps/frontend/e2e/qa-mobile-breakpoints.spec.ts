@@ -94,7 +94,7 @@ test.describe('sprint 10 mobile breakpoint coverage', () => {
   test('resident mobile shell holds up in ltr dark reduced-motion mode', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await setSession(page, 'RESIDENT');
-    await configureClient(page, { direction: 'ltr', theme: 'dark' });
+    await configureClient(page, { direction: 'ltr', theme: 'dark', locale: 'en' });
     await mockApi(page);
     await page.emulateMedia({ reducedMotion: 'reduce' });
 

@@ -2,6 +2,12 @@ import { authFetch } from './auth';
 
 export type GardensStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'NEEDS_CHANGES';
 
+export type GardensBuildingOption = {
+  id: number;
+  name: string;
+  address?: string | null;
+};
+
 export type GardensMonthSummary = {
   id: number;
   plan: string;
@@ -245,6 +251,10 @@ export async function sendGardensReminders(
 
 export async function getGardensWorkerDashboard() {
   return readJson<GardensWorkerDashboard>('/api/v1/gardens/me/dashboard');
+}
+
+export async function listGardensBuildings() {
+  return readJson<GardensBuildingOption[]>('/api/v1/buildings');
 }
 
 export async function getGardensWorkerMonth(plan: string) {

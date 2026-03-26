@@ -234,7 +234,7 @@ export default function CreateCall() {
   }
 
   return (
-    <div dir="rtl" className="mx-auto max-w-2xl space-y-5 pb-32 text-right md:pb-20">
+    <div className="mx-auto max-w-2xl space-y-5 pb-32 text-right md:pb-20">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="icon-directional h-4 w-4" />

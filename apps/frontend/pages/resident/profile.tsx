@@ -246,7 +246,7 @@ export default function ResidentProfilePage() {
   }
 
   return (
-    <div dir="rtl" className="mx-auto w-full max-w-md space-y-4 pb-24 text-right sm:max-w-3xl sm:space-y-5">
+    <div className="mx-auto w-full max-w-md space-y-4 pb-24 text-right sm:max-w-3xl sm:space-y-5">
       <motion.section
         {...residentScreenMotion(Boolean(reducedMotion))}
       >

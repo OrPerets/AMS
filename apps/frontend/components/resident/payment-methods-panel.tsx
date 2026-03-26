@@ -414,7 +414,7 @@ export function ResidentPaymentMethodsPanel({
         description={step === 1 ? 'פרטים' : step === 2 ? 'אישור' : 'נשמר'}
         tone="light"
       >
-        <div dir="rtl" className="space-y-4 text-right">
+        <div className="space-y-4 text-right">
           <PaymentFlowRail currentStep={step} />
 
           <AnimatePresence initial={false} mode="wait">

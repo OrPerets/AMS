@@ -16,6 +16,9 @@ import {
   formatNumber,
   formatTime,
   getLocaleDirection,
+  getStoredDirection,
+  getStoredLocale,
+  getStoredRegionalFormat,
   translate,
 } from './i18n';
 
@@ -49,6 +52,37 @@ function resolveThemeValue(theme: Theme): "light" | "dark" {
   return "light";
 }
 
+function getInitialTheme(storageKey: string, defaultTheme: Theme): Theme {
+  if (typeof window === 'undefined') return defaultTheme;
+
+  const storedTheme = window.localStorage.getItem(storageKey);
+  if (storedTheme === 'light' || storedTheme === 'dark' || storedTheme === 'system') {
+    return storedTheme;
+  }
+
+  return defaultTheme;
+}
+
+function getInitialLocaleState(defaultLocale: Locale): Locale {
+  if (typeof window === 'undefined') return defaultLocale;
+  return getStoredLocale(defaultLocale);
+}
+
+function getInitialRegionalFormatState(defaultLocale: Locale): RegionalFormat {
+  if (typeof window === 'undefined') return defaultLocale === 'en' ? 'en-US' : 'he-IL';
+  return getStoredRegionalFormat();
+}
+
+function getInitialDirectionState(defaultDirection: Direction): Direction {
+  if (typeof window === 'undefined') return defaultDirection;
+
+  const storedDirection = getStoredDirection();
+  if (storedDirection) return storedDirection;
+
+  const storedLocale = getStoredLocale();
+  return getLocaleDirection(storedLocale);
+}
+
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
@@ -57,18 +91,13 @@ export function ThemeProvider({
   storageKey = "amit-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(defaultTheme);
+  const [theme, setTheme] = useState<Theme>(() => getInitialTheme(storageKey, defaultTheme));
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
 
-  // Only run on client side
   useEffect(() => {
     setMounted(true);
-    const storedTheme = localStorage.getItem(storageKey) as Theme;
-    if (storedTheme) {
-      setTheme(storedTheme);
-    }
-  }, [storageKey]);
+  }, []);
 
   useEffect(() => {
     if (!mounted) return;
@@ -170,19 +199,22 @@ export function DirectionProvider({
   defaultDirection = "rtl",
   storageKey = "amit-direction",
 }: DirectionProviderProps) {
+  const [direction, setDirectionState] = useState<Direction>(() => getInitialDirectionState(defaultDirection));
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const html = window.document.documentElement;
-    localStorage.removeItem(storageKey);
-    html.setAttribute('dir', defaultDirection);
-    html.lang = 'he';
-  }, [storageKey]);
+    html.setAttribute('dir', direction);
+    window.localStorage.setItem(storageKey, direction);
+  }, [direction, storageKey]);
 
   const value = {
-    direction: defaultDirection,
-    isRTL: true,
-    setDirection: () => null,
+    direction,
+    isRTL: direction === 'rtl',
+    setDirection: (nextDirection: Direction) => {
+      setDirectionState(nextDirection);
+    },
   };
 
   return (
@@ -239,25 +271,45 @@ export function LocaleProvider({
   defaultLocale = "he",
   storageKey = "amit-locale",
 }: LocaleProviderProps) {
-  const [regionalFormat, setRegionalFormatState] = useState<RegionalFormat>('he-IL');
+  const [locale, setLocaleState] = useState<Locale>(() => getInitialLocaleState(defaultLocale));
+  const [regionalFormat, setRegionalFormatState] = useState<RegionalFormat>(() =>
+    getInitialRegionalFormatState(defaultLocale),
+  );
+
+  const t = (key: string, params?: Record<string, string | number>): string => {
+    return translate(locale, key, params);
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    localStorage.removeItem(storageKey);
-    localStorage.removeItem('amit-regional-format');
-    setRegionalFormatState('he-IL');
-  }, [storageKey]);
+    window.document.documentElement.lang = locale;
+    window.localStorage.setItem(storageKey, locale);
+  }, [locale, storageKey]);
 
-  const t = (key: string, params?: Record<string, string | number>): string => {
-    return translate(defaultLocale, key, params);
-  };
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    window.localStorage.setItem('amit-regional-format', regionalFormat);
+  }, [regionalFormat]);
 
   const value: LocaleProviderState = {
-    locale: defaultLocale,
-    setLocale: () => null,
+    locale,
+    setLocale: (nextLocale: Locale) => {
+      setLocaleState(nextLocale);
+      setRegionalFormatState((currentFormat) => {
+        const currentLocale = currentFormat.startsWith('en') ? 'en' : 'he';
+        if (currentLocale === nextLocale) {
+          return currentFormat;
+        }
+        return nextLocale === 'en' ? 'en-US' : 'he-IL';
+      });
+    },
     regionalFormat,
-    setRegionalFormat: () => null,
+    setRegionalFormat: (format: RegionalFormat) => {
+      setRegionalFormatState(format);
+      setLocaleState(format.startsWith('en') ? 'en' : 'he');
+    },
     t,
     fmtDate: (date) => formatDate(date, regionalFormat),
     fmtTime: (date) => formatTime(date, regionalFormat),

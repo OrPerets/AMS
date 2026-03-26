@@ -19,9 +19,11 @@ import {
   formatPlanLabel,
   formatStatusLabel,
   getGardensWorkerDashboard,
+  listGardensBuildings,
   getGardensWorkerMonth,
   saveGardensWorkerMonth,
   submitGardensWorkerMonth,
+  type GardensBuildingOption,
   type GardensStatus,
   type GardensWorkerDashboard,
   type GardensWorkerMonth,
@@ -90,6 +92,8 @@ function getWorkerStateCopy(status: GardensStatus, assignmentCount: number, revi
 export function GardensWorkerWorkspace() {
   const [dashboard, setDashboard] = useState<GardensWorkerDashboard | null>(null);
   const [activeMonth, setActiveMonth] = useState<GardensWorkerMonth | null>(null);
+  const [buildings, setBuildings] = useState<GardensBuildingOption[]>([]);
+  const [buildingsLoading, setBuildingsLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [entries, setEntries] = useState<Record<string, DayEntry>>({});
   const [loading, setLoading] = useState(true);
@@ -129,6 +133,32 @@ export function GardensWorkerWorkspace() {
 
   useEffect(() => {
     void loadDashboard();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        setBuildingsLoading(true);
+        const items = await listGardensBuildings();
+        if (!cancelled) {
+          setBuildings(Array.isArray(items) ? items : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setBuildings([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setBuildingsLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -183,6 +213,19 @@ export function GardensWorkerWorkspace() {
   const workerState = useMemo(
     () => getWorkerStateCopy(activeMonth?.month?.status ?? 'DRAFT', assignmentCount, activeMonth?.month?.reviewNote),
     [activeMonth?.month?.reviewNote, activeMonth?.month?.status, assignmentCount],
+  );
+  const buildingOptions = useMemo(
+    () =>
+      buildings
+        .map((building) => ({
+          id: building.id,
+          name: building.name,
+          location: (building.address || building.name || '').trim(),
+          address: building.address?.trim() || null,
+        }))
+        .filter((building) => building.location)
+        .sort((left, right) => left.name.localeCompare(right.name, 'he')),
+    [buildings],
   );
 
   const save = async () => {
@@ -396,6 +439,8 @@ export function GardensWorkerWorkspace() {
             <MonthGrid
               month={activeMonth.month.plan}
               entries={entries}
+              buildingOptions={buildingOptions}
+              buildingsLoading={buildingsLoading}
               readOnly={!editable}
               onChange={(date, value, bulk) => {
                 const activePlan = activeMonth.month?.plan;
@@ -445,10 +490,11 @@ export function GardensWorkerWorkspace() {
         <section id="gardens-guidelines" className="space-y-4">
           <SectionHeader
             title="קווים מנחים להגשה"
-            subtitle="מלא רק ימים שבהם יש עבודה בפועל. כל יום מקבל מיקום אחד והערות אופציונליות."
+            subtitle="לחץ על יום בלוח, בחר בניין אחד מתוך הרשימה, והוסף הערה רק כשצריך הקשר נוסף."
           />
           <div className="grid gap-4 md:grid-cols-3">
             {[
+              'יום נשמר רק אחרי בחירת בניין. הימים שסומנו בלוח הם הימים שיוגשו לבדיקה.',
               'שמור טיוטה בכל שלב. אין צורך להמתין לסיום כל החודש.',
               'אם המנהל החזיר את התוכנית, העדכן את הימים הרלוונטיים והגש מחדש.',
               'אחרי אישור סופי החודש הופך לקריאה בלבד כדי לשמור על גרסה מוסכמת אחת.',

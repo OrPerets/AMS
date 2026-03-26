@@ -396,7 +396,7 @@ export default function ResidentAccountPage() {
     : null;
 
   return (
-    <div dir="rtl" className="mx-auto w-full max-w-md space-y-4 pb-24 text-right sm:max-w-4xl sm:space-y-6">
+    <div className="mx-auto w-full max-w-md space-y-4 pb-24 text-right sm:max-w-4xl sm:space-y-6">
       {/* {showResume ? (
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, y: 12 }}

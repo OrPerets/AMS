@@ -78,7 +78,7 @@ export default function ResidentBuildingPage() {
   }
 
   return (
-    <div dir="rtl" className="space-y-4 pb-20 text-right sm:space-y-6 lg:pb-0">
+    <div className="space-y-4 pb-20 text-right sm:space-y-6 lg:pb-0">
       <CompactStatusStrip
         roleLabel={building?.name ? `${building.name} · דירה ${primaryUnit?.number}` : 'הבניין שלי'}
         icon={<Building2 className="h-4 w-4" strokeWidth={1.75} />}

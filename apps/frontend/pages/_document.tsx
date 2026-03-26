@@ -21,6 +21,12 @@ export default function Document() {
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
+                function getInitialLocale() {
+                  const stored = localStorage.getItem('amit-locale');
+                  if (stored === 'he' || stored === 'en') return stored;
+                  return 'he';
+                }
+
                 function getInitialTheme() {
                   const stored = localStorage.getItem('amit-theme');
                   if (stored && stored !== 'system') return stored;
@@ -28,22 +34,20 @@ export default function Document() {
                   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                 }
 
-                function getInitialDirection() {
-                  try {
-                    localStorage.removeItem('amit-direction');
-                    localStorage.removeItem('amit-locale');
-                    localStorage.removeItem('amit-regional-format');
-                  } catch (e) {}
-                  return 'rtl';
+                function getInitialDirection(locale) {
+                  const stored = localStorage.getItem('amit-direction');
+                  if (stored === 'rtl' || stored === 'ltr') return stored;
+                  return locale === 'en' ? 'ltr' : 'rtl';
                 }
 
                 try {
+                  const locale = getInitialLocale();
                   const theme = getInitialTheme();
-                  const direction = getInitialDirection();
+                  const direction = getInitialDirection(locale);
 
                   document.documentElement.className = theme;
                   document.documentElement.setAttribute('dir', direction);
-                  document.documentElement.lang = 'he';
+                  document.documentElement.lang = locale;
                 } catch (e) {
                   // Fallback to defaults
                   document.documentElement.className = 'light';

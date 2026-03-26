@@ -86,7 +86,7 @@ test.describe('mobile polish smoke', () => {
     await setSession(page, 'PM');
     await configureClient(page, { direction: 'rtl', theme: 'light', locale: 'he' });
     await page.goto('/gardens', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: 'ניהול גננים' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'מודול הגינון' })).toBeVisible();
     await expectNoHorizontalOverflow(page);
     await captureToMobilePolish(page, testInfo, 'gardens-manager-pm-light-rtl.png');
 
@@ -97,5 +97,25 @@ test.describe('mobile polish smoke', () => {
     await expect(page.getByText(/המשך לערוך או הגש לאישור|החודש סגור לעריכה/).first()).toBeVisible();
     await expectNoHorizontalOverflow(page);
     await captureToMobilePolish(page, testInfo, 'gardens-worker-tech-light-rtl.png');
+  });
+
+  test('gardens worker can assign a building from the day popup', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await setSession(page, 'TECH');
+    await configureClient(page, { direction: 'rtl', theme: 'light', locale: 'he' });
+    await mockApi(page);
+
+    await page.goto('/gardens', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: /נדרשים תיקונים לפני אישור|המשך לעדכן את החודש הפעיל/ })).toBeVisible();
+
+    const targetDay = page.locator('#day-2026-04-02');
+    await targetDay.click();
+
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.getByRole('button', { name: /מגדל העיר/ }).click();
+    await page.getByRole('button', { name: 'שמור יום' }).click();
+
+    await expect(targetDay).toHaveAttribute('aria-label', /קיים שיבוץ/);
+    await expect(page.getByText('3 ימים', { exact: false }).first()).toBeVisible();
   });
 });
