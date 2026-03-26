@@ -145,12 +145,12 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Remove routing ambiguity and role inconsistency at the foundation.
 
 ### Todo
-- [ ] Build `role-capabilities` model (single place for role abilities).
-- [ ] Build `route-resolver` module for all post-login/default/workspace logic.
-- [ ] Move duplicate role checks from pages to resolver-driven hooks.
-- [ ] Define unsupported role UI state and telemetry event.
-- [ ] Add unit tests for role normalization, impersonation, and destination outputs.
-- [ ] Add integration tests for login → destination by role.
+- [x] Build `role-capabilities` model (single place for role abilities).
+- [x] Build `route-resolver` module for all post-login/default/workspace logic.
+- [x] Move duplicate role checks from pages to resolver-driven hooks.
+- [x] Define unsupported role UI state and telemetry event.
+- [x] Add unit tests for role normalization, impersonation, and destination outputs.
+- [x] Add integration tests for login → destination by role.
 
 ### Exit Criteria
 - Zero conflicting role redirects.

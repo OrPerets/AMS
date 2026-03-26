@@ -19,6 +19,11 @@ interface MaintenanceCostTrendProps {
 
 const currencyFormatter = (value: number) => `₪${value.toLocaleString("he-IL")}`;
 
+const tooltipCurrencyFormatter = (value: number | string | undefined) => {
+  const numericValue = typeof value === "number" ? value : Number(value ?? 0);
+  return currencyFormatter(Number.isNaN(numericValue) ? 0 : numericValue);
+};
+
 export const MaintenanceCostTrend: React.FC<MaintenanceCostTrendProps> = ({ data }) => {
   return (
     <Card className="p-5">
@@ -45,7 +50,7 @@ export const MaintenanceCostTrend: React.FC<MaintenanceCostTrendProps> = ({ data
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis dataKey="month" tickLine={false} axisLine={false} />
             <YAxis tickFormatter={currencyFormatter} tickLine={false} axisLine={false} width={80} />
-            <Tooltip formatter={(value: number) => currencyFormatter(value)} labelClassName="text-sm font-medium" />
+            <Tooltip formatter={(value) => tooltipCurrencyFormatter(value as number | string | undefined)} labelClassName="text-sm font-medium" />
             <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: 10 }} />
             <Area type="monotone" dataKey="preventive" stroke="#2563eb" fill="url(#colorPreventive)" name="תחזוקה מונעת" />
             <Area type="monotone" dataKey="corrective" stroke="#f97316" fill="url(#colorCorrective)" name="תחזוקה מתקנת" />

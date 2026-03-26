@@ -20,6 +20,12 @@ import { cn } from "../../lib/utils";
 
 const palette = ["#2563eb", "#22c55e", "#f97316", "#9333ea", "#14b8a6", "#f43f5e"];
 
+const formatTooltipValue = (value: number | string | undefined) => {
+  const numericValue = typeof value === "number" ? value : Number(value ?? 0);
+  const safeValue = Number.isNaN(numericValue) ? 0 : numericValue;
+  return `${safeValue.toLocaleString()} ₪`;
+};
+
 interface BudgetChartProps {
   planned: number;
   actual: number;
@@ -60,7 +66,7 @@ export const BudgetChart: React.FC<BudgetChartProps> = ({ planned, actual, categ
                     <Cell key={entry.name} fill={palette[index % palette.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => `${value.toLocaleString()} ₪`} />
+                <Tooltip formatter={(value) => formatTooltipValue(value as number | string | undefined)} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -83,7 +89,7 @@ export const BudgetChart: React.FC<BudgetChartProps> = ({ planned, actual, categ
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `${value / 1000}k`} />
-              <Tooltip formatter={(value: number) => `${value.toLocaleString()} ₪`} />
+              <Tooltip formatter={(value) => formatTooltipValue(value as number | string | undefined)} />
               <Bar dataKey="value" radius={[6, 6, 0, 0]} fill="#2563eb" />
             </BarChart>
           </ResponsiveContainer>
