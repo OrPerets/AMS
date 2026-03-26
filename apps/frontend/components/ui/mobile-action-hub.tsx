@@ -94,8 +94,8 @@ function ActionTile({
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
         mobileHomeEffect &&
-          '[box-shadow:0_calc(10px*var(--mobile-card-depth,0))_24px_rgba(15,23,42,0.10)] [filter:saturate(calc(1+var(--mobile-card-depth,0)*0.06))] [transform:translateY(calc(var(--mobile-card-depth,0)*-2px))]',
-        hold.isHolding && 'rounded-2xl shadow-[0_16px_32px_rgba(15,23,42,0.14)] ring-1 ring-primary/10',
+          '[box-shadow:0_calc(10px*var(--mobile-card-depth,0))_24px_rgba(84,58,15,0.10)] [filter:saturate(calc(1+var(--mobile-card-depth,0)*0.06))] [transform:translateY(calc(var(--mobile-card-depth,0)*-2px))]',
+        hold.isHolding && 'rounded-2xl shadow-[0_16px_32px_rgba(84,58,15,0.14)] ring-1 ring-primary/10',
       )}
       {...hold.holdProps}
     >
@@ -104,12 +104,12 @@ function ActionTile({
         onClick={item.onClick}
         selected={isSelected}
         className={cn(
-          'group block rounded-2xl border bg-card/96 text-center shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target',
-          density === 'compact' ? 'rounded-[18px] p-2 sm:rounded-[20px] sm:p-2.5' : 'p-2.5 sm:rounded-[24px] sm:p-3.5',
+          'group block rounded-2xl border bg-[linear-gradient(180deg,rgba(255,255,255,0.97)_0%,rgba(248,243,234,0.94)_100%)] text-center shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/28 hover:shadow-raised active:translate-y-0 touch-target',
+          density === 'compact' ? 'rounded-2xl p-2 md:rounded-[20px] md:p-2.5' : 'p-2.5 md:rounded-[24px] md:p-3.5',
           layout === 'grid' && (density === 'compact' ? 'min-h-[74px] sm:min-h-[82px]' : 'min-h-[80px] sm:min-h-[90px]'),
           layout === 'hierarchy' && priority === 'primary' && (density === 'compact' ? 'min-h-[84px] text-start sm:min-h-[96px]' : 'min-h-[92px] text-start sm:min-h-[110px]'),
           layout === 'hierarchy' && priority === 'secondary' && (density === 'compact' ? 'min-h-[74px]' : 'min-h-[80px]'),
-          layout === 'hierarchy' && priority === 'utility' && (density === 'compact' ? 'min-h-[68px] bg-muted-surface/85 shadow-elevation-1' : 'min-h-[72px] bg-muted-surface/85 shadow-elevation-1'),
+          layout === 'hierarchy' && priority === 'utility' && (density === 'compact' ? 'min-h-[68px] bg-[linear-gradient(180deg,rgba(252,249,243,0.94),rgba(246,241,232,0.9))] shadow-elevation-1' : 'min-h-[72px] bg-[linear-gradient(180deg,rgba(252,249,243,0.94),rgba(246,241,232,0.9))] shadow-elevation-1'),
           isSelected && 'gold-sheen-surface gold-current-pulse border-primary/35 ring-1 ring-primary/10',
           !item.href && !item.onClick && 'pointer-events-none',
         )}

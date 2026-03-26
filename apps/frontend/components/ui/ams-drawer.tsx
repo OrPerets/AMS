@@ -110,8 +110,8 @@ export function AmsDrawer({
         wrapper: placement === 'bottom' ? 'items-end' : undefined,
         base: cn(
           lightTone
-            ? 'glass-surface-strong border border-subtle-border text-foreground shadow-[0_26px_70px_-44px_rgba(44,28,9,0.22)]'
-            : 'drawer-premium-surface text-inverse-text',
+            ? 'mobile-unified-drawer'
+            : 'mobile-unified-drawer',
           placement === 'bottom' && 'm-0 max-h-[88dvh] rounded-t-[30px] rounded-b-none',
           placement !== 'bottom' && 'rounded-[28px]',
           className,
@@ -154,22 +154,17 @@ export function AmsDrawer({
             </div>
             {(title || description || !hideCloseButton) ? (
               <DrawerHeader>
-                <div className={cn('flex items-start justify-between gap-3 border-b pb-3', lightTone ? 'border-subtle-border/90' : 'border-white/8')}>
+                <div className="flex items-start justify-between gap-3 border-b border-subtle-border/90 pb-3">
                   <div className="min-w-0">
-                    {title ? <h2 className={cn('text-base font-semibold', lightTone ? 'text-foreground' : 'text-inverse-text')}>{title}</h2> : null}
-                    {description ? <p className={cn('mt-1 text-sm leading-6', lightTone ? 'text-secondary-foreground' : 'text-white/70')}>{description}</p> : null}
+                    {title ? <h2 className="text-base font-semibold text-foreground">{title}</h2> : null}
+                    {description ? <p className="mt-1 text-sm leading-6 text-secondary-foreground">{description}</p> : null}
                     <div className="gold-divider-line mt-3 h-px w-full" />
                   </div>
                   {!hideCloseButton ? (
                     <button
                       type="button"
                       onClick={onClose}
-                      className={cn(
-                        'touch-target inline-flex h-10 w-10 items-center justify-center rounded-full border transition',
-                        lightTone
-                          ? 'border-subtle-border bg-background text-secondary-foreground hover:bg-muted/80'
-                          : 'border-white/12 bg-white/6 text-white/74 hover:bg-white/10',
-                      )}
+                      className="touch-target inline-flex h-10 w-10 items-center justify-center rounded-full border border-subtle-border bg-background text-secondary-foreground transition hover:bg-muted/80"
                       aria-label="סגור חלון"
                     >
                       <X className="h-4 w-4" strokeWidth={1.75} />

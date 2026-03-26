@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { PasswordInput } from '../components/ui/password-input';
+import { GlassSurface } from '../components/ui/glass-surface';
 import { useFormValidation } from '../hooks/use-form-validation';
 import { getDefaultRoute, getPortalEntryRoute, getTokenPayload, login } from '../lib/auth';
 import { useDirection, useLocale } from '../lib/providers';
@@ -81,11 +82,8 @@ export default function LoginPage() {
   ];
 
   return (
-    <main
-      dir={direction}
-      className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(201,156,72,0.16),_transparent_30%),linear-gradient(180deg,_rgba(250,247,240,0.98),_rgba(245,240,230,0.84))] px-3 py-4 sm:px-4 sm:py-6"
-    >
-      <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center justify-center sm:min-h-[calc(100vh-3rem)]">
+    <main dir={direction} className="mobile-entry-shell">
+      <div className="mobile-entry-grid">
         <div className="grid w-full items-center gap-5 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
           <section className="order-2 hidden space-y-3 sm:block lg:order-1 lg:space-y-5">
             <div className="inline-flex w-fit items-center rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary sm:text-sm">
@@ -102,17 +100,17 @@ export default function LoginPage() {
 
             <div className="grid gap-2.5 md:grid-cols-3 lg:grid-cols-1 lg:gap-3">
               {trustPoints.map((point, index) => (
-                <div key={point} className="rounded-2xl border border-border/70 bg-card/85 p-3 shadow-sm sm:p-4">
+                <GlassSurface key={point} className="rounded-[26px] p-3 sm:p-4">
                   <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary sm:mb-3 sm:h-10 sm:w-10 sm:rounded-2xl">
                     {index === 0 ? <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" /> : index === 1 ? <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" /> : <Lock className="h-4 w-4 sm:h-5 sm:w-5" />}
                   </div>
                   <p className="text-[13px] leading-5 text-foreground sm:text-sm sm:leading-6">{point}</p>
-                </div>
+                </GlassSurface>
               ))}
             </div>
           </section>
 
-          <Card variant="featured" className="order-1 mx-auto w-full max-w-xl border-primary/20 shadow-[0_35px_100px_-60px_rgba(0,0,0,0.45)] lg:order-2">
+          <Card variant="featured" className="mobile-entry-card order-1 mx-auto w-full max-w-xl border-primary/20 lg:order-2">
             <CardHeader className="space-y-3 pb-3 text-center sm:space-y-5 sm:pb-6">
               <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/12 text-primary sm:h-14 sm:w-14">
                 <LogIn className="h-4 w-4 sm:h-6 sm:w-6" />

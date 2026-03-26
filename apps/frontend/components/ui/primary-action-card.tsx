@@ -49,20 +49,20 @@ export function PrimaryActionCard({
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
         'overflow-hidden border border-s-4 text-right transition-[transform,box-shadow,filter] duration-300',
-        density === 'compact' ? 'rounded-[20px] p-3 sm:rounded-[22px] sm:p-3' : 'rounded-[22px] p-3 sm:rounded-[26px] sm:p-3.5',
+        density === 'compact' ? 'rounded-2xl p-3 md:rounded-[22px] md:p-3' : 'rounded-2xl p-3 md:rounded-[26px] md:p-3.5',
         visualStyle === 'default' &&
           'border-primary/12 border-s-primary bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(247,250,255,0.94)_100%)] shadow-[0_18px_40px_rgba(15,23,42,0.10)]',
         visualStyle === 'resident' &&
           'border-primary/18 border-s-primary bg-[linear-gradient(180deg,rgba(255,249,240,0.98)_0%,rgba(255,255,255,0.94)_52%,rgba(248,243,232,0.92)_100%)] shadow-[0_20px_44px_rgba(84,58,15,0.12)]',
         visualStyle === 'pm' &&
-          'border-[hsl(var(--subtle-border))] border-s-primary bg-[linear-gradient(180deg,rgba(249,246,240,0.98)_0%,rgba(255,255,255,0.94)_100%)] shadow-[0_18px_34px_rgba(44,28,9,0.08)]',
+          'border-primary/14 border-s-primary bg-[linear-gradient(180deg,rgba(255,250,244,0.98)_0%,rgba(255,255,255,0.95)_54%,rgba(247,242,233,0.92)_100%)] shadow-[0_20px_44px_rgba(84,58,15,0.10)]',
         visualStyle === 'admin' &&
-          'border-primary/18 border-s-primary bg-[linear-gradient(180deg,rgba(255,249,240,0.98)_0%,rgba(255,255,255,0.94)_58%,rgba(248,243,232,0.92)_100%)] shadow-[0_24px_54px_rgba(84,58,15,0.12)]',
+          'border-primary/20 border-s-primary bg-[linear-gradient(180deg,rgba(255,248,238,0.99)_0%,rgba(255,255,255,0.95)_58%,rgba(247,241,229,0.94)_100%)] shadow-[0_24px_54px_rgba(84,58,15,0.14)]',
         tone === 'warning' && 'border-s-warning',
         tone === 'danger' && 'border-s-destructive',
         tone === 'success' && 'border-s-success',
         mobileHomeEffect &&
-          'md:shadow-raised [box-shadow:0_calc(12px*var(--mobile-card-depth,0))_32px_rgba(15,23,42,0.12)] [filter:saturate(calc(1+var(--mobile-card-depth,0)*0.08))] [transform:translateY(calc(var(--mobile-card-depth,0)*-3px))]',
+          '[box-shadow:0_calc(12px*var(--mobile-card-depth,0))_32px_rgba(84,58,15,0.12)] [filter:saturate(calc(1+var(--mobile-card-depth,0)*0.08))] [transform:translateY(calc(var(--mobile-card-depth,0)*-3px))]',
         hold.isHolding && 'shadow-[0_18px_40px_rgba(15,23,42,0.14)] ring-1 ring-primary/10',
         className,
       )}

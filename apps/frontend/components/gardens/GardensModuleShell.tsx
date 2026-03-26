@@ -5,6 +5,7 @@ import { ArrowRight, Home, Leaf, ListChecks, Sprout, Undo2 } from 'lucide-react'
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
+import { GlassSurface } from '../ui/glass-surface';
 import { cn } from '../../lib/utils';
 import { getCurrentUserId } from '../../lib/auth';
 import { getLatestGardensPlan, getStoredGardensResume, setStoredGardensResume } from '../../lib/gardens';
@@ -69,7 +70,7 @@ export function GardensModuleShell({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <Card variant="featured" className="overflow-hidden border-primary/15 bg-[radial-gradient(circle_at_top,_rgba(74,124,67,0.18),_transparent_42%),linear-gradient(180deg,_rgba(250,247,240,0.98),_rgba(244,239,230,0.95))]">
+      <Card variant="featured" className="mobile-entry-card overflow-hidden border-primary/15 bg-[radial-gradient(circle_at_top,_rgba(74,124,67,0.16),_transparent_40%),linear-gradient(180deg,_rgba(255,250,244,0.98),_rgba(247,242,233,0.95))]">
         <CardContent className="space-y-3 p-3.5 sm:space-y-5 sm:p-6">
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <Badge variant="success">Garden module</Badge>
@@ -91,7 +92,7 @@ export function GardensModuleShell({
           </div>
 
           <div className="grid gap-2.5 lg:grid-cols-[1.2fr_0.8fr] lg:gap-3">
-            <div className="rounded-2xl border border-border/70 bg-background/85 p-3 sm:rounded-[22px] sm:p-4">
+            <GlassSurface className="rounded-[26px] p-3 sm:p-4">
               <div className="mb-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-tertiary sm:mb-3">ניווט המודול</div>
               <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                 {navItems.map((item) => {
@@ -119,9 +120,9 @@ export function GardensModuleShell({
                   );
                 })}
               </div>
-            </div>
+            </GlassSurface>
 
-            <div className="rounded-2xl border border-border/70 bg-background/85 p-3 sm:rounded-[22px] sm:p-4">
+            <GlassSurface className="rounded-[26px] p-3 sm:p-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-tertiary">המשך מהנקודה האחרונה</div>
               <div className="mt-1.5 text-[15px] font-semibold text-foreground sm:mt-2 sm:text-base">{resume?.label || 'עדיין לא נשמר מסלול קודם'}</div>
               <div className="mt-1 text-[13px] leading-5 text-muted-foreground sm:text-sm sm:leading-6">
@@ -137,7 +138,7 @@ export function GardensModuleShell({
                   </Link>
                 </Button>
               ) : null}
-            </div>
+            </GlassSurface>
           </div>
         </CardContent>
       </Card>

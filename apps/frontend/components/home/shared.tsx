@@ -7,6 +7,7 @@ import { MobileMetricStrip } from '../ui/mobile-metric-strip';
 import { MobilePriorityInbox, type MobilePriorityInboxItem } from '../ui/mobile-priority-inbox';
 import { PrimaryActionCard } from '../ui/primary-action-card';
 import { MiniSparkline } from '../ui/mobile-insight-widget';
+import { GlassSurface } from '../ui/glass-surface';
 import { cn } from '../../lib/utils';
 import { trackQuickActionClick } from '../../lib/analytics';
 import { addRecentAction, getRecentActions } from '../../lib/engagement';
@@ -83,7 +84,7 @@ export function RoleHomeShell({
   prioritizeInbox = false,
 }: HomeBlueprintShellProps) {
   const icon = getRoleStatusIcon(roleKey);
-  const tone = roleKey === 'ADMIN' ? 'admin' : roleKey === 'PM' ? 'pm' : roleKey === 'RESIDENT' ? 'resident' : 'default';
+  const tone = roleKey === 'ADMIN' ? 'admin' : roleKey === 'PM' ? 'pm' : roleKey === 'RESIDENT' ? 'resident' : 'resident';
   const shellMode = roleKey === 'ADMIN' ? 'admin' : roleKey === 'PM' ? 'pm' : 'default';
   const operatorMode = roleKey === 'ADMIN' || roleKey === 'PM' || roleKey === 'ACCOUNTANT' || roleKey === 'TECH';
   const operationalPulseMetrics = statusMetrics.slice(0, 3);
@@ -103,7 +104,7 @@ export function RoleHomeShell({
   const quickActionsGrid = <HomeQuickActionsGrid items={quickActions} roleKey={roleKey} />;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {roleKey !== 'RESIDENT' ? (
         <div className="px-1 text-right">
           <h1 className="text-[18px] font-black tracking-[-0.02em] text-foreground">מרכז העבודה</h1>
@@ -164,8 +165,12 @@ export function RoleHomeShell({
         }
       />
 
-      {prioritizeInbox ? inbox : quickActionsGrid}
-      {prioritizeInbox ? quickActionsGrid : inbox}
+      <GlassSurface className="rounded-[28px] px-3 py-3 sm:px-4 sm:py-4">
+        {prioritizeInbox ? inbox : quickActionsGrid}
+      </GlassSurface>
+      <GlassSurface className="rounded-[28px] px-3 py-3 sm:px-4 sm:py-4">
+        {prioritizeInbox ? quickActionsGrid : inbox}
+      </GlassSurface>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { ArrowRight, Building2, ExternalLink, History, Leaf, ShieldCheck, Star }
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { GlassSurface } from '../components/ui/glass-surface';
 import { Switch } from '../components/ui/switch';
 import {
   EXTERNAL_SUPERVISION_REPORT_URL,
@@ -172,14 +173,11 @@ export default function RoleSelectionPage() {
   }
 
   return (
-    <main
-      dir={direction}
-      className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(201,156,72,0.14),_transparent_32%),linear-gradient(180deg,_rgba(250,247,240,0.98),_rgba(245,240,230,0.9))] px-3 py-4 sm:px-4 sm:py-6"
-    >
-      <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center justify-center sm:min-h-[calc(100vh-3rem)]">
+    <main dir={direction} className="mobile-entry-shell">
+      <div className="mobile-entry-grid">
         <div className="w-full space-y-4 sm:space-y-5">
           <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6">
-            <Card variant="featured" className="gold-sheen-surface shadow-[0_30px_90px_-60px_rgba(0,0,0,0.32)]" data-accent-sheen="true">
+            <Card variant="featured" className="mobile-entry-card gold-sheen-surface" data-accent-sheen="true">
               <CardHeader className="space-y-3 sm:space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="gold">{t('roleSelection.eyebrow')}</Badge>
@@ -197,7 +195,7 @@ export default function RoleSelectionPage() {
               </CardHeader>
             </Card>
 
-            <Card variant="muted" className="border-border/70">
+            <Card variant="muted" className="mobile-entry-panel border-border/70">
               <CardHeader className="space-y-3">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <History className="h-4 w-4 text-primary" />
@@ -215,7 +213,7 @@ export default function RoleSelectionPage() {
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 ) : null}
-                <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
+                <GlassSurface className="rounded-[24px] p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
                       <p className="text-sm font-semibold text-foreground">{t('roleSelection.rememberTitle')}</p>
@@ -223,7 +221,7 @@ export default function RoleSelectionPage() {
                     </div>
                     <Switch checked={rememberChoice} onCheckedChange={(v) => { setRememberChoice(v); trackRememberChoiceToggle(v); }} aria-label={t('roleSelection.rememberTitle')} />
                   </div>
-                </div>
+                </GlassSurface>
                 {isUnsupportedRole ? (
                   <div className="rounded-2xl border border-warning/25 bg-warning/10 p-4 text-sm leading-6 text-warning">
                     {t('roleSelection.unsupportedRole')}
@@ -243,7 +241,7 @@ export default function RoleSelectionPage() {
                 <Card
                   key={card.choice}
                   variant="action"
-                  className={card.choice === 'ams' ? 'gold-sheen-surface border-border/70 bg-card/95' : 'border-border/70 bg-card/95'}
+                  className={card.choice === 'ams' ? 'mobile-entry-panel gold-sheen-surface border-border/70 bg-card/95' : 'mobile-entry-panel border-border/70 bg-card/95'}
                   data-accent-sheen={card.choice === 'ams' ? 'true' : undefined}
                 >
                   <CardHeader className="space-y-3 pb-3 sm:space-y-4 sm:pb-4">

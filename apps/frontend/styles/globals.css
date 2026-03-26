@@ -689,7 +689,7 @@
       linear-gradient(180deg, hsl(var(--mobile-shell-backdrop) / 0.92), hsl(var(--mobile-shell-backdrop) / 0.78));
     box-shadow: var(--surface-shadow-card);
     backdrop-filter: blur(24px);
-    @apply rounded-[24px] border;
+    @apply rounded-2xl md:rounded-[24px] border;
   }
 
   .glass-surface {
@@ -718,6 +718,52 @@
       linear-gradient(180deg, hsl(var(--background) / 0.84), hsl(var(--surface-tint) / 0.94));
     box-shadow: 0 14px 34px -26px rgb(44 28 9 / 0.18);
     backdrop-filter: blur(22px);
+  }
+
+  .mobile-entry-shell {
+    min-height: 100dvh;
+    background:
+      radial-gradient(circle at top, hsl(var(--mobile-page-glow) / 0.18), transparent 30%),
+      linear-gradient(180deg, hsl(var(--page-background)) 0%, hsl(var(--background)) 100%);
+    @apply px-3 py-4 sm:px-4 sm:py-6;
+  }
+
+  .mobile-entry-grid {
+    @apply mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center justify-center sm:min-h-[calc(100vh-3rem)];
+  }
+
+  .mobile-entry-card {
+    border: 1px solid hsl(var(--subtle-border) / 0.88);
+    background:
+      linear-gradient(180deg, hsl(var(--background) / 0.88), hsl(var(--surface-tint) / 0.98));
+    backdrop-filter: blur(24px);
+    @apply rounded-[30px] border-subtle-border/90;
+    box-shadow: 0 28px 70px -42px rgb(44 28 9 / 0.24);
+  }
+
+  .mobile-entry-panel {
+    border: 1px solid hsl(var(--subtle-border) / 0.78);
+    background:
+      linear-gradient(180deg, hsl(var(--background) / 0.78), hsl(var(--surface-tint) / 0.94));
+    backdrop-filter: blur(20px);
+    @apply rounded-[28px] border-subtle-border/80;
+    box-shadow: 0 22px 54px -36px rgb(44 28 9 / 0.18);
+  }
+
+  .mobile-entry-orb {
+    position: absolute;
+    border-radius: 9999px;
+    pointer-events: none;
+    filter: blur(2px);
+  }
+
+  .mobile-unified-drawer {
+    border: 1px solid hsl(var(--subtle-border) / 0.86);
+    background:
+      linear-gradient(180deg, hsl(var(--background) / 0.96), hsl(var(--surface-tint) / 0.98));
+    color: hsl(var(--foreground));
+    box-shadow: 0 28px 80px -40px rgb(44 28 9 / 0.28);
+    backdrop-filter: blur(24px);
   }
 
   .mobile-touch-strip {

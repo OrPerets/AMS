@@ -189,7 +189,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
         isOpen={moreOpen}
         onOpenChange={setMoreOpen}
         title={t('bottomNav.moreMenu')}
-        tone={userRole === 'RESIDENT' ? 'light' : 'dark'}
+        tone="light"
         query={commandQuery}
         onQueryChange={setCommandQuery}
         topActions={topActionItems}
