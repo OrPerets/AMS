@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Plus } from 'lucide-react';
 import { authFetch, getCurrentUserId, getEffectiveRole, hasRoleAccess } from '../../../lib/auth';
+import { CompactStatusStrip } from '../../ui/compact-status-strip';
+import { MobileContextBar } from '../../ui/mobile-context-bar';
 import { Skeleton } from '../../ui/skeleton';
 import { toast } from '../../ui/use-toast';
 import { Button } from '../../ui/button';
@@ -803,14 +805,40 @@ export function DispatchWorkspace() {
   }
 
   const selectedPresetName = allPresets.find((preset) => preset.id === selectedPresetId)?.name ?? 'תצוגה מותאמת';
+  const roleLabel = currentRole === 'PM' ? 'מנהל נכס' : currentRole === 'MASTER' ? 'מנהל ראשי' : 'מנהל מערכת';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-4 sm:space-y-6">
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label="משוך כדי לרענן את לוח הקריאות" />
+
+      <div className="space-y-3 md:hidden">
+        <CompactStatusStrip
+          roleLabel={roleLabel}
+          tone="admin"
+          metrics={[
+            { id: 'open', label: 'פתוחות', value: dispatchData?.summary.open ?? 0, tone: (dispatchData?.summary.open ?? 0) > 0 ? 'warning' : 'success' },
+            { id: 'sla', label: 'SLA', value: dispatchData?.summary.breached ?? 0, tone: (dispatchData?.summary.breached ?? 0) > 0 ? 'danger' : 'default' },
+          ]}
+        />
+      </div>
+
+      <div className="hidden md:block">
+        <MobileContextBar
+          roleLabel={roleLabel}
+          contextLabel={selectedPresetName}
+          syncLabel={refreshing ? 'מרענן עכשיו' : 'סנכרון חי'}
+          chips={[
+            `${dispatchData?.summary.open ?? 0} פתוחות`,
+            `${dispatchData?.summary.unassigned ?? 0} ללא שיוך`,
+            `${dispatchData?.summary.breached ?? 0} חריגות SLA`,
+          ]}
+        />
+      </div>
 
       <DispatchToolbar
         dispatchData={dispatchData}
         technicians={technicians}
+        roleLabel={roleLabel}
         searchInput={searchInput}
         buildingFilter={filters.buildingFilter}
         assigneeFilter={filters.assigneeFilter}

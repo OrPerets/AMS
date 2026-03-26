@@ -85,7 +85,7 @@ export function DispatchDetailPanel({
 
   return (
     <Card
-      className="rounded-[28px] border-slate-200"
+      className="rounded-[28px] border-primary/10 bg-card/96"
       style={{ touchAction: 'pan-y' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -115,11 +115,11 @@ export function DispatchDetailPanel({
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-3 text-xs font-medium text-slate-500 lg:hidden">
               החלק ימינה או שמאלה כדי לעבור לקריאה הקודמת או הבאה בלי לחזור לרשימה.
             </div>
-            <section className="rounded-[22px] border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100/60 p-4 sm:rounded-[26px] sm:p-5">
+            <section className="rounded-[22px] border border-primary/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-4 shadow-[0_16px_36px_rgba(84,58,15,0.08)] sm:rounded-[26px] sm:p-5">
               <div className="flex flex-col gap-4">
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">#{ticket.id}</span>
+                    <span className="rounded-full border border-primary/16 bg-primary/12 px-2.5 py-1 text-xs font-bold text-primary">#{ticket.id}</span>
                     <TicketSeverityBadge severity={ticket.severity} />
                     <TicketStatusBadge status={ticket.status} />
                     <SlaBadge state={ticket.slaState} />
@@ -142,7 +142,7 @@ export function DispatchDetailPanel({
             </section>
 
             <section className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
-              <Card className="rounded-[24px] border-slate-200">
+              <Card className="rounded-[24px] border-primary/10 bg-background/94">
                 <CardHeader>
                   <CardTitle className="text-lg">תמונות וראיות</CardTitle>
                   <CardDescription>גישה מהירה לקבצים שצורפו לקריאה.</CardDescription>
@@ -175,7 +175,7 @@ export function DispatchDetailPanel({
                 </CardContent>
               </Card>
 
-              <Card className="rounded-[24px] border-slate-200">
+              <Card className="rounded-[24px] border-primary/10 bg-background/94">
                 <CardHeader>
                   <CardTitle className="text-lg">ציר זמן ועדכונים</CardTitle>
                   <CardDescription>תיעוד מלא של התקדמות הקריאה, הערות ותקשורת.</CardDescription>

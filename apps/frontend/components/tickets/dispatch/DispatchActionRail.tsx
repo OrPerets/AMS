@@ -105,10 +105,11 @@ export function DispatchActionRail({
   onUseDraftResponse: () => void;
 }) {
   const showEscalation = ticket && (ticket.slaState === 'AT_RISK' || ticket.slaState === 'DUE_TODAY' || ticket.slaState === 'BREACHED');
+  const fieldClassName = 'border-primary/12 bg-white';
 
   return (
     <div className="space-y-4">
-      <Card className="rounded-[28px] border-slate-200">
+      <Card className="rounded-[28px] border-primary/10 bg-card/96">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <BrainCircuit className="h-5 w-5" />
@@ -117,13 +118,13 @@ export function DispatchActionRail({
           <CardDescription>מיון חכם של הקריאה: קטגוריה, עדיפות, מטפל מומלץ וניסוח תגובה מוכן לצוות או לדייר.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button className="w-full" variant="outline" onClick={onRunTriage} disabled={!ticket || triageLoading}>
+          <Button className="w-full rounded-full" variant="outline" onClick={onRunTriage} disabled={!ticket || triageLoading}>
             <Sparkles className="me-2 h-4 w-4" />
             {triageLoading ? 'מנתח...' : 'נתח את הקריאה הנבחרת'}
           </Button>
 
           {triagePreview ? (
-            <div className="space-y-4 rounded-[24px] border border-primary/20 bg-primary/5 p-4">
+            <div className="space-y-4 rounded-[24px] border border-primary/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] p-4">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="outline">{triagePreview.category}</Badge>
@@ -135,7 +136,7 @@ export function DispatchActionRail({
                 <p className="text-sm font-medium text-slate-900">{triagePreview.summary}</p>
               </div>
 
-              <div className="space-y-2 rounded-2xl border border-white/40 bg-white/80 p-3">
+              <div className="space-y-2 rounded-2xl border border-primary/12 bg-white/88 p-3">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">למה זו ההמלצה</div>
                 <ul className="space-y-2 text-sm text-slate-600">
                   {triagePreview.reasons.map((reason) => (
@@ -146,7 +147,7 @@ export function DispatchActionRail({
                 </ul>
               </div>
 
-              <div className="rounded-2xl border border-white/40 bg-white/80 p-3">
+              <div className="rounded-2xl border border-primary/12 bg-white/88 p-3">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">מטפל מומלץ</div>
                 {triagePreview.suggestedAssignee ? (
                   <div className="mt-2 space-y-1">
@@ -158,7 +159,7 @@ export function DispatchActionRail({
                 )}
               </div>
 
-              <div className="space-y-2 rounded-2xl border border-white/40 bg-white/80 p-3">
+              <div className="space-y-2 rounded-2xl border border-primary/12 bg-white/88 p-3">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">טיוטת תגובה</div>
                 <p className="whitespace-pre-wrap text-sm leading-7 text-slate-600">{triagePreview.draftResponse}</p>
               </div>
@@ -180,7 +181,7 @@ export function DispatchActionRail({
         </CardContent>
       </Card>
 
-      <Card className="rounded-[28px] border-slate-200">
+      <Card className="rounded-[28px] border-primary/10 bg-card/96">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Route className="h-5 w-5" />
@@ -193,7 +194,7 @@ export function DispatchActionRail({
             <p className="text-sm font-medium text-slate-700">שיוך טכנאי</p>
             <div className="flex flex-col gap-3">
               <Select value={assignmentTarget} onValueChange={onAssignmentTargetChange} disabled={!canDispatch}>
-                <SelectTrigger ref={technicianTriggerRef}>
+                <SelectTrigger ref={technicianTriggerRef} className={fieldClassName}>
                   <SelectValue placeholder="בחר מטפל" />
                 </SelectTrigger>
                 <SelectContent>
@@ -208,7 +209,7 @@ export function DispatchActionRail({
               </Select>
               <div className="grid gap-2">
                 {technicians.slice(0, 4).map((technician) => (
-                  <div key={technician.id} className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm">
+                  <div key={technician.id} className="flex items-center justify-between rounded-xl border border-subtle-border bg-background/86 px-3 py-2 text-sm">
                     <div>
                       <div className="font-medium text-slate-900">{technician.email}</div>
                       <div className="text-xs text-slate-500">
@@ -232,7 +233,7 @@ export function DispatchActionRail({
             <p className="text-sm font-medium text-slate-700">יצירת הזמנת עבודה לספק</p>
             <div className="grid gap-3">
               <Select value={supplierTarget} onValueChange={onSupplierTargetChange} disabled={!canDispatch}>
-                <SelectTrigger>
+                <SelectTrigger className={fieldClassName}>
                   <SelectValue placeholder="בחר ספק" />
                 </SelectTrigger>
                 <SelectContent>
@@ -249,20 +250,21 @@ export function DispatchActionRail({
                 value={costEstimate}
                 onChange={(event) => onCostEstimateChange(event.target.value)}
                 placeholder="אומדן עלות (אופציונלי)"
+                className={fieldClassName}
               />
-              <Button variant="outline" onClick={onAssignSupplier} disabled={!ticket || !canDispatch || assigningSupplier || supplierTarget === 'NONE'}>
+              <Button variant="outline" className="rounded-full" onClick={onAssignSupplier} disabled={!ticket || !canDispatch || assigningSupplier || supplierTarget === 'NONE'}>
                 <Factory className="me-2 h-4 w-4" />
                 {assigningSupplier ? 'יוצר...' : 'פתח הזמנת עבודה'}
               </Button>
             </div>
             {ticket?.workOrders.length ? (
-              <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+              <div className="space-y-2 rounded-2xl border border-subtle-border bg-background/86 p-3">
                 <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">הזמנות פעילות</div>
                 {ticket.workOrders.map((workOrder) => (
                   <Link
                     key={workOrder.id}
                     href={`/work-orders/${workOrder.id}`}
-                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50"
+                    className="flex items-center justify-between rounded-xl border border-subtle-border bg-white px-3 py-2 text-sm hover:bg-slate-50"
                   >
                     <span>{workOrder.supplierName}</span>
                     <span className="font-semibold">#{workOrder.id} • {workOrder.status}</span>
@@ -276,7 +278,7 @@ export function DispatchActionRail({
             <div className="space-y-2">
               <p className="text-sm font-medium text-slate-700">סטטוס</p>
               <Select value={statusTarget} onValueChange={(value) => onStatusTargetChange(value as DispatchTicket['status'])}>
-                <SelectTrigger ref={statusTriggerRef}>
+                <SelectTrigger ref={statusTriggerRef} className={fieldClassName}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -286,7 +288,7 @@ export function DispatchActionRail({
                   <SelectItem value="RESOLVED">נפתר</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={onUpdateStatus} disabled={!ticket || updatingStatus}>
+              <Button variant="outline" className="rounded-full" onClick={onUpdateStatus} disabled={!ticket || updatingStatus}>
                 {updatingStatus ? 'מעדכן...' : 'עדכן סטטוס'}
               </Button>
             </div>
@@ -294,7 +296,7 @@ export function DispatchActionRail({
             <div className="space-y-2">
               <p className="text-sm font-medium text-slate-700">עדיפות</p>
               <Select value={severityTarget} onValueChange={(value) => onSeverityTargetChange(value as DispatchTicket['severity'])}>
-                <SelectTrigger ref={severityTriggerRef}>
+                <SelectTrigger ref={severityTriggerRef} className={fieldClassName}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -303,7 +305,7 @@ export function DispatchActionRail({
                   <SelectItem value="URGENT">{severityLabels.URGENT}</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={onUpdateSeverity} disabled={!ticket || updatingSeverity}>
+              <Button variant="outline" className="rounded-full" onClick={onUpdateSeverity} disabled={!ticket || updatingSeverity}>
                 {updatingSeverity ? 'מעדכן...' : 'עדכן עדיפות'}
               </Button>
             </div>
@@ -316,7 +318,7 @@ export function DispatchActionRail({
         </CardContent>
       </Card>
 
-      <Card className="rounded-[28px] border-slate-200">
+      <Card className="rounded-[28px] border-primary/10 bg-card/96">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Users className="h-5 w-5" />
@@ -342,7 +344,7 @@ export function DispatchActionRail({
         </CardContent>
       </Card>
 
-      <Card className="rounded-[28px] border-slate-200">
+      <Card className="rounded-[28px] border-primary/10 bg-card/96">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <AlertTriangle className="h-5 w-5" />
@@ -352,7 +354,7 @@ export function DispatchActionRail({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="rounded-2xl border border-subtle-border bg-background/86 p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-slate-500">תמונה כוללת</div>
               <div className="mt-3 space-y-2 text-sm">
                 <div className="flex items-center justify-between">
@@ -384,13 +386,14 @@ export function DispatchActionRail({
               ) : null}
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="rounded-2xl border border-subtle-border bg-background/86 p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-slate-500">עדכון ליומן / לדייר</div>
               <Textarea
                 value={newNote}
                 onChange={(event) => onNewNoteChange(event.target.value)}
                 rows={6}
                 placeholder="כתוב עדכון, תיאום הגעה, סיכום טיפול או הערה תפעולית"
+                className={fieldClassName}
               />
               <Button className="mt-3 w-full" onClick={onAddNote} disabled={addingNote || !newNote.trim() || !ticket}>
                 <MessageSquareText className="me-2 h-4 w-4" />

@@ -48,7 +48,7 @@ export function DispatchResultsList({
   const allVisibleSelected = Boolean(dispatchData?.items.length) && dispatchData!.items.every((ticket) => selectedIds.includes(ticket.id));
 
   return (
-    <Card className="rounded-[28px] border-slate-200">
+    <Card className="rounded-[28px] border-primary/10 bg-card/96">
       <CardHeader className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -58,11 +58,11 @@ export function DispatchResultsList({
             </CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline">
+            <Badge variant="outline" className="bg-white/80">
               <Filter className="me-1 h-3.5 w-3.5" />
               מסננים פעילים
             </Badge>
-            <Button variant="outline" size="sm" onClick={onToggleAllVisible} disabled={!dispatchData?.items.length}>
+            <Button variant="outline" size="sm" className="rounded-full" onClick={onToggleAllVisible} disabled={!dispatchData?.items.length}>
               {allVisibleSelected ? 'בטל בחירה' : 'בחר הכל'}
             </Button>
           </div>
@@ -70,7 +70,7 @@ export function DispatchResultsList({
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-            <SelectTrigger>
+            <SelectTrigger className="border-primary/12 bg-white">
               <SelectValue placeholder="סטטוס" />
             </SelectTrigger>
             <SelectContent>
@@ -83,7 +83,7 @@ export function DispatchResultsList({
           </Select>
 
           <Select value={severityFilter} onValueChange={onSeverityFilterChange}>
-            <SelectTrigger>
+            <SelectTrigger className="border-primary/12 bg-white">
               <SelectValue placeholder="חומרה" />
             </SelectTrigger>
             <SelectContent>
@@ -95,7 +95,7 @@ export function DispatchResultsList({
           </Select>
 
           <Select value={slaFilter} onValueChange={onSlaFilterChange}>
-            <SelectTrigger>
+            <SelectTrigger className="border-primary/12 bg-white">
               <SelectValue placeholder="SLA" />
             </SelectTrigger>
             <SelectContent>
@@ -108,7 +108,7 @@ export function DispatchResultsList({
           </Select>
 
           <Select value={categoryFilter} onValueChange={onCategoryFilterChange}>
-            <SelectTrigger>
+            <SelectTrigger className="border-primary/12 bg-white">
               <SelectValue placeholder="קטגוריה" />
             </SelectTrigger>
             <SelectContent>
@@ -121,7 +121,7 @@ export function DispatchResultsList({
             </SelectContent>
           </Select>
 
-          <Button variant="outline" onClick={onResetFilters}>
+          <Button variant="outline" className="rounded-full border-primary/14 bg-white/82 hover:bg-white" onClick={onResetFilters}>
             איפוס מסננים
           </Button>
         </div>
@@ -172,9 +172,9 @@ function TicketListCard({
     <div
       className={`rounded-[22px] border border-s-[4px] p-4 transition-all ${
         selected
-          ? 'border-primary border-s-primary bg-primary text-primary-foreground shadow-[0_20px_50px_-28px_rgba(37,99,235,0.55)]'
-          : `border-slate-200 ${severityBorderColors[ticket.severity]} bg-slate-50/70 hover:border-slate-300 hover:bg-white hover:shadow-sm`
-      } ${isUrgent && !selected ? 'ring-1 ring-rose-200' : ''}`}
+          ? 'border-primary/24 border-s-primary bg-[linear-gradient(180deg,rgba(215,164,62,0.18)_0%,rgba(255,250,240,0.96)_100%)] text-foreground shadow-[0_24px_56px_-38px_rgba(84,58,15,0.34)]'
+          : `border-subtle-border ${severityBorderColors[ticket.severity]} bg-background/86 hover:border-primary/16 hover:bg-white hover:shadow-card`
+      } ${isUrgent && !selected ? 'ring-1 ring-destructive/16' : ''}`}
     >
       <div className="flex gap-3">
         <label className="mt-1 flex items-start">
@@ -200,15 +200,15 @@ function TicketListCard({
               </div>
 
               <div className="min-w-0">
-                <p className={`break-words text-[15px] font-bold leading-snug ${selected ? 'text-white' : 'text-slate-950'}`}>
+                <p className={`break-words text-[15px] font-bold leading-snug ${selected ? 'text-foreground' : 'text-slate-950'}`}>
                   {ticket.title}
                 </p>
-                <p className={`mt-1 line-clamp-2 break-words text-sm leading-6 ${selected ? 'text-slate-200' : 'text-slate-500'}`}>
+                <p className={`mt-1 line-clamp-2 break-words text-sm leading-6 ${selected ? 'text-secondary-foreground' : 'text-slate-500'}`}>
                   {ticket.description}
                 </p>
               </div>
 
-              <div className={`flex flex-wrap gap-x-3 gap-y-1.5 text-[13px] ${selected ? 'text-slate-200' : 'text-slate-500'}`}>
+              <div className={`flex flex-wrap gap-x-3 gap-y-1.5 text-[13px] ${selected ? 'text-secondary-foreground' : 'text-slate-500'}`}>
                 <span className="inline-flex min-w-0 items-center gap-1">
                   <Building2 className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">
@@ -222,8 +222,8 @@ function TicketListCard({
               </div>
             </div>
 
-            <div className={`grid gap-2 sm:grid-cols-2 lg:w-[220px] lg:shrink-0 lg:grid-cols-1 ${selected ? 'text-slate-200' : 'text-slate-600'}`}>
-              <div className="rounded-xl border border-current/10 px-3 py-2 text-sm">
+            <div className={`grid gap-2 sm:grid-cols-2 lg:w-[220px] lg:shrink-0 lg:grid-cols-1 ${selected ? 'text-secondary-foreground' : 'text-slate-600'}`}>
+              <div className="rounded-xl border border-current/10 bg-white/45 px-3 py-2 text-sm">
                 <p className="text-[11px] opacity-60">מטפל</p>
                 <p className="mt-0.5 truncate font-semibold">{ticket.assignedTo?.email || 'לא הוקצה'}</p>
               </div>

@@ -17,20 +17,20 @@ export function DispatchSavedViews({
   onResetFilters: () => void;
 }) {
   return (
-    <div className="rounded-[22px] border border-white/10 bg-white/5 p-4 backdrop-blur">
+    <div className="rounded-[24px] border border-subtle-border bg-background/92 p-4 shadow-elevation-1 backdrop-blur">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Star className="h-4 w-4 text-amber-300" />
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Star className="h-4 w-4 text-primary" />
             תצוגות שמורות
           </div>
-          <p className="text-xs leading-5 text-slate-300">
+          <p className="text-xs leading-5 text-secondary-foreground">
             שמירה מקומית של מסננים ותורים כדי לחזור למסכי עבודה חוזרים בלחיצה אחת.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Select value={selectedPresetId} onValueChange={onSelectPreset}>
-            <SelectTrigger className="min-w-[230px] border-white/10 bg-slate-950/30 text-white">
+            <SelectTrigger className="min-w-[230px] border-subtle-border bg-white text-foreground">
               <SelectValue placeholder="בחר תצוגה" />
             </SelectTrigger>
             <SelectContent>
@@ -42,11 +42,11 @@ export function DispatchSavedViews({
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10" onClick={onOpenSaveDialog}>
+          <Button variant="outline" className="border-primary/14 bg-white/82 text-foreground hover:bg-white" onClick={onOpenSaveDialog}>
             <BookmarkPlus className="me-2 h-4 w-4" />
             שמור תצוגה
           </Button>
-          <Button variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10" onClick={onResetFilters}>
+          <Button variant="outline" className="border-primary/14 bg-white/82 text-foreground hover:bg-white" onClick={onResetFilters}>
             <RotateCcw className="me-2 h-4 w-4" />
             איפוס
           </Button>

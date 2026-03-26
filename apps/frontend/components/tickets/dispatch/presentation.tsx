@@ -65,25 +65,25 @@ export function SummaryCard({
   tone: 'default' | 'warning' | 'danger' | 'success';
 }) {
   const toneClasses = {
-    default: 'border-white/10 bg-white/5 text-white',
-    warning: 'border-amber-400/20 bg-amber-500/10 text-white',
-    danger: 'border-rose-400/20 bg-rose-500/10 text-white',
-    success: 'border-emerald-400/20 bg-emerald-500/10 text-white',
+    default: 'border-subtle-border bg-white/82 text-foreground shadow-card',
+    warning: 'border-warning/18 bg-warning/10 text-foreground shadow-card',
+    danger: 'border-destructive/18 bg-destructive/8 text-foreground shadow-card',
+    success: 'border-success/18 bg-success/10 text-foreground shadow-card',
   } as const;
 
   const iconBg = {
-    default: 'bg-white/10',
-    warning: 'bg-amber-500/20',
-    danger: 'bg-rose-500/20',
-    success: 'bg-emerald-500/20',
+    default: 'bg-primary/10 text-primary',
+    warning: 'bg-warning/14 text-warning',
+    danger: 'bg-destructive/12 text-destructive',
+    success: 'bg-success/12 text-success',
   } as const;
 
   return (
-    <div className={`rounded-[22px] border p-4 backdrop-blur ${toneClasses[tone]}`}>
+    <div className={`rounded-[22px] border p-4 backdrop-blur-sm ${toneClasses[tone]}`}>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-medium opacity-70">{title}</p>
-          <p className="mt-1.5 text-2xl font-black">{value}</p>
+          <p className="text-xs font-medium text-secondary-foreground">{title}</p>
+          <p className="mt-1.5 text-2xl font-black text-foreground">{value}</p>
         </div>
         <div className={`rounded-xl p-2.5 ${iconBg[tone]}`}>
           <Icon className="h-4.5 w-4.5" />
