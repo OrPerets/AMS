@@ -20,7 +20,9 @@ type AnalyticsEventName =
   | 'success_next_step_click'
   | 'onboarding_complete'
   | 'onboarding_dismiss'
-  | 'page_view';
+  | 'page_view'
+  | 'navigation_misclick_loop'
+  | 'navigation_backtrack_churn';
 
 type AnalyticsPayload = Record<string, string | number | boolean | null | undefined>;
 
@@ -139,4 +141,23 @@ export function trackSuccessNextStep(screen: string, action: string) {
 
 export function trackUnsupportedRoleState(role?: string | null) {
   trackEvent('unsupported_role_state', { role: role ?? undefined });
+}
+
+export function trackNavigationMisclickLoop(role: string, from: string, to: string, elapsedMs: number) {
+  trackEvent('navigation_misclick_loop', {
+    role,
+    from,
+    to,
+    elapsedMs: Math.max(0, Math.round(elapsedMs)),
+  });
+}
+
+export function trackNavigationBacktrackChurn(role: string, routeA: string, routeB: string, switches: number, windowMs: number) {
+  trackEvent('navigation_backtrack_churn', {
+    role,
+    routeA,
+    routeB,
+    switches: Math.max(0, Math.round(switches)),
+    windowMs: Math.max(0, Math.round(windowMs)),
+  });
 }

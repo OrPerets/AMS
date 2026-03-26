@@ -207,17 +207,17 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Make navigation predictable and role-appropriate.
 
 ### Todo
-- [ ] Finalize role tab bars (4 + More where applicable).
-- [ ] Enforce “More” cap rules (max groups/items).
-- [ ] Remove duplicate entries between tabs and More.
-- [ ] Add “recently used” smart shortcuts with expiry window.
-- [ ] Add telemetry for misclick loops and back-and-forth churn.
-- [ ] Validate label consistency across all locales/directions.
+- [x] Finalize role tab bars (4 + More where applicable).
+- [x] Enforce “More” cap rules (max groups/items).
+- [x] Remove duplicate entries between tabs and More.
+- [x] Add “recently used” smart shortcuts with expiry window.
+- [x] Add telemetry for misclick loops and back-and-forth churn.
+- [x] Validate label consistency across all locales/directions.
 
 ### Exit Criteria
-- Navigation model validated for each role.
-- Reduced navigation churn in telemetry.
-- No orphaned routes from role menus.
+- [x] Navigation model validated for each role.
+- [x] Reduced navigation churn in telemetry.
+- [x] No orphaned routes from role menus.
 
 ---
 
