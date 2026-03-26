@@ -360,18 +360,9 @@ export function isAuthenticated(): boolean {
 }
 
 export function getAmsRouteForRole(role?: string | null): string | null {
-  switch (normalizeRole(role)) {
-    case 'ADMIN':
-    case 'MASTER':
-    case 'PM':
-    case 'TECH':
-    case 'ACCOUNTANT':
-      return '/home';
-    case 'RESIDENT':
-      return '/resident/account';
-    default:
-      return null;
-  }
+  const normalizedRole = normalizeRole(role);
+  if (!normalizedRole) return null;
+  return normalizedRole === 'RESIDENT' ? '/resident/account' : '/home';
 }
 
 export function isResidentRole(role?: string | null): boolean {
@@ -379,15 +370,13 @@ export function isResidentRole(role?: string | null): boolean {
 }
 
 export function requiresRoleSelection(role?: string | null): boolean {
-  return !isResidentRole(role);
+  const normalizedRole = normalizeRole(role);
+  return Boolean(normalizedRole && normalizedRole !== 'RESIDENT');
 }
 
 export function getDefaultRoute(role?: string | null): string {
   const effectiveRole = normalizeRole(role) || getEffectiveRole();
-  if (isResidentRole(effectiveRole)) {
-    return '/resident/account';
-  }
-
+  if (isResidentRole(effectiveRole)) return '/resident/account';
   return ROLE_SELECTION_ROUTE;
 }
 

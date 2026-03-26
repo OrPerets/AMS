@@ -9,11 +9,9 @@ import { GlassSurface } from '../components/ui/glass-surface';
 import { Switch } from '../components/ui/switch';
 import {
   EXTERNAL_SUPERVISION_REPORT_URL,
-  getAmsRouteForRole,
   getAuthSnapshot,
   getCurrentUserId,
   getStoredWorkspaceChoice,
-  getWorkspaceChoiceRoute,
   isResidentRole,
   normalizeRole,
   setStoredWorkspaceChoice,
@@ -27,7 +25,10 @@ import {
   trackRoleSelectionResume,
   trackWorkspaceEnter,
   trackRememberChoiceToggle,
+  trackUnsupportedRoleState,
 } from '../lib/analytics';
+import { resolveWorkspaceRoute } from '../lib/route-resolver';
+import { useWorkspaceChoiceResolution } from '../hooks/use-route-resolution';
 import { trackDestinationUsage, setLastModule, addRecentAction, getPreferredDestination } from '../lib/engagement';
 import { showWorkspaceEntrySuccess } from '../lib/success-feedback';
 
@@ -72,7 +73,7 @@ export default function RoleSelectionPage() {
     if (storedChoice?.remember && storedChoice?.choice) {
       const preferredDest = getPreferredDestination(authSnapshot.userId, effectiveRole);
       if (preferredDest && preferredDest === storedChoice.choice) {
-        const destination = getWorkspaceChoiceRoute(storedChoice.choice as WorkspaceChoice, effectiveRole);
+        const destination = resolveWorkspaceRoute(storedChoice.choice as WorkspaceChoice, effectiveRole)?.destination;
         if (destination) {
           trackRoleSelectionChoice(storedChoice.choice, effectiveRole);
           trackWorkspaceEnter(storedChoice.choice as 'ams' | 'supervision' | 'gardens', effectiveRole);
@@ -97,7 +98,8 @@ export default function RoleSelectionPage() {
   }, [router, router.isReady]);
 
   const next = typeof router.query.next === 'string' ? router.query.next : undefined;
-  const amsHref = next || getAmsRouteForRole(role);
+  const amsRoute = useWorkspaceChoiceResolution('ams', role);
+  const amsHref = next || amsRoute?.destination || null;
   const gardensHref = canAccessGardens(role) ? '/gardens' : null;
   const cards = useMemo<WorkspaceCard[]>(() => ([
     {
@@ -130,8 +132,14 @@ export default function RoleSelectionPage() {
   const lastUsedCard = cards.find((card) => card.choice === lastChoice);
   const isUnsupportedRole = ready && !amsHref && role !== 'MASTER';
 
+  useEffect(() => {
+    if (isUnsupportedRole) {
+      trackUnsupportedRoleState(role);
+    }
+  }, [isUnsupportedRole, role]);
+
   async function handleSelection(choice: WorkspaceChoice, isResume = false) {
-    const destination = choice === 'ams' && next ? next : getWorkspaceChoiceRoute(choice, role);
+    const destination = choice === 'ams' && next ? next : resolveWorkspaceRoute(choice, role)?.destination;
     if (!destination) return;
 
     setStoredWorkspaceChoice(choice, {

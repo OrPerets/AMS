@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Bell, Building2, ClipboardList, Sparkles, Ticket } from 'lucide-react';
 import { ROLE_SELECTION_ROUTE, authFetch, getAuthSnapshot, getCurrentUserId, getEffectiveRole } from '../lib/auth';
+import { getRoleCapabilities } from '../lib/role-capabilities';
 import { trackEvent } from '../lib/analytics';
 import { setLastModule, addRecentAction } from '../lib/engagement';
 import { formatCurrency, formatDate } from '../lib/utils';
@@ -221,12 +222,14 @@ export default function HomePage() {
       return;
     }
 
-    if (effectiveRole === 'RESIDENT') {
+    const capabilities = getRoleCapabilities(effectiveRole);
+
+    if (capabilities?.role === 'RESIDENT') {
       void router.replace('/resident/account');
       return;
     }
 
-    if (!['ADMIN', 'MASTER', 'PM', 'TECH', 'ACCOUNTANT'].includes(effectiveRole)) {
+    if (!capabilities?.canAccessAms) {
       void router.replace(ROLE_SELECTION_ROUTE);
       return;
     }

@@ -9,6 +9,7 @@ type AnalyticsEventName =
   | 'workspace_enter_ams'
   | 'workspace_enter_supervision'
   | 'workspace_enter_gardens'
+  | 'unsupported_role_state'
   | 'last_used_shortcut'
   | 'remember_choice_toggle'
   | 'quick_action_click'
@@ -124,4 +125,8 @@ export function trackEmptyStateCta(screen: string, action: string) {
 
 export function trackSuccessNextStep(screen: string, action: string) {
   trackEvent('success_next_step_click', { screen, action });
+}
+
+export function trackUnsupportedRoleState(role?: string | null) {
+  trackEvent('unsupported_role_state', { role: role ?? undefined });
 }
