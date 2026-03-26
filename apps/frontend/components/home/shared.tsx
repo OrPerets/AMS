@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, Bell, Building2, CalendarClock, CreditCard, FileText, Home, ShieldCheck, Ticket, Wrench, type LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
@@ -9,7 +10,7 @@ import { PrimaryActionCard } from '../ui/primary-action-card';
 import { MiniSparkline } from '../ui/mobile-insight-widget';
 import { GlassSurface } from '../ui/glass-surface';
 import { cn } from '../../lib/utils';
-import { trackQuickActionClick } from '../../lib/analytics';
+import { trackHomeFirstActionClick, trackHomeTopCardImpression, trackQuickActionClick } from '../../lib/analytics';
 import { addRecentAction, getRecentActions } from '../../lib/engagement';
 import { getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 
@@ -69,6 +70,15 @@ export type HomeBlueprintShellProps = {
   prioritizeInbox?: boolean;
 };
 
+function enforceShellContract(props: HomeBlueprintShellProps) {
+  if (props.statusMetrics.length < 2) {
+    throw new Error(`RoleHomeShell requires at least 2 status metrics for ${props.roleKey}.`);
+  }
+  if (props.quickActions.length < 4) {
+    throw new Error(`RoleHomeShell requires 4 quick actions for ${props.roleKey}.`);
+  }
+}
+
 export function RoleHomeShell({
   roleLabel,
   roleKey,
@@ -83,6 +93,21 @@ export function RoleHomeShell({
   emptyAction,
   prioritizeInbox = false,
 }: HomeBlueprintShellProps) {
+  enforceShellContract({
+    roleLabel,
+    roleKey,
+    statusMetrics,
+    primaryAction,
+    quickActions,
+    inboxTitle,
+    inboxSubtitle,
+    inboxItems,
+    emptyTitle,
+    emptyDescription,
+    emptyAction,
+    prioritizeInbox,
+  });
+  const hasTrackedTopCardImpression = useRef(false);
   const icon = getRoleStatusIcon(roleKey);
   const tone = roleKey === 'ADMIN' ? 'admin' : roleKey === 'PM' ? 'pm' : roleKey === 'RESIDENT' ? 'resident' : 'resident';
   const shellMode = roleKey === 'ADMIN' ? 'admin' : roleKey === 'PM' ? 'pm' : 'default';
@@ -102,6 +127,12 @@ export function RoleHomeShell({
     />
   );
   const quickActionsGrid = <HomeQuickActionsGrid items={quickActions} roleKey={roleKey} />;
+
+  useEffect(() => {
+    if (hasTrackedTopCardImpression.current) return;
+    hasTrackedTopCardImpression.current = true;
+    trackHomeTopCardImpression(roleKey, primaryAction.href);
+  }, [primaryAction.href, roleKey]);
 
   return (
     <div className="space-y-3">
@@ -138,6 +169,7 @@ export function RoleHomeShell({
         description={primaryAction.description}
         ctaLabel={primaryAction.ctaLabel}
         href={primaryAction.href}
+        onCtaClick={() => trackHomeFirstActionClick(roleKey, primaryAction.href, primaryAction.href)}
         tone={primaryAction.tone}
         visualStyle={tone}
         mobileHomeEffect

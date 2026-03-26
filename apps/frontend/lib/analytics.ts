@@ -13,6 +13,8 @@ type AnalyticsEventName =
   | 'last_used_shortcut'
   | 'remember_choice_toggle'
   | 'quick_action_click'
+  | 'home_top_card_impression'
+  | 'home_first_action_click'
   | 'resume_click'
   | 'empty_state_cta_click'
   | 'success_next_step_click'
@@ -113,6 +115,14 @@ export function trackRememberChoiceToggle(enabled: boolean) {
 
 export function trackQuickActionClick(actionId: string, screen: string, role?: string | null) {
   trackEvent('quick_action_click', { actionId, screen, role: role ?? undefined });
+}
+
+export function trackHomeTopCardImpression(role: string, actionId: string) {
+  trackEvent('home_top_card_impression', { role, actionId, screen: 'home' });
+}
+
+export function trackHomeFirstActionClick(role: string, actionId: string, destination?: string) {
+  trackEvent('home_first_action_click', { role, actionId, destination: destination ?? undefined, screen: 'home' });
 }
 
 export function trackResumeClick(screen: string, destination: string) {

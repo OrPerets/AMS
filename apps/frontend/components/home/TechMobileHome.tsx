@@ -33,7 +33,7 @@ export function buildTechFallback(): TechMobileHomeData {
       { id: 'urgent', label: 'דחוף', value: 0, tone: 'success', href: '/tech/jobs' },
     ],
     primaryAction: {
-      eyebrow: 'Next Job',
+      eyebrow: 'המשימה הבאה',
       title: 'פתח את תור העבודות',
       description: 'רשימת העבודות, הגינון והעדכונים שלי זמינים גם ללא נתוני שטח חיים.',
       ctaLabel: 'צפה בעבודות',
