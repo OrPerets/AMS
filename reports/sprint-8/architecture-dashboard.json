@@ -1,0 +1,110 @@
+{
+  "generatedAt": "2026-03-26T21:20:06.875Z",
+  "frontend": {
+    "totalSourceFiles": 250,
+    "largeFileCount": 34,
+    "largeFiles": [
+      {
+        "path": "apps/frontend/lib/i18n.ts",
+        "lines": 1250
+      },
+      {
+        "path": "apps/frontend/pages/payments/resident.tsx",
+        "lines": 1143
+      },
+      {
+        "path": "apps/frontend/pages/payments.tsx",
+        "lines": 1110
+      },
+      {
+        "path": "apps/frontend/pages/resident/requests.tsx",
+        "lines": 1098
+      },
+      {
+        "path": "apps/frontend/components/tickets/dispatch/DispatchWorkspace.tsx",
+        "lines": 992
+      },
+      {
+        "path": "apps/frontend/pages/home.tsx",
+        "lines": 877
+      },
+      {
+        "path": "apps/frontend/pages/buildings.tsx",
+        "lines": 848
+      },
+      {
+        "path": "apps/frontend/pages/maintenance/index.tsx",
+        "lines": 707
+      },
+      {
+        "path": "apps/frontend/pages/tech/jobs.tsx",
+        "lines": 682
+      },
+      {
+        "path": "apps/frontend/components/resident/payment-methods-panel.tsx",
+        "lines": 678
+      },
+      {
+        "path": "apps/frontend/pages/resident/account.tsx",
+        "lines": 654
+      },
+      {
+        "path": "apps/frontend/lib/navigation.ts",
+        "lines": 638
+      },
+      {
+        "path": "apps/frontend/pages/settings.tsx",
+        "lines": 634
+      },
+      {
+        "path": "apps/frontend/pages/communications.tsx",
+        "lines": 628
+      },
+      {
+        "path": "apps/frontend/pages/notifications.tsx",
+        "lines": 623
+      },
+      {
+        "path": "apps/frontend/pages/documents.tsx",
+        "lines": 592
+      },
+      {
+        "path": "apps/frontend/pages/work-orders/[id].tsx",
+        "lines": 554
+      },
+      {
+        "path": "apps/frontend/pages/create-call.tsx",
+        "lines": 548
+      },
+      {
+        "path": "apps/frontend/pages/resident/profile.tsx",
+        "lines": 545
+      },
+      {
+        "path": "apps/frontend/components/gardens/GardensWorkerWorkspace.tsx",
+        "lines": 536
+      }
+    ],
+    "avgLinesPerFile": 197
+  },
+  "boundaries": {
+    "violations": 0,
+    "missingBarrels": 0
+  },
+  "backend": {
+    "moduleCount": 26,
+    "totalFiles": 143
+  },
+  "thresholds": {
+    "maxFileLines": 400,
+    "maxTotalFrontendFiles": 300,
+    "maxFeatureFoldersMissing": 0,
+    "maxBoundaryViolations": 0,
+    "maxLargeFiles": 10
+  },
+  "health": {
+    "errors": 1,
+    "warnings": 0,
+    "status": "unhealthy"
+  }
+}
