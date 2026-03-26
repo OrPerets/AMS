@@ -8,7 +8,14 @@
     "start": "mkdir -p .next/standalone/apps/frontend/.next && rm -rf .next/standalone/apps/frontend/.next/static .next/standalone/apps/frontend/public && cp -R .next/static .next/standalone/apps/frontend/.next/static && cp -R public .next/standalone/apps/frontend/public && HOSTNAME=0.0.0.0 PORT=${PORT:-3001} node .next/standalone/apps/frontend/server.js",
     "start:prod": "npm run start",
     "test:e2e": "playwright test",
-    "test:e2e:qa": "playwright test --workers=1 e2e/qa-*.spec.ts"
+    "test:e2e:qa": "playwright test --workers=1 e2e/qa-*.spec.ts",
+    "test:e2e:a11y": "playwright test --workers=1 e2e/qa-sprint-7-a11y-audit.spec.ts",
+    "test:e2e:visual": "playwright test --workers=1 e2e/qa-sprint-7-visual-regression.spec.ts",
+    "test:e2e:perf": "playwright test --workers=1 e2e/qa-sprint-7-performance.spec.ts",
+    "test:e2e:rtl-dark": "playwright test --workers=1 e2e/qa-sprint-7-rtl-dark-gates.spec.ts",
+    "test:e2e:sprint-7": "playwright test --workers=1 e2e/qa-sprint-7-*.spec.ts",
+    "test:e2e:sprint-8": "playwright test --workers=1 e2e/qa-sprint-8*.spec.ts",
+    "test:visual:update": "playwright test --workers=1 --update-snapshots e2e/qa-sprint-7-visual-regression.spec.ts"
   },
   "dependencies": {
     "@heroui/react": "^2.8.10",
@@ -53,6 +60,7 @@
     "zod": "^4.1.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.1.12",
     "@testing-library/react": "^16.3.2",
