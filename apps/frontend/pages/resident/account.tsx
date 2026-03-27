@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowUpRight, Bell, Building2, ClipboardList, CreditCard, Fi
 import { authFetch, getAccessToken, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { cn, formatCurrency, formatDate, getTicketStatusTone } from '../../lib/utils';
 import { Button } from '../../components/ui/button';
+import { AmsDrawer } from '../../components/ui/ams-drawer';
 import { EmptyState } from '../../components/ui/empty-state';
 import { GlassSurface } from '../../components/ui/glass-surface';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
@@ -75,6 +76,7 @@ export default function ResidentAccountPage() {
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [quickAccessOpen, setQuickAccessOpen] = useState(false);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -309,6 +311,40 @@ export default function ResidentAccountPage() {
       tone: 'success' as const,
     },
   ];
+  const quickAccessItems = [
+    {
+      id: 'resident-pay',
+      title: 'שלם עכשיו',
+      description: nextPaymentDue ? `${nextPaymentDue.description} · ${formatDate(nextPaymentDue.dueDate, locale)}` : 'פתיחת מרכז התשלומים והחשבוניות.',
+      href: '/payments/resident',
+      icon: CreditCard,
+      tone: nextPaymentDue?.status === 'OVERDUE' ? ('warning' as const) : ('default' as const),
+    },
+    {
+      id: 'resident-request',
+      title: 'פתח בקשה',
+      description: 'פתיחה מהירה לצוות עם מעקב מלא אחר הטיפול.',
+      href: '/resident/requests?view=new',
+      icon: ClipboardList,
+      tone: 'default' as const,
+    },
+    {
+      id: 'resident-support',
+      title: 'מרכז עדכונים',
+      description: unreadNotifications.length ? `${unreadNotifications.length} עדכונים מחכים.` : 'התראות, שיחות ועדכוני בניין.',
+      href: '/notifications',
+      icon: Bell,
+      tone: unreadNotifications.length ? ('warning' as const) : ('default' as const),
+    },
+    {
+      id: 'resident-building',
+      title: 'הבניין שלי',
+      description: primaryBuilding?.address || 'שירותים, אנשי קשר ופרטי הבניין.',
+      href: '/resident/building',
+      icon: Building2,
+      tone: 'success' as const,
+    },
+  ];
   const paymentConfidenceItems = [
    
     {
@@ -467,14 +503,24 @@ export default function ResidentAccountPage() {
           bodyClassName="pt-0"
         >
           <div className="space-y-2.5">
-            <Link
-              href={residentPrimaryAction.href}
-              className="gold-sheen-button flex min-h-[56px] w-full items-center justify-center gap-2 rounded-full px-4 text-base font-semibold shadow-raised"
-              data-accent-sheen="true"
-            >
-              {residentPrimaryAction.ctaLabel}
-              <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.85} />
-            </Link>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+              <Link
+                href={residentPrimaryAction.href}
+                className="gold-sheen-button flex min-h-[56px] w-full items-center justify-center gap-2 rounded-full px-4 text-base font-semibold shadow-raised"
+                data-accent-sheen="true"
+              >
+                {residentPrimaryAction.ctaLabel}
+                <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.85} />
+              </Link>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-[56px] rounded-full px-5 text-sm"
+                onClick={() => setQuickAccessOpen(true)}
+              >
+                גישה מהירה
+              </Button>
+            </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               {paymentConfidenceItems.map((item) => (
                 <div
@@ -572,6 +618,39 @@ export default function ResidentAccountPage() {
           </GlassSurface>
         ) : null}
 
+        {primaryBuilding ? (
+          <GlassSurface strength="strong" className="rounded-[30px] p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary-foreground">Building Preview</div>
+                <div className="mt-1 text-base font-semibold text-foreground">{primaryBuilding.name}</div>
+                <div className="mt-0.5 text-[12px] leading-5 text-secondary-foreground">{primaryBuilding.address}</div>
+              </div>
+              <span className="rounded-full border border-primary/14 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">
+                דירה {primaryUnit?.number}
+              </span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
+              <Link
+                href="/resident/building"
+                className="rounded-[22px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] px-3 py-3 text-right transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-card"
+              >
+                <div className="text-[10px] font-semibold text-secondary-foreground">שירותים ופרטים</div>
+                <div className="mt-1 text-[15px] font-black text-foreground">בניין</div>
+                <div className="mt-1 text-[11px] leading-4.5 text-secondary-foreground">אנשי קשר, מתקנים ומידע שוטף.</div>
+              </Link>
+              <Link
+                href="/resident/payment-methods"
+                className="rounded-[22px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] px-3 py-3 text-right transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-card"
+              >
+                <div className="text-[10px] font-semibold text-secondary-foreground">חיוב</div>
+                <div className="mt-1 text-[15px] font-black text-foreground">אמצעי תשלום</div>
+                <div className="mt-1 text-[11px] leading-4.5 text-secondary-foreground">כרטיסים, חיוב אוטומטי והגדרות חשבון.</div>
+              </Link>
+            </div>
+          </GlassSurface>
+        ) : null}
+
         {trendState ? (
           <div className="hidden md:block">
             <ResidentTrendCard
@@ -610,7 +689,53 @@ export default function ResidentAccountPage() {
         </div>
       </motion.section>
 
-   
+      <AmsDrawer
+        isOpen={quickAccessOpen}
+        onOpenChange={setQuickAccessOpen}
+        title="גישה מהירה"
+        description="התשלומים, השירות והבניין במקום אחד."
+        tone="light"
+        size="md"
+      >
+        <div className="space-y-3 pb-2">
+          {quickAccessItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={cn(
+                  'flex min-h-[72px] items-center gap-3 rounded-[22px] border px-4 py-3 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-card',
+                  item.tone === 'warning'
+                    ? 'border-warning/16 bg-[linear-gradient(180deg,rgba(255,250,241,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
+                    : item.tone === 'success'
+                      ? 'border-success/16 bg-[linear-gradient(180deg,rgba(245,252,247,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
+                      : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)]',
+                )}
+                onClick={() => setQuickAccessOpen(false)}
+              >
+                <span
+                  className={cn(
+                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border',
+                    item.tone === 'warning'
+                      ? 'border-warning/12 bg-warning/10 text-warning'
+                      : item.tone === 'success'
+                        ? 'border-success/12 bg-success/10 text-success'
+                        : 'border-primary/12 bg-primary/10 text-primary',
+                  )}
+                >
+                  <Icon className="h-5 w-5" strokeWidth={1.85} />
+                </span>
+                <span className="min-w-0 flex-1 text-right">
+                  <span className="block text-sm font-semibold text-foreground">{item.title}</span>
+                  <span className="mt-0.5 block text-[12px] leading-5 text-secondary-foreground">{item.description}</span>
+                </span>
+                <ArrowUpRight className="icon-directional h-4 w-4 shrink-0 text-primary" strokeWidth={1.8} />
+              </Link>
+            );
+          })}
+        </div>
+      </AmsDrawer>
     </div>
   );
 }

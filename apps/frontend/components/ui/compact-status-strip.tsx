@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import * as React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ShieldCheck } from 'lucide-react';
@@ -10,6 +11,13 @@ type StatusMetric = {
   value: string | number;
   tone?: 'default' | 'warning' | 'danger' | 'success';
   onClick?: () => void;
+};
+
+type StatusContextChip = {
+  id: string;
+  label: string;
+  href?: string;
+  tone?: 'default' | 'warning' | 'danger' | 'success';
 };
 
 const metricPriority: Record<NonNullable<StatusMetric['tone']>, number> = {
@@ -32,12 +40,14 @@ export function CompactStatusStrip({
   roleLabel,
   icon,
   metrics,
+  contextChips,
   className,
   tone = 'default',
 }: {
   roleLabel: string;
   icon?: React.ReactNode;
   metrics: StatusMetric[];
+  contextChips?: StatusContextChip[];
   className?: string;
   tone?: 'default' | 'resident' | 'pm' | 'admin';
 }) {
@@ -100,7 +110,49 @@ export function CompactStatusStrip({
         </span>
       </div>
 
-      <div className="grid min-w-0 grid-cols-2 gap-1.5 text-right sm:ms-3 sm:flex sm:flex-nowrap">
+      <div className="flex min-w-0 flex-col gap-1.5 text-right sm:ms-3 sm:min-w-[min(18rem,100%)]">
+        {contextChips?.length ? (
+          <div className="flex flex-wrap justify-end gap-1.5">
+            {contextChips.slice(0, 2).map((chip) =>
+              chip.href ? (
+                <Link
+                  key={chip.id}
+                  href={chip.href}
+                  className={cn(
+                    'inline-flex min-h-[28px] items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                    chip.tone === 'danger'
+                      ? 'border-destructive/18 bg-destructive/8 text-destructive'
+                      : chip.tone === 'warning'
+                        ? 'border-warning/18 bg-warning/8 text-warning'
+                        : chip.tone === 'success'
+                          ? 'border-success/18 bg-success/8 text-success'
+                          : 'border-primary/12 bg-primary/8 text-primary',
+                  )}
+                >
+                  {chip.label}
+                </Link>
+              ) : (
+                <span
+                  key={chip.id}
+                  className={cn(
+                    'inline-flex min-h-[28px] items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold',
+                    chip.tone === 'danger'
+                      ? 'border-destructive/18 bg-destructive/8 text-destructive'
+                      : chip.tone === 'warning'
+                        ? 'border-warning/18 bg-warning/8 text-warning'
+                        : chip.tone === 'success'
+                          ? 'border-success/18 bg-success/8 text-success'
+                          : 'border-primary/12 bg-primary/8 text-primary',
+                  )}
+                >
+                  {chip.label}
+                </span>
+              ),
+            )}
+          </div>
+        ) : null}
+
+        <div className="grid min-w-0 grid-cols-2 gap-1.5 text-right sm:flex sm:flex-nowrap">
         {metrics.slice(0, 2).map((metric, index) => {
           const interactive = typeof metric.onClick === 'function';
           const shouldPulse = pulsingMetricId === metric.id;
@@ -194,6 +246,7 @@ export function CompactStatusStrip({
             </motion.button>
           );
         })}
+        </div>
       </div>
     </section>
   );

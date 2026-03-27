@@ -6,6 +6,13 @@ import { cn } from '../../lib/utils';
 import { useMobileDepthEffect, useTouchHoldLift } from './mobile-card-effects';
 
 type PrimaryActionTone = 'default' | 'warning' | 'danger' | 'success';
+type PrimaryActionPulseMetric = {
+  id: string;
+  label: string;
+  value: string | number;
+  meta?: string;
+  tone?: PrimaryActionTone;
+};
 
 export function PrimaryActionCard({
   eyebrow,
@@ -22,6 +29,7 @@ export function PrimaryActionCard({
   mobileHomeEffect = false,
   visualStyle = 'default',
   density = 'default',
+  pulseMetrics,
 }: {
   eyebrow?: string;
   title: string;
@@ -37,6 +45,7 @@ export function PrimaryActionCard({
   mobileHomeEffect?: boolean;
   visualStyle?: 'default' | 'resident' | 'pm' | 'admin';
   density?: 'default' | 'compact';
+  pulseMetrics?: PrimaryActionPulseMetric[];
 }) {
   const reducedMotion = useReducedMotion();
   const Icon = tone === 'success' ? CheckCircle2 : CircleAlert;
@@ -108,6 +117,30 @@ export function PrimaryActionCard({
               >
                 {description}
               </div>
+              {pulseMetrics?.length ? (
+                <div className={cn('mt-2 grid gap-2', pulseMetrics.length > 1 ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-1')}>
+                  {pulseMetrics.slice(0, 3).map((metric) => (
+                    <div
+                      key={metric.id}
+                      className="rounded-[16px] border border-primary/10 bg-background/76 px-2.5 py-2 text-right shadow-[inset_0_1px_0_rgba(255,255,255,0.62)]"
+                    >
+                      <div className="text-[10px] font-semibold text-secondary-foreground">{metric.label}</div>
+                      <div
+                        className={cn(
+                          'mt-1 text-[15px] font-black leading-none tabular-nums',
+                          metric.tone === 'danger' && 'text-destructive',
+                          metric.tone === 'warning' && 'text-warning',
+                          metric.tone === 'success' && 'text-success',
+                          (!metric.tone || metric.tone === 'default') && 'text-foreground',
+                        )}
+                      >
+                        <bdi>{metric.value}</bdi>
+                      </div>
+                      {metric.meta ? <div className="mt-1 truncate text-[10px] text-secondary-foreground">{metric.meta}</div> : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

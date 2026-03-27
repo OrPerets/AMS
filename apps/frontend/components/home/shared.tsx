@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, Bell, Building2, CalendarClock, CreditCard, FileText, Home, ShieldCheck, Ticket, Wrench, type LucideIcon } from 'lucide-react';
+import { ArrowUpRight, Bell, Building2, CalendarClock, CreditCard, FileText, Home, ShieldCheck, Ticket, Wrench, Zap, type LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { CompactStatusStrip } from '../ui/compact-status-strip';
 import { MobileActionHub } from '../ui/mobile-action-hub';
@@ -9,6 +9,8 @@ import { MobilePriorityInbox, type MobilePriorityInboxItem } from '../ui/mobile-
 import { PrimaryActionCard } from '../ui/primary-action-card';
 import { MiniSparkline } from '../ui/mobile-insight-widget';
 import { GlassSurface } from '../ui/glass-surface';
+import { AmsDrawer } from '../ui/ams-drawer';
+import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
 import { trackHomeFirstActionClick, trackHomeTopCardImpression, trackQuickActionClick } from '../../lib/analytics';
 import { addRecentAction, getRecentActions } from '../../lib/engagement';
@@ -23,6 +25,7 @@ export type HomeStatusMetric = {
   tone?: 'default' | 'warning' | 'danger' | 'success';
   href?: string;
   progress?: number;
+  meta?: string;
   hint?: string;
   trendLabel?: string;
   sparkline?: number[];
@@ -42,6 +45,14 @@ export type HomePrimaryAction = {
   };
 };
 
+export type MetricPulseState = {
+  id: string;
+  label: string;
+  value: string | number;
+  meta?: string;
+  tone?: 'default' | 'warning' | 'danger' | 'success';
+};
+
 export type HomeQuickAction = {
   id: string;
   title: string;
@@ -55,12 +66,47 @@ export type HomeQuickAction = {
   fullCardTap?: boolean;
 };
 
+export type RoleContextPreviewItem = {
+  id: string;
+  label: string;
+  value: string | number;
+  meta: string;
+  href?: string;
+  icon?: LucideIcon;
+  tone?: 'default' | 'warning' | 'danger' | 'success';
+};
+
+export type RoleContextPreview = {
+  eyebrow?: string;
+  title: string;
+  subtitle?: string;
+  tone?: 'default' | 'warning' | 'danger' | 'success';
+  items: RoleContextPreviewItem[];
+};
+
+export type BottomSheetActionFlow = {
+  title: string;
+  description?: string;
+  ctaLabel?: string;
+  items: Array<{
+    id: string;
+    title: string;
+    description: string;
+    href: string;
+    icon: LucideIcon;
+    tone?: 'default' | 'warning' | 'danger' | 'success';
+  }>;
+};
+
 export type HomeBlueprintShellProps = {
   roleLabel: string;
   roleKey: RoleKey;
   statusMetrics: HomeStatusMetric[];
   primaryAction: HomePrimaryAction;
+  pulseMetrics?: MetricPulseState[];
   quickActions: HomeQuickAction[];
+  contextPreview?: RoleContextPreview;
+  launcher?: BottomSheetActionFlow;
   inboxTitle: string;
   inboxSubtitle: string;
   inboxItems: MobilePriorityInboxItem[];
@@ -84,7 +130,10 @@ export function RoleHomeShell({
   roleKey,
   statusMetrics,
   primaryAction,
+  pulseMetrics,
   quickActions,
+  contextPreview,
+  launcher,
   inboxTitle,
   inboxSubtitle,
   inboxItems,
@@ -108,11 +157,12 @@ export function RoleHomeShell({
     prioritizeInbox,
   });
   const hasTrackedTopCardImpression = useRef(false);
+  const [launcherOpen, setLauncherOpen] = useState(false);
   const icon = getRoleStatusIcon(roleKey);
   const tone = roleKey === 'ADMIN' ? 'admin' : roleKey === 'PM' ? 'pm' : roleKey === 'RESIDENT' ? 'resident' : 'resident';
   const shellMode = roleKey === 'ADMIN' ? 'admin' : roleKey === 'PM' ? 'pm' : 'default';
   const operatorMode = roleKey === 'ADMIN' || roleKey === 'PM' || roleKey === 'ACCOUNTANT' || roleKey === 'TECH';
-  const operationalPulseMetrics = statusMetrics.slice(0, 3);
+  const operationalPulseMetrics = (pulseMetrics?.length ? pulseMetrics : statusMetrics.slice(0, 3)).slice(0, 3);
   const inbox = (
     <MobilePriorityInbox
       title={inboxTitle}
@@ -135,7 +185,8 @@ export function RoleHomeShell({
   }, [primaryAction.href, roleKey]);
 
   return (
-    <div className="space-y-3">
+    <>
+      <div className="space-y-3">
       {roleKey !== 'RESIDENT' ? (
         <div className="px-1 text-right">
           <h1 className="text-[18px] font-black tracking-[-0.02em] text-foreground">מרכז העבודה</h1>
@@ -147,6 +198,12 @@ export function RoleHomeShell({
         roleLabel={roleLabel}
         icon={icon}
         tone={tone}
+        contextChips={quickActions.slice(0, 2).map((item) => ({
+          id: `chip-${item.id}`,
+          label: `${item.title} · ${item.previewValue ?? item.value}`,
+          href: item.href,
+          tone: item.tone,
+        }))}
         metrics={statusMetrics.map((metric) => ({
           ...metric,
           onClick: metric.href
@@ -172,30 +229,54 @@ export function RoleHomeShell({
         onCtaClick={() => trackHomeFirstActionClick(roleKey, primaryAction.href, primaryAction.href)}
         tone={primaryAction.tone}
         visualStyle={tone}
+        pulseMetrics={operationalPulseMetrics.map((metric) => ({
+          id: metric.id,
+          label: metric.label,
+          value: metric.value,
+          meta: metric.meta,
+          tone: metric.tone,
+        }))}
         mobileHomeEffect
         density={operatorMode ? 'compact' : 'default'}
         className={operatorMode ? 'shadow-[0_16px_34px_rgba(44,28,9,0.10)]' : undefined}
-        supportingContent={
-          roleKey === 'ADMIN' || roleKey === 'PM' || roleKey === 'ACCOUNTANT' ? (
+        supportingContent={operatorMode ? (
             <OperationalPulseRow metrics={operationalPulseMetrics} shellMode={shellMode} />
           ) : null
         }
         secondaryAction={
-          primaryAction.secondaryAction ? (
-            <Link
-              href={primaryAction.secondaryAction.href}
-              className={cn(
-                'inline-flex min-h-[40px] items-center rounded-xl border px-3 py-2 text-xs font-semibold',
-                shellMode === 'admin'
-                  ? 'border-primary/12 text-foreground'
-                  : 'border-subtle-border text-foreground',
-              )}
-            >
-              {primaryAction.secondaryAction.label}
-            </Link>
+          primaryAction.secondaryAction || launcher ? (
+            <div className="flex flex-wrap justify-stretch gap-2 sm:justify-end">
+              {primaryAction.secondaryAction ? (
+                <Link
+                  href={primaryAction.secondaryAction.href}
+                  className={cn(
+                    'inline-flex min-h-[40px] items-center justify-center rounded-xl border px-3 py-2 text-xs font-semibold',
+                    shellMode === 'admin'
+                      ? 'border-primary/12 text-foreground'
+                      : 'border-subtle-border text-foreground',
+                  )}
+                >
+                  {primaryAction.secondaryAction.label}
+                </Link>
+              ) : null}
+              {launcher ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="min-h-[40px] rounded-xl px-3 text-xs"
+                  onClick={() => setLauncherOpen(true)}
+                >
+                  <Zap className="h-3.5 w-3.5" strokeWidth={1.8} />
+                  {launcher.ctaLabel ?? 'פעולות מהירות'}
+                </Button>
+              ) : null}
+            </div>
           ) : null
         }
       />
+
+      {contextPreview ? <RoleContextPreviewCard preview={contextPreview} /> : null}
 
       <GlassSurface className="rounded-[28px] px-3 py-3 sm:px-4 sm:py-4">
         {prioritizeInbox ? inbox : quickActionsGrid}
@@ -203,7 +284,53 @@ export function RoleHomeShell({
       <GlassSurface className="rounded-[28px] px-3 py-3 sm:px-4 sm:py-4">
         {prioritizeInbox ? quickActionsGrid : inbox}
       </GlassSurface>
-    </div>
+      </div>
+
+      {launcher ? (
+        <AmsDrawer
+          isOpen={launcherOpen}
+          onOpenChange={setLauncherOpen}
+          title={launcher.title}
+          description={launcher.description}
+          tone="light"
+          size="md"
+        >
+          <div className="space-y-3 pb-2">
+            {launcher.items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className="flex min-h-[72px] items-center gap-3 rounded-[22px] border border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)] px-4 py-3 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-card"
+                  onClick={() => setLauncherOpen(false)}
+                >
+                  <span
+                    className={cn(
+                      'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border',
+                      item.tone === 'danger'
+                        ? 'border-destructive/15 bg-destructive/10 text-destructive'
+                        : item.tone === 'warning'
+                          ? 'border-warning/15 bg-warning/10 text-warning'
+                          : item.tone === 'success'
+                            ? 'border-success/15 bg-success/10 text-success'
+                            : 'border-primary/15 bg-primary/10 text-primary',
+                    )}
+                  >
+                    <Icon className="h-5 w-5" strokeWidth={1.85} />
+                  </span>
+                  <span className="min-w-0 flex-1 text-right">
+                    <span className="block text-sm font-semibold text-foreground">{item.title}</span>
+                    <span className="mt-0.5 block text-[12px] leading-5 text-secondary-foreground">{item.description}</span>
+                  </span>
+                  <ArrowUpRight className="icon-directional h-4 w-4 shrink-0 text-primary" strokeWidth={1.8} />
+                </Link>
+              );
+            })}
+          </div>
+        </AmsDrawer>
+      ) : null}
+    </>
   );
 }
 
@@ -234,11 +361,27 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
   const sorted = sortByRecentUsage(items, roleKey);
   const compactDensity = roleKey === 'PM' || roleKey === 'ADMIN' || roleKey === 'TECH';
 
-  if (roleKey === 'PM' || roleKey === 'ADMIN') {
+  if (roleKey === 'PM' || roleKey === 'ADMIN' || roleKey === 'TECH' || roleKey === 'ACCOUNTANT') {
     return (
       <MobileActionHub
-        title={roleKey === 'ADMIN' ? 'פעולות בקרה' : 'פעולות ניהול'}
-        subtitle={roleKey === 'ADMIN' ? 'מוקד הפעולה הבא.' : 'המשימות הקרובות במקום אחד.'}
+        title={
+          roleKey === 'ADMIN'
+            ? 'פעולות בקרה'
+            : roleKey === 'PM'
+              ? 'פעולות ניהול'
+              : roleKey === 'TECH'
+                ? 'פעולות שטח'
+                : 'מהלכי גבייה'
+        }
+        subtitle={
+          roleKey === 'ADMIN'
+            ? 'מוקד הפעולה הבא.'
+            : roleKey === 'PM'
+              ? 'המשימות הקרובות במקום אחד.'
+              : roleKey === 'TECH'
+                ? 'התחנה הבאה, עדכון סטטוס וגיבוי תפעולי.'
+                : 'גבייה, תקציב ודוחות במסלול מקוצר.'
+        }
         layout="hierarchy"
         density="compact"
         items={sorted.slice(0, 4).map((item, index) => ({
@@ -321,6 +464,77 @@ export function HomeQuickActionsGrid({ items, roleKey = 'RESIDENT' }: { items: H
         );
       })}
     </div>
+  );
+}
+
+function RoleContextPreviewCard({ preview }: { preview: RoleContextPreview }) {
+  return (
+    <GlassSurface className="rounded-[28px] px-4 py-4 sm:px-5">
+      <div className="flex items-end justify-between gap-3">
+        <div className="min-w-0 text-right">
+          {preview.eyebrow ? (
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-secondary-foreground">{preview.eyebrow}</div>
+          ) : null}
+          <div className="mt-1 text-[15px] font-semibold text-foreground">{preview.title}</div>
+          {preview.subtitle ? <div className="mt-0.5 text-[12px] leading-5 text-secondary-foreground">{preview.subtitle}</div> : null}
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2.5">
+        {preview.items.slice(0, 4).map((item) => {
+          const Icon = item.icon ?? ShieldCheck;
+          const content = (
+            <div
+              className={cn(
+                'flex min-h-[88px] flex-col justify-between rounded-[22px] border px-3 py-3 text-right transition-[transform,box-shadow,border-color] duration-200',
+                item.tone === 'danger'
+                  ? 'border-destructive/18 bg-[linear-gradient(180deg,rgba(255,247,247,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
+                  : item.tone === 'warning'
+                    ? 'border-warning/18 bg-[linear-gradient(180deg,rgba(255,250,241,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
+                    : item.tone === 'success'
+                      ? 'border-success/18 bg-[linear-gradient(180deg,rgba(245,252,247,0.98)_0%,rgba(255,255,255,0.94)_100%)]'
+                      : 'border-subtle-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,244,236,0.92)_100%)]',
+                item.href && 'hover:-translate-y-0.5 hover:border-primary/24 hover:shadow-card',
+              )}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span
+                  className={cn(
+                    'flex h-9 w-9 items-center justify-center rounded-2xl border',
+                    item.tone === 'danger'
+                      ? 'border-destructive/12 bg-destructive/10 text-destructive'
+                      : item.tone === 'warning'
+                        ? 'border-warning/12 bg-warning/10 text-warning'
+                        : item.tone === 'success'
+                          ? 'border-success/12 bg-success/10 text-success'
+                          : 'border-primary/12 bg-primary/10 text-primary',
+                  )}
+                >
+                  <Icon className="h-4 w-4" strokeWidth={1.8} />
+                </span>
+                <div className="truncate text-[10px] font-semibold text-secondary-foreground">{item.label}</div>
+              </div>
+              <div className="mt-2">
+                <div className="truncate text-[16px] font-black leading-none text-foreground">
+                  <bdi>{item.value}</bdi>
+                </div>
+                <div className="mt-1 line-clamp-2 text-[11px] leading-4.5 text-secondary-foreground">{item.meta}</div>
+              </div>
+            </div>
+          );
+
+          if (!item.href) {
+            return <div key={item.id}>{content}</div>;
+          }
+
+          return (
+            <Link key={item.id} href={item.href}>
+              {content}
+            </Link>
+          );
+        })}
+      </div>
+    </GlassSurface>
   );
 }
 

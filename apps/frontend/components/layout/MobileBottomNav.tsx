@@ -144,12 +144,13 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
         ref={navRef}
         className={cn(
           'glass-sticky-chrome fixed inset-x-0 bottom-0 z-40 border-t safe-pb thumb-zone md:hidden',
+          'before:pointer-events-none before:absolute before:inset-x-10 before:top-0 before:h-px before:bg-[linear-gradient(90deg,transparent,rgba(224,182,89,0.78),transparent)]',
           className,
         )}
         role="navigation"
         aria-label={t('bottomNav.label')}
       >
-        <div className="grid grid-cols-5 gap-1 px-2 py-1.5">
+        <div className="mx-auto grid max-w-md grid-cols-5 gap-1 px-2 py-2">
           {primaryItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -159,7 +160,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                 href={item.href}
                 onClick={() => handleNavigate(item.href)}
                 className={cn(
-                  'relative flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-[20px] px-1 py-1 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
+                  'relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-[20px] px-1 py-1.5 text-[10px] font-semibold transition-[color,transform] duration-200 touch-manipulation active:scale-[0.98]',
                   active ? 'text-primary' : 'text-muted-foreground',
                 )}
                 aria-current={active ? 'page' : undefined}
@@ -168,15 +169,15 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                 {active ? (
                   <motion.span
                     layoutId="mobile-bottom-nav-active"
-                    className="gold-active-pill gold-current-pulse absolute inset-0 rounded-[20px]"
+                    className="gold-active-pill gold-current-pulse absolute inset-0 rounded-[20px] shadow-[0_18px_30px_-24px_rgba(84,58,15,0.52)]"
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                   />
                 ) : null}
-                <span className={cn('relative z-10 flex h-[30px] w-[30px] items-center justify-center rounded-[14px] transition-colors', active ? 'bg-white/72 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]' : 'text-muted-foreground')}>
+                <span className={cn('relative z-10 flex h-[32px] w-[32px] items-center justify-center rounded-[15px] transition-[color,transform,background-color,box-shadow] duration-200', active ? 'bg-white/78 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_10px_18px_-14px_rgba(84,58,15,0.38)]' : 'text-muted-foreground')}>
                   <Icon className={cn('h-[18px] w-[18px]', active && 'scale-105')} strokeWidth={1.75} />
                 </span>
                 <span className="relative z-10 w-full text-center leading-tight">
-                  <span className={cn('block truncate text-[10px]', active && 'font-bold')}>{item.title}</span>
+                  <span className={cn('block truncate text-[10px]', active && 'font-bold tracking-[-0.01em]')}>{item.title}</span>
                 </span>
               </Link>
             );
@@ -185,7 +186,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
           <button
             type="button"
             className={cn(
-              'relative flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-[20px] px-1 py-1 text-[10px] font-semibold transition-colors touch-manipulation active:scale-[0.98]',
+              'relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-[20px] px-1 py-1.5 text-[10px] font-semibold transition-[color,transform] duration-200 touch-manipulation active:scale-[0.98]',
               moreOpen || isMoreRouteActive ? 'text-primary' : 'text-muted-foreground',
             )}
             onClick={() => setMoreOpen((current) => !current)}
@@ -194,16 +195,17 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
             aria-controls="mobile-more-sheet"
           >
             {moreOpen || isMoreRouteActive ? (
-              <span className="gold-active-pill gold-current-pulse absolute inset-0 rounded-[20px]" />
+              <span className="gold-active-pill gold-current-pulse absolute inset-0 rounded-[20px] shadow-[0_18px_30px_-24px_rgba(84,58,15,0.52)]" />
             ) : null}
-            <span className={cn('relative z-10 flex h-[30px] w-[30px] items-center justify-center rounded-[14px] transition-colors', moreOpen || isMoreRouteActive ? 'bg-white/72 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]' : 'text-muted-foreground')}>
+            <span className={cn('relative z-10 flex h-[32px] w-[32px] items-center justify-center rounded-[15px] transition-[color,transform,background-color,box-shadow] duration-200', moreOpen || isMoreRouteActive ? 'bg-white/78 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_10px_18px_-14px_rgba(84,58,15,0.38)]' : 'text-muted-foreground')}>
               <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
               {unreadNotifications > 0 ? (
                 <motion.span
                   key={unreadNotifications}
-                  initial={{ scale: 1 }}
-                  animate={{ scale: [1, 1.3, 1] }}
-                  className="absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground"
+                  initial={{ scale: 0.95, opacity: 0.82 }}
+                  animate={{ scale: [1, 1.16, 1], opacity: [0.9, 1, 0.95] }}
+                  transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground shadow-[0_10px_18px_-12px_rgba(153,27,27,0.75)]"
                 >
                   {unreadNotifications > 9 ? '9+' : unreadNotifications}
                 </motion.span>
