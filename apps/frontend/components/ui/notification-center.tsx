@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import {
   AlertTriangle,
+  Archive,
   Bell,
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -154,9 +156,36 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     id: NotificationItem["id"] | null;
     offset: number;
   }>({ id: null, offset: 0 });
+  const [snapBackId, setSnapBackId] = useState<NotificationItem["id"] | null>(null);
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
   const touchStartXRef = useRef<number | null>(null);
   const touchStartYRef = useRef<number | null>(null);
   const swipeLockedRef = useRef(false);
+  const snapBackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    try {
+      const hasSeenHint = sessionStorage.getItem("notification-center-swipe-hint-seen");
+      if (!hasSeenHint) {
+        setShowSwipeHint(true);
+        sessionStorage.setItem("notification-center-swipe-hint-seen", "1");
+      }
+    } catch {
+      // Ignore storage access issues (private mode/restricted browser contexts).
+    }
+
+    return () => {
+      if (snapBackTimeoutRef.current) {
+        clearTimeout(snapBackTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showSwipeHint) return;
+    const timeoutId = setTimeout(() => setShowSwipeHint(false), 5000);
+    return () => clearTimeout(timeoutId);
+  }, [showSwipeHint]);
 
   const normalizedNotifications = useMemo(
     () =>
@@ -219,6 +248,11 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     const config = priorityConfig[priority];
     const PriorityIcon = config.icon;
     const action = resolveNotificationAction(notification, t);
+    const dragOffset = dragState.id === notification.id ? dragState.offset : 0;
+    const dragProgress = Math.min(Math.abs(dragOffset) / 120, 1);
+    const isDragging = dragState.id === notification.id;
+    const isSnappingBack = snapBackId === notification.id;
+    const isLeftSwipe = dragOffset < 0;
 
     return (
       <article
@@ -226,11 +260,12 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         className={cn(
           "relative overflow-hidden rounded-[24px] border p-4 shadow-card transition duration-200",
           "hover:-translate-y-0.5 active:translate-y-0",
+          isSnappingBack && "transition-transform duration-250 ease-out",
           config.itemClass,
         )}
         style={{
-          transform: dragState.id === notification.id ? `translateX(${dragState.offset}px)` : undefined,
-          touchAction: 'pan-y',
+          transform: isDragging || isSnappingBack ? `translateX(${dragOffset}px)` : undefined,
+          touchAction: "pan-y",
         }}
         onTouchStart={(event) => {
           touchStartXRef.current = event.touches[0]?.clientX ?? null;
@@ -262,11 +297,20 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             if (!notification.read) onMarkAsRead?.(notification.id);
             onDismiss?.(notification.id);
             triggerHaptic("light");
+          } else if (dragState.id === notification.id && Math.abs(dragState.offset) > 0) {
+            setSnapBackId(notification.id);
+            setDragState({ id: notification.id, offset: 0 });
+            if (snapBackTimeoutRef.current) {
+              clearTimeout(snapBackTimeoutRef.current);
+            }
+            snapBackTimeoutRef.current = setTimeout(() => setSnapBackId(null), 260);
           }
           touchStartXRef.current = null;
           touchStartYRef.current = null;
           swipeLockedRef.current = false;
-          setDragState({ id: null, offset: 0 });
+          if (shouldDismiss || dragState.id !== notification.id || Math.abs(dragState.offset) === 0) {
+            setDragState({ id: null, offset: 0 });
+          }
         }}
         onTouchCancel={() => {
           touchStartXRef.current = null;
@@ -275,6 +319,35 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           setDragState({ id: null, offset: 0 });
         }}
       >
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4"
+          aria-hidden="true"
+        >
+          <div
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-full border border-success/30 bg-success/15 text-success transition-transform duration-150",
+              !isLeftSwipe ? "origin-left" : "origin-center",
+            )}
+            style={{
+              opacity: !isLeftSwipe ? dragProgress : Math.max(dragProgress * 0.35, 0.08),
+              transform: `scale(${!isLeftSwipe ? 0.85 + dragProgress * 0.25 : 0.9})`,
+            }}
+          >
+            <Check className="h-4 w-4" />
+          </div>
+          <div
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-full border border-warning/30 bg-warning/15 text-warning-foreground transition-transform duration-150",
+              isLeftSwipe ? "origin-right" : "origin-center",
+            )}
+            style={{
+              opacity: isLeftSwipe ? dragProgress : Math.max(dragProgress * 0.35, 0.08),
+              transform: `scale(${isLeftSwipe ? 0.85 + dragProgress * 0.25 : 0.9})`,
+            }}
+          >
+            <Archive className="h-4 w-4" />
+          </div>
+        </div>
         <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-linear-to-b from-white/6 to-transparent" />
         <div className="relative flex items-start gap-3">
           <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] border border-white/8 bg-background/74 shadow-sm backdrop-blur">
@@ -407,6 +480,13 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
               )}
             </button>
+            {showSwipeHint && key === "needs_action" ? (
+              <div className="px-4 pb-1">
+                <div className="rounded-md border border-primary/20 bg-primary/8 px-3 py-2 text-xs leading-5 text-muted-foreground">
+                  Tip: swipe a notification card right to complete it or left to archive it.
+                </div>
+              </div>
+            ) : null}
 
             {!isCollapsed ? <div className="space-y-3 px-4 pb-4">{items.map(renderNotificationCard)}</div> : null}
           </Card>
