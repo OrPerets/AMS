@@ -1,7 +1,6 @@
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
-import { motion, useReducedMotion } from 'framer-motion';
-import { Bell, Filter, Radio, RefreshCw, Settings, SlidersHorizontal } from 'lucide-react';
+import { Bell, ExternalLink, Filter, Radio, RefreshCw, Settings, SlidersHorizontal } from 'lucide-react';
 import { authFetch, getAccessToken, getCurrentUserId } from '../lib/auth';
 import { triggerHaptic } from '../lib/mobile';
 import { emitNotificationsChanged } from '../lib/notification-events';
@@ -16,7 +15,6 @@ import { PageHero } from '../components/ui/page-hero';
 import { PullToRefreshIndicator } from '../components/ui/pull-to-refresh-indicator';
 import { SectionHeader } from '../components/ui/section-header';
 import { StatusBadge } from '../components/ui/status-badge';
-import { Switch } from '../components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from '../components/ui/use-toast';
 import { usePullToRefresh } from '../hooks/use-pull-to-refresh';
@@ -185,33 +183,6 @@ export default function NotificationsPage() {
     };
   }, [currentUserId, loadNotifications, loadPreferences, t]);
 
-  const updatePreferences = async (nextPreferences: NotificationPreferences) => {
-    if (!currentUserId) return;
-    try {
-      setPreferencesLoading(true);
-      const response = await authFetch(`/api/v1/notifications/user/${currentUserId}/preferences`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(nextPreferences),
-      });
-      if (!response.ok) throw new Error(await response.text());
-      setPreferences(nextPreferences);
-      toast({
-        title: t('notifications.preferencesSavedTitle'),
-        description: t('notifications.preferencesSavedDescription'),
-      });
-      triggerHaptic('success');
-    } catch {
-      toast({
-        title: t('notifications.preferencesSaveFailedTitle'),
-        description: t('notifications.preferencesSaveFailedDescription'),
-        variant: 'destructive',
-      });
-    } finally {
-      setPreferencesLoading(false);
-    }
-  };
-
   const markAsRead = async (id: number | string) => {
     try {
       const response = await authFetch(`/api/v1/notifications/${id}/read`, { method: 'POST' });
@@ -297,65 +268,59 @@ export default function NotificationsPage() {
     { key: 'archived', labelKey: 'notifications.filter.archived' },
   ];
 
-  const channelPrefs: Array<{ key: string; label: string; desc: string; consequence: string }> = [
+  const channelPrefs: Array<{ key: keyof NotificationPreferences; label: string; description: string }> = [
     {
       key: 'email',
-      label: t('notifications.channel.email'),
-      desc: t('settings.preference.emailDesc'),
-      consequence: t('notifications.preference.consequence.email'),
+      // Keep labels aligned with Settings (canonical editor) to prevent translation drift.
+      label: t('settings.preference.email'),
+      description: t('settings.preference.emailDesc'),
     },
     {
       key: 'sms',
-      label: t('notifications.channel.sms'),
-      desc: t('settings.preference.smsDesc'),
-      consequence: t('notifications.preference.consequence.sms'),
+      label: t('settings.preference.sms'),
+      description: t('settings.preference.smsDesc'),
     },
     {
       key: 'push',
-      label: t('notifications.channel.push'),
-      desc: t('settings.preference.pushDesc'),
-      consequence: t('notifications.preference.consequence.push'),
+      label: t('settings.preference.push'),
+      description: t('settings.preference.pushDesc'),
     },
   ];
 
-  const topicPrefs: Array<{ key: string; label: string; desc: string; consequence: string }> = [
+  const topicPrefs: Array<{ key: keyof NotificationPreferences; label: string; description: string }> = [
     {
       key: 'ticketUpdates',
-      label: t('notifications.topic.ticketUpdates'),
-      desc: t('settings.preference.ticketUpdatesDesc'),
-      consequence: t('notifications.preference.consequence.ticketUpdates'),
+      label: t('settings.preference.ticketUpdates'),
+      description: t('settings.preference.ticketUpdatesDesc'),
     },
     {
       key: 'maintenanceReminders',
-      label: t('notifications.topic.maintenanceReminders'),
-      desc: t('settings.preference.maintenanceRemindersDesc'),
-      consequence: t('notifications.preference.consequence.maintenanceReminders'),
+      label: t('settings.preference.maintenanceReminders'),
+      description: t('settings.preference.maintenanceRemindersDesc'),
     },
     {
       key: 'paymentReminders',
-      label: t('notifications.topic.paymentReminders'),
-      desc: t('settings.preference.paymentRemindersDesc'),
-      consequence: t('notifications.preference.consequence.paymentReminders'),
+      label: t('settings.preference.paymentReminders'),
+      description: t('settings.preference.paymentRemindersDesc'),
     },
     {
       key: 'announcements',
-      label: t('notifications.topic.announcements'),
-      desc: t('settings.preference.announcementsDesc'),
-      consequence: t('notifications.preference.consequence.announcements'),
+      label: t('settings.preference.announcements'),
+      description: t('settings.preference.announcementsDesc'),
     },
     {
       key: 'emergencyAlerts',
-      label: t('notifications.topic.emergencyAlerts'),
-      desc: t('settings.preference.emergencyAlertsDesc'),
-      consequence: t('notifications.preference.consequence.emergencyAlerts'),
+      label: t('settings.preference.emergencyAlerts'),
+      description: t('settings.preference.emergencyAlertsDesc'),
     },
     {
       key: 'workOrderUpdates',
-      label: t('notifications.topic.workOrderUpdates'),
-      desc: t('settings.preference.workOrderUpdatesDesc'),
-      consequence: t('notifications.preference.consequence.workOrderUpdates'),
+      label: t('settings.preference.workOrderUpdates'),
+      description: t('settings.preference.workOrderUpdatesDesc'),
     },
   ];
+  const enabledChannels = channelPrefs.filter((item) => preferences[item.key]).length;
+  const enabledTopics = topicPrefs.filter((item) => preferences[item.key]).length;
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -496,7 +461,7 @@ export default function NotificationsPage() {
                   onChange={(event) => setSearchTerm(event.target.value)}
                   placeholder={t('notifications.searchPlaceholder')}
                 />
-                <Button variant="outline" className="justify-start lg:justify-center" onClick={() => router.push('/settings')}>
+                <Button variant="outline" className="justify-start lg:justify-center" onClick={() => router.push('/settings?tab=notifications')}>
                   <SlidersHorizontal className="me-2 h-4 w-4" />
                   {t('notifications.tabPreferences')}
                 </Button>
@@ -518,55 +483,51 @@ export default function NotificationsPage() {
             <CardContent className="space-y-4 p-4 sm:p-5">
               <SectionHeader
                 title={t('notifications.tabPreferences')}
-                subtitle={t('notifications.preference.group.channelsDesc')}
-                meta={preferencesLoading ? t('common.loading') : t('common.readyToSave')}
-                actions={<StatusBadge label={t('notifications.preference.group.channels')} tone="finance" />}
+                subtitle={t('settings.section.preferencesSubtitle')}
+                meta={preferencesLoading ? t('common.loading') : t('settings.meta.personalized')}
+                actions={<StatusBadge label={`${enabledTopics}/${topicPrefs.length}`} tone="active" />}
               />
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                {channelPrefs.map((item) => (
-                  <PreferenceTile
-                    key={item.key}
-                    title={item.label}
-                    description={item.desc}
-                    consequence={item.consequence}
-                    checked={preferences[item.key as keyof NotificationPreferences]}
-                    onCheckedChange={(checked) =>
-                      setPreferences((current) => ({ ...current, [item.key]: checked }))
-                    }
-                  />
-                ))}
+              {/* Migration note: Settings > Notifications is the single canonical editor.
+                  Do not reintroduce writable preference forms on this page; keep this section read-only with deep-link navigation. */}
+              <div className="rounded-[24px] border border-subtle-border bg-background/88 p-4 text-sm leading-6 text-muted-foreground">
+                {t('settings.preference.explanation')}
               </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="elevated">
-            <CardContent className="space-y-4 p-4 sm:p-5">
-              <SectionHeader
-                title={t('notifications.preference.group.topics')}
-                subtitle={t('notifications.preference.group.topicsDesc')}
-                meta={`${topicPrefs.length} ${t('notifications.total')}`}
-                actions={<StatusBadge label={t('notifications.tabPreferences')} tone="active" />}
-              />
-
-              <div className="grid gap-3 md:grid-cols-2">
-                {topicPrefs.map((item) => (
-                  <PreferenceTile
-                    key={item.key}
-                    title={item.label}
-                    description={item.desc}
-                    consequence={item.consequence}
-                    checked={preferences[item.key as keyof NotificationPreferences]}
-                    onCheckedChange={(checked) =>
-                      setPreferences((current) => ({ ...current, [item.key]: checked }))
-                    }
-                  />
-                ))}
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card variant="elevated">
+                  <CardHeader>
+                    <CardTitle>{t('notifications.preference.group.channels')}</CardTitle>
+                    <CardDescription>{`${enabledChannels}/${channelPrefs.length}`}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {channelPrefs.map((item) => (
+                      <PreferenceSummaryRow
+                        key={item.key}
+                        title={item.label}
+                        description={item.description}
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
+                <Card variant="elevated">
+                  <CardHeader>
+                    <CardTitle>{t('notifications.preference.group.topics')}</CardTitle>
+                    <CardDescription>{`${enabledTopics}/${topicPrefs.length}`}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {topicPrefs.map((item) => (
+                      <PreferenceSummaryRow
+                        key={item.key}
+                        title={item.label}
+                        description={item.description}
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
               </div>
-
               <div className="flex justify-end">
-                <Button onClick={() => void updatePreferences(preferences)} disabled={preferencesLoading}>
-                  {preferencesLoading ? t('common.saving') : t('settings.action.savePreferences')}
+                <Button onClick={() => router.push('/settings?tab=notifications')}>
+                  <ExternalLink className="me-2 h-4 w-4" />
+                  {t('notifications.tabPreferences')}
                 </Button>
               </div>
             </CardContent>
@@ -613,30 +574,18 @@ function NotificationMetricCard({
   );
 }
 
-function PreferenceTile({
+function PreferenceSummaryRow({
   title,
   description,
-  consequence,
-  checked,
-  onCheckedChange,
 }: {
   title: string;
   description: string;
-  consequence: string;
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="rounded-[24px] border border-subtle-border bg-background/88 p-4 shadow-card">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1.5">
-          <div className="text-sm font-semibold text-foreground">{title}</div>
-          <div className="text-sm leading-6 text-muted-foreground">{description}</div>
-        </div>
-        <Switch checked={checked} onCheckedChange={onCheckedChange} />
-      </div>
-      <div className="mt-3 rounded-[18px] border border-subtle-border/70 bg-muted/24 px-3 py-2 text-xs leading-5 text-muted-foreground">
-        {consequence}
+    <div className="rounded-[18px] border border-subtle-border bg-background/88 p-3">
+      <div className="space-y-1">
+        <div className="text-sm font-semibold text-foreground">{title}</div>
+        <div className="text-xs leading-5 text-muted-foreground">{description}</div>
       </div>
     </div>
   );
