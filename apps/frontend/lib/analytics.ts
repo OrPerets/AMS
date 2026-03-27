@@ -22,7 +22,8 @@ type AnalyticsEventName =
   | 'onboarding_dismiss'
   | 'page_view'
   | 'navigation_misclick_loop'
-  | 'navigation_backtrack_churn';
+  | 'navigation_backtrack_churn'
+  | 'navigation_dedupe_suppressed';
 
 type AnalyticsPayload = Record<string, string | number | boolean | null | undefined>;
 
@@ -159,5 +160,13 @@ export function trackNavigationBacktrackChurn(role: string, routeA: string, rout
     routeB,
     switches: Math.max(0, Math.round(switches)),
     windowMs: Math.max(0, Math.round(windowMs)),
+  });
+}
+
+export function trackNavigationDedupeSuppressed(role: string, section: string, href: string) {
+  trackEvent('navigation_dedupe_suppressed', {
+    role,
+    section,
+    href,
   });
 }

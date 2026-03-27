@@ -9,7 +9,7 @@ import { cn } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
 import { getTokenPayload, normalizeRole } from '../../lib/auth';
 import { useRegisterBottomSurface } from '../../lib/bottom-surface';
-import { trackNavigationBacktrackChurn, trackNavigationMisclickLoop } from '../../lib/analytics';
+import { trackNavigationBacktrackChurn, trackNavigationDedupeSuppressed, trackNavigationMisclickLoop } from '../../lib/analytics';
 import { getNavigationModel, getRecentShortcutHrefs, recordRecentShortcut, validateMobileLabelConsistency, type NavigationItem } from '../../lib/navigation';
 import { AmsCommandDrawer, type AmsCommandDrawerItem } from '../ui/ams-command-drawer';
 
@@ -54,14 +54,18 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
       console.warn('[navigation] Mobile label consistency issues detected', issues);
     }
   }
-  const topActionItems = primaryItems.map((item) => ({
-    id: item.id,
-    title: item.title,
-    href: item.href,
-    icon: item.icon,
-    hint: item.hint,
-    badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
-  }));
+  const topActionItems = dedupeCommandItemsByHref(
+    primaryItems.map((item) => ({
+      id: item.id,
+      title: item.title,
+      href: item.href,
+      icon: item.icon,
+      hint: item.hint,
+      badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
+    })),
+    userRole,
+    'top_actions',
+  );
   const allToolsItems = moreGroups.flatMap((group) =>
     group.items.map((item) => ({
       id: item.id,
@@ -72,25 +76,34 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
       badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
     })),
   );
-  const recentItems = recentShortcuts
-    .map((href) => [...primaryItems, ...allToolsItems].find((item) => item.href === href))
-    .filter((item): item is NavigationItem & { badge?: React.ReactNode } => Boolean(item));
-  const commandSections = allToolsItems.length
+  const dedupedToolItems = dedupeCommandItemsByHref(allToolsItems, userRole, 'section_all_tools');
+  const recentItems = dedupeCommandItemsByHref(
+    recentShortcuts
+      .map((href) => [...primaryItems, ...dedupedToolItems].find((item) => item.href === href))
+      .filter((item): item is NavigationItem & { badge?: React.ReactNode } => Boolean(item)),
+    userRole,
+    'recent_items',
+  );
+  const commandSections = dedupedToolItems.length
     ? [
         {
           id: 'all-tools',
           title: 'כל הכלים',
-          items: allToolsItems,
+          items: dedupedToolItems,
         },
       ]
     : [];
-  const priorityItems = buildPriorityItems({
-    role: userRole,
-    primaryItems,
-    allToolsItems,
-    unreadNotifications,
-    t,
-  });
+  const priorityItems = dedupeCommandItemsByHref(
+    buildPriorityItems({
+      role: userRole,
+      primaryItems,
+      allToolsItems: dedupedToolItems,
+      unreadNotifications,
+      t,
+    }),
+    userRole,
+    'priority_items',
+  );
   const isActive = (href: string) => {
     const [path, query] = href.split('?');
     if (query) {
@@ -240,6 +253,20 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   );
 }
 
+
+function dedupeCommandItemsByHref<T extends { href: string }>(items: T[], role: string, section: string): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (!item.href) return false;
+    if (seen.has(item.href)) {
+      trackNavigationDedupeSuppressed(role, section, item.href);
+      return false;
+    }
+    seen.add(item.href);
+    return true;
+  });
+}
+
 function toCommandItem(item: NavigationItem & { badge?: React.ReactNode }): AmsCommandDrawerItem {
   return {
     id: item.id,
@@ -250,6 +277,14 @@ function toCommandItem(item: NavigationItem & { badge?: React.ReactNode }): AmsC
     badge: item.badge,
   };
 }
+
+const OVERDUE_ACTION_HREFS_BY_ROLE: Record<string, string[]> = {
+  ADMIN: ['/tickets', '/admin/approvals'],
+  PM: ['/tickets', '/operations/calendar'],
+  TECH: ['/tech/jobs', '/tickets?mine=true'],
+  ACCOUNTANT: ['/payments', '/finance/budgets'],
+  RESIDENT: ['/payments/resident', '/resident/requests'],
+};
 
 function buildPriorityItems({
   role,
@@ -282,34 +317,13 @@ function buildPriorityItems({
   };
 
   if (unreadNotifications > 0) {
-    addItem('/notifications', 'לא נקראו', unreadNotifications > 9 ? '9+' : unreadNotifications);
+    addItem('/notifications', 'דחוף · לא נקראו', unreadNotifications > 9 ? '9+' : unreadNotifications);
   }
 
-  switch (role) {
-    case 'ADMIN':
-      addItem('/tickets', 'תפעול');
-      addItem('/admin/approvals', 'ממתין');
-      break;
-    case 'PM':
-      addItem('/tickets', 'שיוך');
-      addItem('/operations/calendar', 'היום');
-      break;
-    case 'TECH':
-      addItem('/tech/jobs', 'הבא בתור');
-      addItem('/tickets?mine=true', 'עדכון');
-      break;
-    case 'ACCOUNTANT':
-      addItem('/payments', 'גבייה');
-      addItem('/finance/budgets', 'בדיקה');
-      break;
-    case 'RESIDENT':
-    default:
-      addItem('/payments/resident', 'לטיפול');
-      addItem('/resident/requests', 'מעקב');
-      break;
-  }
+  const overdueRoutes = OVERDUE_ACTION_HREFS_BY_ROLE[role] ?? OVERDUE_ACTION_HREFS_BY_ROLE.RESIDENT;
+  overdueRoutes.forEach((href) => addItem(href, 'לטיפול · באיחור'));
 
-  return items.slice(0, 3).map((item) => ({
+  return items.slice(0, 2).map((item) => ({
     ...item,
     title: item.href === '/notifications' ? t('nav.notifications') : item.title,
   }));

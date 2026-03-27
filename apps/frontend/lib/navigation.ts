@@ -41,6 +41,15 @@ export type NavigationModel = {
   mobileMoreGroups: NavigationGroup[];
 };
 
+const MOBILE_DESTINATION_ORDER_BY_ROLE: Record<AppRole, string[]> = {
+  ADMIN: ['/home', '/tickets', '/admin/dashboard', '/operations/calendar', '/buildings', '/assets', '/vendors', '/contracts', '/payments', '/finance/budgets', '/finance/reports', '/admin/configuration', '/admin/security', '/admin/approvals', '/documents', '/notifications', '/supervision-report'],
+  PM: ['/home', '/tickets', '/buildings', '/operations/calendar', '/maintenance', '/communications', '/gardens', '/supervision-report', '/schedules', '/payments', '/finance/budgets', '/finance/reports', '/documents', '/vendors', '/contracts', '/notifications', '/settings'],
+  TECH: ['/home', '/tech/jobs', '/gardens', '/tickets?mine=true', '/supervision-report', '/maintenance', '/schedules', '/assets', '/documents', '/communications', '/notifications', '/settings'],
+  RESIDENT: ['/resident/account', '/resident/requests', '/payments/resident', '/create-call', '/documents', '/resident/building', '/resident/payment-methods', '/support', '/notifications', '/settings'],
+  ACCOUNTANT: ['/home', '/payments', '/finance/budgets', '/finance/reports', '/operations/calendar', '/tickets', '/vendors', '/contracts', '/documents', '/supervision-report', '/notifications', '/settings'],
+  MASTER: ['/home', '/tickets', '/admin/dashboard', '/operations/calendar', '/tech/jobs', '/payments', '/finance/budgets', '/finance/reports', '/buildings', '/assets', '/documents', '/vendors', '/contracts', '/maintenance', '/communications', '/schedules', '/supervision-report', '/notifications', '/settings', '/resident/account', '/resident/requests', '/payments/resident', '/create-call'],
+};
+
 export const MOBILE_PRIMARY_TAB_COUNT = 4;
 export const MOBILE_MORE_MAX_GROUPS = 3;
 export const MOBILE_MORE_MAX_ITEMS = 12;
@@ -525,8 +534,22 @@ function combineModels(models: NavigationModel[]): NavigationModel {
   };
 }
 
-function normalizeMobileNav(model: NavigationModel): NavigationModel {
-  const primary = dedupeItems(model.mobilePrimary).slice(0, MOBILE_PRIMARY_TAB_COUNT);
+function orderMobileItems(items: NavigationItem[], role: AppRole): NavigationItem[] {
+  const order = MOBILE_DESTINATION_ORDER_BY_ROLE[role] ?? [];
+  const rankByHref = new Map(order.map((href, index) => [href, index]));
+
+  return [...items].sort((a, b) => {
+    const aRank = rankByHref.get(a.href);
+    const bRank = rankByHref.get(b.href);
+    if (aRank == null && bRank == null) return 0;
+    if (aRank == null) return 1;
+    if (bRank == null) return -1;
+    return aRank - bRank;
+  });
+}
+
+function normalizeMobileNav(model: NavigationModel, role: AppRole): NavigationModel {
+  const primary = orderMobileItems(dedupeItems(model.mobilePrimary), role).slice(0, MOBILE_PRIMARY_TAB_COUNT);
   const primaryHrefs = new Set(primary.map((item) => item.href));
   const seen = new Set<string>();
   let remaining = MOBILE_MORE_MAX_ITEMS;
@@ -534,7 +557,7 @@ function normalizeMobileNav(model: NavigationModel): NavigationModel {
 
   for (const group of model.mobileMoreGroups.slice(0, MOBILE_MORE_MAX_GROUPS)) {
     if (remaining <= 0) break;
-    const items = group.items.filter((item) => {
+    const items = orderMobileItems(group.items, role).filter((item) => {
       if (remaining <= 0) return false;
       if (primaryHrefs.has(item.href) || seen.has(item.href)) return false;
       seen.add(item.href);
@@ -621,17 +644,17 @@ export function getNavigationModel(role: string | null | undefined, t: Translato
 
   switch (normalizedRole) {
     case 'ADMIN':
-      return normalizeMobileNav(adminModel(t));
+      return normalizeMobileNav(adminModel(t), 'ADMIN');
     case 'PM':
-      return normalizeMobileNav(pmModel(t));
+      return normalizeMobileNav(pmModel(t), 'PM');
     case 'TECH':
-      return normalizeMobileNav(techModel(t));
+      return normalizeMobileNav(techModel(t), 'TECH');
     case 'ACCOUNTANT':
-      return normalizeMobileNav(accountantModel());
+      return normalizeMobileNav(accountantModel(), 'ACCOUNTANT');
     case 'MASTER':
-      return normalizeMobileNav(combineModels([adminModel(t), pmModel(t), techModel(t), residentModel(t), accountantModel()]));
+      return normalizeMobileNav(combineModels([adminModel(t), pmModel(t), techModel(t), residentModel(t), accountantModel()]), 'MASTER');
     case 'RESIDENT':
     default:
-      return normalizeMobileNav(residentModel(t));
+      return normalizeMobileNav(residentModel(t), 'RESIDENT');
   }
 }
