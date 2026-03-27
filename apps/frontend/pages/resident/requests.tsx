@@ -9,7 +9,7 @@ import { cn } from '../../lib/utils';
 import { Card, CardContent } from '../../components/ui/card';
 import { EmptyState } from '../../components/ui/empty-state';
 import { FileUpload } from '../../components/ui/file-upload';
-import { FormField, FormErrorSummary } from '../../components/ui/form-field';
+import { FormActionHint, FormField, FormErrorSummary } from '../../components/ui/form-field';
 import { Input } from '../../components/ui/input';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { MobileContextBar } from '../../components/ui/mobile-context-bar';
@@ -225,12 +225,13 @@ export default function ResidentRequestsPage() {
       .filter((key) => formErrors[key] && shouldShowError(key))
       .map((key) => ({ field: key, message: formErrors[key] }));
   }, [formErrors, formSubmitted, formTouched]);
+  const hasRequiredErrors = Boolean(formErrors.subject || formErrors.message || formErrors.requestedDate);
 
   async function submitRequest() {
     setFormSubmitted(true);
     setSubmitError(null);
 
-    if (formErrors.subject || formErrors.message) {
+    if (hasRequiredErrors) {
       toast({ title: 'יש להשלים את שדות החובה לפני השליחה', variant: 'destructive' });
       requestAnimationFrame(() => {
         const el = document.querySelector<HTMLElement>('[aria-invalid="true"]');
@@ -315,7 +316,7 @@ export default function ResidentRequestsPage() {
 
   function advanceToReview() {
     setFormSubmitted(true);
-    if (formErrors.subject || formErrors.message || formErrors.requestedDate) {
+    if (hasRequiredErrors) {
       toast({ title: 'יש להשלים את השדות הנדרשים לפני האישור', variant: 'destructive' });
       return;
     }
@@ -550,9 +551,14 @@ export default function ResidentRequestsPage() {
             ) : null}
             {formStep === 3 ? (
               <>
-                <button type="button" className="gold-sheen-button flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-base font-semibold" data-accent-sheen="true" onClick={submitRequest} disabled={submitting}>
+                <button type="button" className="gold-sheen-button flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-base font-semibold" data-accent-sheen="true" onClick={submitRequest} disabled={submitting || hasRequiredErrors}>
                   {submitting ? 'שולח...' : 'שלח בקשה'}
                 </button>
+                {hasRequiredErrors ? (
+                  <FormActionHint>
+                    יש להשלים את שדות החובה המסומנים כדי לשלוח את הבקשה.
+                  </FormActionHint>
+                ) : null}
                 <Button type="button" variant="outline" className="w-full rounded-full min-h-[52px]" onClick={() => advanceComposer(2)}>
                   חזרה לפרטים
                 </Button>
@@ -595,7 +601,7 @@ export default function ResidentRequestsPage() {
                 <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.responseWindow}</div>
               </div>
 
-              <FormErrorSummary errors={visibleFormErrors} fieldLabels={fieldLabels} />
+              <FormErrorSummary errors={visibleFormErrors} fieldLabels={fieldLabels} sticky />
 
               {form.requestType === 'MOVING' ? (
                 <div className="space-y-4">
@@ -608,7 +614,7 @@ export default function ResidentRequestsPage() {
                   </FormField>
 
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <FormField label="תאריך מבוקש" error={shouldShowError('requestedDate') ? formErrors.requestedDate : ''}>
+                    <FormField label="תאריך מבוקש" fieldKey="requestedDate" error={shouldShowError('requestedDate') ? formErrors.requestedDate : ''}>
                       <Input
                         name="requestedDate"
                         aria-label="תאריך מבוקש"
@@ -709,7 +715,7 @@ export default function ResidentRequestsPage() {
               ) : null}
 
               <div className="grid gap-4">
-                <FormField label="נושא" required error={shouldShowError('subject') ? formErrors.subject : ''}>
+                <FormField label="נושא" fieldKey="subject" required error={shouldShowError('subject') ? formErrors.subject : ''}>
                   <Input
                     name="subject"
                     aria-label="נושא"
@@ -720,7 +726,7 @@ export default function ResidentRequestsPage() {
                   />
                 </FormField>
 
-                <FormField label="פרטי הבקשה" required error={shouldShowError('message') ? formErrors.message : ''}>
+                <FormField label="פרטי הבקשה" fieldKey="message" required error={shouldShowError('message') ? formErrors.message : ''}>
                   <Textarea
                     name="message"
                     aria-label="פרטי הבקשה"
