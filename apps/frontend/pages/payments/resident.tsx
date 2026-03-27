@@ -68,6 +68,8 @@ export default function ResidentPaymentsPage() {
   const { locale } = useLocale();
   const reducedMotion = useReducedMotion();
   const motionReduced = Boolean(reducedMotion);
+  const iconLayoutId = reducedMotion ? undefined : 'priority-tile-icon-payments';
+  const badgeLayoutId = reducedMotion ? undefined : 'priority-tile-badge-payments';
   const [context, setContext] = useState<AccountContext | null>(null);
   const [finance, setFinance] = useState<ResidentFinance | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<ResidentPaymentMethod[]>([]);
@@ -388,10 +390,30 @@ export default function ResidentPaymentsPage() {
       <motion.section {...residentScreenMotion(motionReduced)}>
         <ResidentHero
           eyebrow="תשלומים"
-          eyebrowIcon={<ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.85} />}
+          eyebrowIcon={
+            <motion.span
+              layoutId={iconLayoutId}
+              initial={motionReduced ? { opacity: 0.94 } : false}
+              animate={motionReduced ? { opacity: 1 } : undefined}
+              transition={motionReduced ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              className="inline-flex"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.85} />
+            </motion.span>
+          }
           title="מרכז תשלומים"
           subtitle={undefined}
-          badge={<div className="rounded-full border border-primary/12 bg-white/76 px-3 py-1.5 text-xs font-semibold text-primary">חשבון דייר</div>}
+          badge={
+            <motion.div
+              layoutId={badgeLayoutId}
+              initial={motionReduced ? { opacity: 0.92 } : false}
+              animate={motionReduced ? { opacity: 1 } : undefined}
+              transition={motionReduced ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              className="rounded-full border border-primary/12 bg-white/76 px-3 py-1.5 text-xs font-semibold text-primary"
+            >
+              חשבון דייר
+            </motion.div>
+          }
           floatingCard={
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">

@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, CalendarDays, CheckCircle2, FileText, Move, ParkingCircle, PhoneCall, Sparkles } from 'lucide-react';
 import { authFetch, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
@@ -107,6 +108,9 @@ type RequestDraftPayload = {
 export default function ResidentRequestsPage() {
   const router = useRouter();
   const { locale, t } = useLocale();
+  const prefersReducedMotion = useReducedMotion();
+  const iconLayoutId = prefersReducedMotion ? undefined : 'priority-tile-icon-resident-requests';
+  const badgeLayoutId = prefersReducedMotion ? undefined : 'priority-tile-badge-resident-requests';
   const [form, setForm] = useState(emptyForm);
   const [history, setHistory] = useState<RequestHistoryItem[]>([]);
   const [historyFilter, setHistoryFilter] = useState({ status: 'ALL', requestType: 'ALL' });
@@ -424,6 +428,26 @@ export default function ResidentRequestsPage() {
       <GlassSurface strength="strong" className="rounded-[28px] p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
+            <div className="mb-2 flex items-center gap-2 md:hidden">
+              <motion.span
+                layoutId={iconLayoutId}
+                initial={prefersReducedMotion ? { opacity: 0.94 } : false}
+                animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+                transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-primary/16 bg-primary/10 text-primary"
+              >
+                <FileText className="h-4 w-4" strokeWidth={1.85} />
+              </motion.span>
+              <motion.span
+                layoutId={badgeLayoutId}
+                initial={prefersReducedMotion ? { opacity: 0.92 } : false}
+                animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+                transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+                className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
+              >
+                {openRequests.length ? `${openRequests.length} פתוחות` : 'מסלולי שירות'}
+              </motion.span>
+            </div>
             <div className="text-[11px] font-semibold tracking-[0.12em] text-primary/72">בקשות</div>
             <div className="mt-1 text-[25px] font-black leading-[1.04] text-foreground">בקשות דייר</div>
             <div className="mt-1.5 text-[13px] leading-5 text-secondary-foreground">

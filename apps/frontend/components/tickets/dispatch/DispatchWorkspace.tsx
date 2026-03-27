@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { authFetch, getCurrentUserId, getEffectiveRole, hasRoleAccess } from '../../../lib/auth';
 import { CompactStatusStrip } from '../../ui/compact-status-strip';
@@ -43,6 +44,9 @@ const defaultCreateForm = {
 
 export function DispatchWorkspace() {
   const router = useRouter();
+  const prefersReducedMotion = useReducedMotion();
+  const iconLayoutId = prefersReducedMotion ? undefined : 'priority-tile-icon-tickets';
+  const badgeLayoutId = prefersReducedMotion ? undefined : 'priority-tile-badge-tickets';
   const searchRef = useRef<HTMLInputElement>(null);
   const technicianTriggerRef = useRef<HTMLButtonElement>(null);
   const statusTriggerRef = useRef<HTMLButtonElement>(null);
@@ -812,6 +816,26 @@ export function DispatchWorkspace() {
       <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label="משוך כדי לרענן את לוח הקריאות" />
 
       <div className="space-y-3 md:hidden">
+        <div className="flex items-center justify-between rounded-2xl border border-subtle-border bg-background/76 px-3 py-2">
+          <motion.span
+            layoutId={iconLayoutId}
+            initial={prefersReducedMotion ? { opacity: 0.94 } : false}
+            animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+            transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-primary/16 bg-primary/10 text-primary"
+          >
+            <Plus className="h-4 w-4" />
+          </motion.span>
+          <motion.span
+            layoutId={badgeLayoutId}
+            initial={prefersReducedMotion ? { opacity: 0.92 } : false}
+            animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+            transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+            className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
+          >
+            {dispatchData?.summary.open ?? 0} פתוחות
+          </motion.span>
+        </div>
         <CompactStatusStrip
           roleLabel={roleLabel}
           tone="admin"

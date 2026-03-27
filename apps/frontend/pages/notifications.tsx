@@ -1,5 +1,6 @@
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Bell, Filter, Radio, RefreshCw, Settings, SlidersHorizontal } from 'lucide-react';
 import { authFetch, getAccessToken, getCurrentUserId } from '../lib/auth';
 import { triggerHaptic } from '../lib/mobile';
@@ -68,6 +69,9 @@ function persistFilters(quickFilter: QuickFilter, searchTerm: string) {
 export default function NotificationsPage() {
   const { t } = useLocale();
   const router = useRouter();
+  const prefersReducedMotion = useReducedMotion();
+  const iconLayoutId = prefersReducedMotion ? undefined : 'priority-tile-icon-notifications';
+  const badgeLayoutId = prefersReducedMotion ? undefined : 'priority-tile-badge-notifications';
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -359,12 +363,28 @@ export default function NotificationsPage() {
         compact
         kicker={t('notifications.title')}
         eyebrow={
-          <>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <motion.span
+              layoutId={iconLayoutId}
+              initial={prefersReducedMotion ? { opacity: 0.94 } : false}
+              animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+              transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-white/20 bg-white/8 md:hidden"
+            >
+              <Bell className="h-4 w-4 text-white/90" strokeWidth={1.9} />
+            </motion.span>
             <StatusBadge label={liveConnected ? t('notifications.liveConnected') : t('notifications.liveDisconnected')} tone={liveConnected ? 'success' : 'warning'} />
-            <Badge variant="outline" className="border-white/12 bg-white/8 text-white/82">
-              {unreadCount} {t('notifications.unread')}
-            </Badge>
-          </>
+            <motion.span
+              layoutId={badgeLayoutId}
+              initial={prefersReducedMotion ? { opacity: 0.92 } : false}
+              animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+              transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+            >
+              <Badge variant="outline" className="border-white/12 bg-white/8 text-white/82">
+                {unreadCount} {t('notifications.unread')}
+              </Badge>
+            </motion.span>
+          </div>
         }
         title={t('notifications.title')}
         description={t('notifications.description')}
