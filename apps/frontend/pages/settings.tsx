@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
 import { Bell, CheckCircle2, Globe, KeyRound, Save, ShieldCheck, Smartphone, UserRound } from 'lucide-react';
 import { authFetch } from '../lib/auth';
 import { formatCurrency, formatDate, formatNumber, formatTime, regionalFormats } from '../lib/i18n';
@@ -34,10 +35,14 @@ const defaultPreferences: NotificationPreferences = {
 
 type ChannelPref = { key: string; label: string; description: string };
 type TopicPref = { key: string; label: string; description: string };
+type SettingsTabKey = 'profile' | 'security' | 'notifications' | 'language';
+const SETTINGS_TAB_KEYS: SettingsTabKey[] = ['profile', 'security', 'notifications', 'language'];
 
 export default function SettingsPage() {
+  const router = useRouter();
   const { t, regionalFormat } = useLocale();
   const { direction } = useDirection();
+  const [activeTab, setActiveTab] = useState<SettingsTabKey>('profile');
 
   const [profile, setProfile] = useState({ email: '', phone: '', pushToken: '' });
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '' });
@@ -56,6 +61,16 @@ export default function SettingsPage() {
   useEffect(() => {
     void loadSettings();
   }, []);
+
+  useEffect(() => {
+    const tabParam = router.query.tab;
+    const queryTab = typeof tabParam === 'string' ? tabParam : null;
+    if (queryTab && SETTINGS_TAB_KEYS.includes(queryTab as SettingsTabKey)) {
+      setActiveTab(queryTab as SettingsTabKey);
+      return;
+    }
+    setActiveTab('profile');
+  }, [router.query.tab]);
 
   async function loadSettings() {
     try {
@@ -295,7 +310,19 @@ export default function SettingsPage() {
         </Card>
       ) : null}
 
-      <Tabs defaultValue="profile" className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          const nextTab = value as SettingsTabKey;
+          setActiveTab(nextTab);
+          void router.replace(
+            { pathname: '/settings', query: nextTab === 'profile' ? {} : { tab: nextTab } },
+            undefined,
+            { shallow: true },
+          );
+        }}
+        className="space-y-4"
+      >
         <TabsList className="grid w-full grid-cols-2 gap-1 rounded-[24px] border border-subtle-border bg-muted/24 p-1 md:grid-cols-4">
           <TabsTrigger value="profile" className="gap-1.5 rounded-[18px]">
             <UserRound className="h-3.5 w-3.5" />
@@ -510,6 +537,8 @@ export default function SettingsPage() {
               <div className="rounded-[24px] border border-subtle-border bg-background/86 p-4 text-sm leading-6 text-muted-foreground">
                 {t('settings.preference.explanation')}
               </div>
+              {/* Migration note: this Notifications tab is the canonical preference editor.
+                  Keep labels and control names here in sync with /notifications summary to avoid duplicate editable forms. */}
             </CardContent>
           </Card>
 
