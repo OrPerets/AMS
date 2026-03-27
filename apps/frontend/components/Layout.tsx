@@ -210,7 +210,7 @@ export default function Layout({ children }: Props) {
                 : undefined
             }
           >
-            <ErrorBoundary fallback={CompactErrorFallback}>
+            <ErrorBoundary key={router.asPath} fallback={CompactErrorFallback}>
               {children}
             </ErrorBoundary>
           </div>
