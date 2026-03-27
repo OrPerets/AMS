@@ -132,7 +132,9 @@ export default function ResidentRequestsPage() {
   );
 
   const activeType = requestTypes.find((item) => item.value === form.requestType)!;
-  const { pullDistance, isRefreshing } = usePullToRefresh({
+  const { pullDistance, isRefreshing, threshold } = usePullToRefresh({
+    preset: 'detail',
+    onThresholdReached: () => triggerHaptic('light'),
     onRefresh: async () => {
       await loadHistory();
     },
@@ -396,7 +398,12 @@ export default function ResidentRequestsPage() {
 
   return (
     <div className="space-y-5 pb-4 sm:space-y-8">
-      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label="משוך כדי לרענן בקשות דייר" />
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        isRefreshing={isRefreshing}
+        threshold={threshold}
+        label="משוך כדי לרענן בקשות דייר"
+      />
 
       <div className="space-y-3 md:hidden">
         <CompactStatusStrip
