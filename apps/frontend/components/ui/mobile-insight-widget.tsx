@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { MOTION_DURATION, MOTION_EASE } from '../../lib/motion-tokens';
 
 type InsightTone = 'default' | 'warning' | 'danger' | 'success' | 'info';
 
@@ -209,7 +210,7 @@ export function MobileInsightWidget({
           ? { boxShadow: ['0 0 0 rgba(0,0,0,0)', '0 0 0 6px rgba(224,182,89,0)', '0 0 0 rgba(0,0,0,0)'] }
           : undefined
       }
-      transition={pulse && !reducedMotion ? { duration: 1.2, repeat: 1, ease: 'easeOut' } : undefined}
+      transition={pulse && !reducedMotion ? { duration: MOTION_DURATION.accentPulse, repeat: 1, ease: MOTION_EASE.standardOut } : undefined}
     >
       <InsightSurface
         href={href}
