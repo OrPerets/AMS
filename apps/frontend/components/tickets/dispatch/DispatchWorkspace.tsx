@@ -91,6 +91,10 @@ export function DispatchWorkspace() {
   const [escalating, setEscalating] = useState(false);
   const [triagePreview, setTriagePreview] = useState<SmartTriagePreview | null>(null);
   const [triageLoading, setTriageLoading] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const [updatedTicketIds, setUpdatedTicketIds] = useState<Set<number>>(new Set());
+  const lastPayloadSignaturesRef = useRef<Map<number, string>>(new Map());
+  const rowHighlightTimeoutRef = useRef<number | null>(null);
 
   const allPresets = useMemo(() => [...BUILTIN_PRESETS, ...customPresets], [customPresets]);
   const selectedTicket = useMemo(
@@ -158,6 +162,14 @@ export function DispatchWorkspace() {
     } else {
       setVendors([]);
     }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (rowHighlightTimeoutRef.current) {
+        window.clearTimeout(rowHighlightTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -306,7 +318,32 @@ export function DispatchWorkspace() {
       }
 
       const payload = (await response.json()) as DispatchResponse;
+      const nextSignatures = new Map<number, string>();
+      const changedIds: number[] = [];
+      payload.items.forEach((ticket) => {
+        const signature = [
+          ticket.status,
+          ticket.severity,
+          ticket.slaState,
+          ticket.assignedTo?.id ?? 'none',
+          ticket.latestActivityAt ?? 'none',
+          ticket.commentCount,
+          ticket.photoCount,
+        ].join('|');
+        nextSignatures.set(ticket.id, signature);
+        const previousSignature = lastPayloadSignaturesRef.current.get(ticket.id);
+        if (previousSignature && previousSignature !== signature) {
+          changedIds.push(ticket.id);
+        }
+      });
+      lastPayloadSignaturesRef.current = nextSignatures;
       setDispatchData(payload);
+      setLastSyncedAt(Date.now());
+      if (rowHighlightTimeoutRef.current) {
+        window.clearTimeout(rowHighlightTimeoutRef.current);
+      }
+      setUpdatedTicketIds(new Set(changedIds));
+      rowHighlightTimeoutRef.current = window.setTimeout(() => setUpdatedTicketIds(new Set()), 2200);
       const nextId =
         preferredTicketId && payload.items.some((ticket) => ticket.id === preferredTicketId)
           ? preferredTicketId
@@ -846,6 +883,7 @@ export function DispatchWorkspace() {
         <CompactStatusStrip
           roleLabel={roleLabel}
           tone="admin"
+          lastSyncedAt={lastSyncedAt}
           metrics={[
             { id: 'open', label: 'פתוחות', value: dispatchData?.summary.open ?? 0, tone: (dispatchData?.summary.open ?? 0) > 0 ? 'warning' : 'success' },
             { id: 'sla', label: 'SLA', value: dispatchData?.summary.breached ?? 0, tone: (dispatchData?.summary.breached ?? 0) > 0 ? 'danger' : 'default' },
@@ -858,6 +896,7 @@ export function DispatchWorkspace() {
           roleLabel={roleLabel}
           contextLabel={selectedPresetName}
           syncLabel={refreshing ? 'מרענן עכשיו' : 'סנכרון חי'}
+          lastSyncedAt={lastSyncedAt}
           chips={[
             `${dispatchData?.summary.open ?? 0} פתוחות`,
             `${dispatchData?.summary.unassigned ?? 0} ללא שיוך`,
@@ -914,6 +953,7 @@ export function DispatchWorkspace() {
           onSelectTicket={setSelectedTicketId}
           onToggleTicket={toggleTicketSelection}
           onToggleAllVisible={toggleAllVisible}
+          updatedTicketIds={updatedTicketIds}
         />
 
         <DispatchDetailPanel
