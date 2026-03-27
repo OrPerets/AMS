@@ -1,9 +1,12 @@
+import * as React from 'react';
 import { Building2, Camera, Filter, MessageSquare, Search, UserRound } from 'lucide-react';
 import { useReducedMotion } from 'framer-motion';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
+import { MobileRowActionsSheet, type MobileRowActionItem } from '../../ui/mobile-row-actions-sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { useLongPressActions } from '../../../hooks/use-long-press-actions';
 import type { DispatchResponse, DispatchTicket } from './types';
 import {
   formatRelative,
@@ -173,7 +176,25 @@ function TicketListCard({
   isUpdated: boolean;
 }) {
   const isUrgent = ticket.slaState === 'BREACHED' || ticket.severity === 'URGENT';
-  const reducedMotion = useReducedMotion();
+  const [actionsOpen, setActionsOpen] = React.useState(false);
+  const actions: MobileRowActionItem[] = [
+    {
+      id: 'open-ticket',
+      label: 'פתח פרטי קריאה',
+      description: 'מעבר לפירוט הקריאה ולפעולות מהירות.',
+      tone: 'primary',
+      onSelect,
+    },
+    {
+      id: checked ? 'unselect-ticket' : 'select-ticket',
+      label: checked ? 'בטל בחירה' : 'בחר לקריאה מרובה',
+      description: checked ? 'הסרת הקריאה מהרשימה הנבחרת.' : 'הוספת הקריאה לבחירה מרובה.',
+      onSelect: onToggle,
+    },
+  ];
+  const { longPressProps } = useLongPressActions({
+    onLongPress: () => setActionsOpen(true),
+  });
 
   return (
     <div
@@ -196,7 +217,7 @@ function TicketListCard({
           />
         </label>
 
-        <button type="button" onClick={onSelect} className="flex-1 text-right">
+        <button type="button" onClick={onSelect} className="flex-1 touch-pan-y text-right" {...longPressProps}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0 flex-1 space-y-2.5">
               <div className="flex flex-wrap items-center gap-1.5">
@@ -252,6 +273,14 @@ function TicketListCard({
           </div>
         </button>
       </div>
+      <MobileRowActionsSheet
+        title={`קריאה #${ticket.id}`}
+        description={ticket.title}
+        actions={actions}
+        open={actionsOpen}
+        onOpenChange={setActionsOpen}
+        hideTrigger
+      />
     </div>
   );
 }

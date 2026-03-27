@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import {
   AlertTriangle,
@@ -23,6 +24,8 @@ import { cn } from "../../lib/utils";
 import { Badge } from "./badge";
 import { Button } from "./button";
 import { Card } from "./card";
+import { MobileRowActionsSheet, type MobileRowActionItem } from "./mobile-row-actions-sheet";
+import { useLongPressActions } from "../../hooks/use-long-press-actions";
 
 export type NotificationPriority = "critical" | "needs_action" | "informational" | "completed";
 
@@ -150,6 +153,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   onDismiss,
   mode = "triage",
 }) => {
+  const router = useRouter();
   const { locale, t } = useLocale();
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [dragState, setDragState] = useState<{
@@ -158,6 +162,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   }>({ id: null, offset: 0 });
   const [snapBackId, setSnapBackId] = useState<NotificationItem["id"] | null>(null);
   const [showSwipeHint, setShowSwipeHint] = useState(false);
+  const [actionsNotificationId, setActionsNotificationId] = useState<NotificationItem["id"] | null>(null);
   const touchStartXRef = useRef<number | null>(null);
   const touchStartYRef = useRef<number | null>(null);
   const swipeLockedRef = useRef(false);
@@ -253,6 +258,30 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     const isDragging = dragState.id === notification.id;
     const isSnappingBack = snapBackId === notification.id;
     const isLeftSwipe = dragOffset < 0;
+    const isActionsOpen = actionsNotificationId === notification.id;
+    const openDefaultRoute = () => void router.push(action.href);
+    const { longPressProps } = useLongPressActions({
+      onLongPress: () => setActionsNotificationId(notification.id),
+    });
+    const rowActions: MobileRowActionItem[] = [
+      {
+        id: "open-notification-target",
+        label: action.label,
+        description: t("common.viewDetails"),
+        tone: "primary",
+        onSelect: openDefaultRoute,
+      },
+      ...(!notification.read
+        ? [
+            {
+              id: "mark-notification-read",
+              label: t("common.markAsRead"),
+              description: t("notifications.centerDescription"),
+              onSelect: () => onMarkAsRead?.(notification.id),
+            } satisfies MobileRowActionItem,
+          ]
+        : []),
+    ];
 
     return (
       <article
@@ -266,6 +295,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         style={{
           transform: isDragging || isSnappingBack ? `translateX(${dragOffset}px)` : undefined,
           touchAction: "pan-y",
+        }}
+        onClick={(event) => {
+          if ((event.target as HTMLElement).closest("a,button,input,textarea,select,[role='button']")) return;
+          openDefaultRoute();
         }}
         onTouchStart={(event) => {
           touchStartXRef.current = event.touches[0]?.clientX ?? null;
@@ -318,6 +351,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           swipeLockedRef.current = false;
           setDragState({ id: null, offset: 0 });
         }}
+        {...longPressProps}
       >
         <div
           className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4"
@@ -405,6 +439,14 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             </div>
           </div>
         </div>
+        <MobileRowActionsSheet
+          title={notification.title}
+          description={notification.message}
+          actions={rowActions}
+          open={isActionsOpen}
+          onOpenChange={(open) => setActionsNotificationId(open ? notification.id : null)}
+          hideTrigger
+        />
       </article>
     );
   };

@@ -14,6 +14,7 @@ import { FormActionHint, FormField, FormErrorSummary } from '../../components/ui
 import { Input } from '../../components/ui/input';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { MobileContextBar } from '../../components/ui/mobile-context-bar';
+import { MobileRowActionsSheet, type MobileRowActionItem } from '../../components/ui/mobile-row-actions-sheet';
 import { MobileCardSkeleton } from '../../components/ui/page-states';
 import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
 import { GlassSurface } from '../../components/ui/glass-surface';
@@ -30,6 +31,7 @@ import { AmsTabs } from '../../components/ui/ams-tabs';
 import { Textarea } from '../../components/ui/textarea';
 import { toast } from '../../components/ui/use-toast';
 import { usePullToRefresh } from '../../hooks/use-pull-to-refresh';
+import { useLongPressActions } from '../../hooks/use-long-press-actions';
 import { triggerHaptic } from '../../lib/mobile';
 import { showRequestSubmitted } from '../../lib/success-feedback';
 import {
@@ -1132,16 +1134,52 @@ function ReviewTile({ label, value }: { label: string; value: string }) {
 }
 
 function RequestHistoryList({ items, locale }: { items: RequestHistoryItem[]; locale: string }) {
+  const router = useRouter();
+
   return (
     <div className="space-y-3">
       {items.map((item, index) => (
-        <div key={item.requestKey} className="space-y-2">
+        <RequestHistoryCard key={item.requestKey} item={item} index={index} locale={locale} onNavigate={() => router.push(`/resident/requests?view=history&requestKey=${encodeURIComponent(item.requestKey)}`)} />
+      ))}
+    </div>
+  );
+}
+
+function RequestHistoryCard({
+  item,
+  index,
+  locale,
+  onNavigate,
+}: {
+  item: RequestHistoryItem;
+  index: number;
+  locale: string;
+  onNavigate: () => void;
+}) {
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const actions: MobileRowActionItem[] = [
+    {
+      id: 'open-request',
+      label: 'פתח מעקב בקשה',
+      description: 'מעבר למסך המעקב של הבקשה.',
+      tone: 'primary',
+      onSelect: onNavigate,
+    },
+  ];
+  const { longPressProps } = useLongPressActions({
+    onLongPress: () => setActionsOpen(true),
+  });
+
+  return (
+    <div className="space-y-2">
+      <div className="touch-pan-y" {...longPressProps}>
           <ResidentListCard
             title={item.subject.replace(/^[A-Z_]+:\s*/, '')}
             subtitle={item.message}
             icon={item.requestType === 'MOVING' ? Move : item.requestType === 'PARKING' ? ParkingCircle : item.requestType === 'DOCUMENT' ? FileText : item.requestType === 'CONTACT_UPDATE' ? PhoneCall : Sparkles}
             accent={item.status === 'SUBMITTED' || item.status === 'IN_REVIEW' ? 'warning' : 'success'}
             delay={index * 0.04}
+            onClick={onNavigate}
             meta={<StatusBadge label={getResidentRequestStatusLabel(item.status)} tone={getResidentRequestStatusTone(item.status)} className="px-1.5 py-0 h-4 text-[9px]" />}
             endSlot={
               <div className="flex flex-col items-end gap-1 shrink-0">
@@ -1150,25 +1188,33 @@ function RequestHistoryList({ items, locale }: { items: RequestHistoryItem[]; lo
               </div>
             }
           />
+      </div>
 
-          {item.statusNotes ? (
-            <GlassSurface className="rounded-[20px] px-3 py-2.5">
-              <div className="mb-1 flex items-center gap-1.5 text-[12px] font-bold text-primary">
-                <Sparkles className="h-3.5 w-3.5" strokeWidth={2.5} />
-                עדכון
-              </div>
-              <div className="text-[12px] leading-5 text-secondary-foreground">{item.statusNotes}</div>
-            </GlassSurface>
-          ) : null}
+      {item.statusNotes ? (
+        <GlassSurface className="rounded-[20px] px-3 py-2.5">
+          <div className="mb-1 flex items-center gap-1.5 text-[12px] font-bold text-primary">
+            <Sparkles className="h-3.5 w-3.5" strokeWidth={2.5} />
+            עדכון
+          </div>
+          <div className="text-[12px] leading-5 text-secondary-foreground">{item.statusNotes}</div>
+        </GlassSurface>
+      ) : null}
 
-          {item.requestedDate ? (
-            <div className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-warning">
-              <CalendarDays className="h-3.5 w-3.5" strokeWidth={2.5} />
-              <span>יעד: <bdi>{formatDate(item.requestedDate, locale)}</bdi></span>
-            </div>
-          ) : null}
+      {item.requestedDate ? (
+        <div className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-warning">
+          <CalendarDays className="h-3.5 w-3.5" strokeWidth={2.5} />
+          <span>יעד: <bdi>{formatDate(item.requestedDate, locale)}</bdi></span>
         </div>
-      ))}
+      ) : null}
+
+      <MobileRowActionsSheet
+        title={item.subject.replace(/^[A-Z_]+:\s*/, '')}
+        description={item.message}
+        actions={actions}
+        open={actionsOpen}
+        onOpenChange={setActionsOpen}
+        hideTrigger
+      />
     </div>
   );
 }
