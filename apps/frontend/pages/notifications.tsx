@@ -241,8 +241,10 @@ export default function NotificationsPage() {
     }
   };
 
-  const { pullDistance, isRefreshing } = usePullToRefresh({
+  const { pullDistance, isRefreshing, threshold } = usePullToRefresh({
     enabled: Boolean(currentUserId),
+    preset: 'list',
+    onThresholdReached: () => triggerHaptic('light'),
     onRefresh: async () => {
       await loadNotifications();
       await loadPreferences();
@@ -353,7 +355,12 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label={t('notifications.pullToRefresh')} />
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        isRefreshing={isRefreshing}
+        threshold={threshold}
+        label={t('notifications.pullToRefresh')}
+      />
 
       <PageHero
         compact

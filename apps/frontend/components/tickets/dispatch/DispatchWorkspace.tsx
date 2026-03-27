@@ -268,8 +268,10 @@ export function DispatchWorkspace() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [canDispatch, selectedTicket, dispatchData?.items]);
 
-  const { pullDistance, isRefreshing } = usePullToRefresh({
+  const { pullDistance, isRefreshing, threshold } = usePullToRefresh({
     enabled: Boolean(dispatchData),
+    preset: 'dashboard',
+    onThresholdReached: () => triggerHaptic('light'),
     onRefresh: async () => {
       await loadDispatch(selectedTicket?.id);
     },
@@ -809,7 +811,12 @@ export function DispatchWorkspace() {
 
   return (
     <div className="space-y-5 pb-4 sm:space-y-6">
-      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label="משוך כדי לרענן את לוח הקריאות" />
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        isRefreshing={isRefreshing}
+        threshold={threshold}
+        label="משוך כדי לרענן את לוח הקריאות"
+      />
 
       <div className="space-y-3 md:hidden">
         <CompactStatusStrip
