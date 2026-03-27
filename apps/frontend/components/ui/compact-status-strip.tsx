@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ShieldCheck } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAnimatedNumber } from '../../hooks/use-animated-number';
+import { MOTION_DURATION, MOTION_EASE } from '../../lib/motion-tokens';
 
 type StatusMetric = {
   id: string;
@@ -182,11 +183,11 @@ export function CompactStatusStrip({
                 transition={
                   shouldPulse && !reducedMotion
                     ? {
-                        duration: 0.9,
+                        duration: MOTION_DURATION.pulse,
                         repeat: 3,
-                        ease: 'easeInOut',
+                        ease: MOTION_EASE.standardInOut,
                       }
-                    : { duration: 0.2 }
+                    : { duration: MOTION_DURATION.instant }
                 }
               >
                 {shouldPulse && !reducedMotion ? (
@@ -200,7 +201,7 @@ export function CompactStatusStrip({
                     )}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: [0.12, 0.28, 0], scale: [0.92, 1.18, 1.28] }}
-                    transition={{ duration: 0.9, repeat: 3, ease: 'easeOut' }}
+                    transition={{ duration: MOTION_DURATION.pulse, repeat: 3, ease: MOTION_EASE.standardOut }}
                     aria-hidden="true"
                   />
                 ) : null}

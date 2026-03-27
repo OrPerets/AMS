@@ -10,6 +10,7 @@ import { cn } from '../../lib/utils';
 import { useDirection, useLocale } from '../../lib/providers';
 import { triggerHaptic } from '../../lib/mobile';
 import { useTouchHoldLift } from './mobile-card-effects';
+import { MOTION_DISTANCE, MOTION_DURATION, MOTION_SPRING, MOTION_STAGGER } from '../../lib/motion-tokens';
 
 type InboxTone = 'neutral' | 'active' | 'success' | 'warning' | 'danger';
 
@@ -93,10 +94,10 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
     <motion.div
       ref={ref}
       layout
-      initial={reducedMotion ? false : { opacity: 0, y: 16, scale: 0.98 }}
+      initial={reducedMotion ? false : { opacity: 0, y: MOTION_DISTANCE.sm, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -14, scale: 0.98 }}
-      transition={{ layout: { type: 'spring', stiffness: 320, damping: 30 }, duration: 0.28, delay: reducedMotion ? 0 : index * 0.04 }}
+      exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -MOTION_DISTANCE.xs, scale: 0.98 }}
+      transition={{ layout: MOTION_SPRING.layout, duration: MOTION_DURATION.moderate, delay: reducedMotion ? 0 : index * MOTION_STAGGER.quick }}
       role="listitem"
       aria-label={`${item.status} ${item.title}`}
       className="relative overflow-hidden rounded-2xl"
@@ -120,8 +121,8 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
         )}
         layout
         style={{ x: offset, touchAction: 'pan-y' }}
-        animate={hold.isHolding && !reducedMotion ? { y: -3, scale: 1.01 } : { y: 0, scale: 1 }}
-        transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+        animate={hold.isHolding && !reducedMotion ? { y: -MOTION_DISTANCE.xxs, scale: 1.01 } : { y: 0, scale: 1 }}
+        transition={MOTION_SPRING.cardTight}
         onTouchStart={(event) => {
           touchStartXRef.current = event.touches[0]?.clientX ?? null;
           touchStartYRef.current = event.touches[0]?.clientY ?? null;
