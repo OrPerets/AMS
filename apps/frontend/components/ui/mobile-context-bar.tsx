@@ -3,11 +3,13 @@ import { Clock3, RefreshCw, ShieldCheck } from 'lucide-react';
 import { Badge } from './badge';
 import { cn } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
+import { useSyncDeltaLabel } from '../../hooks/use-sync-delta-label';
 
 type MobileContextBarProps = {
   roleLabel: string;
   contextLabel?: string;
   syncLabel?: string;
+  lastSyncedAt?: number | null;
   lastUpdated?: string;
   chips?: string[];
   className?: string;
@@ -17,12 +19,14 @@ export function MobileContextBar({
   roleLabel,
   contextLabel,
   syncLabel,
+  lastSyncedAt,
   lastUpdated,
   chips = [],
   className,
 }: MobileContextBarProps) {
   const { t } = useLocale();
   const resolvedSyncLabel = syncLabel ?? t('mobileContext.syncLive');
+  const syncDeltaLabel = useSyncDeltaLabel(lastSyncedAt ?? null);
 
   return (
     <section
@@ -40,7 +44,7 @@ export function MobileContextBar({
         {contextLabel ? <Badge variant="outline">{contextLabel}</Badge> : null}
         <Badge variant="outline" className="gap-1.5 text-muted-foreground">
           <RefreshCw className="h-3.5 w-3.5" />
-          {resolvedSyncLabel}
+          {resolvedSyncLabel} · {syncDeltaLabel}
         </Badge>
       </div>
 
