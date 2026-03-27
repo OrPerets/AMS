@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ShieldCheck } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAnimatedNumber } from '../../hooks/use-animated-number';
+import { useSyncDeltaLabel } from '../../hooks/use-sync-delta-label';
 
 type StatusMetric = {
   id: string;
@@ -41,6 +42,7 @@ export function CompactStatusStrip({
   icon,
   metrics,
   contextChips,
+  lastSyncedAt,
   className,
   tone = 'default',
 }: {
@@ -48,11 +50,14 @@ export function CompactStatusStrip({
   icon?: React.ReactNode;
   metrics: StatusMetric[];
   contextChips?: StatusContextChip[];
+  lastSyncedAt?: number | null;
   className?: string;
   tone?: 'default' | 'resident' | 'pm' | 'admin';
 }) {
   const reducedMotion = useReducedMotion();
   const [pulsingMetricId, setPulsingMetricId] = React.useState<string | null>(null);
+  const freshnessLabel = useSyncDeltaLabel(lastSyncedAt ?? null);
+  const justSynced = Boolean(lastSyncedAt && Date.now() - lastSyncedAt < 8_000);
 
   const highlightedMetricId = React.useMemo(() => {
     const visibleMetrics = metrics.slice(0, 2);
@@ -95,7 +100,8 @@ export function CompactStatusStrip({
       )}
       aria-label={roleLabel}
     >
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="flex min-w-0 flex-col items-start gap-1">
+        <div className="flex min-w-0 items-center gap-2">
         <span
           className={cn(
             'flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-[14px]',
@@ -107,6 +113,16 @@ export function CompactStatusStrip({
         </span>
         <span className="truncate text-[13px] font-semibold text-foreground">
           {roleLabel}
+        </span>
+        </div>
+        <span
+          className={cn(
+            'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground',
+            justSynced && 'border-primary/18 text-primary',
+            !reducedMotion && justSynced && 'animate-pulse',
+          )}
+        >
+          {freshnessLabel}
         </span>
       </div>
 
@@ -182,11 +198,11 @@ export function CompactStatusStrip({
                 transition={
                   shouldPulse && !reducedMotion
                     ? {
-                        duration: 0.9,
+                        duration: MOTION_DURATION.pulse,
                         repeat: 3,
-                        ease: 'easeInOut',
+                        ease: MOTION_EASE.standardInOut,
                       }
-                    : { duration: 0.2 }
+                    : { duration: MOTION_DURATION.instant }
                 }
               >
                 {shouldPulse && !reducedMotion ? (
@@ -200,7 +216,7 @@ export function CompactStatusStrip({
                     )}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: [0.12, 0.28, 0], scale: [0.92, 1.18, 1.28] }}
-                    transition={{ duration: 0.9, repeat: 3, ease: 'easeOut' }}
+                    transition={{ duration: MOTION_DURATION.pulse, repeat: 3, ease: MOTION_EASE.standardOut }}
                     aria-hidden="true"
                   />
                 ) : null}

@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, type LucideIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { GlassSurface } from './glass-surface';
+import { MOTION_DURATION, MOTION_EASE } from '../../lib/motion-tokens';
 
 type ResidentListCardProps = {
   title: React.ReactNode;
@@ -69,7 +70,7 @@ export function ResidentListCard({
     <motion.div
       initial={reducedMotion ? false : { opacity: 0, y: 12 }}
       animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
-      transition={{ duration: 0.22, delay: reducedMotion ? 0 : delay, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: MOTION_DURATION.fast, delay: reducedMotion ? 0 : delay, ease: MOTION_EASE.emphasized }}
     >
       {href ? (
         <Link href={href} className={wrapperClass}>

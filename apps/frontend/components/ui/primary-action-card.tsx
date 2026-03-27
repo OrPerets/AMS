@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, CheckCircle2, CircleAlert } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useMobileDepthEffect, useTouchHoldLift } from './mobile-card-effects';
+import { MOTION_DISTANCE, MOTION_SPRING } from '../../lib/motion-tokens';
 
 type PrimaryActionTone = 'default' | 'warning' | 'danger' | 'success';
 type PrimaryActionPulseMetric = {
@@ -56,8 +57,8 @@ export function PrimaryActionCard({
     <motion.div
       ref={depthRef as React.Ref<HTMLDivElement>}
       whileTap={reducedMotion ? undefined : { scale: 0.985 }}
-      animate={hold.isHolding && !reducedMotion ? { y: -3, scale: 1.01 } : { y: 0, scale: 1 }}
-      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+      animate={hold.isHolding && !reducedMotion ? { y: -MOTION_DISTANCE.xxs, scale: 1.01 } : { y: 0, scale: 1 }}
+      transition={MOTION_SPRING.card}
       className={cn(
         'overflow-hidden border border-s-4 text-right transition-[transform,box-shadow,filter] duration-300',
         density === 'compact' ? 'rounded-2xl p-3 md:rounded-[22px] md:p-3' : 'rounded-2xl p-3 md:rounded-[26px] md:p-3.5',

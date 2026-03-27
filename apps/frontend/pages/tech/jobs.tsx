@@ -1,6 +1,7 @@
 // /Users/orperetz/Documents/AMS/apps/frontend/pages/tech/jobs.tsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useReducedMotion } from 'framer-motion';
 import { 
   CheckCircle, 
   Clock, 
@@ -66,7 +67,41 @@ export default function Jobs() {
   const [orders, setOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const [updatedOrderIds, setUpdatedOrderIds] = useState<Set<number>>(new Set());
   const { locale } = useLocale();
+  const reducedMotion = useReducedMotion();
+  const lastOrderSignaturesRef = useRef<Map<number, string>>(new Map());
+  const rowHighlightTimeoutRef = useRef<number | null>(null);
+
+  const commitOrders = (nextOrders: WorkOrder[]) => {
+    const nextSignatures = new Map<number, string>();
+    const changedIds: number[] = [];
+    nextOrders.forEach((order) => {
+      const signature = [
+        order.status,
+        order.ticket.status,
+        order.ticket.severity,
+        order.ticket.title ?? '',
+        order.dueTime ?? '',
+        order.assignedAt ?? '',
+        order.costEstimate ?? '',
+      ].join('|');
+      nextSignatures.set(order.id, signature);
+      const previousSignature = lastOrderSignaturesRef.current.get(order.id);
+      if (previousSignature && previousSignature !== signature) {
+        changedIds.push(order.id);
+      }
+    });
+    lastOrderSignaturesRef.current = nextSignatures;
+    setOrders(nextOrders);
+    setLastSyncedAt(Date.now());
+    if (rowHighlightTimeoutRef.current) {
+      window.clearTimeout(rowHighlightTimeoutRef.current);
+    }
+    setUpdatedOrderIds(new Set(changedIds));
+    rowHighlightTimeoutRef.current = window.setTimeout(() => setUpdatedOrderIds(new Set()), 2200);
+  };
 
   const loadJobs = async () => {
       try {
@@ -83,10 +118,10 @@ export default function Jobs() {
               })
               .map((o: any) => ({ ...o, status: o.ticket.status }))
           : [];
-        setOrders(mapped);
+        commitOrders(mapped);
       } else {
         // Mock data for demo
-        setOrders([
+        commitOrders([
           {
             id: 1,
             ticket: {
@@ -178,6 +213,14 @@ export default function Jobs() {
 
   useEffect(() => {
     loadJobs();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (rowHighlightTimeoutRef.current) {
+        window.clearTimeout(rowHighlightTimeoutRef.current);
+      }
+    };
   }, []);
 
   const handleRefresh = () => {
@@ -285,6 +328,7 @@ export default function Jobs() {
       <div className="space-y-3 md:hidden">
         <CompactStatusStrip
           roleLabel="טכנאי"
+          lastSyncedAt={lastSyncedAt}
           metrics={[
             { id: 'jobs', label: 'משימות', value: todayStats.total, tone: todayStats.total > 0 ? 'warning' : 'success' },
             { id: 'urgent', label: 'דחוף', value: todayStats.urgent, tone: todayStats.urgent > 0 ? 'danger' : 'success' },
@@ -478,7 +522,8 @@ export default function Jobs() {
                 className={cn(
                   "transition-all duration-200 hover:shadow-md",
                   order.status === 'IN_PROGRESS' && "ring-2 ring-info/20",
-                  order.ticket.severity === 'URGENT' && "ring-2 ring-destructive/20"
+                  order.ticket.severity === 'URGENT' && "ring-2 ring-destructive/20",
+                  updatedOrderIds.has(order.id) && (reducedMotion ? "ring-2 ring-primary/25" : "ring-2 ring-primary/25 animate-[pulse_1.2s_ease-out_1]")
                 )}
               >
                 <CardHeader className="pb-3">
@@ -489,6 +534,11 @@ export default function Jobs() {
                           {getSeverityIcon(order.ticket.severity)}
                           <span className="ms-1">{severity.label}</span>
                         </Badge>
+                        {updatedOrderIds.has(order.id) && (
+                          <Badge variant="outline" className="text-[10px] text-primary">
+                            עודכן
+                          </Badge>
+                        )}
                         {order.status === 'IN_PROGRESS' && (
                           <Badge variant="info" className="text-xs">בביצוע</Badge>
                         )}

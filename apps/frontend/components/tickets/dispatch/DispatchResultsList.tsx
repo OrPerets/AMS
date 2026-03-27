@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Building2, Camera, Filter, MessageSquare, Search, UserRound } from 'lucide-react';
+import { useReducedMotion } from 'framer-motion';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
@@ -31,6 +32,7 @@ export function DispatchResultsList({
   onSelectTicket,
   onToggleTicket,
   onToggleAllVisible,
+  updatedTicketIds,
 }: {
   dispatchData: DispatchResponse | null;
   selectedTicketId: number | null;
@@ -47,6 +49,7 @@ export function DispatchResultsList({
   onSelectTicket: (ticketId: number) => void;
   onToggleTicket: (ticketId: number) => void;
   onToggleAllVisible: () => void;
+  updatedTicketIds: Set<number>;
 }) {
   const allVisibleSelected = Boolean(dispatchData?.items.length) && dispatchData!.items.every((ticket) => selectedIds.includes(ticket.id));
 
@@ -140,6 +143,7 @@ export function DispatchResultsList({
               checked={selectedIds.includes(ticket.id)}
               onSelect={() => onSelectTicket(ticket.id)}
               onToggle={() => onToggleTicket(ticket.id)}
+              isUpdated={updatedTicketIds.has(ticket.id)}
             />
           ))
         ) : (
@@ -162,12 +166,14 @@ function TicketListCard({
   checked,
   onSelect,
   onToggle,
+  isUpdated,
 }: {
   ticket: DispatchTicket;
   selected: boolean;
   checked: boolean;
   onSelect: () => void;
   onToggle: () => void;
+  isUpdated: boolean;
 }) {
   const isUrgent = ticket.slaState === 'BREACHED' || ticket.severity === 'URGENT';
   const [actionsOpen, setActionsOpen] = React.useState(false);
@@ -196,7 +202,9 @@ function TicketListCard({
         selected
           ? 'border-primary/24 border-s-primary bg-[linear-gradient(180deg,rgba(215,164,62,0.18)_0%,rgba(255,250,240,0.96)_100%)] text-foreground shadow-[0_24px_56px_-38px_rgba(84,58,15,0.34)]'
           : `border-subtle-border ${severityBorderColors[ticket.severity]} bg-background/86 hover:border-primary/16 hover:bg-white hover:shadow-card`
-      } ${isUrgent && !selected ? 'ring-1 ring-destructive/16' : ''}`}
+      } ${isUrgent && !selected ? 'ring-1 ring-destructive/16' : ''} ${
+        isUpdated ? (reducedMotion ? 'ring-2 ring-primary/25' : 'ring-2 ring-primary/25 animate-[pulse_1.2s_ease-out_1]') : ''
+      }`}
     >
       <div className="flex gap-3">
         <label className="mt-1 flex items-start">
@@ -216,6 +224,7 @@ function TicketListCard({
                 <Badge variant={selected ? 'secondary' : 'outline'} className="text-[11px]">
                   #{ticket.id}
                 </Badge>
+                {isUpdated ? <Badge variant="outline" className="text-[10px] text-primary">עודכן</Badge> : null}
                 <TicketSeverityBadge severity={ticket.severity} />
                 <TicketStatusBadge status={ticket.status} />
                 <SlaBadge state={ticket.slaState} />

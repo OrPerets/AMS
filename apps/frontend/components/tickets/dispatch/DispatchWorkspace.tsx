@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { authFetch, getCurrentUserId, getEffectiveRole, hasRoleAccess } from '../../../lib/auth';
 import { CompactStatusStrip } from '../../ui/compact-status-strip';
@@ -43,6 +44,9 @@ const defaultCreateForm = {
 
 export function DispatchWorkspace() {
   const router = useRouter();
+  const prefersReducedMotion = useReducedMotion();
+  const iconLayoutId = prefersReducedMotion ? undefined : 'priority-tile-icon-tickets';
+  const badgeLayoutId = prefersReducedMotion ? undefined : 'priority-tile-badge-tickets';
   const searchRef = useRef<HTMLInputElement>(null);
   const technicianTriggerRef = useRef<HTMLButtonElement>(null);
   const statusTriggerRef = useRef<HTMLButtonElement>(null);
@@ -87,6 +91,10 @@ export function DispatchWorkspace() {
   const [escalating, setEscalating] = useState(false);
   const [triagePreview, setTriagePreview] = useState<SmartTriagePreview | null>(null);
   const [triageLoading, setTriageLoading] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const [updatedTicketIds, setUpdatedTicketIds] = useState<Set<number>>(new Set());
+  const lastPayloadSignaturesRef = useRef<Map<number, string>>(new Map());
+  const rowHighlightTimeoutRef = useRef<number | null>(null);
 
   const allPresets = useMemo(() => [...BUILTIN_PRESETS, ...customPresets], [customPresets]);
   const selectedTicket = useMemo(
@@ -154,6 +162,14 @@ export function DispatchWorkspace() {
     } else {
       setVendors([]);
     }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (rowHighlightTimeoutRef.current) {
+        window.clearTimeout(rowHighlightTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -268,8 +284,10 @@ export function DispatchWorkspace() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [canDispatch, selectedTicket, dispatchData?.items]);
 
-  const { pullDistance, isRefreshing } = usePullToRefresh({
+  const { pullDistance, isRefreshing, threshold } = usePullToRefresh({
     enabled: Boolean(dispatchData),
+    preset: 'dashboard',
+    onThresholdReached: () => triggerHaptic('light'),
     onRefresh: async () => {
       await loadDispatch(selectedTicket?.id);
     },
@@ -300,7 +318,32 @@ export function DispatchWorkspace() {
       }
 
       const payload = (await response.json()) as DispatchResponse;
+      const nextSignatures = new Map<number, string>();
+      const changedIds: number[] = [];
+      payload.items.forEach((ticket) => {
+        const signature = [
+          ticket.status,
+          ticket.severity,
+          ticket.slaState,
+          ticket.assignedTo?.id ?? 'none',
+          ticket.latestActivityAt ?? 'none',
+          ticket.commentCount,
+          ticket.photoCount,
+        ].join('|');
+        nextSignatures.set(ticket.id, signature);
+        const previousSignature = lastPayloadSignaturesRef.current.get(ticket.id);
+        if (previousSignature && previousSignature !== signature) {
+          changedIds.push(ticket.id);
+        }
+      });
+      lastPayloadSignaturesRef.current = nextSignatures;
       setDispatchData(payload);
+      setLastSyncedAt(Date.now());
+      if (rowHighlightTimeoutRef.current) {
+        window.clearTimeout(rowHighlightTimeoutRef.current);
+      }
+      setUpdatedTicketIds(new Set(changedIds));
+      rowHighlightTimeoutRef.current = window.setTimeout(() => setUpdatedTicketIds(new Set()), 2200);
       const nextId =
         preferredTicketId && payload.items.some((ticket) => ticket.id === preferredTicketId)
           ? preferredTicketId
@@ -809,12 +852,38 @@ export function DispatchWorkspace() {
 
   return (
     <div className="space-y-5 pb-4 sm:space-y-6">
-      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label="משוך כדי לרענן את לוח הקריאות" />
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        isRefreshing={isRefreshing}
+        threshold={threshold}
+        label="משוך כדי לרענן את לוח הקריאות"
+      />
 
       <div className="space-y-3 md:hidden">
+        <div className="flex items-center justify-between rounded-2xl border border-subtle-border bg-background/76 px-3 py-2">
+          <motion.span
+            layoutId={iconLayoutId}
+            initial={prefersReducedMotion ? { opacity: 0.94 } : false}
+            animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+            transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-primary/16 bg-primary/10 text-primary"
+          >
+            <Plus className="h-4 w-4" />
+          </motion.span>
+          <motion.span
+            layoutId={badgeLayoutId}
+            initial={prefersReducedMotion ? { opacity: 0.92 } : false}
+            animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+            transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+            className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
+          >
+            {dispatchData?.summary.open ?? 0} פתוחות
+          </motion.span>
+        </div>
         <CompactStatusStrip
           roleLabel={roleLabel}
           tone="admin"
+          lastSyncedAt={lastSyncedAt}
           metrics={[
             { id: 'open', label: 'פתוחות', value: dispatchData?.summary.open ?? 0, tone: (dispatchData?.summary.open ?? 0) > 0 ? 'warning' : 'success' },
             { id: 'sla', label: 'SLA', value: dispatchData?.summary.breached ?? 0, tone: (dispatchData?.summary.breached ?? 0) > 0 ? 'danger' : 'default' },
@@ -827,6 +896,7 @@ export function DispatchWorkspace() {
           roleLabel={roleLabel}
           contextLabel={selectedPresetName}
           syncLabel={refreshing ? 'מרענן עכשיו' : 'סנכרון חי'}
+          lastSyncedAt={lastSyncedAt}
           chips={[
             `${dispatchData?.summary.open ?? 0} פתוחות`,
             `${dispatchData?.summary.unassigned ?? 0} ללא שיוך`,
@@ -883,6 +953,7 @@ export function DispatchWorkspace() {
           onSelectTicket={setSelectedTicketId}
           onToggleTicket={toggleTicketSelection}
           onToggleAllVisible={toggleAllVisible}
+          updatedTicketIds={updatedTicketIds}
         />
 
         <DispatchDetailPanel
