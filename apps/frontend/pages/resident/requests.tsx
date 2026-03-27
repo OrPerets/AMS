@@ -99,6 +99,11 @@ const emptyForm = {
   extraContact: '',
 };
 
+type RequestDraftPayload = {
+  form: typeof emptyForm;
+  formStep: 1 | 2 | 3;
+};
+
 export default function ResidentRequestsPage() {
   const router = useRouter();
   const { locale, t } = useLocale();
@@ -117,6 +122,14 @@ export default function ResidentRequestsPage() {
   const [submittedRequestKey, setSubmittedRequestKey] = useState<string | null>(null);
   const [submittedRequestType, setSubmittedRequestType] = useState<string | null>(null);
   const [view, setView] = useState<'new' | 'history'>('history');
+  const [draftRestored, setDraftRestored] = useState(false);
+  const draftHydratedRef = React.useRef(false);
+  const currentUserId = getCurrentUserId() || 'anonymous';
+  const currentRole = getEffectiveRole() || 'RESIDENT';
+  const draftStorageKey = useMemo(
+    () => `resident-requests-draft:${currentUserId}:${currentRole}`,
+    [currentRole, currentUserId],
+  );
 
   const activeType = requestTypes.find((item) => item.value === form.requestType)!;
   const { pullDistance, isRefreshing } = usePullToRefresh({
@@ -140,6 +153,47 @@ export default function ResidentRequestsPage() {
     setComposerOpen(nextView === 'new');
     setFormStep(1);
   }, [router.isReady, router.query.view]);
+
+  useEffect(() => {
+    draftHydratedRef.current = false;
+    setDraftRestored(false);
+  }, [draftStorageKey]);
+
+  useEffect(() => {
+    if (!composerOpen || draftHydratedRef.current) return;
+    draftHydratedRef.current = true;
+    if (typeof window === 'undefined') return;
+
+    const serializedDraft = window.localStorage.getItem(draftStorageKey);
+    if (!serializedDraft) return;
+
+    try {
+      const parsedDraft = JSON.parse(serializedDraft) as Partial<RequestDraftPayload>;
+      if (parsedDraft.form && typeof parsedDraft.form === 'object') {
+        setForm((current) => ({ ...current, ...parsedDraft.form }));
+      }
+      if (parsedDraft.formStep && [1, 2, 3].includes(parsedDraft.formStep)) {
+        setFormStep(parsedDraft.formStep);
+      }
+      setDraftRestored(true);
+    } catch (error) {
+      console.error(error);
+      window.localStorage.removeItem(draftStorageKey);
+    }
+  }, [composerOpen, draftStorageKey]);
+
+  useEffect(() => {
+    if (!composerOpen || typeof window === 'undefined') return;
+    const timeoutId = window.setTimeout(() => {
+      const draftPayload: RequestDraftPayload = {
+        form,
+        formStep,
+      };
+      window.localStorage.setItem(draftStorageKey, JSON.stringify(draftPayload));
+    }, 350);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [composerOpen, draftStorageKey, form, formStep]);
 
   useEffect(() => {
     if (view !== 'new' || !composerOpen) return;
@@ -261,6 +315,9 @@ export default function ResidentRequestsPage() {
       triggerHaptic('success');
       setSubmittedRequestKey(payload?.requestKey || `REQ-${new Date().getTime().toString().slice(-6)}`);
       setSubmittedRequestType(form.requestType);
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(draftStorageKey);
+      }
       setForm(emptyForm);
       setDraftAttachment(null);
       setFormTouched({});
@@ -300,12 +357,26 @@ export default function ResidentRequestsPage() {
     setComposerOpen(true);
     setFormStep(nextStep);
     setSubmitError(null);
+    setDraftRestored(false);
     setView('new');
     triggerHaptic('light');
   }
 
   function closeComposer() {
     setComposerOpen(false);
+  }
+
+  function clearDraft() {
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(draftStorageKey);
+    }
+    setForm(emptyForm);
+    setFormTouched({});
+    setFormSubmitted(false);
+    setSubmitError(null);
+    setFormStep(1);
+    setDraftAttachment(null);
+    setDraftRestored(false);
   }
 
   function advanceComposer(nextStep: 1 | 2 | 3) {
@@ -573,6 +644,20 @@ export default function ResidentRequestsPage() {
         )}
       >
         <div className="space-y-4">
+          {draftRestored ? (
+            <div className="flex items-center justify-between gap-3 rounded-[16px] border border-subtle-border bg-muted/40 px-3 py-2 text-sm">
+              <span className="font-medium text-foreground">טיוטה שוחזרה</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-auto rounded-full px-3 py-1 text-secondary-foreground"
+                onClick={clearDraft}
+              >
+                נקה טיוטה
+              </Button>
+            </div>
+          ) : null}
           <RequestFlowProgress currentStep={formStep} items={stepSummaries} />
 
           {formStep === 1 ? (
