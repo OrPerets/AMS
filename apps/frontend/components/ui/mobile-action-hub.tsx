@@ -8,6 +8,13 @@ import { MiniSparkline } from './mobile-insight-widget';
 
 type IconType = React.ComponentType<{ className?: string; strokeWidth?: number }>;
 
+const SHARED_PRIORITY_LAYOUTS = {
+  tickets: { icon: 'priority-tile-icon-tickets', badge: 'priority-tile-badge-tickets' },
+  notifications: { icon: 'priority-tile-icon-notifications', badge: 'priority-tile-badge-notifications' },
+  requests: { icon: 'priority-tile-icon-resident-requests', badge: 'priority-tile-badge-resident-requests' },
+  payments: { icon: 'priority-tile-icon-payments', badge: 'priority-tile-badge-payments' },
+} as const;
+
 export type MobileActionHubItem = {
   id: string;
   label: string;
@@ -39,6 +46,15 @@ function toneClasses(accent: MobileActionHubItem['accent']) {
     default:
       return 'border-primary/16 bg-primary/10 text-primary';
   }
+}
+
+function resolveSharedPriorityLayout(item: MobileActionHubItem) {
+  const href = item.href?.split('?')[0] ?? '';
+  if (href.startsWith('/tickets')) return SHARED_PRIORITY_LAYOUTS.tickets;
+  if (href.startsWith('/notifications')) return SHARED_PRIORITY_LAYOUTS.notifications;
+  if (href.startsWith('/resident/requests')) return SHARED_PRIORITY_LAYOUTS.requests;
+  if (href.startsWith('/payments')) return SHARED_PRIORITY_LAYOUTS.payments;
+  return null;
 }
 
 function TileShell({
@@ -86,6 +102,9 @@ function ActionTile({
   const Icon = item.icon;
   const isSelected = Boolean(item.selected || item.emphasize);
   const priority = item.priority ?? (isSelected ? 'primary' : 'secondary');
+  const sharedPriorityLayout = priority === 'primary' ? resolveSharedPriorityLayout(item) : null;
+  const iconLayoutId = reducedMotion ? undefined : sharedPriorityLayout?.icon;
+  const badgeLayoutId = reducedMotion ? undefined : sharedPriorityLayout?.badge;
 
   return (
     <motion.div
@@ -117,7 +136,11 @@ function ActionTile({
       >
         <div className={cn('flex h-full flex-col', layout === 'hierarchy' && priority === 'primary' ? 'items-stretch text-start' : 'items-center')}>
           <div className="flex w-full items-start justify-between gap-2">
-            <span
+            <motion.span
+              layoutId={iconLayoutId}
+              initial={reducedMotion ? { opacity: 0.94 } : false}
+              animate={reducedMotion ? { opacity: 1 } : undefined}
+              transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
               className={cn(
                 'flex items-center justify-center rounded-xl border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]',
                 layout === 'hierarchy' && priority === 'utility'
@@ -131,16 +154,28 @@ function ActionTile({
               )}
             >
               <Icon className={cn(density === 'compact' ? 'h-3.5 w-3.5 sm:h-4 sm:w-4' : 'h-4 w-4 sm:h-5 sm:w-5')} strokeWidth={1.75} />
-            </span>
+            </motion.span>
             {item.badge !== undefined && item.badge !== '' ? (
-              <span className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+              <motion.span
+                layoutId={badgeLayoutId}
+                initial={reducedMotion ? { opacity: 0.92 } : false}
+                animate={reducedMotion ? { opacity: 1 } : undefined}
+                transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+                className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
+              >
                 {item.badge}
-              </span>
+              </motion.span>
             ) : isSelected ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-primary/18 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+              <motion.span
+                layoutId={badgeLayoutId}
+                initial={reducedMotion ? { opacity: 0.92 } : false}
+                animate={reducedMotion ? { opacity: 1 } : undefined}
+                transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+                className="inline-flex items-center gap-1 rounded-full border border-primary/18 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
+              >
                 <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.9} />
                 נבחר
-              </span>
+              </motion.span>
             ) : null}
           </div>
 

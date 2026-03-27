@@ -15,6 +15,7 @@ import { cn } from '../lib/utils';
 import { Toaster as SonnerToaster } from 'sonner';
 import { PwaInstallPrompt } from '../components/pwa/PwaInstallPrompt';
 import { BottomSurfaceProvider } from '../lib/bottom-surface';
+import { MOTION_DISTANCE, MOTION_DURATION, MOTION_EASE } from '../lib/motion-tokens';
 
 // Font configuration
 const inter = Inter({
@@ -42,10 +43,10 @@ function RouteTransitionIndicator({ active }: { active: boolean }) {
         <motion.div
           key="route-transition-indicator"
           className="pointer-events-none fixed inset-x-0 top-0 z-[120] h-1 origin-left bg-gradient-to-r from-primary via-primary/80 to-primary/30 shadow-[0_0_24px_rgba(201,156,72,0.35)]"
-          initial={{ opacity: 0, scaleX: 0.08 }}
-          animate={{ opacity: 1, scaleX: 0.92 }}
+          initial={{ opacity: 0, scaleX: MOTION_DISTANCE.routeIndicatorStartScaleX }}
+          animate={{ opacity: 1, scaleX: MOTION_DISTANCE.routeIndicatorMidScaleX }}
           exit={{ opacity: 0, scaleX: 1 }}
-          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: MOTION_DURATION.fast, ease: MOTION_EASE.emphasized }}
         />
       ) : null}
     </AnimatePresence>
@@ -89,7 +90,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
           <motion.div
             initial={false}
             animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: MOTION_DURATION.instant, ease: MOTION_EASE.emphasized }}
           >
             <Layout>
               <Component {...pageProps} />

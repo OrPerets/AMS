@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from '@heroui/react';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { MOTION_DISTANCE, MOTION_DURATION, MOTION_EASE } from '../../lib/motion-tokens';
 
 type AmsDrawerProps = {
   isOpen: boolean;
@@ -127,19 +128,19 @@ export function AmsDrawer({
             ? {
                 enter: {
                   y: 0,
-                  scale: 1,
+                  scale: MOTION_DISTANCE.drawerEnterScale,
                   opacity: 1,
-                  transition: { duration: 0.34, ease: [0.16, 1, 0.3, 1] },
+                  transition: { duration: MOTION_DURATION.standard, ease: MOTION_EASE.emphasized },
                 },
                 exit: {
-                  y: '100%',
-                  scale: 0.985,
+                  y: MOTION_DISTANCE.drawerHiddenY,
+                  scale: MOTION_DISTANCE.drawerExitScale,
                   opacity: 0.96,
-                  transition: { duration: 0.22, ease: [0.7, 0, 0.84, 0] },
+                  transition: { duration: MOTION_DURATION.fast, ease: MOTION_EASE.emphasizedExit },
                 },
                 initial: {
-                  y: '100%',
-                  scale: 0.97,
+                  y: MOTION_DISTANCE.drawerHiddenY,
+                  scale: MOTION_DISTANCE.drawerInitialScale,
                   opacity: 0.92,
                 },
               }
