@@ -9,15 +9,20 @@ type AnalyticsEventName =
   | 'workspace_enter_ams'
   | 'workspace_enter_supervision'
   | 'workspace_enter_gardens'
+  | 'unsupported_role_state'
   | 'last_used_shortcut'
   | 'remember_choice_toggle'
   | 'quick_action_click'
+  | 'home_top_card_impression'
+  | 'home_first_action_click'
   | 'resume_click'
   | 'empty_state_cta_click'
   | 'success_next_step_click'
   | 'onboarding_complete'
   | 'onboarding_dismiss'
-  | 'page_view';
+  | 'page_view'
+  | 'navigation_misclick_loop'
+  | 'navigation_backtrack_churn';
 
 type AnalyticsPayload = Record<string, string | number | boolean | null | undefined>;
 
@@ -114,6 +119,14 @@ export function trackQuickActionClick(actionId: string, screen: string, role?: s
   trackEvent('quick_action_click', { actionId, screen, role: role ?? undefined });
 }
 
+export function trackHomeTopCardImpression(role: string, actionId: string) {
+  trackEvent('home_top_card_impression', { role, actionId, screen: 'home' });
+}
+
+export function trackHomeFirstActionClick(role: string, actionId: string, destination?: string) {
+  trackEvent('home_first_action_click', { role, actionId, destination: destination ?? undefined, screen: 'home' });
+}
+
 export function trackResumeClick(screen: string, destination: string) {
   trackEvent('resume_click', { screen, destination });
 }
@@ -124,4 +137,27 @@ export function trackEmptyStateCta(screen: string, action: string) {
 
 export function trackSuccessNextStep(screen: string, action: string) {
   trackEvent('success_next_step_click', { screen, action });
+}
+
+export function trackUnsupportedRoleState(role?: string | null) {
+  trackEvent('unsupported_role_state', { role: role ?? undefined });
+}
+
+export function trackNavigationMisclickLoop(role: string, from: string, to: string, elapsedMs: number) {
+  trackEvent('navigation_misclick_loop', {
+    role,
+    from,
+    to,
+    elapsedMs: Math.max(0, Math.round(elapsedMs)),
+  });
+}
+
+export function trackNavigationBacktrackChurn(role: string, routeA: string, routeB: string, switches: number, windowMs: number) {
+  trackEvent('navigation_backtrack_churn', {
+    role,
+    routeA,
+    routeB,
+    switches: Math.max(0, Math.round(switches)),
+    windowMs: Math.max(0, Math.round(windowMs)),
+  });
 }

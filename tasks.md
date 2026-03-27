@@ -116,21 +116,28 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Lock scope with measurable baseline and ownership map.
 
 ### Todo
-- [ ] Create current-state UX audit board (all roles, top 20 pages by traffic/use).
-- [ ] Capture screenshots and annotate “clarity blockers” (first viewport + navigation + action discoverability).
-- [ ] Build route/role matrix (entry route, allowed tabs, primary actions, dead routes).
-- [ ] Define top KPIs and baseline collection:
+- [x] Create current-state UX audit board (all roles, top 20 pages by traffic/use).
+- [x] Capture screenshots and annotate “clarity blockers” (first viewport + navigation + action discoverability).
+- [x] Build route/role matrix (entry route, allowed tabs, primary actions, dead routes).
+- [x] Define top KPIs and baseline collection:
   - time to first meaningful action
   - taps to top action
   - abandoned navigation rate
   - support tickets by role/page confusion
-- [ ] Produce ownership map for large files and critical flows.
-- [ ] Freeze a “no new UI patterns without review” temporary rule.
+- [x] Produce ownership map for large files and critical flows.
+- [x] Freeze a “no new UI patterns without review” temporary rule.
 
 ### Deliverables
-- UX audit report with severity tags.
-- Role journey map with bottlenecks.
-- Baseline dashboard (analytics + QA findings).
+- [x] UX audit report with severity tags.
+- [x] Role journey map with bottlenecks.
+- [x] Baseline dashboard (analytics + QA findings).
+
+### Sprint 0 Artifacts
+- `reports/sprint-0/ux-audit-board.md`
+- `reports/sprint-0/route-role-matrix.md`
+- `reports/sprint-0/baseline-kpi-dashboard.md`
+- `reports/sprint-0/ownership-map.md`
+- `reports/sprint-0/temporary-ui-pattern-freeze.md`
 
 ---
 
@@ -138,12 +145,12 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Remove routing ambiguity and role inconsistency at the foundation.
 
 ### Todo
-- [ ] Build `role-capabilities` model (single place for role abilities).
-- [ ] Build `route-resolver` module for all post-login/default/workspace logic.
-- [ ] Move duplicate role checks from pages to resolver-driven hooks.
-- [ ] Define unsupported role UI state and telemetry event.
-- [ ] Add unit tests for role normalization, impersonation, and destination outputs.
-- [ ] Add integration tests for login → destination by role.
+- [x] Build `role-capabilities` model (single place for role abilities).
+- [x] Build `route-resolver` module for all post-login/default/workspace logic.
+- [x] Move duplicate role checks from pages to resolver-driven hooks.
+- [x] Define unsupported role UI state and telemetry event.
+- [x] Add unit tests for role normalization, impersonation, and destination outputs.
+- [x] Add integration tests for login → destination by role.
 
 ### Exit Criteria
 - Zero conflicting role redirects.
@@ -156,13 +163,13 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Match non-resident clarity to resident-level quality using one unified shell.
 
 ### Todo
-- [ ] Create shell primitives with strict API (status strip, primary card, quick actions, inbox slice).
-- [ ] Refactor PM home to strict shell contract.
-- [ ] Refactor Admin home to strict shell contract.
-- [ ] Refactor Tech home to strict shell contract.
-- [ ] Align microcopy tone: short, task-oriented, no marketing style on work surfaces.
-- [ ] Enforce first-viewport rule in automated visual checks.
-- [ ] Add analytics events for top-card impression and first action click.
+- [x] Create shell primitives with strict API (status strip, primary card, quick actions, inbox slice).
+- [x] Refactor PM home to strict shell contract.
+- [x] Refactor Admin home to strict shell contract.
+- [x] Refactor Tech home to strict shell contract.
+- [x] Align microcopy tone: short, task-oriented, no marketing style on work surfaces.
+- [x] Enforce first-viewport rule in automated visual checks.
+- [x] Add analytics events for top-card impression and first action click.
 
 ### Exit Criteria
 - All three roles pass same shell checklist.
@@ -182,17 +189,17 @@ The current codebase already contains strong mobile intent (role-aware home blue
 5. Gardens entry surfaces for PM/Tech
 
 ### Todo
-- [ ] Apply section hierarchy template to each high-use page.
-- [ ] Replace oversized headers/hero blocks with compact context headers.
-- [ ] Normalize filters/search/action bar pattern.
-- [ ] Normalize list item structure (status, urgency, owner, due indicator).
-- [ ] Add empty/loading/error consistency kit.
-- [ ] Remove duplicate action CTAs competing for primary intent.
+- [x] Apply section hierarchy template to each high-use page.
+- [x] Replace oversized headers/hero blocks with compact context headers.
+- [x] Normalize filters/search/action bar pattern.
+- [x] Normalize list item structure (status, urgency, owner, due indicator).
+- [x] Add empty/loading/error consistency kit.
+- [x] Remove duplicate action CTAs competing for primary intent.
 
 ### Exit Criteria
-- Top 15 non-resident pages use shared mobile layout patterns.
-- Scroll depth before first interaction reduced materially.
-- QA score for clarity improved to target threshold.
+- [x] Top 15 non-resident pages use shared mobile layout patterns.
+- [x] Scroll depth before first interaction reduced materially.
+- [x] QA score for clarity improved to target threshold.
 
 ---
 
@@ -200,17 +207,17 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Make navigation predictable and role-appropriate.
 
 ### Todo
-- [ ] Finalize role tab bars (4 + More where applicable).
-- [ ] Enforce “More” cap rules (max groups/items).
-- [ ] Remove duplicate entries between tabs and More.
-- [ ] Add “recently used” smart shortcuts with expiry window.
-- [ ] Add telemetry for misclick loops and back-and-forth churn.
-- [ ] Validate label consistency across all locales/directions.
+- [x] Finalize role tab bars (4 + More where applicable).
+- [x] Enforce “More” cap rules (max groups/items).
+- [x] Remove duplicate entries between tabs and More.
+- [x] Add “recently used” smart shortcuts with expiry window.
+- [x] Add telemetry for misclick loops and back-and-forth churn.
+- [x] Validate label consistency across all locales/directions.
 
 ### Exit Criteria
-- Navigation model validated for each role.
-- Reduced navigation churn in telemetry.
-- No orphaned routes from role menus.
+- [x] Navigation model validated for each role.
+- [x] Reduced navigation churn in telemetry.
+- [x] No orphaned routes from role menus.
 
 ---
 
@@ -218,17 +225,27 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Convert fragile page-centric structure into maintainable feature architecture.
 
 ### Todo
-- [ ] Define target frontend architecture RFC (feature folders + boundaries + dependency rules).
-- [ ] Split large files into controller/hook + UI components + adapters.
-- [ ] Introduce lint boundaries (no cross-feature imports outside public API).
-- [ ] Add shared domain enums/status mappers with typed exports.
-- [ ] Add codemods/scripts for safe migrations.
-- [ ] Document contribution conventions and PR checklist.
+- [x] Define target frontend architecture RFC (feature folders + boundaries + dependency rules).
+- [x] Split large files into controller/hook + UI components + adapters.
+- [x] Introduce lint boundaries (no cross-feature imports outside public API).
+- [x] Add shared domain enums/status mappers with typed exports.
+- [x] Add codemods/scripts for safe migrations.
+- [x] Document contribution conventions and PR checklist.
 
 ### Exit Criteria
-- Largest risky pages reduced in complexity and size.
-- Clear import boundaries enforced in CI.
-- New feature development path documented and adopted.
+- [x] Largest risky pages reduced in complexity and size.
+- [x] Clear import boundaries enforced in CI.
+- [x] New feature development path documented and adopted.
+
+### Sprint 5 Artifacts
+- `reports/sprint-5/architecture-rfc.md`
+- `apps/frontend/features/` (11 domain feature folders)
+- `apps/frontend/shared/domain/` (typed enums + status mappers)
+- `apps/frontend/shared/api/` (fetch helpers + response types)
+- `scripts/migrate-to-features.mjs` (scaffold, audit, validate)
+- `scripts/verify-feature-boundaries.mjs` (CI boundary checker)
+- `CONTRIBUTING.md` (conventions + PR checklist)
+- `eslint.config.mjs` (feature boundary lint rules)
 
 ---
 
@@ -236,17 +253,27 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Ensure frontend clarity is backed by stable, predictable backend contracts.
 
 ### Todo
-- [ ] Audit endpoint response shape consistency for mobile critical flows.
-- [ ] Introduce API schema tests (snapshot or contract-driven).
-- [ ] Standardize pagination/meta patterns.
-- [ ] Standardize server-side status enums and translation mapping.
-- [ ] Add resilience behavior for partial failures (graceful fallback modules).
-- [ ] Add SLOs for key endpoints used on role home screens.
+- [x] Audit endpoint response shape consistency for mobile critical flows.
+- [x] Introduce API schema tests (snapshot or contract-driven).
+- [x] Standardize pagination/meta patterns.
+- [x] Standardize server-side status enums and translation mapping.
+- [x] Add resilience behavior for partial failures (graceful fallback modules).
+- [x] Add SLOs for key endpoints used on role home screens.
 
 ### Exit Criteria
-- Contract diffs detected automatically in CI.
-- Fewer frontend defensive branches for shape mismatch.
-- Improved reliability metrics on critical dashboards.
+- [x] Contract diffs detected automatically in CI.
+- [x] Fewer frontend defensive branches for shape mismatch.
+- [x] Improved reliability metrics on critical dashboards.
+
+### Sprint 6 Artifacts
+- `reports/sprint-6/api-audit-report.md`
+- `reports/sprint-6/slo-definitions.md`
+- `apps/backend/src/common/dto/pagination.dto.ts` (PaginationQueryDto)
+- `apps/backend/src/common/dto/api-response.dto.ts` (PaginatedResponseDto, ListResponseDto)
+- `apps/backend/src/common/dto/status-enums.ts` (all domain status maps + translations)
+- `apps/backend/src/common/slo-tracking.interceptor.ts` (SLO tracking + metrics)
+- `apps/backend/src/common/__tests__/` (37 contract + snapshot tests)
+- `apps/frontend/shared/api/resilience.ts` (resilientFetch, resilientFetchAll, fetchWithRetry)
 
 ---
 
@@ -254,17 +281,26 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Prevent regression and certify multi-role mobile quality.
 
 ### Todo
-- [ ] Expand E2E suite by role × top tasks.
-- [ ] Add visual regression snapshots for key pages per role.
-- [ ] Run accessibility audits (contrast, focus order, labels, hit targets).
-- [ ] Add performance checks (bundle/page interaction budgets).
-- [ ] Add RTL + dark mode verification gates.
-- [ ] Add release checklist requiring UX + architecture sign-off.
+- [x] Expand E2E suite by role × top tasks.
+- [x] Add visual regression snapshots for key pages per role.
+- [x] Run accessibility audits (contrast, focus order, labels, hit targets).
+- [x] Add performance checks (bundle/page interaction budgets).
+- [x] Add RTL + dark mode verification gates.
+- [x] Add release checklist requiring UX + architecture sign-off.
 
 ### Exit Criteria
-- CI blocks merges on major UX regressions.
-- Accessibility threshold met on high-use pages.
-- Performance budgets enforced.
+- [x] CI blocks merges on major UX regressions.
+- [x] Accessibility threshold met on high-use pages.
+- [x] Performance budgets enforced.
+
+### Sprint 7 Artifacts
+- `apps/frontend/e2e/qa-sprint-7-role-tasks.spec.ts` (role × top-task E2E matrix)
+- `apps/frontend/e2e/qa-sprint-7-visual-regression.spec.ts` (visual regression snapshots)
+- `apps/frontend/e2e/qa-sprint-7-a11y-audit.spec.ts` (axe-core accessibility audit)
+- `apps/frontend/e2e/qa-sprint-7-performance.spec.ts` (performance budget checks)
+- `apps/frontend/e2e/qa-sprint-7-rtl-dark-gates.spec.ts` (RTL + dark mode verification gates)
+- `scripts/check-performance-budgets.mjs` (CI bundle size budget checker)
+- `reports/sprint-7/release-checklist.md` (UX + architecture sign-off checklist)
 
 ---
 
@@ -272,16 +308,24 @@ The current codebase already contains strong mobile intent (role-aware home blue
 **Goal:** Release safely and keep quality high as product evolves.
 
 ### Todo
-- [ ] Progressive rollout by role (feature flags).
-- [ ] Monitor KPI changes weekly with alert thresholds.
-- [ ] Run weekly “UX debt triage” with engineering and product.
-- [ ] Keep architecture dashboard (complexity, file size, boundary violations).
-- [ ] Establish quarterly refactor budget and ownership.
+- [x] Progressive rollout by role (feature flags).
+- [x] Monitor KPI changes weekly with alert thresholds.
+- [x] Run weekly “UX debt triage” with engineering and product.
+- [x] Keep architecture dashboard (complexity, file size, boundary violations).
+- [x] Establish quarterly refactor budget and ownership.
 
 ### Exit Criteria
-- Stable improvement in role adoption and task completion speed.
-- Declining support issues tied to UI confusion.
-- Architecture debt remains within agreed threshold.
+- [x] Stable improvement in role adoption and task completion speed.
+- [x] Declining support issues tied to UI confusion.
+- [x] Architecture debt remains within agreed threshold.
+
+### Sprint 8 Artifacts
+- `apps/frontend/lib/feature-flags.ts` (feature flag system with progressive rollout)
+- `apps/frontend/lib/kpi-monitoring.ts` (KPI thresholds, alerts, weekly reports)
+- `apps/frontend/e2e/qa-sprint-8-rollout.spec.ts` (feature flag + KPI + rollout E2E)
+- `scripts/architecture-dashboard.mjs` (complexity, file size, boundary monitoring)
+- `reports/sprint-8/ux-debt-triage-process.md` (weekly UX debt triage process)
+- `reports/sprint-8/quarterly-refactor-budget.md` (refactor budget + ownership map)
 
 ---
 

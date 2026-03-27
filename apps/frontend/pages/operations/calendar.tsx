@@ -9,6 +9,12 @@ import { Badge } from '../../components/ui/badge';
 import { toast } from '../../components/ui/use-toast';
 import { formatDate } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
+import {
+  CompactContextHeader,
+  ConsistencyStateBlock,
+  FilterActionBar,
+  ListItemMetaRow,
+} from '../../components/ui/mobile-page-cleanup-kit';
 
 type CalendarItem = {
   id: string;
@@ -25,6 +31,7 @@ export default function OperationsCalendarPage() {
   const { locale } = useLocale();
   const [items, setItems] = useState<CalendarItem[]>([]);
   const [summary, setSummary] = useState<Record<string, number>>({});
+  const [loadError, setLoadError] = useState(false);
   const [range, setRange] = useState({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
     end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0],
@@ -37,6 +44,7 @@ export default function OperationsCalendarPage() {
 
   async function loadCalendar() {
     try {
+      setLoadError(false);
       const params = new URLSearchParams({ start: range.start, end: range.end });
       if (filters.type !== 'ALL') params.set('type', filters.type);
       if (filters.status) params.set('status', filters.status);
@@ -48,6 +56,7 @@ export default function OperationsCalendarPage() {
       setSummary(data.summary || {});
     } catch (error) {
       console.error(error);
+      setLoadError(true);
       toast({ title: 'טעינת היומן נכשלה', variant: 'destructive' });
     }
   }
@@ -63,17 +72,22 @@ export default function OperationsCalendarPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-3xl font-semibold">יומן תפעול פורטפוליו</h1>
-        <p className="text-sm text-muted-foreground">אירועי תחזוקה, לוחות זמנים, חידושי חוזים, פירעונות והודעות במקום אחד.</p>
-      </div>
+      <CompactContextHeader
+        title="יומן תפעול פורטפוליו"
+        description="אירועי תחזוקה, לוחות זמנים, חידושי חוזים ופירעונות — במבט אחד."
+        context="תפעול"
+        chips={['לפי טווח תאריכים', 'סינון מהיר', 'פתיחה ישירה']}
+      />
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><CalendarClock className="h-5 w-5" /> טווח תאריכים</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarClock className="h-5 w-5" /> טווח תאריכים
+          </CardTitle>
           <CardDescription>היומן מאחד בין מקורות שונים כדי לאפשר תכנון שבועי וחודשי.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-4">
+        <CardContent>
+          <FilterActionBar>
           <Input type="date" value={range.start} onChange={(event) => setRange((current) => ({ ...current, start: event.target.value }))} />
           <Input type="date" value={range.end} onChange={(event) => setRange((current) => ({ ...current, end: event.target.value }))} />
           <select className="rounded-md border px-3 py-2 text-sm" value={filters.type} onChange={(event) => setFilters((current) => ({ ...current, type: event.target.value }))}>
@@ -81,6 +95,7 @@ export default function OperationsCalendarPage() {
             {['SCHEDULE', 'MAINTENANCE', 'CONTRACT', 'INVOICE', 'NOTICE', 'VOTE', 'COMPLIANCE'].map((type) => <option key={type} value={type}>{type}</option>)}
           </select>
           <Input placeholder="חיפוש" value={filters.search} onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))} />
+          </FilterActionBar>
         </CardContent>
       </Card>
 
@@ -90,42 +105,54 @@ export default function OperationsCalendarPage() {
         ))}
       </div>
 
-      <div className="space-y-4">
-        {Object.entries(grouped).map(([day, dayItems]) => (
-          <Card key={day}>
-            <CardHeader>
-              <CardTitle>{formatDate(new Date(day), locale)}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {dayItems.map((item) => (
-                <div key={item.id} className="rounded-xl border p-4">
-                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant={item.type === 'CONTRACT' || item.type === 'INVOICE' || item.type === 'COMPLIANCE' ? 'warning' : item.type === 'MAINTENANCE' ? 'outline' : 'secondary'}>
-                          {item.type}
-                        </Badge>
-                        <span className="font-medium">{item.title}</span>
+      <ConsistencyStateBlock
+        state={loadError ? 'error' : !items.length ? 'empty' : 'ready'}
+        emptyTitle="אין אירועים בטווח שנבחר"
+        emptyDescription="שנה טווח תאריכים או נקה סינון כדי לראות פעילויות."
+        onRetry={loadCalendar}
+      >
+        <div className="space-y-4">
+          {Object.entries(grouped).map(([day, dayItems]) => (
+            <Card key={day}>
+              <CardHeader>
+                <CardTitle>{formatDate(new Date(day), locale)}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {dayItems.map((item) => (
+                  <div key={item.id} className="space-y-2 rounded-xl border p-4">
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant={item.type === 'CONTRACT' || item.type === 'INVOICE' || item.type === 'COMPLIANCE' ? 'warning' : item.type === 'MAINTENANCE' ? 'outline' : 'secondary'}>
+                            {item.type}
+                          </Badge>
+                          <span className="font-medium">{item.title}</span>
+                        </div>
+                        <div className="mt-1 text-sm text-muted-foreground">{item.buildingName} · {item.description}</div>
                       </div>
-                      <div className="mt-1 text-sm text-muted-foreground">{item.buildingName} · {item.description}</div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {item.type === 'MAINTENANCE' ? <Wrench className="h-4 w-4" /> : <FileWarning className="h-4 w-4" />}
+                        {item.priority}
+                        {item.href ? (
+                          <Button asChild size="sm" variant="outline">
+                            <Link href={item.href}>פתח</Link>
+                          </Button>
+                        ) : null}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {item.type === 'MAINTENANCE' ? <Wrench className="h-4 w-4" /> : <FileWarning className="h-4 w-4" />}
-                      {item.priority}
-                      {item.href ? (
-                        <Button asChild size="sm" variant="outline">
-                          <Link href={item.href}>פתח</Link>
-                        </Button>
-                      ) : null}
-                    </div>
+                    <ListItemMetaRow
+                      status={item.type}
+                      urgency={item.priority}
+                      owner={item.buildingName}
+                      dueLabel={`מועד: ${formatDate(new Date(item.date), locale)}`}
+                    />
                   </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        ))}
-        {!items.length && <div className="py-8 text-center text-sm text-muted-foreground">אין אירועים בטווח שנבחר.</div>}
-      </div>
+                ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </ConsistencyStateBlock>
     </div>
   );
 }

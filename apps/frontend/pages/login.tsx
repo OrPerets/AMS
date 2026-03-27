@@ -9,7 +9,8 @@ import { Label } from '../components/ui/label';
 import { PasswordInput } from '../components/ui/password-input';
 import { GlassSurface } from '../components/ui/glass-surface';
 import { useFormValidation } from '../hooks/use-form-validation';
-import { getDefaultRoute, getPortalEntryRoute, getTokenPayload, login } from '../lib/auth';
+import { getTokenPayload, login } from '../lib/auth';
+import { resolvePostLoginRoute } from '../lib/route-resolver';
 import { useDirection, useLocale } from '../lib/providers';
 import { trackLoginSuccess, trackLoginFailed } from '../lib/analytics';
 import { showLoginSuccess } from '../lib/success-feedback';
@@ -42,6 +43,7 @@ export default function LoginPage() {
     validateOn: 'blur',
   });
 
+
   const onSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
     setServerError(null);
@@ -59,8 +61,13 @@ export default function LoginPage() {
         ? router.query.portal
         : undefined;
       const role = payload?.actAsRole || payload?.role;
-      const defaultRoute = portal ? getPortalEntryRoute(portal, role) : getDefaultRoute(role);
-      const destination = next || defaultRoute;
+      const resolution = resolvePostLoginRoute({
+        isAuthenticated: true,
+        role,
+        next: next ?? null,
+        portal,
+      });
+      const destination = resolution.destination;
 
       trackLoginSuccess(role);
       // showLoginSuccess(role);
