@@ -122,13 +122,31 @@ export function useRegisterBottomSurface(id: string, kind: SurfaceKind) {
 
   useEffect(() => {
     if (!measuredRef.current) return;
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        updateHeight(id, entry.contentRect.height);
-      }
-    });
-    observer.observe(measuredRef.current);
-    return () => observer.disconnect();
+    const measuredNode = measuredRef.current;
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          updateHeight(id, entry.contentRect.height);
+        }
+      });
+      observer.observe(measuredNode);
+      return () => observer.disconnect();
+    }
+
+    const updateFromNode = () => {
+      if (!measuredRef.current) return;
+      updateHeight(id, measuredRef.current.getBoundingClientRect().height);
+    };
+
+    updateFromNode();
+    window.addEventListener('resize', updateFromNode);
+    window.addEventListener('orientationchange', updateFromNode);
+
+    return () => {
+      window.removeEventListener('resize', updateFromNode);
+      window.removeEventListener('orientationchange', updateFromNode);
+    };
   }, [id, updateHeight]);
 
   useEffect(() => {
