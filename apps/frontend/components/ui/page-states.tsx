@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Card, CardContent } from './card';
 import { Skeleton } from './skeleton';
+import { MOTION_DISTANCE, MOTION_DURATION, MOTION_EASE, MOTION_STAGGER } from '../../lib/motion-tokens';
 
 type TableListSkeletonProps = {
   rows?: number;
@@ -11,9 +12,9 @@ function Stage({ children, index }: { children: React.ReactNode; index: number }
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 18, scale: 0.985 }}
+      initial={{ opacity: 0, y: MOTION_DISTANCE.md, scale: 0.985 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.38, delay: index * 0.06, ease: 'easeOut' }}
+      transition={{ duration: MOTION_DURATION.deliberate, delay: index * MOTION_STAGGER.standard, ease: MOTION_EASE.standardOut }}
     >
       {children}
     </motion.div>
