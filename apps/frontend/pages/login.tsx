@@ -4,8 +4,8 @@ import { useRouter } from 'next/router';
 import { AlertCircle, ArrowLeft, Lock, LogIn, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { FormActionHint, FormErrorSummary, FormField } from '../components/ui/form-field';
 import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
 import { PasswordInput } from '../components/ui/password-input';
 import { GlassSurface } from '../components/ui/glass-surface';
 import { useFormValidation } from '../hooks/use-form-validation';
@@ -87,6 +87,7 @@ export default function LoginPage() {
     t('login.trustPointTwo'),
     t('login.trustPointThree'),
   ];
+  const submitBlocked = form.hasErrors;
 
   return (
     <main dir={direction} className="mobile-entry-shell">
@@ -133,8 +134,20 @@ export default function LoginPage() {
 
             <CardContent>
               <form onSubmit={onSubmit} className="space-y-5" noValidate>
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">{t('login.emailLabel')}</Label>
+                <FormErrorSummary
+                  errors={form.visibleErrorList}
+                  fieldLabels={{
+                    email: t('login.emailLabel'),
+                    password: t('login.passwordLabel'),
+                  }}
+                  sticky
+                />
+                <FormField
+                  label={t('login.emailLabel')}
+                  fieldKey="email"
+                  error={form.getFieldError('email')}
+                  required
+                >
                   <Input
                     ref={emailRef}
                     id="email"
@@ -149,15 +162,15 @@ export default function LoginPage() {
                     error={!!form.getFieldError('email')}
                     startIcon={<ArrowLeft className="h-4 w-4" />}
                     className="h-12 rounded-2xl text-base"
-                    aria-invalid={!!form.getFieldError('email') || undefined}
                   />
-                  {form.getFieldError('email') ? (
-                    <p className="text-xs text-destructive" role="alert">{form.getFieldError('email')}</p>
-                  ) : null}
-                </div>
+                </FormField>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium">{t('login.passwordLabel')}</Label>
+                <FormField
+                  label={t('login.passwordLabel')}
+                  fieldKey="password"
+                  error={form.getFieldError('password')}
+                  required
+                >
                   <PasswordInput
                     id="password"
                     name="password"
@@ -170,12 +183,8 @@ export default function LoginPage() {
                     showLabel={t('login.showPassword')}
                     hideLabel={t('login.hidePassword')}
                     className="h-12 rounded-2xl text-base"
-                    aria-invalid={!!form.getFieldError('password') || undefined}
                   />
-                  {form.getFieldError('password') ? (
-                    <p className="text-xs text-destructive" role="alert">{form.getFieldError('password')}</p>
-                  ) : null}
-                </div>
+                </FormField>
 
                 {serverError ? (
                   <div className="flex items-start gap-3 rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive" role="alert">
@@ -187,10 +196,15 @@ export default function LoginPage() {
                   </div>
                 ) : null}
 
-                <Button type="submit" loading={loading} size="xl" className="w-full text-base">
+                <Button type="submit" loading={loading} disabled={submitBlocked} size="xl" className="w-full text-base">
                   <LogIn className="me-2 h-4 w-4" />
                   {loading ? t('login.submitting') : t('login.submit')}
                 </Button>
+                {!loading && submitBlocked ? (
+                  <FormActionHint className="text-center">
+                    מלא אימייל תקין וסיסמה באורך מינימלי כדי להתחבר.
+                  </FormActionHint>
+                ) : null}
 
 
                 <div className="text-center text-sm text-muted-foreground">

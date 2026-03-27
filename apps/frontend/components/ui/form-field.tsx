@@ -28,12 +28,17 @@ interface FormFieldProps
   description?: string
   error?: string
   required?: boolean
+  fieldKey?: string
+  inputId?: string
   children: React.ReactNode
 }
 
 const FormField = React.forwardRef<HTMLDivElement, FormFieldProps>(
-  ({ className, state, label, description, error, required, children, ...props }, ref) => {
-    const fieldId = React.useId()
+  ({ className, state, label, description, error, required, fieldKey, inputId, children, ...props }, ref) => {
+    const generatedId = React.useId()
+    const child = children as React.ReactElement<any>
+    const childId = child.props.id as string | undefined
+    const fieldId = inputId ?? childId ?? fieldKey ?? generatedId
     const descriptionId = React.useId() 
     const errorId = React.useId()
 
@@ -56,7 +61,7 @@ const FormField = React.forwardRef<HTMLDivElement, FormFieldProps>(
         )}
         
         <div className="relative">
-          {React.cloneElement(children as React.ReactElement<any>, {
+          {React.cloneElement(child, {
             id: fieldId,
             'aria-describedby': cn(
               description ? descriptionId : undefined,
@@ -64,7 +69,7 @@ const FormField = React.forwardRef<HTMLDivElement, FormFieldProps>(
             ),
             'aria-invalid': error ? 'true' : undefined,
             className: cn(
-              (children as React.ReactElement<any>).props.className,
+              child.props.className,
               error && "border-destructive focus-visible:ring-destructive"
             ),
           })}
@@ -157,10 +162,12 @@ interface FormErrorSummaryProps {
   fieldLabels?: Record<string, string>;
   title?: string;
   className?: string;
+  sticky?: boolean;
+  stickyClassName?: string;
 }
 
 const FormErrorSummary = React.forwardRef<HTMLDivElement, FormErrorSummaryProps>(
-  ({ errors, fieldLabels, title, className }, ref) => {
+  ({ errors, fieldLabels, title, className, sticky = false, stickyClassName }, ref) => {
     if (errors.length === 0) return null;
 
     const scrollToField = (fieldName: string) => {
@@ -179,6 +186,8 @@ const FormErrorSummary = React.forwardRef<HTMLDivElement, FormErrorSummaryProps>
         role="alert"
         aria-live="assertive"
         className={cn(
+          sticky && "sticky top-3 z-20",
+          sticky && stickyClassName,
           "rounded-xl border border-destructive/20 bg-destructive/5 p-3 sm:p-4",
           className,
         )}
@@ -193,15 +202,15 @@ const FormErrorSummary = React.forwardRef<HTMLDivElement, FormErrorSummaryProps>
             <ul className="space-y-1">
               {errors.map((err) => (
                 <li key={err.field}>
-                  <button
-                    type="button"
+                  <a
+                    href={`#${err.field}`}
                     className="text-start text-sm text-destructive/85 underline-offset-2 hover:underline"
                     onClick={() => scrollToField(err.field)}
                   >
                     {fieldLabels?.[err.field]
                       ? `${fieldLabels[err.field]}: ${err.message}`
                       : err.message}
-                  </button>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -213,12 +222,28 @@ const FormErrorSummary = React.forwardRef<HTMLDivElement, FormErrorSummaryProps>
 );
 FormErrorSummary.displayName = "FormErrorSummary";
 
+const FormActionHint = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn(
+      "text-xs leading-5 text-muted-foreground",
+      className,
+    )}
+    {...props}
+  />
+))
+FormActionHint.displayName = "FormActionHint"
+
 export { 
   FormField, 
   FormDescription, 
   FormError, 
   FormLabel,
   FormErrorSummary,
+  FormActionHint,
   fieldVariants,
   type FormFieldProps 
 }

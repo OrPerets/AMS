@@ -5,7 +5,7 @@ import { formatCurrency, formatDate, formatNumber, formatTime, regionalFormats }
 import { isValidEmail } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { FormField } from '../components/ui/form-field';
+import { FormActionHint, FormField, FormErrorSummary } from '../components/ui/form-field';
 import { InlineErrorPanel } from '../components/ui/inline-feedback';
 import { Input } from '../components/ui/input';
 import { PasswordInput } from '../components/ui/password-input';
@@ -202,6 +202,18 @@ export default function SettingsPage() {
       newPassword: passwords.newPassword.length >= 6 ? '' : t('settings.validation.newPassword'),
     };
   }, [passwords.currentPassword, passwords.newPassword, t]);
+  const profileHasRequiredErrors = Boolean(profileErrors.email || profileErrors.phone);
+  const passwordHasRequiredErrors = Boolean(passwordErrors.currentPassword || passwordErrors.newPassword);
+  const profileVisibleErrors = useMemo(() => (
+    (Object.keys(profileErrors) as Array<keyof typeof profileErrors>)
+      .filter((key) => profileErrors[key] && shouldShowProfileError(key))
+      .map((key) => ({ field: key, message: profileErrors[key] }))
+  ), [profileErrors, profileSubmitted, profileTouched]);
+  const passwordVisibleErrors = useMemo(() => (
+    (Object.keys(passwordErrors) as Array<keyof typeof passwordErrors>)
+      .filter((key) => passwordErrors[key] && shouldShowPasswordError(key))
+      .map((key) => ({ field: key, message: passwordErrors[key] }))
+  ), [passwordErrors, passwordSubmitted, passwordTouched]);
 
   const channelPrefs: ChannelPref[] = [
     { key: 'email', label: t('settings.preference.email'), description: t('settings.preference.emailDesc') },
@@ -328,9 +340,18 @@ export default function SettingsPage() {
                   subtitle={t('settings.section.profileSubtitle')}
                   eyebrow={t('settings.section.profileTitle')}
                 />
+                <FormErrorSummary
+                  errors={profileVisibleErrors}
+                  fieldLabels={{
+                    email: t('settings.field.email'),
+                    phone: t('settings.field.phone'),
+                  }}
+                  sticky
+                />
 
                 <FormField
                   label={t('settings.field.email')}
+                  fieldKey="email"
                   error={shouldShowProfileError('email') ? profileErrors.email || undefined : undefined}
                   required
                 >
@@ -348,6 +369,7 @@ export default function SettingsPage() {
 
                 <FormField
                   label={t('settings.field.phone')}
+                  fieldKey="phone"
                   description={t('settings.field.phoneHint')}
                   error={shouldShowProfileError('phone') ? profileErrors.phone || undefined : undefined}
                 >
@@ -364,11 +386,16 @@ export default function SettingsPage() {
                 </FormField>
 
                 <div className="flex justify-end">
-                  <Button onClick={saveProfile} disabled={savingProfile || Boolean(profileErrors.email || profileErrors.phone)}>
+                  <Button onClick={saveProfile} disabled={savingProfile || profileHasRequiredErrors}>
                     <Save className="me-2 h-4 w-4" />
                     {savingProfile ? t('common.saving') : t('settings.action.saveProfile')}
                   </Button>
                 </div>
+                {!savingProfile && profileHasRequiredErrors ? (
+                  <FormActionHint className="text-end">
+                    יש להשלים אימייל תקין וטלפון בפורמט חוקי לפני שמירה.
+                  </FormActionHint>
+                ) : null}
               </CardContent>
             </Card>
 
@@ -415,8 +442,17 @@ export default function SettingsPage() {
 
           <Card variant="elevated">
             <CardContent className="space-y-5 p-4 sm:p-5">
+              <FormErrorSummary
+                errors={passwordVisibleErrors}
+                fieldLabels={{
+                  currentPassword: t('settings.field.currentPassword'),
+                  newPassword: t('settings.field.newPassword'),
+                }}
+                sticky
+              />
               <FormField
                 label={t('settings.field.currentPassword')}
+                fieldKey="currentPassword"
                 error={shouldShowPasswordError('currentPassword') ? passwordErrors.currentPassword || undefined : undefined}
                 required
               >
@@ -432,6 +468,7 @@ export default function SettingsPage() {
 
               <FormField
                 label={t('settings.field.newPassword')}
+                fieldKey="newPassword"
                 description={t('settings.validation.newPassword')}
                 error={shouldShowPasswordError('newPassword') ? passwordErrors.newPassword || undefined : undefined}
                 required
@@ -447,11 +484,16 @@ export default function SettingsPage() {
               </FormField>
 
               <div className="flex justify-end">
-                <Button onClick={savePassword} disabled={savingPassword || Boolean(passwordErrors.currentPassword || passwordErrors.newPassword)}>
+                <Button onClick={savePassword} disabled={savingPassword || passwordHasRequiredErrors}>
                   <KeyRound className="me-2 h-4 w-4" />
                   {savingPassword ? t('common.saving') : t('settings.action.updatePassword')}
                 </Button>
               </div>
+              {!savingPassword && passwordHasRequiredErrors ? (
+                <FormActionHint className="text-end">
+                  הזן סיסמה נוכחית וסיסמה חדשה באורך 6 תווים לפחות כדי לעדכן.
+                </FormActionHint>
+              ) : null}
             </CardContent>
           </Card>
         </TabsContent>
