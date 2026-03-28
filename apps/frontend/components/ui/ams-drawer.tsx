@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { MOTION_DISTANCE, MOTION_DURATION, MOTION_EASE } from '../../lib/motion-tokens';
 import { trackInteractionLifecycle } from '../../lib/analytics';
+import { isMobileInteractionFeatureEnabled } from '../../lib/mobile-interaction-flags';
 
 type AmsDrawerProps = {
   isOpen: boolean;
@@ -63,6 +64,8 @@ export function AmsDrawer({
   defaultSnapPoint = 1,
   onSnapPointChange,
 }: AmsDrawerProps) {
+  const drawerFeatureEnabled = isMobileInteractionFeatureEnabled('mobile-interactions-peek-drawers');
+  const snapEnabled = enableSnapPoints && drawerFeatureEnabled;
   const lightTone = tone === 'light';
   const contentRef = React.useRef<HTMLDivElement | null>(null);
   const dragStartRef = React.useRef<{ y: number; ratio: number; time: number } | null>(null);
@@ -98,7 +101,7 @@ export function AmsDrawer({
   }, []);
 
   React.useEffect(() => {
-    if (!enableSnapPoints || !isOpen || placement !== 'bottom' || !drawerKey || typeof window === 'undefined') return;
+    if (!snapEnabled || !isOpen || placement !== 'bottom' || !drawerKey || typeof window === 'undefined') return;
     try {
       const raw = window.sessionStorage.getItem(`ams-drawer-snap:${drawerKey}`);
       if (!raw) return;
@@ -109,13 +112,13 @@ export function AmsDrawer({
       }, normalizedSnapPoints[normalizedSnapPoints.length - 1] ?? 1);
       setActiveSnapPoint(nearest);
     } catch {}
-  }, [drawerKey, enableSnapPoints, isOpen, normalizedSnapPoints, placement]);
+  }, [drawerKey, snapEnabled, isOpen, normalizedSnapPoints, placement]);
 
   React.useEffect(() => {
     if (!isOpen || placement !== 'bottom') return;
     const appSurface = document.querySelector<HTMLElement>('[data-scroll-container="app"]');
     if (!appSurface) return;
-    const backdropProgress = enableSnapPoints ? activeSnapPoint : 1;
+    const backdropProgress = snapEnabled ? activeSnapPoint : 1;
     appSurface.style.transition = 'transform 220ms ease, filter 220ms ease';
     appSurface.style.transformOrigin = '50% 8%';
     appSurface.style.transform = `scale(${1 - backdropProgress * 0.015})`;
@@ -126,7 +129,7 @@ export function AmsDrawer({
       appSurface.style.transition = '';
       appSurface.style.transformOrigin = '';
     };
-  }, [activeSnapPoint, enableSnapPoints, isOpen, placement]);
+  }, [activeSnapPoint, snapEnabled, isOpen, placement]);
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -180,7 +183,7 @@ export function AmsDrawer({
       setActiveSnapPoint(nearest);
       saveSnapPoint(nearest);
       onSnapPointChange?.(nearest);
-      if (typeof window !== 'undefined' && enableSnapPoints) {
+      if (typeof window !== 'undefined' && snapEnabled) {
         const snapType = nearest <= 0.36 ? 'peek' : nearest <= 0.7 ? 'half' : 'full';
         trackInteractionLifecycle('interaction_committed', {
           pathname: window.location.pathname,
@@ -192,11 +195,11 @@ export function AmsDrawer({
         });
       }
     },
-    [normalizedSnapPoints, onSnapPointChange, saveSnapPoint, enableSnapPoints, drawerKey],
+    [normalizedSnapPoints, onSnapPointChange, saveSnapPoint, snapEnabled, drawerKey],
   );
 
   const handleDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!enableSnapPoints || placement !== 'bottom') return;
+    if (!snapEnabled || placement !== 'bottom') return;
     const startPoint = event.clientY;
     dragStartRef.current = { y: startPoint, ratio: activeSnapPoint, time: Date.now() };
     dragLastRef.current = { y: startPoint, time: Date.now() };
@@ -204,7 +207,7 @@ export function AmsDrawer({
   };
 
   const handleDragMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!enableSnapPoints || placement !== 'bottom' || !dragStartRef.current) return;
+    if (!snapEnabled || placement !== 'bottom' || !dragStartRef.current) return;
     const maxHeight = Math.max(window.innerHeight * 0.88, 1);
     const delta = dragStartRef.current.y - event.clientY;
     const nextRatio = Math.min(1, Math.max(0.2, dragStartRef.current.ratio + delta / maxHeight));
@@ -213,7 +216,7 @@ export function AmsDrawer({
   };
 
   const handleDragEnd = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!enableSnapPoints || placement !== 'bottom' || !dragStartRef.current) return;
+    if (!snapEnabled || placement !== 'bottom' || !dragStartRef.current) return;
     const start = dragStartRef.current;
     const last = dragLastRef.current ?? { y: event.clientY, time: Date.now() };
     const elapsedMs = Math.max(last.time - start.time, 1);
@@ -294,7 +297,7 @@ export function AmsDrawer({
             ref={contentRef}
             className="text-start"
             style={
-              placement === 'bottom' && enableSnapPoints
+              placement === 'bottom' && snapEnabled
                 ? {
                   height: `${Math.max(viewportHeight * 0.88 * activeSnapPoint, 220)}px`,
                     maxHeight: '88dvh',
@@ -309,7 +312,7 @@ export function AmsDrawer({
                 onPointerMove={handleDragMove}
                 onPointerUp={handleDragEnd}
                 onPointerCancel={handleDragEnd}
-                className={cn(enableSnapPoints && placement === 'bottom' && 'cursor-grab touch-none active:cursor-grabbing')}
+                className={cn(snapEnabled && placement === 'bottom' && 'cursor-grab touch-none active:cursor-grabbing')}
                 aria-label="Drawer resize handle"
               >
                 <div className="gold-current-pulse mx-auto h-1.5 w-14 rounded-full bg-[linear-gradient(90deg,rgba(255,242,214,0.28),rgba(224,182,89,0.95),rgba(255,242,214,0.28))]" />
