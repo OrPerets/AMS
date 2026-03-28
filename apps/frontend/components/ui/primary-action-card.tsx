@@ -6,6 +6,8 @@ import { cn } from '../../lib/utils';
 import { useMobileDepthEffect, useTouchHoldLift } from './mobile-card-effects';
 import { MOTION_DISTANCE, MOTION_SPRING } from '../../lib/motion-tokens';
 import { resolveRouteTransitionTokensByHref } from '../../lib/route-transition-contract';
+import { MobileRowActionsSheet, type MobileRowActionItem } from './mobile-row-actions-sheet';
+import { useLongPressActions } from '../../hooks/use-long-press-actions';
 
 type PrimaryActionTone = 'default' | 'warning' | 'danger' | 'success';
 type PrimaryActionPulseMetric = {
@@ -15,6 +17,43 @@ type PrimaryActionPulseMetric = {
   meta?: string;
   tone?: PrimaryActionTone;
 };
+
+type LongPressActionType = 'tickets' | 'notifications' | 'requests' | 'jobs';
+
+const LONG_PRESS_CONTEXT_ACTIONS: Record<LongPressActionType, MobileRowActionItem[]> = {
+  tickets: [
+    { id: 'tickets-open', label: 'פתח קריאות', description: 'מעבר לכל הקריאות הפעילות.', href: '/tickets' },
+    { id: 'tickets-mine', label: 'הקריאות שלי', description: 'קריאות שמוקצות אליך.', href: '/tickets?mine=true' },
+  ],
+  notifications: [
+    { id: 'notifications-open', label: 'מרכז ההתראות', description: 'צפה בכל ההתראות האחרונות.', href: '/notifications' },
+    { id: 'notifications-action', label: 'דורש טיפול', description: 'סינון התראות עם פעולה פתוחה.', href: '/notifications?filter=needs_action' },
+  ],
+  requests: [
+    { id: 'requests-open', label: 'מעקב בקשות', description: 'מעבר לכל בקשות הדיירים.', href: '/resident/requests?view=history' },
+    { id: 'requests-new', label: 'בקשה חדשה', description: 'יצירה מהירה של בקשה חדשה.', href: '/create-call' },
+  ],
+  jobs: [
+    { id: 'jobs-open', label: 'תור משימות', description: 'צפייה בכל המשימות הפעילות.', href: '/tech/jobs' },
+    { id: 'jobs-today', label: 'משימות להיום', description: 'פתיחה מהירה של משימות היום.', href: '/tech/jobs?view=today' },
+  ],
+};
+
+function composeHandlers<T>(...handlers: Array<((event: T) => void) | undefined>) {
+  return (event: T) => {
+    handlers.forEach((handler) => handler?.(event));
+  };
+}
+
+function resolveActionType(href?: string, actionType?: LongPressActionType) {
+  if (actionType) return actionType;
+  const route = href?.split('?')[0] ?? '';
+  if (route.startsWith('/tickets')) return 'tickets';
+  if (route.startsWith('/notifications')) return 'notifications';
+  if (route.startsWith('/resident/requests')) return 'requests';
+  if (route.startsWith('/tech/jobs') || route.startsWith('/work-orders')) return 'jobs';
+  return null;
+}
 
 export function PrimaryActionCard({
   eyebrow,
@@ -32,6 +71,7 @@ export function PrimaryActionCard({
   visualStyle = 'default',
   density = 'default',
   pulseMetrics,
+  actionType,
 }: {
   eyebrow?: string;
   title: string;
@@ -48,6 +88,7 @@ export function PrimaryActionCard({
   visualStyle?: 'default' | 'resident' | 'pm' | 'admin';
   density?: 'default' | 'compact';
   pulseMetrics?: PrimaryActionPulseMetric[];
+  actionType?: LongPressActionType;
 }) {
   const reducedMotion = useReducedMotion();
   const Icon = tone === 'success' ? CheckCircle2 : CircleAlert;
@@ -57,8 +98,34 @@ export function PrimaryActionCard({
   const badgeLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.badge;
   const titleLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.title;
   const hold = useTouchHoldLift(true);
+  const [actionsOpen, setActionsOpen] = React.useState(false);
+  const resolvedActionType = resolveActionType(href, actionType);
+  const rowActions = React.useMemo<MobileRowActionItem[]>(() => {
+    const destinationActions = resolvedActionType ? LONG_PRESS_CONTEXT_ACTIONS[resolvedActionType] : [];
+    const quickOpenAction =
+      href || onClick
+        ? [
+            {
+              id: 'open-primary-action',
+              label: ctaLabel,
+              description: 'פתיחת הפעולה הראשית.',
+              tone: 'primary' as const,
+              ...(href ? { href } : { onSelect: onClick }),
+            },
+          ]
+        : [];
+    const dedupedContext = destinationActions.filter((action) => !href || action.href !== href);
+    return [...quickOpenAction, ...dedupedContext];
+  }, [ctaLabel, href, onClick, resolvedActionType]);
+  const { longPressProps } = useLongPressActions({
+    onLongPress: () => {
+      if (!rowActions.length) return;
+      setActionsOpen(true);
+    },
+  });
 
   const panel = (
+    <>
     <motion.div
       ref={depthRef as React.Ref<HTMLDivElement>}
       whileTap={reducedMotion ? undefined : { scale: 0.985 }}
@@ -84,7 +151,13 @@ export function PrimaryActionCard({
         className,
       )}
       data-testid="primary-action-card"
-      {...hold.holdProps}
+      onPointerDown={composeHandlers(hold.holdProps.onPointerDown, longPressProps.onPointerDown)}
+      onPointerMove={longPressProps.onPointerMove}
+      onPointerUp={composeHandlers(hold.holdProps.onPointerUp, longPressProps.onPointerUp)}
+      onPointerLeave={composeHandlers(hold.holdProps.onPointerLeave, longPressProps.onPointerLeave)}
+      onPointerCancel={composeHandlers(hold.holdProps.onPointerCancel, longPressProps.onPointerCancel)}
+      onBlur={hold.holdProps.onBlur}
+      onClickCapture={longPressProps.onClickCapture}
     >
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1 space-y-1.5">
@@ -223,6 +296,15 @@ export function PrimaryActionCard({
       {supportingContent ? <div className={cn(density === 'compact' ? 'mt-2' : 'mt-2.5')}>{supportingContent}</div> : null}
       {secondaryAction ? <div className={cn(density === 'compact' ? 'mt-2 flex justify-stretch sm:justify-end' : 'mt-2.5 flex justify-stretch sm:justify-end')}>{secondaryAction}</div> : null}
     </motion.div>
+    <MobileRowActionsSheet
+      title={title}
+      description={description}
+      actions={rowActions}
+      open={actionsOpen}
+      onOpenChange={setActionsOpen}
+      hideTrigger
+    />
+    </>
   );
 
   return panel;
