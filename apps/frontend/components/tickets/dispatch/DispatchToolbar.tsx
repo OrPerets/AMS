@@ -1,4 +1,5 @@
-import { Command, HelpCircle, Plus, RefreshCw, Search } from 'lucide-react';
+import { Command, HelpCircle, Plus, RefreshCw, Search, Ticket } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { RefObject } from 'react';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
@@ -6,6 +7,7 @@ import { Input } from '../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import type { DispatchResponse, TechnicianOption } from './types';
 import { SummaryCard, summaryCards } from './presentation';
+import { getRouteTransitionTokensByKey } from '../../../lib/route-transition-contract';
 
 export function DispatchToolbar({
   dispatchData,
@@ -46,23 +48,52 @@ export function DispatchToolbar({
   onOpenCommandPalette: () => void;
   onOpenHelp: () => void;
 }) {
+  const prefersReducedMotion = useReducedMotion();
+  const transitionTokens = getRouteTransitionTokensByKey('tickets');
+  const iconLayoutId = prefersReducedMotion ? undefined : transitionTokens.icon;
+  const badgeLayoutId = prefersReducedMotion ? undefined : transitionTokens.badge;
+  const titleLayoutId = prefersReducedMotion ? undefined : transitionTokens.title;
+
   return (
     <section className="surface-hero-brand-light overflow-hidden rounded-[24px] border border-primary/14 text-foreground shadow-raised sm:rounded-[30px]">
       <div className="space-y-4 p-4 sm:space-y-5 sm:p-5 lg:space-y-6 lg:p-6">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(18rem,0.92fr)] lg:gap-6">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-3">
+              <motion.span
+                layoutId={iconLayoutId}
+                initial={prefersReducedMotion ? { opacity: 0.94 } : false}
+                animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+                transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-primary/14 bg-primary/10 text-primary"
+              >
+                <Ticket className="h-4 w-4" strokeWidth={1.9} />
+              </motion.span>
               <Badge variant="outline" className="border-primary/12 bg-white/72 text-primary">
                 {roleLabel}
               </Badge>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/18 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700">
+              <motion.span
+                layoutId={badgeLayoutId}
+                initial={prefersReducedMotion ? { opacity: 0.92 } : false}
+                animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+                transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/18 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700"
+              >
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                 {dispatchData?.meta.total ?? 0} קריאות בתצוגה
-              </span>
+              </motion.span>
             </div>
             <div className="space-y-2">
               <div className="text-[11px] font-semibold tracking-[0.12em] text-primary/72">מוקד קריאות</div>
-              <h1 className="max-w-[12ch] text-[1.55rem] font-black leading-[1.04] tracking-[-0.03em] sm:text-[2rem] lg:text-[2.4rem]">קריאות שירות</h1>
+              <motion.h1
+                layoutId={titleLayoutId}
+                initial={prefersReducedMotion ? { opacity: 0.94 } : false}
+                animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+                transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+                className="max-w-[12ch] text-[1.55rem] font-black leading-[1.04] tracking-[-0.03em] sm:text-[2rem] lg:text-[2.4rem]"
+              >
+                קריאות שירות
+              </motion.h1>
               <p className="max-w-2xl text-[13px] leading-6 text-secondary-foreground sm:text-sm sm:leading-6">
                 מסך עבודה אחד למיון, שיוך, עדכון SLA ויצירת הזמנות עבודה בלי לצאת מההקשר.
               </p>
