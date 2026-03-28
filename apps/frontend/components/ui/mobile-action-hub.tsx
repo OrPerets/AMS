@@ -5,8 +5,11 @@ import { ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useMobileDepthEffect, useTouchHoldLift } from './mobile-card-effects';
 import { MiniSparkline } from './mobile-insight-widget';
+import { MobileRowActionsSheet, type MobileRowActionItem } from './mobile-row-actions-sheet';
+import { useLongPressActions } from '../../hooks/use-long-press-actions';
 
 type IconType = React.ComponentType<{ className?: string; strokeWidth?: number }>;
+type LongPressActionType = 'tickets' | 'notifications' | 'requests' | 'jobs';
 
 const SHARED_PRIORITY_LAYOUTS = {
   tickets: { icon: 'priority-tile-icon-tickets', badge: 'priority-tile-badge-tickets' },
@@ -30,7 +33,47 @@ export type MobileActionHubItem = {
   previewValue?: string | number;
   microViz?: number[];
   fullCardTap?: boolean;
+  actionType?: LongPressActionType;
 };
+
+const LONG_PRESS_CONTEXT_ACTIONS: Record<LongPressActionType, MobileRowActionItem[]> = {
+  tickets: [
+    { id: 'tickets-open', label: 'פתח קריאות', description: 'מעבר לכל הקריאות הפעילות.', href: '/tickets' },
+    { id: 'tickets-mine', label: 'הקריאות שלי', description: 'קריאות שמוקצות אליך.', href: '/tickets?mine=true' },
+  ],
+  notifications: [
+    { id: 'notifications-open', label: 'מרכז ההתראות', description: 'צפה בכל ההתראות האחרונות.', href: '/notifications' },
+    { id: 'notifications-action', label: 'דורש טיפול', description: 'סינון התראות עם פעולה פתוחה.', href: '/notifications?filter=needs_action' },
+  ],
+  requests: [
+    { id: 'requests-open', label: 'מעקב בקשות', description: 'מעבר לכל בקשות הדיירים.', href: '/resident/requests?view=history' },
+    { id: 'requests-new', label: 'בקשה חדשה', description: 'יצירה מהירה של בקשה חדשה.', href: '/create-call' },
+  ],
+  jobs: [
+    { id: 'jobs-open', label: 'תור משימות', description: 'צפייה בכל המשימות הפעילות.', href: '/tech/jobs' },
+    { id: 'jobs-today', label: 'משימות להיום', description: 'פתיחה מהירה של משימות היום.', href: '/tech/jobs?view=today' },
+  ],
+};
+
+function composeHandlers<T>(...handlers: Array<((event: T) => void) | undefined>) {
+  return (event: T) => {
+    handlers.forEach((handler) => handler?.(event));
+  };
+}
+
+function resolveActionType(item: MobileActionHubItem): LongPressActionType | null {
+  if (item.actionType) return item.actionType;
+  const route = item.href?.split('?')[0] ?? '';
+  if (route.startsWith('/tickets')) return 'tickets';
+  if (route.startsWith('/notifications')) return 'notifications';
+  if (route.startsWith('/resident/requests')) return 'requests';
+  if (route.startsWith('/tech/jobs') || route.startsWith('/work-orders')) return 'jobs';
+  if (item.id.includes('ticket')) return 'tickets';
+  if (item.id.includes('notification')) return 'notifications';
+  if (item.id.includes('request')) return 'requests';
+  if (item.id.includes('job')) return 'jobs';
+  return null;
+}
 
 function toneClasses(accent: MobileActionHubItem['accent']) {
   switch (accent) {
@@ -101,12 +144,38 @@ function ActionTile({
   const hold = useTouchHoldLift(true);
   const Icon = item.icon;
   const isSelected = Boolean(item.selected || item.emphasize);
+  const [actionsOpen, setActionsOpen] = React.useState(false);
   const priority = item.priority ?? (isSelected ? 'primary' : 'secondary');
   const sharedPriorityLayout = priority === 'primary' ? resolveSharedPriorityLayout(item) : null;
   const iconLayoutId = reducedMotion ? undefined : sharedPriorityLayout?.icon;
   const badgeLayoutId = reducedMotion ? undefined : sharedPriorityLayout?.badge;
+  const resolvedActionType = resolveActionType(item);
+  const rowActions = React.useMemo<MobileRowActionItem[]>(() => {
+    const destinationActions = resolvedActionType ? LONG_PRESS_CONTEXT_ACTIONS[resolvedActionType] : [];
+    const quickOpenAction =
+      item.href || item.onClick
+        ? [
+            {
+              id: `open-${item.id}`,
+              label: `פתח ${item.label}`,
+              description: 'מעבר מהיר למסך הנבחר.',
+              tone: 'primary' as const,
+              ...(item.href ? { href: item.href } : { onSelect: item.onClick }),
+            },
+          ]
+        : [];
+    const dedupedContext = destinationActions.filter((action) => !item.href || action.href !== item.href);
+    return [...quickOpenAction, ...dedupedContext];
+  }, [item.href, item.id, item.label, item.onClick, resolvedActionType]);
+  const { longPressProps } = useLongPressActions({
+    onLongPress: () => {
+      if (!rowActions.length) return;
+      setActionsOpen(true);
+    },
+  });
 
   return (
+    <>
     <motion.div
       ref={depthRef as React.Ref<HTMLDivElement>}
       animate={hold.isHolding && !reducedMotion ? { y: -3, scale: 1.01 } : { y: 0, scale: 1 }}
@@ -116,7 +185,13 @@ function ActionTile({
           '[box-shadow:0_calc(10px*var(--mobile-card-depth,0))_24px_rgba(84,58,15,0.10)] [filter:saturate(calc(1+var(--mobile-card-depth,0)*0.06))] [transform:translateY(calc(var(--mobile-card-depth,0)*-2px))]',
         hold.isHolding && 'rounded-2xl shadow-[0_16px_32px_rgba(84,58,15,0.14)] ring-1 ring-primary/10',
       )}
-      {...hold.holdProps}
+      onPointerDown={composeHandlers(hold.holdProps.onPointerDown, longPressProps.onPointerDown)}
+      onPointerMove={longPressProps.onPointerMove}
+      onPointerUp={composeHandlers(hold.holdProps.onPointerUp, longPressProps.onPointerUp)}
+      onPointerLeave={composeHandlers(hold.holdProps.onPointerLeave, longPressProps.onPointerLeave)}
+      onPointerCancel={composeHandlers(hold.holdProps.onPointerCancel, longPressProps.onPointerCancel)}
+      onBlur={hold.holdProps.onBlur}
+      onClickCapture={longPressProps.onClickCapture}
     >
       <TileShell
         href={item.href}
@@ -219,6 +294,15 @@ function ActionTile({
         </div>
       </TileShell>
     </motion.div>
+    <MobileRowActionsSheet
+      title={item.label}
+      description={item.description}
+      actions={rowActions}
+      open={actionsOpen}
+      onOpenChange={setActionsOpen}
+      hideTrigger
+    />
+    </>
   );
 }
 
