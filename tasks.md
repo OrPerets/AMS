@@ -361,17 +361,17 @@ This plan covers the mobile web experience in `apps/frontend`, with emphasis on 
 **Goal:** Release safely and lock in the new interaction quality.
 
 ### Frontend
-- [ ] Remove dead code paths from superseded gesture experiments.
-- [ ] Consolidate final motion constants and docs.
-- [ ] Ensure each feature can be independently disabled by flag.
+- [x] Remove dead code paths from superseded gesture experiments.
+- [x] Consolidate final motion constants and docs.
+- [x] Ensure each feature can be independently disabled by flag.
 
 ### QA
-- [ ] Add or update Playwright coverage for:
-  - [ ] swipe commit and undo
-  - [ ] live event visual reaction
-  - [ ] route morph continuity
-  - [ ] drawer snap interactions
-  - [ ] pull-to-refresh canopy
+- [x] Add or update Playwright coverage for:
+  - [x] swipe commit and undo
+  - [x] live event visual reaction
+  - [x] route morph continuity
+  - [x] drawer snap interactions
+  - [x] pull-to-refresh canopy
 - [ ] Run full mobile matrix:
   - [ ] iPhone Safari
   - [ ] Android Chrome

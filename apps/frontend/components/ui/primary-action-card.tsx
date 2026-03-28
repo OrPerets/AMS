@@ -5,6 +5,7 @@ import { ArrowUpRight, CheckCircle2, CircleAlert } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useMobileDepthEffect, useTouchHoldLift } from './mobile-card-effects';
 import { MOTION_DISTANCE, MOTION_SPRING } from '../../lib/motion-tokens';
+import { isMobileInteractionFeatureEnabled } from '../../lib/mobile-interaction-flags';
 import { resolveRouteTransitionTokensByHref } from '../../lib/route-transition-contract';
 import { MobileRowActionsSheet, type MobileRowActionItem } from './mobile-row-actions-sheet';
 import { useLongPressActions } from '../../hooks/use-long-press-actions';
@@ -91,13 +92,14 @@ export function PrimaryActionCard({
   actionType?: LongPressActionType;
 }) {
   const reducedMotion = useReducedMotion();
+  const morphEnabled = isMobileInteractionFeatureEnabled('mobile-interactions-card-morph');
   const Icon = tone === 'success' ? CheckCircle2 : CircleAlert;
   const depthRef = useMobileDepthEffect(mobileHomeEffect);
   const sharedTransitionTokens = resolveRouteTransitionTokensByHref(href);
-  const containerLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.container;
-  const iconLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.icon;
-  const badgeLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.badge;
-  const titleLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.title;
+  const containerLayoutId = reducedMotion || !morphEnabled ? undefined : sharedTransitionTokens?.container;
+  const iconLayoutId = reducedMotion || !morphEnabled ? undefined : sharedTransitionTokens?.icon;
+  const badgeLayoutId = reducedMotion || !morphEnabled ? undefined : sharedTransitionTokens?.badge;
+  const titleLayoutId = reducedMotion || !morphEnabled ? undefined : sharedTransitionTokens?.title;
   const hold = useTouchHoldLift(true);
   const [actionsOpen, setActionsOpen] = React.useState(false);
   const resolvedActionType = resolveActionType(href, actionType);

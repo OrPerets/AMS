@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { isMobileInteractionFeatureEnabled } from '../lib/mobile-interaction-flags';
 import { isTouchDevice } from '../lib/mobile';
 
 const PULL_TO_REFRESH_PRESETS = {
@@ -30,6 +31,7 @@ export function usePullToRefresh({
   onThresholdReached,
   onRefresh,
 }: UsePullToRefreshOptions) {
+  const refreshFeatureEnabled = isMobileInteractionFeatureEnabled('mobile-interactions-elastic-refresh');
   const threshold = customThreshold ?? PULL_TO_REFRESH_PRESETS[preset].threshold;
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -46,7 +48,7 @@ export function usePullToRefresh({
   pullDistanceRef.current = pullDistance;
 
   useEffect(() => {
-    if (!enabled || !isTouchDevice()) {
+    if (!enabled || !refreshFeatureEnabled || !isTouchDevice()) {
       return;
     }
 
@@ -147,7 +149,7 @@ export function usePullToRefresh({
       scrollContainer.removeEventListener('touchend', handleTouchEnd);
       scrollContainer.removeEventListener('touchcancel', reset);
     };
-  }, [enabled, isRefreshing, threshold]);
+  }, [enabled, isRefreshing, refreshFeatureEnabled, threshold]);
 
   return {
     isPulling: pullDistance > 0,

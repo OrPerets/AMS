@@ -12,6 +12,7 @@ import { cn } from '../../lib/utils';
 import { useDirection, useLocale } from '../../lib/providers';
 import { triggerHaptic } from '../../lib/mobile';
 import { trackInteractionLifecycle, trackLiveEventReactionRendered } from '../../lib/analytics';
+import { isMobileInteractionFeatureEnabled } from '../../lib/mobile-interaction-flags';
 import { useTouchHoldLift } from './mobile-card-effects';
 import { INTERACTION_THRESHOLDS, MOTION_DISTANCE, MOTION_DURATION, MOTION_SPRING, MOTION_STAGGER } from '../../lib/motion-tokens';
 import { subscribeUIInteraction } from '../../lib/ui-interaction-bus';
@@ -89,6 +90,7 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
   onActionCommitted,
 }, ref) => {
   const reducedMotion = useReducedMotion();
+  const swipeEnabled = isMobileInteractionFeatureEnabled('mobile-interactions-swipe-undo');
   const [offset, setOffset] = React.useState(0);
   const [isPrepared, setIsPrepared] = React.useState(false);
   const [isCommitArmed, setIsCommitArmed] = React.useState(false);
@@ -137,6 +139,7 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
         animate={hold.isHolding && !reducedMotion ? { y: -MOTION_DISTANCE.xxs, scale: 1.01 } : { y: 0, scale: 1 }}
         transition={MOTION_SPRING.cardTight}
         onTouchStart={(event) => {
+          if (!swipeEnabled) return;
           touchStartXRef.current = event.touches[0]?.clientX ?? null;
           touchStartYRef.current = event.touches[0]?.clientY ?? null;
           swipeLockedRef.current = false;
@@ -155,6 +158,7 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
           });
         }}
         onTouchMove={(event) => {
+          if (!swipeEnabled) return;
           if (reducedMotion || touchStartXRef.current === null || touchStartYRef.current === null) return;
           const deltaX = event.touches[0].clientX - touchStartXRef.current;
           const deltaY = event.touches[0].clientY - touchStartYRef.current;
@@ -199,6 +203,7 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
           setOffset(clamped);
         }}
         onTouchEnd={() => {
+          if (!swipeEnabled) return;
           const crossedThreshold = isCommitArmed && Math.sign(offset || 0) === swipeDirection;
           if (crossedThreshold && (action.href || action.onClick)) {
             triggerHaptic(item.tone === 'danger' ? 'warning' : 'success');
@@ -237,6 +242,7 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
           setOffset(0);
         }}
         onTouchCancel={() => {
+          if (!swipeEnabled) return;
           touchStartXRef.current = null;
           touchStartYRef.current = null;
           swipeLockedRef.current = false;

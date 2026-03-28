@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { trackInteractionLifecycle } from '../../lib/analytics';
 import { INTERACTION_THRESHOLDS } from '../../lib/motion-tokens';
 import { triggerHaptic } from '../../lib/mobile';
+import { isMobileInteractionFeatureEnabled } from '../../lib/mobile-interaction-flags';
 import { useDirection } from '../../lib/providers';
 import { emitUIInteraction } from '../../lib/ui-interaction-bus';
 import { cn } from '../../lib/utils';
@@ -70,6 +71,8 @@ export function MobileSwipeActionCard({
 }) {
   const reducedMotion = useReducedMotion();
   const { isRTL } = useDirection();
+  const swipeFeatureEnabled = isMobileInteractionFeatureEnabled('mobile-interactions-swipe-undo');
+  const isDisabled = disabled || !swipeFeatureEnabled;
   const [offset, setOffset] = React.useState(0);
   const [isPrepared, setIsPrepared] = React.useState(false);
   const [armedActionId, setArmedActionId] = React.useState<string | null>(null);
@@ -127,7 +130,7 @@ export function MobileSwipeActionCard({
   );
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (disabled || isCommitted) return;
+    if (isDisabled || isCommitted) return;
     touchStartXRef.current = event.touches[0]?.clientX ?? null;
     touchStartYRef.current = event.touches[0]?.clientY ?? null;
     swipeLockedRef.current = false;
@@ -141,7 +144,7 @@ export function MobileSwipeActionCard({
   };
 
   const handleTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (disabled || isCommitted || touchStartXRef.current === null || touchStartYRef.current === null) return;
+    if (isDisabled || isCommitted || touchStartXRef.current === null || touchStartYRef.current === null) return;
 
     const deltaX = event.touches[0].clientX - touchStartXRef.current;
     const deltaY = event.touches[0].clientY - touchStartYRef.current;
