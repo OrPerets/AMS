@@ -28,7 +28,10 @@ type AnalyticsEventName =
   | 'interaction_threshold_reached'
   | 'interaction_committed'
   | 'interaction_undone'
-  | 'interaction_cancelled';
+  | 'interaction_cancelled'
+  | 'live_event_received'
+  | 'live_event_reaction_rendered'
+  | 'live_event_navigation_follow';
 
 type AnalyticsPayload = Record<string, string | number | boolean | null | undefined>;
 
@@ -206,5 +209,49 @@ export function trackInteractionLifecycle(
     interactionId: context.interactionId ?? undefined,
     tone: context.tone ?? undefined,
     cancelledAfterThreshold: context.cancelledAfterThreshold ?? undefined,
+  });
+}
+
+export function trackLiveEventReceived(context: {
+  eventType: string;
+  sourceSurface: string;
+  destinationSurface?: string | null;
+  urgency?: string;
+  role?: string | null;
+}) {
+  trackEvent('live_event_received', {
+    eventType: context.eventType,
+    sourceSurface: context.sourceSurface,
+    destinationSurface: context.destinationSurface ?? undefined,
+    urgency: context.urgency ?? undefined,
+    role: context.role ?? undefined,
+  });
+}
+
+export function trackLiveEventReactionRendered(context: {
+  eventType: string;
+  surface: string;
+  reactionLatencyMs: number;
+  destinationSurface?: string | null;
+}) {
+  trackEvent('live_event_reaction_rendered', {
+    eventType: context.eventType,
+    surface: context.surface,
+    destinationSurface: context.destinationSurface ?? undefined,
+    reactionLatencyMs: Math.max(0, Math.round(context.reactionLatencyMs)),
+  });
+}
+
+export function trackLiveEventNavigationFollow(context: {
+  eventType: string;
+  sourceSurface: string;
+  destinationSurface: string;
+  elapsedMs: number;
+}) {
+  trackEvent('live_event_navigation_follow', {
+    eventType: context.eventType,
+    sourceSurface: context.sourceSurface,
+    destinationSurface: context.destinationSurface,
+    elapsedMs: Math.max(0, Math.round(context.elapsedMs)),
   });
 }

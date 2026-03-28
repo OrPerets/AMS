@@ -16,6 +16,9 @@ import { websocketService } from '../lib/websocket';
 import { toast } from './ui/use-toast';
 import { authFetch, getAccessToken, getAuthSnapshot, getCurrentUserId, isMasterPendingRoleSelection } from '../lib/auth';
 import { useBottomSurface } from '../lib/bottom-surface';
+import { emitUIInteraction } from '../lib/ui-interaction-bus';
+import { isFeatureEnabled } from '../lib/feature-flags';
+import { trackLiveEventReceived } from '../lib/analytics';
 
 interface Props {
   children: React.ReactNode;
@@ -34,6 +37,13 @@ export default function Layout({ children }: Props) {
   const publicRoutes = new Set(['/', '/404', '/_error', '/login', '/privacy', '/terms', '/support']);
   const isPublicRoute = publicRoutes.has(router.pathname);
   const authSnapshot = mounted ? getAuthSnapshot() : null;
+  const liveChoreographyEnabled = Boolean(
+    authSnapshot?.isAuthenticated &&
+      isFeatureEnabled('mobile-interactions-live-choreography', {
+        role: (authSnapshot?.role as any) ?? null,
+        userId: authSnapshot?.userId ?? null,
+      }),
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -72,6 +82,32 @@ export default function Layout({ children }: Props) {
     const handleNewTicket = (data: any) => {
       const ticket = data.ticket;
       const buildingName = ticket?.unit?.building?.name || 'בניין';
+      const urgency = ticket?.priority ?? (ticket?.status === 'URGENT' ? 'high' : 'normal');
+
+      if (liveChoreographyEnabled) {
+        const emitted = emitUIInteraction('live_event_received', {
+          eventType: 'new_ticket',
+          sourceSurface: 'websocket',
+          destinationSurface: '/tickets',
+          urgency,
+          receivedAt: Date.now(),
+          ticketId: ticket?.id ?? null,
+        });
+        trackLiveEventReceived({
+          eventType: 'new_ticket',
+          sourceSurface: 'websocket',
+          destinationSurface: '/tickets',
+          urgency: String(urgency),
+          role: authSnapshot?.role,
+        });
+        emitUIInteraction('live_event_reaction_rendered', {
+          eventType: 'new_ticket',
+          sourceSurface: 'layout_toast',
+          destinationSurface: '/tickets',
+          receivedAt: emitted.timestamp,
+          reactedAt: Date.now(),
+        });
+      }
 
       toast({
         title: 'קריאה חדשה נפתחה',
@@ -89,6 +125,31 @@ export default function Layout({ children }: Props) {
 
     const handleTicketUpdate = (data: any) => {
       const ticket = data.ticket;
+      const urgency = ticket?.priority ?? (ticket?.status === 'CRITICAL' ? 'high' : 'normal');
+      if (liveChoreographyEnabled) {
+        const emitted = emitUIInteraction('live_event_received', {
+          eventType: 'ticket_updated',
+          sourceSurface: 'websocket',
+          destinationSurface: '/tickets',
+          urgency,
+          receivedAt: Date.now(),
+          ticketId: ticket?.id ?? null,
+        });
+        trackLiveEventReceived({
+          eventType: 'ticket_updated',
+          sourceSurface: 'websocket',
+          destinationSurface: '/tickets',
+          urgency: String(urgency),
+          role: authSnapshot?.role,
+        });
+        emitUIInteraction('live_event_reaction_rendered', {
+          eventType: 'ticket_updated',
+          sourceSurface: 'layout_toast',
+          destinationSurface: '/tickets',
+          receivedAt: emitted.timestamp,
+          reactedAt: Date.now(),
+        });
+      }
       toast({
         title: 'עדכון בקריאה',
         description: `קריאה מספר ${ticket?.id} עודכנה - סטטוס: ${ticket?.status}`,
@@ -98,6 +159,30 @@ export default function Layout({ children }: Props) {
 
     const handleNewNotification = (data: any) => {
       const notification = data.notification;
+      if (liveChoreographyEnabled) {
+        const emitted = emitUIInteraction('live_event_received', {
+          eventType: 'new_notification',
+          sourceSurface: 'websocket',
+          destinationSurface: '/notifications',
+          urgency: notification?.priority ?? 'normal',
+          receivedAt: Date.now(),
+          notificationId: notification?.id ?? null,
+        });
+        trackLiveEventReceived({
+          eventType: 'new_notification',
+          sourceSurface: 'websocket',
+          destinationSurface: '/notifications',
+          urgency: notification?.priority ?? 'normal',
+          role: authSnapshot?.role,
+        });
+        emitUIInteraction('live_event_reaction_rendered', {
+          eventType: 'new_notification',
+          sourceSurface: 'layout_toast',
+          destinationSurface: '/notifications',
+          receivedAt: emitted.timestamp,
+          reactedAt: Date.now(),
+        });
+      }
       toast({
         title: notification?.title || 'התראה חדשה',
         description: notification?.message,
@@ -123,7 +208,7 @@ export default function Layout({ children }: Props) {
       websocketService.off('ticket_updated', handleTicketUpdate);
       websocketService.off('new_notification', handleNewNotification);
     };
-  }, [isPublicRoute, mounted]);
+  }, [authSnapshot?.role, isPublicRoute, liveChoreographyEnabled, mounted]);
 
   // Don't show layout on login page and landing page
   if (isPublicRoute) {

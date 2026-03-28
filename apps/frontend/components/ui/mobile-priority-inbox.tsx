@@ -11,9 +11,10 @@ import { toast } from './use-toast';
 import { cn } from '../../lib/utils';
 import { useDirection, useLocale } from '../../lib/providers';
 import { triggerHaptic } from '../../lib/mobile';
-import { trackInteractionLifecycle } from '../../lib/analytics';
+import { trackInteractionLifecycle, trackLiveEventReactionRendered } from '../../lib/analytics';
 import { useTouchHoldLift } from './mobile-card-effects';
 import { INTERACTION_THRESHOLDS, MOTION_DISTANCE, MOTION_DURATION, MOTION_SPRING, MOTION_STAGGER } from '../../lib/motion-tokens';
+import { subscribeUIInteraction } from '../../lib/ui-interaction-bus';
 
 type InboxTone = 'neutral' | 'active' | 'success' | 'warning' | 'danger';
 
@@ -106,7 +107,7 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
     <motion.div
       ref={ref}
       layout
-      initial={reducedMotion ? false : { opacity: 0, y: MOTION_DISTANCE.sm, scale: 0.98 }}
+      initial={reducedMotion ? false : { opacity: 0, y: -MOTION_DISTANCE.sm, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -MOTION_DISTANCE.xs, scale: 0.98 }}
       transition={{ layout: MOTION_SPRING.layout, duration: MOTION_DURATION.moderate, delay: reducedMotion ? 0 : index * MOTION_STAGGER.quick }}
@@ -313,6 +314,7 @@ export function MobilePriorityInbox({
   const resolvedEmptyDescription = emptyDescription ?? t('mobilePriority.emptyDescription');
   const [optimisticallyHiddenIds, setOptimisticallyHiddenIds] = React.useState<string[]>([]);
   const [undoStack, setUndoStack] = React.useState<Array<{ id: string; index: number; expiresAt: number }>>([]);
+  const [liveAttention, setLiveAttention] = React.useState(false);
   const undoTimeoutsRef = React.useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const filteredItems = React.useMemo(
     () => items.filter((item) => !optimisticallyHiddenIds.includes(item.id)),
@@ -395,8 +397,44 @@ export function MobilePriorityInbox({
     undoTimeoutsRef.current.clear();
   }, []);
 
+  React.useEffect(() => {
+    const timeouts = new Set<number>();
+    const unsubscribe = subscribeUIInteraction((event) => {
+      if (event.name !== 'live_event_received') return;
+      const destinationSurface = String(event.payload.destinationSurface ?? '');
+      if (!destinationSurface || (!destinationSurface.includes('/notifications') && !destinationSurface.includes('/tickets'))) {
+        return;
+      }
+      setLiveAttention(true);
+      trackLiveEventReactionRendered({
+        eventType: String(event.payload.eventType ?? 'unknown'),
+        surface: 'mobile_priority_inbox',
+        destinationSurface,
+        reactionLatencyMs: Date.now() - event.timestamp,
+      });
+      const timeout = window.setTimeout(() => {
+        setLiveAttention(false);
+        timeouts.delete(timeout);
+      }, 3800);
+      timeouts.add(timeout);
+    });
+    return () => {
+      unsubscribe();
+      timeouts.forEach((timeout) => window.clearTimeout(timeout));
+      timeouts.clear();
+    };
+  }, []);
+
   return (
-    <Card variant="elevated" className={cn('overflow-hidden', compact && 'rounded-[24px]', className)}>
+    <Card
+      variant="elevated"
+      className={cn(
+        'overflow-hidden',
+        compact && 'rounded-[24px]',
+        liveAttention && 'ring-1 ring-primary/18 shadow-[0_0_0_1px_rgba(224,182,89,0.24)]',
+        className,
+      )}
+    >
       <CardHeader className={cn(compact ? 'pb-2.5 pt-4' : 'pb-3')}>
         <div className="flex items-center justify-between gap-3">
           <div>
