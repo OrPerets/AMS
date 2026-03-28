@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { MoreHorizontal } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
@@ -12,6 +12,7 @@ import { useRegisterBottomSurface } from '../../lib/bottom-surface';
 import { trackNavigationBacktrackChurn, trackNavigationDedupeSuppressed, trackNavigationMisclickLoop } from '../../lib/analytics';
 import { getNavigationModel, getRecentShortcutHrefs, recordRecentShortcut, validateMobileLabelConsistency, type NavigationItem } from '../../lib/navigation';
 import { AmsCommandDrawer, type AmsCommandDrawerItem } from '../ui/ams-command-drawer';
+import { MOBILE_MORE_SHARED_LAYOUT_IDS } from '../ui/mobile-more-shared-layout';
 
 const MISCLICK_WINDOW_MS = 10_000;
 const CHURN_WINDOW_MS = 90_000;
@@ -24,6 +25,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   const [commandQuery, setCommandQuery] = useState('');
   const [mounted, setMounted] = useState(false);
   const [recentShortcuts, setRecentShortcuts] = useState<string[]>([]);
+  const prefersReducedMotion = useReducedMotion();
   const navigationTrailRef = React.useRef<Array<{ path: string; timestamp: number }>>([]);
   const lastTrackedChurnRef = React.useRef<string | null>(null);
   const { refCallback: navRef } = useRegisterBottomSurface('mobile-bottom-nav', 'essential');
@@ -113,6 +115,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   };
 
   const isMoreRouteActive = moreGroups.some((group) => group.items.some((item) => isActive(item.href)));
+  const shouldUseSharedLayout = !prefersReducedMotion;
 
   const trackPotentialChurn = (nextPath: string) => {
     const now = Date.now();
@@ -208,20 +211,46 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
             aria-controls="mobile-more-sheet"
           >
             {moreOpen || isMoreRouteActive ? (
-              <span className="gold-active-pill gold-current-pulse absolute inset-0 rounded-[20px] shadow-[0_18px_30px_-24px_rgba(84,58,15,0.52)]" />
+              shouldUseSharedLayout ? (
+                <motion.span
+                  layoutId={MOBILE_MORE_SHARED_LAYOUT_IDS.pill}
+                  className="gold-active-pill gold-current-pulse absolute inset-0 rounded-[20px] shadow-[0_18px_30px_-24px_rgba(84,58,15,0.52)]"
+                />
+              ) : (
+                <span className="gold-active-pill gold-current-pulse absolute inset-0 rounded-[20px] shadow-[0_18px_30px_-24px_rgba(84,58,15,0.52)]" />
+              )
             ) : null}
             <span className={cn('relative z-10 flex h-[32px] w-[32px] items-center justify-center rounded-[15px] transition-[color,transform,background-color,box-shadow] duration-200', moreOpen || isMoreRouteActive ? 'bg-white/78 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_10px_18px_-14px_rgba(84,58,15,0.38)]' : 'text-muted-foreground')}>
-              <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
-              {unreadNotifications > 0 ? (
-                <motion.span
-                  key={unreadNotifications}
-                  initial={{ scale: 0.95, opacity: 0.82 }}
-                  animate={{ scale: [1, 1.16, 1], opacity: [0.9, 1, 0.95] }}
-                  transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground shadow-[0_10px_18px_-12px_rgba(153,27,27,0.75)]"
-                >
-                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
+              {shouldUseSharedLayout ? (
+                <motion.span layoutId={MOBILE_MORE_SHARED_LAYOUT_IDS.icon} className="inline-flex h-[18px] w-[18px] items-center justify-center">
+                  <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
                 </motion.span>
+              ) : (
+                <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              )}
+              {unreadNotifications > 0 ? (
+                shouldUseSharedLayout ? (
+                  <motion.span
+                    key={unreadNotifications}
+                    layoutId={MOBILE_MORE_SHARED_LAYOUT_IDS.badge}
+                    initial={{ scale: 0.95, opacity: 0.82 }}
+                    animate={{ scale: [1, 1.16, 1], opacity: [0.9, 1, 0.95] }}
+                    transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+                    className="absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground shadow-[0_10px_18px_-12px_rgba(153,27,27,0.75)]"
+                  >
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key={unreadNotifications}
+                    initial={{ scale: 0.95, opacity: 0.82 }}
+                    animate={{ scale: [1, 1.16, 1], opacity: [0.9, 1, 0.95] }}
+                    transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+                    className="absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground shadow-[0_10px_18px_-12px_rgba(153,27,27,0.75)]"
+                  >
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  </motion.span>
+                )
               ) : null}
             </span>
             <span className="relative z-10 text-center leading-tight">

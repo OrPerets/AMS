@@ -3,9 +3,11 @@
 import * as React from 'react';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
-import { ArrowUpRight, Bell, Sparkles } from 'lucide-react';
+import { ArrowUpRight, Bell, MoreHorizontal, Sparkles } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { AmsDrawer } from './ams-drawer';
 import { AmsQueryField } from './ams-query-field';
+import { MOBILE_MORE_SHARED_LAYOUT_IDS } from './mobile-more-shared-layout';
 import { cn } from '../../lib/utils';
 
 export type AmsCommandDrawerItem = {
@@ -60,6 +62,8 @@ export function AmsCommandDrawer({
   tone = 'light',
 }: AmsCommandDrawerProps) {
   const lightTone = true;
+  const prefersReducedMotion = useReducedMotion();
+  const shouldUseSharedLayout = !prefersReducedMotion;
   const normalizedQuery = query.trim().toLowerCase();
   const filteredSections = normalizedQuery
     ? sections
@@ -80,8 +84,41 @@ export function AmsCommandDrawer({
       description={description}
       className="md:hidden"
       tone={tone}
+      preferSharedTransition={shouldUseSharedLayout}
     >
       <div className="space-y-4 py-2">
+        <div className="flex justify-center" aria-hidden="true">
+          {shouldUseSharedLayout ? (
+            <motion.span
+              layoutId={MOBILE_MORE_SHARED_LAYOUT_IDS.pill}
+              className="relative inline-flex h-[44px] w-[52px] items-center justify-center rounded-[20px] bg-primary/[0.09] shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_10px_18px_-14px_rgba(84,58,15,0.24)]"
+            >
+              <motion.span layoutId={MOBILE_MORE_SHARED_LAYOUT_IDS.icon} className="inline-flex h-[18px] w-[18px] items-center justify-center text-primary">
+                <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              </motion.span>
+              {unreadCount > 0 ? (
+                <motion.span
+                  layoutId={MOBILE_MORE_SHARED_LAYOUT_IDS.badge}
+                  className="absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground shadow-[0_10px_18px_-12px_rgba(153,27,27,0.75)]"
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </motion.span>
+              ) : null}
+            </motion.span>
+          ) : (
+            <span className="relative inline-flex h-[44px] w-[52px] items-center justify-center rounded-[20px] bg-primary/[0.09] shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_10px_18px_-14px_rgba(84,58,15,0.24)]">
+              <span className="inline-flex h-[18px] w-[18px] items-center justify-center text-primary">
+                <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              </span>
+              {unreadCount > 0 ? (
+                <span className="absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground shadow-[0_10px_18px_-12px_rgba(153,27,27,0.75)]">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              ) : null}
+            </span>
+          )}
+        </div>
+
         <AmsQueryField
           value={query}
           onChange={onQueryChange}

@@ -22,6 +22,7 @@ type AmsDrawerProps = {
   backdrop?: 'opaque' | 'blur' | 'transparent';
   scrollBehavior?: 'inside' | 'outside';
   tone?: 'dark' | 'light';
+  preferSharedTransition?: boolean;
 };
 
 const FOCUSABLE_SELECTOR = [
@@ -49,6 +50,7 @@ export function AmsDrawer({
   backdrop = 'blur',
   scrollBehavior = 'inside',
   tone = 'light',
+  preferSharedTransition = false,
 }: AmsDrawerProps) {
   const lightTone = tone === 'light';
   const contentRef = React.useRef<HTMLDivElement | null>(null);
@@ -133,13 +135,13 @@ export function AmsDrawer({
                   transition: { duration: MOTION_DURATION.standard, ease: MOTION_EASE.emphasized },
                 },
                 exit: {
-                  y: MOTION_DISTANCE.drawerHiddenY,
+                  y: preferSharedTransition ? 0 : MOTION_DISTANCE.drawerHiddenY,
                   scale: MOTION_DISTANCE.drawerExitScale,
                   opacity: 0.96,
                   transition: { duration: MOTION_DURATION.fast, ease: MOTION_EASE.emphasizedExit },
                 },
                 initial: {
-                  y: MOTION_DISTANCE.drawerHiddenY,
+                  y: preferSharedTransition ? 0 : MOTION_DISTANCE.drawerHiddenY,
                   scale: MOTION_DISTANCE.drawerInitialScale,
                   opacity: 0.92,
                 },
