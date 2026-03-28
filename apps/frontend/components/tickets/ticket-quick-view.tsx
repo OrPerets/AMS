@@ -22,6 +22,10 @@ export function TicketQuickView({
       description={description}
       placement="bottom"
       size="lg"
+      enableSnapPoints
+      drawerKey="ticket-quick-view"
+      snapPoints={[0.38, 0.66, 0.92]}
+      defaultSnapPoint={1}
       bodyClassName="max-h-[68dvh] overflow-y-auto"
     >
         {children}

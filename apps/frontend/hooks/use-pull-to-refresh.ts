@@ -153,6 +153,7 @@ export function usePullToRefresh({
     isPulling: pullDistance > 0,
     isRefreshing,
     pullDistance,
+    pullProgress: Math.min(pullDistance / threshold, 1),
     threshold,
     thresholdReached: pullDistance >= threshold,
   };

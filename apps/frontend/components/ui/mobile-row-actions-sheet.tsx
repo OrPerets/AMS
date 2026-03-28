@@ -98,6 +98,10 @@ export function MobileRowActionsSheet({
         description={description}
         placement="bottom"
         size="lg"
+        enableSnapPoints
+        drawerKey="mobile-row-actions"
+        snapPoints={[0.32, 0.56, 0.88]}
+        defaultSnapPoint={0}
       >
         <div className="space-y-3 pb-2">
           {primaryActions.map((action) => {
