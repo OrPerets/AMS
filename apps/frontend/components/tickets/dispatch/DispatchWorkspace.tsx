@@ -865,6 +865,18 @@ export function DispatchWorkspace() {
     );
   }
 
+  if (!dispatchData) {
+    return (
+      <div className="rounded-3xl border border-subtle-border bg-surface p-6 text-center shadow-elevation-sm">
+        <h2 className="text-lg font-semibold text-foreground">טעינת לוח הקריאות נכשלה</h2>
+        <p className="mt-2 text-sm text-muted-foreground">לא הצלחנו להביא את הנתונים כרגע. אפשר לרענן ולנסות שוב.</p>
+        <Button className="mt-4" onClick={() => void loadDispatch()}>
+          נסה שוב
+        </Button>
+      </div>
+    );
+  }
+
   const selectedPresetName = allPresets.find((preset) => preset.id === selectedPresetId)?.name ?? 'תצוגה מותאמת';
   const roleLabel = currentRole === 'PM' ? 'מנהל נכס' : currentRole === 'MASTER' ? 'מנהל ראשי' : 'מנהל מערכת';
 
