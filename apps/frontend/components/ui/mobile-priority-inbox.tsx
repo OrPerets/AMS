@@ -6,6 +6,8 @@ import { ArrowUpRight, CircleAlert, Clock3, ShieldAlert } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './card';
 import { StatusBadge } from './status-badge';
 import { Button } from './button';
+import { ToastAction } from './toast';
+import { toast } from './use-toast';
 import { cn } from '../../lib/utils';
 import { useDirection, useLocale } from '../../lib/providers';
 import { triggerHaptic } from '../../lib/mobile';
@@ -76,19 +78,28 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
   index: number;
   swipeDirection: 1 | -1;
   roleHint: 'resident' | 'admin' | 'operations';
+  onActionCommitted?: (item: MobilePriorityInboxItem) => void;
 }>(({
   item,
   index,
   swipeDirection,
   roleHint,
+  onActionCommitted,
 }, ref) => {
   const reducedMotion = useReducedMotion();
   const [offset, setOffset] = React.useState(0);
+  const [isPrepared, setIsPrepared] = React.useState(false);
+  const [isCommitArmed, setIsCommitArmed] = React.useState(false);
   const touchStartXRef = React.useRef<number | null>(null);
   const touchStartYRef = React.useRef<number | null>(null);
   const swipeLockedRef = React.useRef(false);
+  const revealCrossedRef = React.useRef(false);
+  const commitCrossedRef = React.useRef(false);
   const action = resolveSwipeAction(item, roleHint);
   const hold = useTouchHoldLift(true);
+  const revealThreshold = 36;
+  const commitThreshold = 82;
+  const maxSwipeDistance = 116;
 
   return (
     <motion.div
@@ -108,7 +119,7 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
           swipeDirection === 1 ? 'left-0 justify-start' : 'right-0 justify-end',
           actionToneClasses(action.tone),
         )}
-        style={{ opacity: Math.abs(offset) > 10 ? 1 : 0 }}
+        style={{ opacity: isPrepared ? 1 : 0 }}
         aria-hidden="true"
       >
         {action.label}
@@ -128,6 +139,10 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
           touchStartYRef.current = event.touches[0]?.clientY ?? null;
           swipeLockedRef.current = false;
           setOffset(0);
+          setIsPrepared(false);
+          setIsCommitArmed(false);
+          revealCrossedRef.current = false;
+          commitCrossedRef.current = false;
         }}
         onTouchMove={(event) => {
           if (reducedMotion || touchStartXRef.current === null || touchStartYRef.current === null) return;
@@ -142,13 +157,34 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
           }
 
           const directionalDelta = deltaX * swipeDirection;
-          const clamped = Math.max(0, Math.min(directionalDelta, 116)) * swipeDirection;
+          const clamped = Math.max(0, Math.min(directionalDelta, maxSwipeDistance)) * swipeDirection;
+          const absoluteOffset = Math.abs(clamped);
+          const isRevealActive = absoluteOffset >= revealThreshold;
+          const isCommitActive = absoluteOffset >= commitThreshold;
+
+          if (isRevealActive !== revealCrossedRef.current) {
+            revealCrossedRef.current = isRevealActive;
+            if (isRevealActive) {
+              triggerHaptic('light');
+            }
+          }
+
+          if (isCommitActive !== commitCrossedRef.current) {
+            commitCrossedRef.current = isCommitActive;
+            if (isCommitActive) {
+              triggerHaptic(item.tone === 'danger' ? 'warning' : 'light');
+            }
+          }
+
+          setIsPrepared(isRevealActive);
+          setIsCommitArmed(isCommitActive);
           setOffset(clamped);
         }}
         onTouchEnd={() => {
-          const crossedThreshold = Math.abs(offset) > 78 && Math.sign(offset || 0) === swipeDirection;
+          const crossedThreshold = isCommitArmed && Math.sign(offset || 0) === swipeDirection;
           if (crossedThreshold && (action.href || action.onClick)) {
-            triggerHaptic(item.tone === 'danger' ? 'warning' : 'light');
+            triggerHaptic(item.tone === 'danger' ? 'warning' : 'success');
+            onActionCommitted?.(item);
             if (action.onClick) {
               action.onClick(item);
             } else if (action.href) {
@@ -158,12 +194,20 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
           touchStartXRef.current = null;
           touchStartYRef.current = null;
           swipeLockedRef.current = false;
+          revealCrossedRef.current = false;
+          commitCrossedRef.current = false;
+          setIsPrepared(false);
+          setIsCommitArmed(false);
           setOffset(0);
         }}
         onTouchCancel={() => {
           touchStartXRef.current = null;
           touchStartYRef.current = null;
           swipeLockedRef.current = false;
+          revealCrossedRef.current = false;
+          commitCrossedRef.current = false;
+          setIsPrepared(false);
+          setIsCommitArmed(false);
           setOffset(0);
         }}
         {...hold.holdProps}
@@ -212,6 +256,7 @@ export function MobilePriorityInbox({
   emphasizeFirst = true,
   maxItems = 3,
   compact = false,
+  onActionCommitted,
 }: {
   title?: string;
   subtitle?: string;
@@ -223,6 +268,7 @@ export function MobilePriorityInbox({
   emphasizeFirst?: boolean;
   maxItems?: number;
   compact?: boolean;
+  onActionCommitted?: (item: MobilePriorityInboxItem) => void;
 }) {
   const { t } = useLocale();
   const { isRTL } = useDirection();
@@ -230,13 +276,81 @@ export function MobilePriorityInbox({
   const resolvedTitle = title ?? t('mobilePriority.title');
   const resolvedEmptyTitle = emptyTitle ?? t('mobilePriority.emptyTitle');
   const resolvedEmptyDescription = emptyDescription ?? t('mobilePriority.emptyDescription');
-  const visibleItems = items.slice(0, maxItems);
+  const [optimisticallyHiddenIds, setOptimisticallyHiddenIds] = React.useState<string[]>([]);
+  const [undoStack, setUndoStack] = React.useState<Array<{ id: string; index: number; expiresAt: number }>>([]);
+  const undoTimeoutsRef = React.useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const filteredItems = React.useMemo(
+    () => items.filter((item) => !optimisticallyHiddenIds.includes(item.id)),
+    [items, optimisticallyHiddenIds],
+  );
+  const pendingUndoCount = undoStack.length;
+  const visibleItems = filteredItems.slice(0, maxItems);
   const swipeDirection = isRTL ? 1 : -1;
   const roleHint: 'resident' | 'admin' | 'operations' = router.pathname.startsWith('/resident')
     ? 'resident'
     : router.pathname.startsWith('/admin')
       ? 'admin'
       : 'operations';
+  const removeUndoEntry = React.useCallback((id: string) => {
+    const timeout = undoTimeoutsRef.current.get(id);
+    if (timeout) {
+      clearTimeout(timeout);
+      undoTimeoutsRef.current.delete(id);
+    }
+    setUndoStack((current) => current.filter((entry) => entry.id !== id));
+  }, []);
+
+  const handleActionCommitted = React.useCallback((item: MobilePriorityInboxItem) => {
+    const filteredIndex = filteredItems.findIndex((candidate) => candidate.id === item.id);
+    if (filteredIndex === -1) return;
+
+    const expiresAt = Date.now() + 8000;
+
+    setOptimisticallyHiddenIds((current) => (current.includes(item.id) ? current : [...current, item.id]));
+    setUndoStack((current) => {
+      const withoutCurrent = current.filter((entry) => entry.id !== item.id);
+      return [...withoutCurrent, { id: item.id, index: filteredIndex, expiresAt }];
+    });
+
+    const existingTimeout = undoTimeoutsRef.current.get(item.id);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+    undoTimeoutsRef.current.set(
+      item.id,
+      setTimeout(() => {
+        removeUndoEntry(item.id);
+      }, Math.max(0, expiresAt - Date.now())),
+    );
+
+    toast({
+      title: 'הפריט הועבר לטיפול',
+      description: pendingUndoCount > 0 ? `${item.title} · ${pendingUndoCount + 1} ממתינים לאישור` : item.title,
+      action: (
+        <ToastAction
+          altText="בטל"
+          onClick={() => {
+            setOptimisticallyHiddenIds((current) => current.filter((id) => id !== item.id));
+            removeUndoEntry(item.id);
+          }}
+        >
+          בטל
+        </ToastAction>
+      ),
+    });
+
+    onActionCommitted?.(item);
+  }, [filteredItems, onActionCommitted, pendingUndoCount, removeUndoEntry]);
+
+  React.useEffect(() => {
+    setOptimisticallyHiddenIds((current) => current.filter((id) => items.some((item) => item.id === id)));
+    setUndoStack((current) => current.filter((entry) => items.some((item) => item.id === entry.id) && entry.expiresAt > Date.now()));
+  }, [items]);
+
+  React.useEffect(() => () => {
+    undoTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+    undoTimeoutsRef.current.clear();
+  }, []);
 
   return (
     <Card variant="elevated" className={cn('overflow-hidden', compact && 'rounded-[24px]', className)}>
@@ -264,7 +378,13 @@ export function MobilePriorityInbox({
                   index === 0 && emphasizeFirst && 'rounded-[22px] bg-[linear-gradient(180deg,rgba(255,250,244,0.75)_0%,rgba(255,255,255,0)_100%)] p-[1px]',
                 )}
               >
-                <PriorityInboxItemCard item={item} index={index} swipeDirection={swipeDirection} roleHint={roleHint} />
+                <PriorityInboxItemCard
+                  item={item}
+                  index={index}
+                  swipeDirection={swipeDirection}
+                  roleHint={roleHint}
+                  onActionCommitted={handleActionCommitted}
+                />
               </div>
             ))}
           </AnimatePresence>
