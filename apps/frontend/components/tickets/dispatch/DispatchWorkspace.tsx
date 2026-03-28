@@ -31,6 +31,8 @@ import type {
 } from './types';
 import { usePullToRefresh } from '../../../hooks/use-pull-to-refresh';
 import { triggerHaptic } from '../../../lib/mobile';
+import { getRouteTransitionTokensByKey } from '../../../lib/route-transition-contract';
+import { MOTION_DISTANCE, MOTION_DURATION, MOTION_EASE } from '../../../lib/motion-tokens';
 
 const defaultCreateForm = {
   buildingId: '',
@@ -45,8 +47,9 @@ const defaultCreateForm = {
 export function DispatchWorkspace() {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
-  const iconLayoutId = prefersReducedMotion ? undefined : 'priority-tile-icon-tickets';
-  const badgeLayoutId = prefersReducedMotion ? undefined : 'priority-tile-badge-tickets';
+  const transitionTokens = getRouteTransitionTokensByKey('tickets');
+  const iconLayoutId = prefersReducedMotion ? undefined : transitionTokens.icon;
+  const badgeLayoutId = prefersReducedMotion ? undefined : transitionTokens.badge;
   const searchRef = useRef<HTMLInputElement>(null);
   const technicianTriggerRef = useRef<HTMLButtonElement>(null);
   const statusTriggerRef = useRef<HTMLButtonElement>(null);
@@ -957,92 +960,99 @@ export function DispatchWorkspace() {
         onOpenHelp={() => setDialogs((current) => ({ ...current, help: true }))}
       />
 
-      <DispatchSavedViews
-        presets={allPresets}
-        selectedPresetId={selectedPresetId}
-        onSelectPreset={applyPresetById}
-        onOpenSaveDialog={() => setDialogs((current) => ({ ...current, savePreset: true }))}
-        onResetFilters={resetFilters}
-      />
-
-      <DispatchQueueTabs queue={filters.queue} queueCounts={dispatchData?.queueCounts ?? { TRIAGE: 0, UNASSIGNED: 0, SLA_RISK: 0, ACTIVE: 0, RESOLVED_RECENT: 0 }} onQueueChange={(value) => updateFilter('queue', value)} />
-
-      <section className="grid gap-6 xl:grid-cols-[0.85fr_1fr_0.78fr]">
-        <DispatchResultsList
-          dispatchData={dispatchData}
-          selectedTicketId={selectedTicket?.id ?? null}
-          selectedIds={selectedIds}
-          statusFilter={filters.statusFilter}
-          severityFilter={filters.severityFilter}
-          slaFilter={filters.slaFilter}
-          categoryFilter={filters.categoryFilter}
-          onStatusFilterChange={(value) => updateFilter('statusFilter', value)}
-          onSeverityFilterChange={(value) => updateFilter('severityFilter', value)}
-          onSlaFilterChange={(value) => updateFilter('slaFilter', value)}
-          onCategoryFilterChange={(value) => updateFilter('categoryFilter', value)}
+      <motion.div
+        initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: MOTION_DISTANCE.xs }}
+        animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        transition={{ delay: prefersReducedMotion ? 0 : 0.14, duration: MOTION_DURATION.moderate, ease: MOTION_EASE.emphasized }}
+        className="space-y-5"
+      >
+        <DispatchSavedViews
+          presets={allPresets}
+          selectedPresetId={selectedPresetId}
+          onSelectPreset={applyPresetById}
+          onOpenSaveDialog={() => setDialogs((current) => ({ ...current, savePreset: true }))}
           onResetFilters={resetFilters}
-          onSelectTicket={setSelectedTicketId}
-          onToggleTicket={toggleTicketSelection}
-          onToggleAllVisible={toggleAllVisible}
-          updatedTicketIds={updatedTicketIds}
         />
 
-        <DispatchDetailPanel
-          ticket={selectedTicket}
-          canNavigatePrevious={Boolean(dispatchData?.items.length && selectedTicket && dispatchData.items.findIndex((ticket) => ticket.id === selectedTicket.id) > 0)}
-          canNavigateNext={Boolean(
-            dispatchData?.items.length &&
-              selectedTicket &&
-              dispatchData.items.findIndex((ticket) => ticket.id === selectedTicket.id) < dispatchData.items.length - 1,
-          )}
-          onNavigatePrevious={() => navigateTicketSelection(-1)}
-          onNavigateNext={() => navigateTicketSelection(1)}
-        />
+        <DispatchQueueTabs queue={filters.queue} queueCounts={dispatchData?.queueCounts ?? { TRIAGE: 0, UNASSIGNED: 0, SLA_RISK: 0, ACTIVE: 0, RESOLVED_RECENT: 0 }} onQueueChange={(value) => updateFilter('queue', value)} />
 
-        <DispatchActionRail
-          ticket={selectedTicket}
-          dispatchData={dispatchData}
-          technicians={technicianInsights}
-          vendors={vendors}
-          canDispatch={canDispatch}
-          assignmentTarget={assignmentTarget}
-          supplierTarget={supplierTarget}
-          statusTarget={statusTarget}
-          severityTarget={severityTarget}
-          costEstimate={costEstimate}
-          newNote={newNote}
-          bulkSelectionCount={selectedIds.length}
-          technicianTriggerRef={technicianTriggerRef}
-          statusTriggerRef={statusTriggerRef}
-          severityTriggerRef={severityTriggerRef}
-          onAssignmentTargetChange={setAssignmentTarget}
-          onSupplierTargetChange={setSupplierTarget}
-          onStatusTargetChange={setStatusTarget}
-          onSeverityTargetChange={setSeverityTarget}
-          onCostEstimateChange={setCostEstimate}
-          onNewNoteChange={setNewNote}
-          onAssignTechnician={() => void handleAssignTechnician(selectedTicket ? [selectedTicket.id] : [])}
-          onAssignSupplier={() => void handleAssignSupplier()}
-          onUpdateStatus={() => void handleUpdateStatus(selectedTicket ? [selectedTicket.id] : [])}
-          onUpdateSeverity={() => void handleUpdateSeverity(selectedTicket ? [selectedTicket.id] : [])}
-          onAddNote={() => void handleAddNote()}
-          onBulkAssignTechnician={() => void handleAssignTechnician(selectedIds)}
-          onBulkUpdateStatus={() => void handleUpdateStatus(selectedIds)}
-          onBulkUpdateSeverity={() => void handleUpdateSeverity(selectedIds)}
-          assigning={assigning}
-          assigningSupplier={assigningSupplier}
-          updatingStatus={updatingStatus}
-          updatingSeverity={updatingSeverity}
-          addingNote={addingNote}
-          escalating={escalating}
-          onEscalateTicket={() => void handleEscalateTicket()}
-          triagePreview={triagePreview}
-          triageLoading={triageLoading}
-          onRunTriage={() => void handleRunTriage()}
-          onApplyTriage={applyTriageSuggestion}
-          onUseDraftResponse={useDraftResponse}
-        />
-      </section>
+        <section className="grid gap-6 xl:grid-cols-[0.85fr_1fr_0.78fr]">
+          <DispatchResultsList
+            dispatchData={dispatchData}
+            selectedTicketId={selectedTicket?.id ?? null}
+            selectedIds={selectedIds}
+            statusFilter={filters.statusFilter}
+            severityFilter={filters.severityFilter}
+            slaFilter={filters.slaFilter}
+            categoryFilter={filters.categoryFilter}
+            onStatusFilterChange={(value) => updateFilter('statusFilter', value)}
+            onSeverityFilterChange={(value) => updateFilter('severityFilter', value)}
+            onSlaFilterChange={(value) => updateFilter('slaFilter', value)}
+            onCategoryFilterChange={(value) => updateFilter('categoryFilter', value)}
+            onResetFilters={resetFilters}
+            onSelectTicket={setSelectedTicketId}
+            onToggleTicket={toggleTicketSelection}
+            onToggleAllVisible={toggleAllVisible}
+            updatedTicketIds={updatedTicketIds}
+          />
+
+          <DispatchDetailPanel
+            ticket={selectedTicket}
+            canNavigatePrevious={Boolean(dispatchData?.items.length && selectedTicket && dispatchData.items.findIndex((ticket) => ticket.id === selectedTicket.id) > 0)}
+            canNavigateNext={Boolean(
+              dispatchData?.items.length &&
+                selectedTicket &&
+                dispatchData.items.findIndex((ticket) => ticket.id === selectedTicket.id) < dispatchData.items.length - 1,
+            )}
+            onNavigatePrevious={() => navigateTicketSelection(-1)}
+            onNavigateNext={() => navigateTicketSelection(1)}
+          />
+
+          <DispatchActionRail
+            ticket={selectedTicket}
+            dispatchData={dispatchData}
+            technicians={technicianInsights}
+            vendors={vendors}
+            canDispatch={canDispatch}
+            assignmentTarget={assignmentTarget}
+            supplierTarget={supplierTarget}
+            statusTarget={statusTarget}
+            severityTarget={severityTarget}
+            costEstimate={costEstimate}
+            newNote={newNote}
+            bulkSelectionCount={selectedIds.length}
+            technicianTriggerRef={technicianTriggerRef}
+            statusTriggerRef={statusTriggerRef}
+            severityTriggerRef={severityTriggerRef}
+            onAssignmentTargetChange={setAssignmentTarget}
+            onSupplierTargetChange={setSupplierTarget}
+            onStatusTargetChange={setStatusTarget}
+            onSeverityTargetChange={setSeverityTarget}
+            onCostEstimateChange={setCostEstimate}
+            onNewNoteChange={setNewNote}
+            onAssignTechnician={() => void handleAssignTechnician(selectedTicket ? [selectedTicket.id] : [])}
+            onAssignSupplier={() => void handleAssignSupplier()}
+            onUpdateStatus={() => void handleUpdateStatus(selectedTicket ? [selectedTicket.id] : [])}
+            onUpdateSeverity={() => void handleUpdateSeverity(selectedTicket ? [selectedTicket.id] : [])}
+            onAddNote={() => void handleAddNote()}
+            onBulkAssignTechnician={() => void handleAssignTechnician(selectedIds)}
+            onBulkUpdateStatus={() => void handleUpdateStatus(selectedIds)}
+            onBulkUpdateSeverity={() => void handleUpdateSeverity(selectedIds)}
+            assigning={assigning}
+            assigningSupplier={assigningSupplier}
+            updatingStatus={updatingStatus}
+            updatingSeverity={updatingSeverity}
+            addingNote={addingNote}
+            escalating={escalating}
+            onEscalateTicket={() => void handleEscalateTicket()}
+            triagePreview={triagePreview}
+            triageLoading={triageLoading}
+            onRunTriage={() => void handleRunTriage()}
+            onApplyTriage={applyTriageSuggestion}
+            onUseDraftResponse={useDraftResponse}
+          />
+        </section>
+      </motion.div>
 
       <DispatchDialogs
         helpOpen={dialogs.help}
