@@ -9,10 +9,12 @@ import { cn } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
 import { getTokenPayload, normalizeRole } from '../../lib/auth';
 import { useRegisterBottomSurface } from '../../lib/bottom-surface';
-import { trackNavigationBacktrackChurn, trackNavigationDedupeSuppressed, trackNavigationMisclickLoop } from '../../lib/analytics';
+import { trackLiveEventNavigationFollow, trackNavigationBacktrackChurn, trackNavigationDedupeSuppressed, trackNavigationMisclickLoop } from '../../lib/analytics';
 import { getNavigationModel, getRecentShortcutHrefs, recordRecentShortcut, validateMobileLabelConsistency, type NavigationItem } from '../../lib/navigation';
 import { AmsCommandDrawer, type AmsCommandDrawerItem } from '../ui/ams-command-drawer';
 import { MOBILE_MORE_SHARED_LAYOUT_IDS } from '../ui/mobile-more-shared-layout';
+import { subscribeUIInteraction } from '../../lib/ui-interaction-bus';
+import { useAnimatedNumber } from '../../hooks/use-animated-number';
 
 const MISCLICK_WINDOW_MS = 10_000;
 const CHURN_WINDOW_MS = 90_000;
@@ -25,10 +27,13 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   const [commandQuery, setCommandQuery] = useState('');
   const [mounted, setMounted] = useState(false);
   const [recentShortcuts, setRecentShortcuts] = useState<string[]>([]);
+  const [liveAttention, setLiveAttention] = useState(false);
   const prefersReducedMotion = useReducedMotion();
   const navigationTrailRef = React.useRef<Array<{ path: string; timestamp: number }>>([]);
   const lastTrackedChurnRef = React.useRef<string | null>(null);
+  const latestLiveEventRef = React.useRef<{ eventType: string; sourceSurface: string; destinationSurface: string; timestamp: number } | null>(null);
   const { refCallback: navRef } = useRegisterBottomSurface('mobile-bottom-nav', 'essential');
+  const animatedUnread = useAnimatedNumber(unreadNotifications);
 
   useEffect(() => {
     setMounted(true);
@@ -44,6 +49,35 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   useEffect(() => {
     setRecentShortcuts(getRecentShortcutHrefs());
   }, [router.asPath, moreOpen]);
+
+  useEffect(() => {
+    const timeouts = new Set<number>();
+    const unsubscribe = subscribeUIInteraction((event) => {
+      if (event.name !== 'live_event_received') return;
+      const destinationSurface = String(event.payload.destinationSurface ?? '');
+      if (!destinationSurface || (!destinationSurface.includes('/notifications') && !destinationSurface.includes('/tickets'))) {
+        return;
+      }
+      setLiveAttention(true);
+      latestLiveEventRef.current = {
+        eventType: String(event.payload.eventType ?? 'unknown'),
+        sourceSurface: String(event.payload.sourceSurface ?? 'websocket'),
+        destinationSurface,
+        timestamp: event.timestamp,
+      };
+      const timeout = window.setTimeout(() => {
+        setLiveAttention(false);
+        timeouts.delete(timeout);
+      }, 4200);
+      timeouts.add(timeout);
+    });
+
+    return () => {
+      unsubscribe();
+      timeouts.forEach((timeout) => window.clearTimeout(timeout));
+      timeouts.clear();
+    };
+  }, []);
 
   if (!mounted) return null;
 
@@ -149,6 +183,16 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
     }
 
     trackPotentialChurn(href);
+    const lastLive = latestLiveEventRef.current;
+    if (lastLive && href.startsWith(lastLive.destinationSurface)) {
+      trackLiveEventNavigationFollow({
+        eventType: lastLive.eventType,
+        sourceSurface: lastLive.sourceSurface,
+        destinationSurface: lastLive.destinationSurface,
+        elapsedMs: Date.now() - lastLive.timestamp,
+      });
+      latestLiveEventRef.current = null;
+    }
     setRecentShortcuts(getRecentShortcutHrefs(now));
     setMoreOpen(false);
     setCommandQuery('');
@@ -236,9 +280,12 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                     initial={{ scale: 0.95, opacity: 0.82 }}
                     animate={{ scale: [1, 1.16, 1], opacity: [0.9, 1, 0.95] }}
                     transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-                    className="absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground shadow-[0_10px_18px_-12px_rgba(153,27,27,0.75)]"
+                    className={cn(
+                      "absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground shadow-[0_10px_18px_-12px_rgba(153,27,27,0.75)]",
+                      liveAttention && "animate-pulse",
+                    )}
                   >
-                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                    {animatedUnread > 9 ? '9+' : Math.round(animatedUnread)}
                   </motion.span>
                 ) : (
                   <motion.span
@@ -246,9 +293,12 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
                     initial={{ scale: 0.95, opacity: 0.82 }}
                     animate={{ scale: [1, 1.16, 1], opacity: [0.9, 1, 0.95] }}
                     transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-                    className="absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground shadow-[0_10px_18px_-12px_rgba(153,27,27,0.75)]"
+                    className={cn(
+                      "absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground shadow-[0_10px_18px_-12px_rgba(153,27,27,0.75)]",
+                      liveAttention && "animate-pulse",
+                    )}
                   >
-                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                    {animatedUnread > 9 ? '9+' : Math.round(animatedUnread)}
                   </motion.span>
                 )
               ) : null}

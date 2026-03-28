@@ -6,6 +6,8 @@ import { cn } from '../../lib/utils';
 import { MOTION_DURATION, MOTION_EASE } from '../../lib/motion-tokens';
 import { useAnimatedNumber } from '../../hooks/use-animated-number';
 import { useSyncDeltaLabel } from '../../hooks/use-sync-delta-label';
+import { subscribeUIInteraction } from '../../lib/ui-interaction-bus';
+import { trackLiveEventReactionRendered } from '../../lib/analytics';
 
 type StatusMetric = {
   id: string;
@@ -57,6 +59,7 @@ export function CompactStatusStrip({
 }) {
   const reducedMotion = useReducedMotion();
   const [pulsingMetricId, setPulsingMetricId] = React.useState<string | null>(null);
+  const [liveAttention, setLiveAttention] = React.useState(false);
   const freshnessLabel = useSyncDeltaLabel(lastSyncedAt ?? null);
   const justSynced = Boolean(lastSyncedAt && Date.now() - lastSyncedAt < 8_000);
 
@@ -71,6 +74,38 @@ export function CompactStatusStrip({
         return rightPriority - leftPriority;
       })[0]?.id ?? null;
   }, [metrics]);
+
+  React.useEffect(() => {
+    const timeouts = new Set<number>();
+    const unsubscribe = subscribeUIInteraction((event) => {
+      if (event.name !== 'live_event_received') return;
+      const destinationSurface = String(event.payload.destinationSurface ?? '');
+      if (!destinationSurface || (!destinationSurface.includes('/notifications') && !destinationSurface.includes('/tickets'))) {
+        return;
+      }
+      setLiveAttention(true);
+      if (!reducedMotion && metrics[0]?.id) {
+        setPulsingMetricId(metrics[0].id);
+      }
+      trackLiveEventReactionRendered({
+        eventType: String(event.payload.eventType ?? 'unknown'),
+        surface: 'compact_status_strip',
+        destinationSurface,
+        reactionLatencyMs: Date.now() - event.timestamp,
+      });
+      const timeout = window.setTimeout(() => {
+        setLiveAttention(false);
+        setPulsingMetricId((current) => (current === metrics[0]?.id ? null : current));
+        timeouts.delete(timeout);
+      }, 3600);
+      timeouts.add(timeout);
+    });
+    return () => {
+      unsubscribe();
+      timeouts.forEach((timeout) => window.clearTimeout(timeout));
+      timeouts.clear();
+    };
+  }, [metrics, reducedMotion]);
 
   React.useEffect(() => {
     if (reducedMotion || !highlightedMetricId) {
@@ -120,6 +155,7 @@ export function CompactStatusStrip({
           className={cn(
             'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground',
             justSynced && 'border-primary/18 text-primary',
+            liveAttention && 'border-primary/24 bg-primary/8 text-primary',
             !reducedMotion && justSynced && 'animate-pulse',
           )}
         >

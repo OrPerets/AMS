@@ -3,7 +3,10 @@ export type UIInteractionEventName =
   | 'swipe_threshold_reached'
   | 'swipe_committed'
   | 'swipe_undone'
-  | 'swipe_cancelled';
+  | 'swipe_cancelled'
+  | 'live_event_received'
+  | 'live_event_reaction_rendered'
+  | 'live_event_navigation_follow';
 
 export type UIInteractionEvent = {
   name: UIInteractionEventName;

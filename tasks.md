@@ -200,23 +200,23 @@ This plan covers the mobile web experience in `apps/frontend`, with emphasis on 
 - [ ] Decide where sound/haptic is allowed and where it must remain silent.
 
 ### Frontend
-- [ ] Refactor websocket listeners in `apps/frontend/components/Layout.tsx` to emit structured UI interaction events.
+- [x] Refactor websocket listeners in `apps/frontend/components/Layout.tsx` to emit structured UI interaction events.
 - [ ] Add coordinated reactions to:
-  - [ ] `apps/frontend/components/layout/MobileBottomNav.tsx`
-  - [ ] `apps/frontend/components/ui/compact-status-strip.tsx`
-  - [ ] `apps/frontend/components/ui/mobile-priority-inbox.tsx`
+  - [x] `apps/frontend/components/layout/MobileBottomNav.tsx`
+  - [x] `apps/frontend/components/ui/compact-status-strip.tsx`
+  - [x] `apps/frontend/components/ui/mobile-priority-inbox.tsx`
   - [ ] relevant page-local counters and lists
-- [ ] Reuse `useAnimatedNumber` for count deltas.
-- [ ] Animate inserted list items from the top with short spring motion.
-- [ ] Add subtle attention states that decay automatically after a few seconds.
+- [x] Reuse `useAnimatedNumber` for count deltas.
+- [x] Animate inserted list items from the top with short spring motion.
+- [x] Add subtle attention states that decay automatically after a few seconds.
 
 ### Backend
 - [ ] Audit websocket payload consistency for ticket and notification events.
 - [ ] Include enough metadata to identify route destination and urgency.
 
 ### Analytics
-- [ ] Track event receipt to visible reaction time.
-- [ ] Track whether users navigate into the highlighted module after a live event.
+- [x] Track event receipt to visible reaction time.
+- [x] Track whether users navigate into the highlighted module after a live event.
 
 ### QA
 - [ ] Verify no double reactions when page-level and global listeners both receive the same event.
