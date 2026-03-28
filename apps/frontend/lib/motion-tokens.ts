@@ -38,3 +38,13 @@ export const MOTION_SPRING = {
   cardTight: { type: 'spring' as const, stiffness: 320, damping: 24 },
   layout: { type: 'spring' as const, stiffness: 320, damping: 30 },
 } as const;
+
+
+export const INTERACTION_THRESHOLDS = {
+  swipeReveal: 34,
+  swipeCommit: 88,
+  swipeMaxDistance: 124,
+  swipeCollapseDuration: 0.22,
+  swipeFlashDuration: 0.18,
+  undoWindowMs: 8000,
+} as const;
