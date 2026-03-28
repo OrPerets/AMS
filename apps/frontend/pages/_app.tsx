@@ -2,7 +2,7 @@
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { Fraunces, Heebo, Inter } from 'next/font/google';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import '../styles/globals.css';
@@ -87,15 +87,21 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       <AppProviders>
         <BottomSurfaceProvider>
           <RouteTransitionIndicator active={isRoutePending} />
-          <motion.div
-            initial={false}
-            animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-            transition={{ duration: MOTION_DURATION.instant, ease: MOTION_EASE.emphasized }}
-          >
+          <LayoutGroup id="mobile-route-shared-layout">
             <Layout>
-              <Component {...pageProps} />
+              <AnimatePresence initial={false} mode="sync">
+                <motion.div
+                  key={router.asPath}
+                  initial={reducedMotion ? { opacity: 1 } : { opacity: 0.94, y: MOTION_DISTANCE.xxs }}
+                  animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                  exit={reducedMotion ? { opacity: 1 } : { opacity: 0.98, y: -MOTION_DISTANCE.xxs }}
+                  transition={{ duration: MOTION_DURATION.instant, ease: MOTION_EASE.emphasized }}
+                >
+                  <Component {...pageProps} />
+                </motion.div>
+              </AnimatePresence>
             </Layout>
-          </motion.div>
+          </LayoutGroup>
           <PwaInstallPrompt />
           <SonnerToaster position="top-center" richColors />
         </BottomSurfaceProvider>

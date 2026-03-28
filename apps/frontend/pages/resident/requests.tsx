@@ -18,6 +18,7 @@ import { MobileRowActionsSheet, type MobileRowActionItem } from '../../component
 import { MobileCardSkeleton } from '../../components/ui/page-states';
 import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
 import { GlassSurface } from '../../components/ui/glass-surface';
+import { MobileSwipeActionCard } from '../../components/ui/mobile-swipe-action-card';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 import { PullToRefreshIndicator } from '../../components/ui/pull-to-refresh-indicator';
 import { QuickActionTile } from '../../components/ui/quick-action-tile';
@@ -33,6 +34,7 @@ import { toast } from '../../components/ui/use-toast';
 import { usePullToRefresh } from '../../hooks/use-pull-to-refresh';
 import { useLongPressActions } from '../../hooks/use-long-press-actions';
 import { triggerHaptic } from '../../lib/mobile';
+import { getRouteTransitionTokensByKey } from '../../lib/route-transition-contract';
 import { showRequestSubmitted } from '../../lib/success-feedback';
 import {
   formatDate,
@@ -144,8 +146,10 @@ export default function ResidentRequestsPage() {
   const router = useRouter();
   const { locale, t } = useLocale();
   const prefersReducedMotion = useReducedMotion();
-  const iconLayoutId = prefersReducedMotion ? undefined : 'priority-tile-icon-resident-requests';
-  const badgeLayoutId = prefersReducedMotion ? undefined : 'priority-tile-badge-resident-requests';
+  const transitionTokens = getRouteTransitionTokensByKey('requests');
+  const iconLayoutId = prefersReducedMotion ? undefined : transitionTokens.icon;
+  const badgeLayoutId = prefersReducedMotion ? undefined : transitionTokens.badge;
+  const titleLayoutId = prefersReducedMotion ? undefined : transitionTokens.title;
   const [form, setForm] = useState(emptyForm);
   const [history, setHistory] = useState<RequestHistoryItem[]>([]);
   const [historyFilter, setHistoryFilter] = useState({ status: 'ALL', requestType: 'ALL' });
@@ -515,7 +519,15 @@ export default function ResidentRequestsPage() {
               </motion.span>
             </div>
             <div className="text-[11px] font-semibold tracking-[0.12em] text-primary/72">בקשות</div>
-            <div className="mt-1 text-[25px] font-black leading-[1.04] text-foreground">בקשות דייר</div>
+            <motion.div
+              layoutId={titleLayoutId}
+              initial={prefersReducedMotion ? { opacity: 0.94 } : false}
+              animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+              transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              className="mt-1 text-[25px] font-black leading-[1.04] text-foreground"
+            >
+              בקשות דייר
+            </motion.div>
             <div className="mt-1.5 text-[13px] leading-5 text-secondary-foreground">
               {openRequests[0]
                 ? openRequests[0].statusNotes || t('residentRequests.priority.waitingReason')
@@ -1231,23 +1243,43 @@ function RequestHistoryCard({
 
   return (
     <div className="space-y-2">
-      <div className="touch-pan-y" {...longPressProps}>
-          <ResidentListCard
-            title={item.subject.replace(/^[A-Z_]+:\s*/, '')}
-            subtitle={item.message}
-            icon={item.requestType === 'MOVING' ? Move : item.requestType === 'PARKING' ? ParkingCircle : item.requestType === 'DOCUMENT' ? FileText : item.requestType === 'CONTACT_UPDATE' ? PhoneCall : Sparkles}
-            accent={item.status === 'SUBMITTED' || item.status === 'IN_REVIEW' ? 'warning' : 'success'}
-            delay={index * 0.04}
-            onClick={onNavigate}
-            meta={<StatusBadge label={getResidentRequestStatusLabel(item.status)} tone={getResidentRequestStatusTone(item.status)} className="px-1.5 py-0 h-4 text-[9px]" />}
-            endSlot={
-              <div className="flex flex-col items-end gap-1 shrink-0">
-                <div className="text-[10px] font-bold text-muted-foreground/60"><bdi>{formatDate(new Date(item.updatedAt || item.createdAt), locale)}</bdi></div>
-                <StatusBadge label={getRequestTypeLabel(item.requestType)} tone="neutral" className="px-1.5 py-0 h-4 text-[9px]" />
-              </div>
-            }
-          />
-      </div>
+      <MobileSwipeActionCard
+        actions={[
+          {
+            id: `open-request-${item.requestKey}`,
+            label: 'פתח מעקב',
+            tone: 'primary',
+            side: 'start',
+            onCommit: onNavigate,
+          },
+          {
+            id: `request-status-${item.requestKey}`,
+            label: item.status === 'COMPLETED' || item.status === 'CLOSED' ? 'הצג סיכום' : 'בדוק סטטוס',
+            tone: item.status === 'COMPLETED' || item.status === 'CLOSED' ? 'success' : 'warning',
+            side: 'end',
+            onCommit: onNavigate,
+          },
+        ]}
+        className="rounded-[24px]"
+      >
+        <div className="touch-pan-y" {...longPressProps}>
+            <ResidentListCard
+              title={item.subject.replace(/^[A-Z_]+:\s*/, '')}
+              subtitle={item.message}
+              icon={item.requestType === 'MOVING' ? Move : item.requestType === 'PARKING' ? ParkingCircle : item.requestType === 'DOCUMENT' ? FileText : item.requestType === 'CONTACT_UPDATE' ? PhoneCall : Sparkles}
+              accent={item.status === 'SUBMITTED' || item.status === 'IN_REVIEW' ? 'warning' : 'success'}
+              delay={index * 0.04}
+              onClick={onNavigate}
+              meta={<StatusBadge label={getResidentRequestStatusLabel(item.status)} tone={getResidentRequestStatusTone(item.status)} className="px-1.5 py-0 h-4 text-[9px]" />}
+              endSlot={
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <div className="text-[10px] font-bold text-muted-foreground/60"><bdi>{formatDate(new Date(item.updatedAt || item.createdAt), locale)}</bdi></div>
+                  <StatusBadge label={getRequestTypeLabel(item.requestType)} tone="neutral" className="px-1.5 py-0 h-4 text-[9px]" />
+                </div>
+              }
+            />
+        </div>
+      </MobileSwipeActionCard>
 
       {item.statusNotes ? (
         <GlassSurface className="rounded-[20px] px-3 py-2.5">

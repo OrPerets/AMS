@@ -4,6 +4,7 @@ import { useReducedMotion } from 'framer-motion';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
+import { MobileSwipeActionCard } from '../../ui/mobile-swipe-action-card';
 import { MobileRowActionsSheet, type MobileRowActionItem } from '../../ui/mobile-row-actions-sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { useLongPressActions } from '../../../hooks/use-long-press-actions';
@@ -217,61 +218,81 @@ function TicketListCard({
           />
         </label>
 
-        <button type="button" onClick={onSelect} className="flex-1 touch-pan-y text-right" {...longPressProps}>
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0 flex-1 space-y-2.5">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <Badge variant={selected ? 'secondary' : 'outline'} className="text-[11px]">
-                  #{ticket.id}
-                </Badge>
-                {isUpdated ? <Badge variant="outline" className="text-[10px] text-primary">עודכן</Badge> : null}
-                <TicketSeverityBadge severity={ticket.severity} />
-                <TicketStatusBadge status={ticket.status} />
-                <SlaBadge state={ticket.slaState} />
-              </div>
+        <MobileSwipeActionCard
+          actions={[
+            {
+              id: 'open-ticket-swipe',
+              label: 'פתח קריאה',
+              tone: 'primary',
+              side: 'start',
+              onCommit: onSelect,
+            },
+            {
+              id: checked ? 'unselect-ticket-swipe' : 'select-ticket-swipe',
+              label: checked ? 'בטל בחירה' : 'בחר לטיפול',
+              tone: checked ? 'warning' : 'success',
+              side: 'end',
+              onCommit: onToggle,
+            },
+          ]}
+          className="flex-1 rounded-[18px]"
+        >
+          <button type="button" onClick={onSelect} className="flex w-full touch-pan-y text-right" {...longPressProps}>
+            <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0 flex-1 space-y-2.5">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge variant={selected ? 'secondary' : 'outline'} className="text-[11px]">
+                    #{ticket.id}
+                  </Badge>
+                  {isUpdated ? <Badge variant="outline" className="text-[10px] text-primary">עודכן</Badge> : null}
+                  <TicketSeverityBadge severity={ticket.severity} />
+                  <TicketStatusBadge status={ticket.status} />
+                  <SlaBadge state={ticket.slaState} />
+                </div>
 
-              <div className="min-w-0">
-                <p className={`break-words text-[15px] font-bold leading-snug ${selected ? 'text-foreground' : 'text-slate-950'}`}>
-                  {ticket.title}
-                </p>
-                <p className={`mt-1 line-clamp-2 break-words text-sm leading-6 ${selected ? 'text-secondary-foreground' : 'text-slate-500'}`}>
-                  {ticket.description}
-                </p>
-              </div>
+                <div className="min-w-0">
+                  <p className={`break-words text-[15px] font-bold leading-snug ${selected ? 'text-foreground' : 'text-slate-950'}`}>
+                    {ticket.title}
+                  </p>
+                  <p className={`mt-1 line-clamp-2 break-words text-sm leading-6 ${selected ? 'text-secondary-foreground' : 'text-slate-500'}`}>
+                    {ticket.description}
+                  </p>
+                </div>
 
-              <div className={`flex flex-wrap gap-x-3 gap-y-1.5 text-[13px] ${selected ? 'text-secondary-foreground' : 'text-slate-500'}`}>
-                <span className="inline-flex min-w-0 items-center gap-1">
-                  <Building2 className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">
-                    {ticket.building.name} • {ticket.unit.number}
+                <div className={`flex flex-wrap gap-x-3 gap-y-1.5 text-[13px] ${selected ? 'text-secondary-foreground' : 'text-slate-500'}`}>
+                  <span className="inline-flex min-w-0 items-center gap-1">
+                    <Building2 className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">
+                      {ticket.building.name} • {ticket.unit.number}
+                    </span>
                   </span>
-                </span>
-                <span className="inline-flex min-w-0 items-center gap-1">
-                  <UserRound className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{ticket.residentName}</span>
-                </span>
+                  <span className="inline-flex min-w-0 items-center gap-1">
+                    <UserRound className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{ticket.residentName}</span>
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <div className={`grid gap-2 sm:grid-cols-2 lg:w-[220px] lg:shrink-0 lg:grid-cols-1 ${selected ? 'text-secondary-foreground' : 'text-slate-600'}`}>
-              <div className="rounded-xl border border-current/10 bg-white/45 px-3 py-2 text-sm">
-                <p className="text-[11px] opacity-60">מטפל</p>
-                <p className="mt-0.5 truncate font-semibold">{ticket.assignedTo?.email || 'לא הוקצה'}</p>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-sm">
-                <span className="inline-flex items-center gap-1 rounded-xl border border-current/10 px-2.5 py-1.5">
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  {ticket.commentCount}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-xl border border-current/10 px-2.5 py-1.5">
-                  <Camera className="h-3.5 w-3.5" />
-                  {ticket.photoCount}
-                </span>
-                <span className="text-xs opacity-70">{formatRelative(ticket.latestActivityAt)}</span>
+              <div className={`grid gap-2 sm:grid-cols-2 lg:w-[220px] lg:shrink-0 lg:grid-cols-1 ${selected ? 'text-secondary-foreground' : 'text-slate-600'}`}>
+                <div className="rounded-xl border border-current/10 bg-white/45 px-3 py-2 text-sm">
+                  <p className="text-[11px] opacity-60">מטפל</p>
+                  <p className="mt-0.5 truncate font-semibold">{ticket.assignedTo?.email || 'לא הוקצה'}</p>
+                </div>
+                <div className="flex items-center justify-between gap-1.5 text-sm">
+                  <span className="inline-flex items-center gap-1 rounded-xl border border-current/10 px-2.5 py-1.5">
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    {ticket.commentCount}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-xl border border-current/10 px-2.5 py-1.5">
+                    <Camera className="h-3.5 w-3.5" />
+                    {ticket.photoCount}
+                  </span>
+                  <span className="text-xs opacity-70">{formatRelative(ticket.latestActivityAt)}</span>
+                </div>
               </div>
             </div>
-          </div>
-        </button>
+          </button>
+        </MobileSwipeActionCard>
       </div>
       <MobileRowActionsSheet
         title={`קריאה #${ticket.id}`}

@@ -1,7 +1,8 @@
 // /Users/orperetz/Documents/AMS/apps/frontend/pages/tech/jobs.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useReducedMotion } from 'framer-motion';
+import { useRouter } from 'next/router';
+import { motion, useReducedMotion } from 'framer-motion';
 import { 
   CheckCircle, 
   Clock, 
@@ -26,9 +27,11 @@ import { MobilePriorityInbox } from '../../components/ui/mobile-priority-inbox';
 import { MobileActionHub } from '../../components/ui/mobile-action-hub';
 import { Badge } from '../../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { MobileSwipeActionCard } from '../../components/ui/mobile-swipe-action-card';
 import { Skeleton } from '../../components/ui/skeleton';
 import { cn, formatDate, formatCurrency } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
+import { getRouteTransitionTokensByKey } from '../../lib/route-transition-contract';
 import { toast } from '../../components/ui/use-toast';
 
 interface WorkOrder {
@@ -64,6 +67,7 @@ const severityConfig = {
 };
 
 export default function Jobs() {
+  const router = useRouter();
   const [orders, setOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -71,6 +75,10 @@ export default function Jobs() {
   const [updatedOrderIds, setUpdatedOrderIds] = useState<Set<number>>(new Set());
   const { locale } = useLocale();
   const reducedMotion = useReducedMotion();
+  const transitionTokens = getRouteTransitionTokensByKey('jobs');
+  const iconLayoutId = reducedMotion ? undefined : transitionTokens.icon;
+  const badgeLayoutId = reducedMotion ? undefined : transitionTokens.badge;
+  const titleLayoutId = reducedMotion ? undefined : transitionTokens.title;
   const lastOrderSignaturesRef = useRef<Map<number, string>>(new Map());
   const rowHighlightTimeoutRef = useRef<number | null>(null);
 
@@ -326,6 +334,26 @@ export default function Jobs() {
   return (
     <div className="space-y-6">
       <div className="space-y-3 md:hidden">
+        <div className="flex items-center justify-between rounded-2xl border border-subtle-border bg-background/76 px-3 py-2">
+          <motion.span
+            layoutId={iconLayoutId}
+            initial={reducedMotion ? { opacity: 0.94 } : false}
+            animate={reducedMotion ? { opacity: 1 } : undefined}
+            transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-primary/16 bg-primary/10 text-primary"
+          >
+            <Wrench className="h-4 w-4" strokeWidth={1.85} />
+          </motion.span>
+          <motion.span
+            layoutId={badgeLayoutId}
+            initial={reducedMotion ? { opacity: 0.92 } : false}
+            animate={reducedMotion ? { opacity: 1 } : undefined}
+            transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+            className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
+          >
+            {todayStats.total} משימות
+          </motion.span>
+        </div>
         <CompactStatusStrip
           roleLabel="טכנאי"
           lastSyncedAt={lastSyncedAt}
@@ -338,13 +366,19 @@ export default function Jobs() {
         <PrimaryActionCard
           eyebrow="Next Job"
           title={
-            nextJob
-              ? `${nextJob.ticket.severity === 'URGENT' ? '🔴 דחוף' : nextJob.ticket.severity === 'HIGH' ? '🟡 גבוה' : '🔵 רגיל'} — ${nextJob.ticket.title || 'משימה לשטח'}`
-              : 'אין כרגע משימה דחופה'
+            <motion.span
+              layoutId={titleLayoutId}
+              initial={reducedMotion ? { opacity: 0.94 } : false}
+              animate={reducedMotion ? { opacity: 1 } : undefined}
+              transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              className="inline-block"
+            >
+              משימות היום
+            </motion.span>
           }
           description={
             nextJob
-              ? `${nextJob.location?.building || 'בניין'}${nextJob.location?.floor ? ` · קומה ${nextJob.location.floor}` : ''} · ${getTimeRemaining(nextJob.dueTime) || 'ללא SLA'}`
+              ? `${nextJob.ticket.title || 'משימה לשטח'} · ${nextJob.location?.building || 'בניין'}${nextJob.location?.floor ? ` · קומה ${nextJob.location.floor}` : ''} · ${getTimeRemaining(nextJob.dueTime) || 'ללא SLA'}`
               : 'תור העבודות פתוח עבורך. אפשר לעדכן סטטוס, לעבור לגינון או לרענן שוב בהמשך.'
           }
           ctaLabel="התחל טיפול"
@@ -517,130 +551,143 @@ export default function Jobs() {
             const isOverdue = timeRemaining === 'פג תוקף';
 
             return (
-              <Card
+              <MobileSwipeActionCard
                 key={order.id}
-                className={cn(
-                  "transition-all duration-200 hover:shadow-md",
-                  order.status === 'IN_PROGRESS' && "ring-2 ring-info/20",
-                  order.ticket.severity === 'URGENT' && "ring-2 ring-destructive/20",
-                  updatedOrderIds.has(order.id) && (reducedMotion ? "ring-2 ring-primary/25" : "ring-2 ring-primary/25 animate-[pulse_1.2s_ease-out_1]")
-                )}
+                actions={[
+                  {
+                    id: `job-open-${order.id}`,
+                    label: 'פתח משימה',
+                    tone: 'primary',
+                    side: 'start',
+                    onCommit: () => void router.push(`/work-orders/${order.id}`),
+                  },
+                  {
+                    id: `job-advance-${order.id}`,
+                    label: order.status === 'ASSIGNED' ? 'התחל עבודה' : 'סיים משימה',
+                    tone: order.status === 'ASSIGNED' ? 'warning' : 'success',
+                    side: 'end',
+                    onCommit: () => (order.status === 'ASSIGNED' ? markInProgress(order.id) : markCompleted(order.id)),
+                  },
+                ]}
+                className="rounded-[inherit]"
               >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={severity.variant} className="text-xs">
-                          {getSeverityIcon(order.ticket.severity)}
-                          <span className="ms-1">{severity.label}</span>
-                        </Badge>
-                        {updatedOrderIds.has(order.id) && (
-                          <Badge variant="outline" className="text-[10px] text-primary">
-                            עודכן
+                <Card
+                  className={cn(
+                    "transition-all duration-200 hover:shadow-md",
+                    order.status === 'IN_PROGRESS' && "ring-2 ring-info/20",
+                    order.ticket.severity === 'URGENT' && "ring-2 ring-destructive/20",
+                    updatedOrderIds.has(order.id) && (reducedMotion ? "ring-2 ring-primary/25" : "ring-2 ring-primary/25 animate-[pulse_1.2s_ease-out_1]")
+                  )}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={severity.variant} className="text-xs">
+                            {getSeverityIcon(order.ticket.severity)}
+                            <span className="ms-1">{severity.label}</span>
                           </Badge>
-                        )}
-                        {order.status === 'IN_PROGRESS' && (
-                          <Badge variant="info" className="text-xs">בביצוע</Badge>
-                        )}
+                          {updatedOrderIds.has(order.id) && (
+                            <Badge variant="outline" className="text-[10px] text-primary">
+                              עודכן
+                            </Badge>
+                          )}
+                          {order.status === 'IN_PROGRESS' && (
+                            <Badge variant="info" className="text-xs">בביצוע</Badge>
+                          )}
+                        </div>
+                        <CardTitle className="text-lg leading-tight">
+                          {order.ticket.title || 'משימה ללא כותרת'}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          קריאה #{order.ticket.id} • יחידה {order.ticket.unitId}
+                        </p>
                       </div>
-                      <CardTitle className="text-lg leading-tight">
-                        {order.ticket.title || 'משימה ללא כותרת'}
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        קריאה #{order.ticket.id} • יחידה {order.ticket.unitId}
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4">
+                    {order.ticket.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {order.ticket.description}
                       </p>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {/* Description */}
-                  {order.ticket.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {order.ticket.description}
-                    </p>
-                  )}
-
-                  {/* Location */}
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{order.location?.building}</span>
-                    {order.location?.floor && (
-                      <span className="text-muted-foreground">• קומה {order.location.floor}</span>
                     )}
-                  </div>
 
-                  {/* Resident Info */}
-                  {order.ticket.residentName && (
                     <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span>{order.location?.building}</span>
+                      {order.location?.floor && (
+                        <span className="text-muted-foreground">• קומה {order.location.floor}</span>
+                      )}
+                    </div>
+
+                    {order.ticket.residentName && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span>{order.ticket.residentName}</span>
+                          {order.ticket.residentPhone && (
+                            <Button variant="ghost" size="sm" className="h-6 px-2">
+                              <Phone className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
-                        <span>{order.ticket.residentName}</span>
-                        {order.ticket.residentPhone && (
-                          <Button variant="ghost" size="sm" className="h-6 px-2">
-                            <Phone className="h-3 w-3" />
-                          </Button>
-                        )}
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span>{order.estimatedDuration ? `${order.estimatedDuration} דקות` : 'לא צוין'}</span>
                       </div>
+                      {timeRemaining && (
+                        <div className={cn(
+                          "flex items-center gap-1",
+                          isOverdue ? "text-destructive" : "text-muted-foreground"
+                        )}>
+                          <Clock className="h-3 w-3" />
+                          <span className="text-xs">{timeRemaining}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
 
-                  {/* Time and Duration */}
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>{order.estimatedDuration ? `${order.estimatedDuration} דקות` : 'לא צוין'}</span>
-                    </div>
-                    {timeRemaining && (
-                      <div className={cn(
-                        "flex items-center gap-1",
-                        isOverdue ? "text-destructive" : "text-muted-foreground"
-                      )}>
-                        <Clock className="h-3 w-3" />
-                        <span className="text-xs">{timeRemaining}</span>
+                    {order.costEstimate && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-muted-foreground">הערכת עלות:</span>
+                        <span className="font-medium">{formatCurrency(order.costEstimate)}</span>
                       </div>
                     )}
-                  </div>
 
-                  {/* Cost Estimate */}
-                  {order.costEstimate && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-muted-foreground">הערכת עלות:</span>
-                      <span className="font-medium">{formatCurrency(order.costEstimate)}</span>
+                    <div className="flex gap-2 pt-2">
+                      {order.status === 'ASSIGNED' ? (
+                        <Button
+                          onClick={() => markInProgress(order.id)}
+                          className="flex-1"
+                          size="sm"
+                        >
+                          התחל עבודה
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => markCompleted(order.id)}
+                          variant="success"
+                          className="flex-1"
+                          size="sm"
+                        >
+                          <CheckCircle className="me-1 h-4 w-4" />
+                          סיים משימה
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm">
+                        <Navigation className="h-4 w-4" />
+                      </Button>
+
+                      <Button variant="outline" size="sm">
+                        <Camera className="h-4 w-4" />
+                      </Button>
                     </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-2">
-                    {order.status === 'ASSIGNED' ? (
-                      <Button 
-                        onClick={() => markInProgress(order.id)}
-                        className="flex-1"
-                        size="sm"
-                      >
-                        התחל עבודה
-                      </Button>
-                    ) : (
-                      <Button 
-                        onClick={() => markCompleted(order.id)}
-                        variant="success"
-                        className="flex-1"
-                        size="sm"
-                      >
-                        <CheckCircle className="me-1 h-4 w-4" />
-                        סיים משימה
-                      </Button>
-                    )}
-                    
-                    <Button variant="outline" size="sm">
-                      <Navigation className="h-4 w-4" />
-                    </Button>
-                    
-                    <Button variant="outline" size="sm">
-                      <Camera className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </MobileSwipeActionCard>
             );
           })}
         </div>

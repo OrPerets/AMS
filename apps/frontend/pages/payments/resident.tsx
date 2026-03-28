@@ -22,6 +22,7 @@ import { ResidentStepSummaryTiles } from '../../components/resident/resident-ste
 import { residentScreenMotion, residentStepMotion, residentSuccessMotion } from '../../components/resident/motion';
 import { useLocale } from '../../lib/providers';
 import { triggerHaptic } from '../../lib/mobile';
+import { getRouteTransitionTokensByKey } from '../../lib/route-transition-contract';
 import { setResumeState } from '../../lib/engagement';
 import { websocketService } from '../../lib/websocket';
 
@@ -68,8 +69,10 @@ export default function ResidentPaymentsPage() {
   const { locale } = useLocale();
   const reducedMotion = useReducedMotion();
   const motionReduced = Boolean(reducedMotion);
-  const iconLayoutId = reducedMotion ? undefined : 'priority-tile-icon-payments';
-  const badgeLayoutId = reducedMotion ? undefined : 'priority-tile-badge-payments';
+  const transitionTokens = getRouteTransitionTokensByKey('payments');
+  const iconLayoutId = reducedMotion ? undefined : transitionTokens.icon;
+  const badgeLayoutId = reducedMotion ? undefined : transitionTokens.badge;
+  const titleLayoutId = reducedMotion ? undefined : transitionTokens.title;
   const [context, setContext] = useState<AccountContext | null>(null);
   const [finance, setFinance] = useState<ResidentFinance | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<ResidentPaymentMethod[]>([]);
@@ -401,7 +404,17 @@ export default function ResidentPaymentsPage() {
               <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.85} />
             </motion.span>
           }
-          title="מרכז תשלומים"
+          title={
+            <motion.span
+              layoutId={titleLayoutId}
+              initial={motionReduced ? { opacity: 0.94 } : false}
+              animate={motionReduced ? { opacity: 1 } : undefined}
+              transition={motionReduced ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              className="inline-block"
+            >
+              מרכז תשלומים
+            </motion.span>
+          }
           subtitle={undefined}
           badge={
             <motion.div

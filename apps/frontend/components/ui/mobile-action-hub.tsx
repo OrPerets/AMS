@@ -132,7 +132,7 @@ function ActionTile({
   const isSelected = Boolean(item.selected || item.emphasize);
   const [actionsOpen, setActionsOpen] = React.useState(false);
   const priority = item.priority ?? (isSelected ? 'primary' : 'secondary');
-  const sharedTransitionTokens = priority === 'primary' ? resolveRouteTransitionTokensByHref(item.href) : null;
+  const sharedTransitionTokens = resolveRouteTransitionTokensByHref(item.href);
   const iconLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.icon;
   const badgeLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.badge;
   const titleLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.title;
