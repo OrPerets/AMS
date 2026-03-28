@@ -5,6 +5,7 @@ import { ArrowUpRight, CheckCircle2, CircleAlert } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useMobileDepthEffect, useTouchHoldLift } from './mobile-card-effects';
 import { MOTION_DISTANCE, MOTION_SPRING } from '../../lib/motion-tokens';
+import { resolveRouteTransitionTokensByHref } from '../../lib/route-transition-contract';
 
 type PrimaryActionTone = 'default' | 'warning' | 'danger' | 'success';
 type PrimaryActionPulseMetric = {
@@ -51,6 +52,10 @@ export function PrimaryActionCard({
   const reducedMotion = useReducedMotion();
   const Icon = tone === 'success' ? CheckCircle2 : CircleAlert;
   const depthRef = useMobileDepthEffect(mobileHomeEffect);
+  const sharedTransitionTokens = resolveRouteTransitionTokensByHref(href);
+  const iconLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.icon;
+  const badgeLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.badge;
+  const titleLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.title;
   const hold = useTouchHoldLift(true);
 
   const panel = (
@@ -89,19 +94,31 @@ export function PrimaryActionCard({
             </div>
           ) : null}
           <div className="flex items-start gap-2">
-            <Icon
-              className={cn(
-                'mt-0.5 h-4 w-4 shrink-0',
-                tone === 'warning' && 'text-warning',
-                tone === 'danger' && 'text-destructive',
-                tone === 'success' && 'text-success',
-                tone === 'default' && 'text-primary',
-              )}
-              strokeWidth={1.75}
-              aria-hidden="true"
-            />
+            <motion.span
+              layoutId={iconLayoutId}
+              initial={reducedMotion ? { opacity: 0.94 } : false}
+              animate={reducedMotion ? { opacity: 1 } : undefined}
+              transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              className="mt-0.5 shrink-0"
+            >
+              <Icon
+                className={cn(
+                  'h-4 w-4',
+                  tone === 'warning' && 'text-warning',
+                  tone === 'danger' && 'text-destructive',
+                  tone === 'success' && 'text-success',
+                  tone === 'default' && 'text-primary',
+                )}
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
+            </motion.span>
             <div className="min-w-0">
-              <div
+              <motion.div
+                layoutId={titleLayoutId}
+                initial={reducedMotion ? { opacity: 0.94 } : false}
+                animate={reducedMotion ? { opacity: 1 } : undefined}
+                transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
                 className={cn(
                   density === 'compact' ? 'text-[14px] leading-5 sm:text-[15px]' : 'text-[15px] leading-5 sm:text-base',
                   'font-semibold',
@@ -109,7 +126,7 @@ export function PrimaryActionCard({
                 )}
               >
                 {title}
-              </div>
+              </motion.div>
               <div
                 className={cn(
                   density === 'compact' ? 'line-clamp-1 text-[11px] leading-4.5 sm:text-[12px]' : 'line-clamp-2 text-[12px] leading-4.5 sm:text-[13px] sm:leading-5',
@@ -162,7 +179,14 @@ export function PrimaryActionCard({
               data-accent-sheen="true"
               data-testid="primary-action-cta"
             >
-              {ctaLabel}
+              <motion.span
+                layoutId={badgeLayoutId}
+                initial={reducedMotion ? { opacity: 0.92 } : false}
+                animate={reducedMotion ? { opacity: 1 } : undefined}
+                transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              >
+                {ctaLabel}
+              </motion.span>
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.75} />
             </Link>
           ) : (
@@ -183,7 +207,14 @@ export function PrimaryActionCard({
               data-accent-sheen="true"
               data-testid="primary-action-cta"
             >
-              {ctaLabel}
+              <motion.span
+                layoutId={badgeLayoutId}
+                initial={reducedMotion ? { opacity: 0.92 } : false}
+                animate={reducedMotion ? { opacity: 1 } : undefined}
+                transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              >
+                {ctaLabel}
+              </motion.span>
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.75} />
             </button>
           )}

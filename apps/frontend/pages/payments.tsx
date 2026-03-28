@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { AlertCircle, Download, Plus, Receipt, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { authFetch, downloadAuthenticatedFile, getEffectiveRole, openAuthenticatedFile } from '../lib/auth';
@@ -16,6 +17,7 @@ import { AmsQueryField } from '../components/ui/ams-query-field';
 import { toast } from '../components/ui/use-toast';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useLocale } from '../lib/providers';
+import { getRouteTransitionTokensByKey } from '../lib/route-transition-contract';
 
 type InvoiceStatus = 'PENDING' | 'PAID' | 'OVERDUE';
 
@@ -123,6 +125,11 @@ const statusLabel: Record<InvoiceStatus, string> = {
 export default function PaymentsPage() {
   const router = useRouter();
   const { locale, t } = useLocale();
+  const prefersReducedMotion = useReducedMotion();
+  const transitionTokens = getRouteTransitionTokensByKey('payments');
+  const iconLayoutId = prefersReducedMotion ? undefined : transitionTokens.icon;
+  const badgeLayoutId = prefersReducedMotion ? undefined : transitionTokens.badge;
+  const titleLayoutId = prefersReducedMotion ? undefined : transitionTokens.title;
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -550,8 +557,37 @@ export default function PaymentsPage() {
       </div>
 
       <div className="page-header">
-        <div>
-          <h1 className="text-2xl font-semibold sm:text-3xl">{t('payments.title')}</h1>
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2">
+            <motion.span
+              layoutId={iconLayoutId}
+              initial={prefersReducedMotion ? { opacity: 0.94 } : false}
+              animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+              transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-primary/16 bg-primary/10 text-primary"
+            >
+              <Receipt className="h-4 w-4" strokeWidth={1.9} />
+            </motion.span>
+            <motion.span
+              layoutId={badgeLayoutId}
+              initial={prefersReducedMotion ? { opacity: 0.92 } : false}
+              animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+              transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+            >
+              <Badge variant="outline" className="border-primary/16 bg-primary/8 text-primary">
+                {collectionsSummary?.totals.overdueCount ?? stats.overdueCount} בפיגור
+              </Badge>
+            </motion.span>
+          </div>
+          <motion.h1
+            layoutId={titleLayoutId}
+            initial={prefersReducedMotion ? { opacity: 0.94 } : false}
+            animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+            transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+            className="text-2xl font-semibold sm:text-3xl"
+          >
+            {t('payments.title')}
+          </motion.h1>
           <p className="text-sm text-muted-foreground">{t('payments.description')}</p>
         </div>
         <div className="page-header-actions">

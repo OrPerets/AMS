@@ -1,4 +1,5 @@
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useRouter } from 'next/router';
 import { Bell, ExternalLink, Filter, Radio, RefreshCw, Settings, SlidersHorizontal } from 'lucide-react';
 import { authFetch, getAccessToken, getCurrentUserId } from '../lib/auth';
@@ -18,6 +19,7 @@ import { StatusBadge } from '../components/ui/status-badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from '../components/ui/use-toast';
 import { usePullToRefresh } from '../hooks/use-pull-to-refresh';
+import { getRouteTransitionTokensByKey } from '../lib/route-transition-contract';
 
 interface NotificationPreferences {
   email: boolean;
@@ -68,8 +70,10 @@ export default function NotificationsPage() {
   const { t } = useLocale();
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
-  const iconLayoutId = prefersReducedMotion ? undefined : 'priority-tile-icon-notifications';
-  const badgeLayoutId = prefersReducedMotion ? undefined : 'priority-tile-badge-notifications';
+  const transitionTokens = getRouteTransitionTokensByKey('notifications');
+  const iconLayoutId = prefersReducedMotion ? undefined : transitionTokens.icon;
+  const badgeLayoutId = prefersReducedMotion ? undefined : transitionTokens.badge;
+  const titleLayoutId = prefersReducedMotion ? undefined : transitionTokens.title;
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -358,7 +362,16 @@ export default function NotificationsPage() {
             </motion.span>
           </div>
         }
-        title={t('notifications.title')}
+        title={
+          <motion.span
+            layoutId={titleLayoutId}
+            initial={prefersReducedMotion ? { opacity: 0.94 } : false}
+            animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+            transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+          >
+            {t('notifications.title')}
+          </motion.span>
+        }
         description={t('notifications.description')}
         actions={
           <>

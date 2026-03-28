@@ -5,15 +5,9 @@ import { ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useMobileDepthEffect, useTouchHoldLift } from './mobile-card-effects';
 import { MiniSparkline } from './mobile-insight-widget';
+import { resolveRouteTransitionTokensByHref } from '../../lib/route-transition-contract';
 
 type IconType = React.ComponentType<{ className?: string; strokeWidth?: number }>;
-
-const SHARED_PRIORITY_LAYOUTS = {
-  tickets: { icon: 'priority-tile-icon-tickets', badge: 'priority-tile-badge-tickets' },
-  notifications: { icon: 'priority-tile-icon-notifications', badge: 'priority-tile-badge-notifications' },
-  requests: { icon: 'priority-tile-icon-resident-requests', badge: 'priority-tile-badge-resident-requests' },
-  payments: { icon: 'priority-tile-icon-payments', badge: 'priority-tile-badge-payments' },
-} as const;
 
 export type MobileActionHubItem = {
   id: string;
@@ -48,14 +42,6 @@ function toneClasses(accent: MobileActionHubItem['accent']) {
   }
 }
 
-function resolveSharedPriorityLayout(item: MobileActionHubItem) {
-  const href = item.href?.split('?')[0] ?? '';
-  if (href.startsWith('/tickets')) return SHARED_PRIORITY_LAYOUTS.tickets;
-  if (href.startsWith('/notifications')) return SHARED_PRIORITY_LAYOUTS.notifications;
-  if (href.startsWith('/resident/requests')) return SHARED_PRIORITY_LAYOUTS.requests;
-  if (href.startsWith('/payments')) return SHARED_PRIORITY_LAYOUTS.payments;
-  return null;
-}
 
 function TileShell({
   children,
@@ -102,9 +88,10 @@ function ActionTile({
   const Icon = item.icon;
   const isSelected = Boolean(item.selected || item.emphasize);
   const priority = item.priority ?? (isSelected ? 'primary' : 'secondary');
-  const sharedPriorityLayout = priority === 'primary' ? resolveSharedPriorityLayout(item) : null;
-  const iconLayoutId = reducedMotion ? undefined : sharedPriorityLayout?.icon;
-  const badgeLayoutId = reducedMotion ? undefined : sharedPriorityLayout?.badge;
+  const sharedTransitionTokens = priority === 'primary' ? resolveRouteTransitionTokensByHref(item.href) : null;
+  const iconLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.icon;
+  const badgeLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.badge;
+  const titleLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.title;
 
   return (
     <motion.div
@@ -185,9 +172,15 @@ function ActionTile({
                 <bdi>{item.previewValue}</bdi>
               </div>
             ) : null}
-            <div className={cn(priority === 'primary' ? (density === 'compact' ? 'text-[14px]' : 'text-[15px]') : density === 'compact' ? 'text-[13px] sm:text-[13px]' : 'text-[14px] sm:text-sm', 'font-semibold leading-5 text-foreground')}>
+            <motion.div
+              layoutId={titleLayoutId}
+              initial={reducedMotion ? { opacity: 0.94 } : false}
+              animate={reducedMotion ? { opacity: 1 } : undefined}
+              transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              className={cn(priority === 'primary' ? (density === 'compact' ? 'text-[14px]' : 'text-[15px]') : density === 'compact' ? 'text-[13px] sm:text-[13px]' : 'text-[14px] sm:text-sm', 'font-semibold leading-5 text-foreground')}
+            >
               {item.label}
-            </div>
+            </motion.div>
             {item.description ? (
               <div
                 className={cn(
