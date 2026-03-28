@@ -10,6 +10,11 @@ export type FeatureFlag =
   | 'ux-v2-maintenance'
   | 'ux-v2-finance'
   | 'ux-v2-gardens'
+  | 'mobile-interactions-card-morph'
+  | 'mobile-interactions-peek-drawers'
+  | 'mobile-interactions-swipe-undo'
+  | 'mobile-interactions-elastic-refresh'
+  | 'mobile-interactions-live-choreography'
   | 'perf-budgets-enforced'
   | 'a11y-gates-enforced';
 
@@ -86,6 +91,41 @@ const FLAG_REGISTRY: FlagConfig[] = [
     percentage: 100,
     allowedRoles: ['PM', 'ADMIN', 'TECH', 'MASTER'],
     description: 'V2 gardens module with worker dashboard',
+  },
+  {
+    flag: 'mobile-interactions-card-morph',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Card-to-screen morph transition family for mobile routes',
+  },
+  {
+    flag: 'mobile-interactions-peek-drawers',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Peek/snap motion behavior for mobile drawers and sheets',
+  },
+  {
+    flag: 'mobile-interactions-swipe-undo',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Swipe commit, collapse, and undo behavior family on mobile rows',
+  },
+  {
+    flag: 'mobile-interactions-elastic-refresh',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Elastic pull-to-refresh canopy interactions',
+  },
+  {
+    flag: 'mobile-interactions-live-choreography',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Coordinated live-update choreography across mobile surfaces',
   },
   {
     flag: 'perf-budgets-enforced',

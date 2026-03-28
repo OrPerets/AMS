@@ -92,42 +92,42 @@ This plan covers the mobile web experience in `apps/frontend`, with emphasis on 
 **Goal:** Create the execution rails before changing behavior.
 
 ### Product / UX
-- [ ] Write one-page behavior briefs for:
-  - [ ] Card-to-screen morph
-  - [ ] Peek/snap drawers
-  - [ ] Swipe commit with undo
-  - [ ] Elastic refresh canopy
-  - [ ] Live event choreography
-- [ ] Define success criteria for each feature:
-  - [ ] perceived speed
-  - [ ] task completion speed
-  - [ ] reduced accidental navigation
-  - [ ] reduced backtracking
-- [ ] Approve one shared motion language for all five features.
+- [x] Write one-page behavior briefs for:
+  - [x] Card-to-screen morph
+  - [x] Peek/snap drawers
+  - [x] Swipe commit with undo
+  - [x] Elastic refresh canopy
+  - [x] Live event choreography
+- [x] Define success criteria for each feature:
+  - [x] perceived speed
+  - [x] task completion speed
+  - [x] reduced accidental navigation
+  - [x] reduced backtracking
+- [x] Approve one shared motion language for all five features.
 
 ### Frontend
-- [ ] Add feature flags in `apps/frontend/lib/feature-flags.ts` for each interaction family.
-- [ ] Normalize motion constants in `apps/frontend/lib/motion-tokens.ts`.
-- [ ] Add a lightweight UI event bus for frontend-only interaction reactions if existing analytics/event plumbing is insufficient.
-- [ ] Audit current reduced-motion coverage and fill obvious gaps.
+- [x] Add feature flags in `apps/frontend/lib/feature-flags.ts` for each interaction family.
+- [x] Normalize motion constants in `apps/frontend/lib/motion-tokens.ts`.
+- [x] Add a lightweight UI event bus for frontend-only interaction reactions if existing analytics/event plumbing is insufficient.
+- [x] Audit current reduced-motion coverage and fill obvious gaps.
 
 ### Analytics
 - [ ] Define event names for gesture lifecycle:
-  - [ ] `interaction_started`
-  - [ ] `interaction_threshold_reached`
-  - [ ] `interaction_committed`
-  - [ ] `interaction_undone`
-  - [ ] `interaction_cancelled`
-- [ ] Add route-level context fields: role, pathname, source surface, destination surface.
+  - [x] `interaction_started`
+  - [x] `interaction_threshold_reached`
+  - [x] `interaction_committed`
+  - [x] `interaction_undone`
+  - [x] `interaction_cancelled`
+- [x] Add route-level context fields: role, pathname, source surface, destination surface.
 
 ### QA
-- [ ] Build a mobile interaction checklist template for every sprint.
-- [ ] Capture baseline videos for current `/home`, `/tickets`, `/notifications`, `/payments/resident`, `/resident/requests`, `/tech/jobs`.
+- [x] Build a mobile interaction checklist template for every sprint.
+- [x] Capture baseline videos for current `/home`, `/tickets`, `/notifications`, `/payments/resident`, `/resident/requests`, `/tech/jobs`.
 
 ### Exit Criteria
-- [ ] All five features have flags.
-- [ ] All five features have analytics contracts.
-- [ ] Motion language and QA checklist approved.
+- [x] All five features have flags.
+- [x] All five features have analytics contracts.
+- [x] Motion language and QA checklist approved.
 
 ---
 
@@ -136,39 +136,39 @@ This plan covers the mobile web experience in `apps/frontend`, with emphasis on 
 **Goal:** Make swipe actions feel decisive, safe, and rewarding.
 
 ### Product / UX
-- [ ] Define which row types support swipe on first release:
-  - [ ] resident requests
-  - [ ] tech jobs
-  - [ ] tickets dispatch rows
-  - [ ] priority inbox items
-- [ ] Define per-tone behavior:
-  - [ ] warning = softer confirmation
-  - [ ] danger = stronger resistance + warning haptic
-  - [ ] success = lighter completion
-- [ ] Specify undo copy per action type.
+- [x] Define which row types support swipe on first release:
+  - [x] resident requests
+  - [x] tech jobs
+  - [x] tickets dispatch rows
+  - [x] priority inbox items
+- [x] Define per-tone behavior:
+  - [x] warning = softer confirmation
+  - [x] danger = stronger resistance + warning haptic
+  - [x] success = lighter completion
+- [x] Specify undo copy per action type.
 
 ### Frontend
 - [ ] Extend `apps/frontend/components/ui/mobile-swipe-action-card.tsx` to support:
-  - [ ] post-commit locked state
-  - [ ] commit flash/tint state
-  - [ ] collapse-out animation
-  - [ ] optional optimistic removal callback
-  - [ ] undo timeout hook
+  - [x] post-commit locked state
+  - [x] commit flash/tint state
+  - [x] collapse-out animation
+  - [x] optional optimistic removal callback
+  - [x] undo timeout hook
 - [ ] Extend `apps/frontend/components/ui/mobile-priority-inbox.tsx` to animate:
-  - [ ] committed card exit
-  - [ ] list reflow spring
-  - [ ] restored card re-entry after undo
-- [ ] Integrate undo toast using existing toast system.
-- [ ] Preserve tap behavior when swipe is cancelled.
-- [ ] Ensure RTL swipe direction rules remain correct.
+  - [x] committed card exit
+  - [x] list reflow spring
+  - [x] restored card re-entry after undo
+- [x] Integrate undo toast using existing toast system.
+- [x] Preserve tap behavior when swipe is cancelled.
+- [x] Ensure RTL swipe direction rules remain correct.
 
 ### Backend
 - [ ] Confirm all committed swipe actions are idempotent.
 - [ ] Support rollback or no-op replay where undo restores frontend state before server confirmation.
 
 ### Analytics
-- [ ] Track swipe start, reveal threshold, commit, undo, and cancel.
-- [ ] Track false positives where swipe is started but cancelled frequently.
+- [x] Track swipe start, reveal threshold, commit, undo, and cancel.
+- [x] Track false positives where swipe is started but cancelled frequently.
 
 ### QA
 - [ ] Verify swipe does not break vertical scrolling.

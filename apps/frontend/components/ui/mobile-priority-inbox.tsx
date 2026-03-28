@@ -11,8 +11,9 @@ import { toast } from './use-toast';
 import { cn } from '../../lib/utils';
 import { useDirection, useLocale } from '../../lib/providers';
 import { triggerHaptic } from '../../lib/mobile';
+import { trackInteractionLifecycle } from '../../lib/analytics';
 import { useTouchHoldLift } from './mobile-card-effects';
-import { MOTION_DISTANCE, MOTION_DURATION, MOTION_SPRING, MOTION_STAGGER } from '../../lib/motion-tokens';
+import { INTERACTION_THRESHOLDS, MOTION_DISTANCE, MOTION_DURATION, MOTION_SPRING, MOTION_STAGGER } from '../../lib/motion-tokens';
 
 type InboxTone = 'neutral' | 'active' | 'success' | 'warning' | 'danger';
 
@@ -97,9 +98,9 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
   const commitCrossedRef = React.useRef(false);
   const action = resolveSwipeAction(item, roleHint);
   const hold = useTouchHoldLift(true);
-  const revealThreshold = 36;
-  const commitThreshold = 82;
-  const maxSwipeDistance = 116;
+  const revealThreshold = INTERACTION_THRESHOLDS.swipeReveal;
+  const commitThreshold = INTERACTION_THRESHOLDS.swipeCommit;
+  const maxSwipeDistance = INTERACTION_THRESHOLDS.swipeMaxDistance;
 
   return (
     <motion.div
@@ -143,6 +144,14 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
           setIsCommitArmed(false);
           revealCrossedRef.current = false;
           commitCrossedRef.current = false;
+          trackInteractionLifecycle('interaction_started', {
+            pathname: window.location.pathname,
+            sourceSurface: 'mobile_priority_inbox',
+            destinationSurface: item.href ?? null,
+            interactionType: 'swipe',
+            interactionId: item.id,
+            tone: item.tone,
+          });
         }}
         onTouchMove={(event) => {
           if (reducedMotion || touchStartXRef.current === null || touchStartYRef.current === null) return;
@@ -166,6 +175,14 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
             revealCrossedRef.current = isRevealActive;
             if (isRevealActive) {
               triggerHaptic('light');
+              trackInteractionLifecycle('interaction_threshold_reached', {
+                pathname: window.location.pathname,
+                sourceSurface: 'mobile_priority_inbox',
+                destinationSurface: item.href ?? null,
+                interactionType: 'swipe',
+                interactionId: item.id,
+                tone: item.tone,
+              });
             }
           }
 
@@ -184,12 +201,30 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
           const crossedThreshold = isCommitArmed && Math.sign(offset || 0) === swipeDirection;
           if (crossedThreshold && (action.href || action.onClick)) {
             triggerHaptic(item.tone === 'danger' ? 'warning' : 'success');
+            trackInteractionLifecycle('interaction_committed', {
+              pathname: window.location.pathname,
+              sourceSurface: 'mobile_priority_inbox',
+              destinationSurface: item.href ?? null,
+              interactionType: 'swipe',
+              interactionId: item.id,
+              tone: item.tone,
+            });
             onActionCommitted?.(item);
             if (action.onClick) {
               action.onClick(item);
             } else if (action.href) {
               window.location.assign(action.href);
             }
+          } else {
+            trackInteractionLifecycle('interaction_cancelled', {
+              pathname: window.location.pathname,
+              sourceSurface: 'mobile_priority_inbox',
+              destinationSurface: item.href ?? null,
+              interactionType: 'swipe',
+              interactionId: item.id,
+              tone: item.tone,
+              cancelledAfterThreshold: commitCrossedRef.current || revealCrossedRef.current,
+            });
           }
           touchStartXRef.current = null;
           touchStartYRef.current = null;
@@ -332,6 +367,14 @@ export function MobilePriorityInbox({
           onClick={() => {
             setOptimisticallyHiddenIds((current) => current.filter((id) => id !== item.id));
             removeUndoEntry(item.id);
+            trackInteractionLifecycle('interaction_undone', {
+              pathname: window.location.pathname,
+              sourceSurface: 'mobile_priority_inbox',
+              destinationSurface: item.href ?? null,
+              interactionType: 'swipe',
+              interactionId: item.id,
+              tone: item.tone,
+            });
           }}
         >
           בטל
