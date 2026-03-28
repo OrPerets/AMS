@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { toast } from '../components/ui/use-toast';
 import { usePullToRefresh } from '../hooks/use-pull-to-refresh';
 import { getRouteTransitionTokensByKey } from '../lib/route-transition-contract';
+import { MOTION_DISTANCE, MOTION_DURATION, MOTION_EASE } from '../lib/motion-tokens';
 
 interface NotificationPreferences {
   email: boolean;
@@ -445,39 +446,45 @@ export default function NotificationsPage() {
         }
       />
 
-      <section className="grid grid-cols-3 gap-3">
-        <NotificationMetricCard
-          title={t('notifications.unread')}
-          value={unreadCount}
-          description={t('notifications.unreadHelp')}
-          tone="primary"
-        />
-        <NotificationMetricCard
-          title={t('notifications.total')}
-          value={notifications.length}
-          description={t('notifications.totalHelp')}
-          tone="neutral"
-        />
-        <NotificationMetricCard
-          title={t('notifications.live')}
-          value={liveConnected ? t('notifications.liveConnected') : t('notifications.liveDisconnected')}
-          description={t('notifications.liveHelp')}
-          tone={liveConnected ? 'success' : 'warning'}
-          icon={<Radio className={`h-3.5 w-3.5 ${liveConnected ? 'text-success' : 'text-warning'}`} />}
-        />
-      </section>
+      <motion.div
+        initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: MOTION_DISTANCE.xs }}
+        animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        transition={{ delay: prefersReducedMotion ? 0 : 0.14, duration: MOTION_DURATION.moderate, ease: MOTION_EASE.emphasized }}
+        className="space-y-4"
+      >
+        <section className="grid grid-cols-3 gap-3">
+          <NotificationMetricCard
+            title={t('notifications.unread')}
+            value={unreadCount}
+            description={t('notifications.unreadHelp')}
+            tone="primary"
+          />
+          <NotificationMetricCard
+            title={t('notifications.total')}
+            value={notifications.length}
+            description={t('notifications.totalHelp')}
+            tone="neutral"
+          />
+          <NotificationMetricCard
+            title={t('notifications.live')}
+            value={liveConnected ? t('notifications.liveConnected') : t('notifications.liveDisconnected')}
+            description={t('notifications.liveHelp')}
+            tone={liveConnected ? 'success' : 'warning'}
+            icon={<Radio className={`h-3.5 w-3.5 ${liveConnected ? 'text-success' : 'text-warning'}`} />}
+          />
+        </section>
 
-      <Tabs defaultValue="notifications" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 rounded-[24px] border border-subtle-border bg-muted/24 p-1">
-          <TabsTrigger value="notifications" className="gap-2 rounded-[18px]">
-            <Bell className="h-4 w-4" />
-            {t('notifications.tabList')}
-          </TabsTrigger>
-          <TabsTrigger value="preferences" className="gap-2 rounded-[18px]">
-            <Settings className="h-4 w-4" />
-            {t('notifications.tabPreferences')}
-          </TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="notifications" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2 rounded-[24px] border border-subtle-border bg-muted/24 p-1">
+            <TabsTrigger value="notifications" className="gap-2 rounded-[18px]">
+              <Bell className="h-4 w-4" />
+              {t('notifications.tabList')}
+            </TabsTrigger>
+            <TabsTrigger value="preferences" className="gap-2 rounded-[18px]">
+              <Settings className="h-4 w-4" />
+              {t('notifications.tabPreferences')}
+            </TabsTrigger>
+          </TabsList>
 
         <TabsContent value="notifications" className="space-y-4">
           <Card variant="elevated">
@@ -603,7 +610,8 @@ export default function NotificationsPage() {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </motion.div>
     </div>
   );
 }

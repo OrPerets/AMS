@@ -33,6 +33,7 @@ import { cn, formatDate, formatCurrency } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
 import { getRouteTransitionTokensByKey } from '../../lib/route-transition-contract';
 import { toast } from '../../components/ui/use-toast';
+import { MOTION_DISTANCE, MOTION_DURATION, MOTION_EASE } from '../../lib/motion-tokens';
 
 interface WorkOrder {
   id: number;
@@ -399,34 +400,40 @@ export default function Jobs() {
           }
         />
 
-        {todayStats.urgent > 0 ? (
-          <TechAlertRail
-            urgentCount={todayStats.urgent}
-            overdueCount={orders.filter((order) => getTimeRemaining(order.dueTime) === 'פג תוקף').length}
+        <motion.div
+          initial={reducedMotion ? { opacity: 1 } : { opacity: 0, y: MOTION_DISTANCE.xs }}
+          animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+          transition={{ delay: reducedMotion ? 0 : 0.14, duration: MOTION_DURATION.moderate, ease: MOTION_EASE.emphasized }}
+          className="space-y-3"
+        >
+          {todayStats.urgent > 0 ? (
+            <TechAlertRail
+              urgentCount={todayStats.urgent}
+              overdueCount={orders.filter((order) => getTimeRemaining(order.dueTime) === 'פג תוקף').length}
+            />
+          ) : null}
+
+          <MobilePriorityInbox
+            title="תור העבודות להיום"
+            subtitle="המשימה הבאה מופיעה ראשונה כדי להיכנס ישר לעבודה."
+            items={queueItems}
+            emptyTitle="אין משימות שטח להיום"
+            emptyDescription="יום שקט. אפשר לעבור לתוכנית הגינון או לרענן שוב בהמשך."
+            compact
+            maxItems={2}
           />
-        ) : null}
 
-        <MobilePriorityInbox
-          title="תור העבודות להיום"
-          subtitle="המשימה הבאה מופיעה ראשונה כדי להיכנס ישר לעבודה."
-          items={queueItems}
-          emptyTitle="אין משימות שטח להיום"
-          emptyDescription="יום שקט. אפשר לעבור לתוכנית הגינון או לרענן שוב בהמשך."
-          compact
-          maxItems={2}
-        />
+          <GlassRouteReadinessCard
+            nextJob={nextJob}
+            todayStats={todayStats}
+          />
 
-        <GlassRouteReadinessCard
-          nextJob={nextJob}
-          todayStats={todayStats}
-        />
-
-        <MobileActionHub
-          mobileHomeEffect
-          title="כלי שטח"
-          subtitle="פעולה מהירה בלי לאבד את התור."
-          density="compact"
-          items={[
+          <MobileActionHub
+            mobileHomeEffect
+            title="כלי שטח"
+            subtitle="פעולה מהירה בלי לאבד את התור."
+            density="compact"
+            items={[
             {
               id: 'jobs',
               label: 'עבודות',
@@ -461,8 +468,9 @@ export default function Jobs() {
               href: '/tickets?mine=true',
               accent: 'info',
             },
-          ]}
-        />
+            ]}
+          />
+        </motion.div>
       </div>
 
       {/* Header */}

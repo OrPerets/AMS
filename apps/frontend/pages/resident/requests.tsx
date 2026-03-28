@@ -44,6 +44,7 @@ import {
 } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
 import { setResumeState } from '../../lib/engagement';
+import { MOTION_DISTANCE, MOTION_DURATION, MOTION_EASE } from '../../lib/motion-tokens';
 
 const requestTypes = [
   { value: 'MOVING', label: 'מעבר', icon: Move, description: 'תיאום מהיר' },
@@ -577,20 +578,26 @@ export default function ResidentRequestsPage() {
         </div>
       </GlassSurface>
 
-      <AmsTabs
-        ariaLabel="בקשות דייר"
-        selectedKey={view}
-        onSelectionChange={(key) => {
-          const nextView = key as 'new' | 'history';
-          setView(nextView);
-          setComposerOpen(false);
-          void router.replace(`/resident/requests?view=${nextView}`, undefined, { shallow: true });
-        }}
-        items={[
-          { key: 'new', title: 'בקשה חדשה' },
-          { key: 'history', title: 'מעקב', badge: openRequests.length || null },
-        ]}
-      />
+      <motion.div
+        initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: MOTION_DISTANCE.xs }}
+        animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        transition={{ delay: prefersReducedMotion ? 0 : 0.14, duration: MOTION_DURATION.moderate, ease: MOTION_EASE.emphasized }}
+        className="space-y-5"
+      >
+        <AmsTabs
+          ariaLabel="בקשות דייר"
+          selectedKey={view}
+          onSelectionChange={(key) => {
+            const nextView = key as 'new' | 'history';
+            setView(nextView);
+            setComposerOpen(false);
+            void router.replace(`/resident/requests?view=${nextView}`, undefined, { shallow: true });
+          }}
+          items={[
+            { key: 'new', title: 'בקשה חדשה' },
+            { key: 'history', title: 'מעקב', badge: openRequests.length || null },
+          ]}
+        />
 
       {view === 'history' && openRequests[0] ? (
         <PrimaryActionCard
@@ -691,6 +698,8 @@ export default function ResidentRequestsPage() {
           </div>
         </section>
       ) : null}
+
+      </motion.div>
 
       <AmsDrawer
         isOpen={composerOpen}
