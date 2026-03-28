@@ -86,6 +86,39 @@ type RequestHistoryItem = {
   statusNotes?: string | null;
 };
 
+function getRequestSignature(item: RequestHistoryItem) {
+  return [
+    item.requestKey,
+    item.status,
+    item.updatedAt,
+    item.subject,
+    item.message,
+    item.requestType,
+    item.statusNotes ?? '',
+  ].join('|');
+}
+
+function countChangedRequests(previous: RequestHistoryItem[], next: RequestHistoryItem[]) {
+  const previousMap = new Map(previous.map((item) => [item.requestKey, getRequestSignature(item)]));
+  const nextMap = new Map(next.map((item) => [item.requestKey, getRequestSignature(item)]));
+  let changed = 0;
+
+  nextMap.forEach((signature, key) => {
+    const previousSignature = previousMap.get(key);
+    if (!previousSignature || previousSignature !== signature) {
+      changed += 1;
+    }
+  });
+
+  previousMap.forEach((_signature, key) => {
+    if (!nextMap.has(key)) {
+      changed += 1;
+    }
+  });
+
+  return changed;
+}
+
 const emptyForm = {
   requestType: 'MOVING',
   subject: '',
@@ -130,6 +163,9 @@ export default function ResidentRequestsPage() {
   const [view, setView] = useState<'new' | 'history'>('history');
   const [draftRestored, setDraftRestored] = useState(false);
   const draftHydratedRef = React.useRef(false);
+  const historyRef = React.useRef<RequestHistoryItem[]>([]);
+  const deltaTimeoutRef = React.useRef<number | null>(null);
+  const [refreshDeltaCount, setRefreshDeltaCount] = useState<number | null>(null);
   const currentUserId = getCurrentUserId() || 'anonymous';
   const currentRole = getEffectiveRole() || 'RESIDENT';
   const draftStorageKey = useMemo(
@@ -137,12 +173,21 @@ export default function ResidentRequestsPage() {
     [currentRole, currentUserId],
   );
 
+  historyRef.current = history;
+
   const activeType = requestTypes.find((item) => item.value === form.requestType)!;
   const { pullDistance, isRefreshing, threshold } = usePullToRefresh({
     preset: 'detail',
     onThresholdReached: () => triggerHaptic('light'),
     onRefresh: async () => {
-      await loadHistory();
+      const previousHistory = historyRef.current;
+      const nextHistory = await loadHistory();
+      const deltaCount = countChangedRequests(previousHistory, nextHistory);
+      setRefreshDeltaCount(deltaCount);
+      if (deltaTimeoutRef.current) {
+        window.clearTimeout(deltaTimeoutRef.current);
+      }
+      deltaTimeoutRef.current = window.setTimeout(() => setRefreshDeltaCount(null), 1800);
     },
   });
 
@@ -153,6 +198,14 @@ export default function ResidentRequestsPage() {
   useEffect(() => {
     void loadHistory();
   }, [historyFilter.status, historyFilter.requestType]);
+
+  useEffect(() => {
+    return () => {
+      if (deltaTimeoutRef.current) {
+        window.clearTimeout(deltaTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -228,11 +281,14 @@ export default function ResidentRequestsPage() {
       const response = await authFetch(`/api/v1/communications/resident-requests${params.toString() ? `?${params.toString()}` : ''}`);
       if (!response.ok) throw new Error(await response.text());
       const payload = await response.json();
-      setHistory(Array.isArray(payload) ? payload : []);
+      const nextHistory = Array.isArray(payload) ? payload : [];
+      setHistory(nextHistory);
+      return nextHistory as RequestHistoryItem[];
     } catch (error) {
       console.error(error);
       setHistoryError('לא ניתן לטעון כרגע את היסטוריית הבקשות.');
       toast({ title: 'טעינת היסטוריית הבקשות נכשלה', variant: 'destructive' });
+      return historyRef.current;
     } finally {
       setLoading(false);
     }
@@ -407,6 +463,7 @@ export default function ResidentRequestsPage() {
       <PullToRefreshIndicator
         pullDistance={pullDistance}
         isRefreshing={isRefreshing}
+        deltaChipCount={refreshDeltaCount}
         threshold={threshold}
         label="משוך כדי לרענן בקשות דייר"
       />
@@ -948,7 +1005,9 @@ export default function ResidentRequestsPage() {
             </FormField>
           </div>
 
-          {historyError ? <InlineErrorPanel title="היסטוריית הבקשות לא נטענה" description={historyError} onRetry={loadHistory} /> : null}
+          {historyError ? (
+            <InlineErrorPanel title="היסטוריית הבקשות לא נטענה" description={historyError} onRetry={() => void loadHistory()} />
+          ) : null}
 
           {loading ? (
             <MobileCardSkeleton cards={2} />
