@@ -48,6 +48,8 @@ export function DispatchWorkspace() {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
   const transitionTokens = getRouteTransitionTokensByKey('tickets');
+  const containerLayoutId = prefersReducedMotion ? undefined : transitionTokens.container;
+  const headerLayoutId = prefersReducedMotion ? undefined : transitionTokens.header;
   const iconLayoutId = prefersReducedMotion ? undefined : transitionTokens.icon;
   const badgeLayoutId = prefersReducedMotion ? undefined : transitionTokens.badge;
   const searchRef = useRef<HTMLInputElement>(null);
@@ -893,8 +895,13 @@ export function DispatchWorkspace() {
         label="משוך כדי לרענן את לוח הקריאות"
       />
 
-      <div className="space-y-3 md:hidden">
-        <div className="flex items-center justify-between rounded-2xl border border-subtle-border bg-background/76 px-3 py-2">
+      <motion.div
+        layoutId={containerLayoutId}
+        initial={prefersReducedMotion ? undefined : { borderRadius: 24 }}
+        animate={prefersReducedMotion ? undefined : { borderRadius: 24 }}
+        className="space-y-3 md:hidden"
+      >
+        <motion.div layoutId={headerLayoutId} className="flex items-center justify-between rounded-2xl border border-subtle-border bg-background/76 px-3 py-2">
           <motion.span
             layoutId={iconLayoutId}
             initial={prefersReducedMotion ? { opacity: 0.94 } : false}
@@ -913,7 +920,7 @@ export function DispatchWorkspace() {
           >
             {dispatchData?.summary.open ?? 0} פתוחות
           </motion.span>
-        </div>
+        </motion.div>
         <CompactStatusStrip
           roleLabel={roleLabel}
           tone="admin"
@@ -923,7 +930,7 @@ export function DispatchWorkspace() {
             { id: 'sla', label: 'SLA', value: dispatchData?.summary.breached ?? 0, tone: (dispatchData?.summary.breached ?? 0) > 0 ? 'danger' : 'default' },
           ]}
         />
-      </div>
+      </motion.div>
 
       <div className="hidden md:block">
         <MobileContextBar

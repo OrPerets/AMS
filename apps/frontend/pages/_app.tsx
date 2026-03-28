@@ -4,7 +4,7 @@ import Head from 'next/head';
 import { Fraunces, Heebo, Inter } from 'next/font/google';
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import '../styles/globals.css';
 import '../styles/gardens.css';
 import '../styles/premium-theme.css';
@@ -16,6 +16,7 @@ import { Toaster as SonnerToaster } from 'sonner';
 import { PwaInstallPrompt } from '../components/pwa/PwaInstallPrompt';
 import { BottomSurfaceProvider } from '../lib/bottom-surface';
 import { MOTION_DISTANCE, MOTION_DURATION, MOTION_EASE } from '../lib/motion-tokens';
+import { resolveRouteTransitionTokensByHref } from '../lib/route-transition-contract';
 
 // Font configuration
 const inter = Inter({
@@ -57,24 +58,48 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const reducedMotion = useReducedMotion();
   const [isRoutePending, setIsRoutePending] = useState(false);
+  const [contentRevealReady, setContentRevealReady] = useState(true);
+  const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMorphRouteRef = useRef(false);
 
   useEffect(() => {
     const handleRouteChangeStart = (url: string) => {
       if (url === router.asPath) return;
+      const sourceHasMorph = Boolean(resolveRouteTransitionTokensByHref(router.asPath));
+      const destinationHasMorph = Boolean(resolveRouteTransitionTokensByHref(url));
+      isMorphRouteRef.current = sourceHasMorph && destinationHasMorph;
       setIsRoutePending(true);
+      if (!reducedMotion && isMorphRouteRef.current) {
+        setContentRevealReady(false);
+      } else {
+        setContentRevealReady(true);
+      }
     };
-    const handleRouteChangeDone = () => setIsRoutePending(false);
+    const handleRouteChangeDone = () => {
+      setIsRoutePending(false);
+      if (reducedMotion || !isMorphRouteRef.current) {
+        setContentRevealReady(true);
+        return;
+      }
+      if (revealTimeoutRef.current) {
+        window.clearTimeout(revealTimeoutRef.current);
+      }
+      revealTimeoutRef.current = window.setTimeout(() => setContentRevealReady(true), 140);
+    };
 
     router.events.on('routeChangeStart', handleRouteChangeStart);
     router.events.on('routeChangeComplete', handleRouteChangeDone);
     router.events.on('routeChangeError', handleRouteChangeDone);
 
     return () => {
+      if (revealTimeoutRef.current) {
+        window.clearTimeout(revealTimeoutRef.current);
+      }
       router.events.off('routeChangeStart', handleRouteChangeStart);
       router.events.off('routeChangeComplete', handleRouteChangeDone);
       router.events.off('routeChangeError', handleRouteChangeDone);
     };
-  }, [router.asPath, router.events]);
+  }, [reducedMotion, router.asPath, router.events]);
 
   return (
     <div className={cn(inter.variable, heebo.variable, fraunces.variable, "font-sans")}>
@@ -92,8 +117,8 @@ export default function MyApp({ Component, pageProps }: AppProps) {
               <AnimatePresence initial={false} mode="sync">
                 <motion.div
                   key={router.asPath}
-                  initial={reducedMotion ? { opacity: 1 } : { opacity: 0.94, y: MOTION_DISTANCE.xxs }}
-                  animate={reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                  initial={reducedMotion ? { opacity: 1 } : { opacity: 0.92, y: MOTION_DISTANCE.xxs }}
+                  animate={reducedMotion ? { opacity: 1 } : { opacity: contentRevealReady ? 1 : 0.9, y: contentRevealReady ? 0 : MOTION_DISTANCE.xxs }}
                   exit={reducedMotion ? { opacity: 1 } : { opacity: 0.98, y: -MOTION_DISTANCE.xxs }}
                   transition={{ duration: MOTION_DURATION.instant, ease: MOTION_EASE.emphasized }}
                 >

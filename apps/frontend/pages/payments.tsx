@@ -127,6 +127,8 @@ export default function PaymentsPage() {
   const { locale, t } = useLocale();
   const prefersReducedMotion = useReducedMotion();
   const transitionTokens = getRouteTransitionTokensByKey('payments');
+  const containerLayoutId = prefersReducedMotion ? undefined : transitionTokens.container;
+  const headerLayoutId = prefersReducedMotion ? undefined : transitionTokens.header;
   const iconLayoutId = prefersReducedMotion ? undefined : transitionTokens.icon;
   const badgeLayoutId = prefersReducedMotion ? undefined : transitionTokens.badge;
   const titleLayoutId = prefersReducedMotion ? undefined : transitionTokens.title;
@@ -556,7 +558,12 @@ export default function PaymentsPage() {
         />
       </div>
 
-      <div className="page-header">
+      <motion.div
+        layoutId={containerLayoutId}
+        initial={prefersReducedMotion ? undefined : { borderRadius: 28 }}
+        animate={prefersReducedMotion ? undefined : { borderRadius: 28 }}
+        className="page-header"
+      >
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2">
             <motion.span
@@ -586,7 +593,9 @@ export default function PaymentsPage() {
             transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
             className="text-2xl font-semibold sm:text-3xl"
           >
-            {t('payments.title')}
+            <motion.span layoutId={headerLayoutId} className="inline-flex">
+              {t('payments.title')}
+            </motion.span>
           </motion.h1>
           <p className="text-sm text-muted-foreground">{t('payments.description')}</p>
         </div>
@@ -604,7 +613,7 @@ export default function PaymentsPage() {
             רענון
           </Button>
         </div>
-      </div>
+      </motion.div>
 
       <Card className="border-primary/10 bg-primary/5">
         <CardHeader>

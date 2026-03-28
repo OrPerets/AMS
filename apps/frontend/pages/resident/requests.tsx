@@ -148,6 +148,8 @@ export default function ResidentRequestsPage() {
   const { locale, t } = useLocale();
   const prefersReducedMotion = useReducedMotion();
   const transitionTokens = getRouteTransitionTokensByKey('requests');
+  const containerLayoutId = prefersReducedMotion ? undefined : transitionTokens.container;
+  const headerLayoutId = prefersReducedMotion ? undefined : transitionTokens.header;
   const iconLayoutId = prefersReducedMotion ? undefined : transitionTokens.icon;
   const badgeLayoutId = prefersReducedMotion ? undefined : transitionTokens.badge;
   const titleLayoutId = prefersReducedMotion ? undefined : transitionTokens.title;
@@ -496,8 +498,9 @@ export default function ResidentRequestsPage() {
         />
       </div>
 
-      <GlassSurface strength="strong" className="rounded-[28px] p-4">
-        <div className="flex items-start justify-between gap-3">
+      <motion.div layoutId={containerLayoutId} initial={prefersReducedMotion ? undefined : { borderRadius: 28 }} animate={prefersReducedMotion ? undefined : { borderRadius: 28 }}>
+        <GlassSurface strength="strong" className="rounded-[28px] p-4">
+          <motion.div layoutId={headerLayoutId} className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="mb-2 flex items-center gap-2 md:hidden">
               <motion.span
@@ -539,7 +542,7 @@ export default function ResidentRequestsPage() {
             label={openRequests[0] ? getResidentRequestStatusLabel(openRequests[0].status) : 'פתיחה מהירה'}
             tone={openRequests[0] ? getResidentRequestStatusTone(openRequests[0].status) : 'finance'}
           />
-        </div>
+          </motion.div>
 
         <div className="mt-4 rounded-[22px] border border-subtle-border bg-background/88 p-4">
           <div className="flex items-start justify-between gap-3">
@@ -576,7 +579,8 @@ export default function ResidentRequestsPage() {
             </Button>
           </div>
         </div>
-      </GlassSurface>
+        </GlassSurface>
+      </motion.div>
 
       <motion.div
         initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: MOTION_DISTANCE.xs }}
