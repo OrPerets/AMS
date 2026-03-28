@@ -77,6 +77,8 @@ export default function Jobs() {
   const { locale } = useLocale();
   const reducedMotion = useReducedMotion();
   const transitionTokens = getRouteTransitionTokensByKey('jobs');
+  const containerLayoutId = reducedMotion ? undefined : transitionTokens.container;
+  const headerLayoutId = reducedMotion ? undefined : transitionTokens.header;
   const iconLayoutId = reducedMotion ? undefined : transitionTokens.icon;
   const badgeLayoutId = reducedMotion ? undefined : transitionTokens.badge;
   const titleLayoutId = reducedMotion ? undefined : transitionTokens.title;
@@ -334,8 +336,13 @@ export default function Jobs() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-3 md:hidden">
-        <div className="flex items-center justify-between rounded-2xl border border-subtle-border bg-background/76 px-3 py-2">
+      <motion.div
+        layoutId={containerLayoutId}
+        initial={reducedMotion ? undefined : { borderRadius: 24 }}
+        animate={reducedMotion ? undefined : { borderRadius: 24 }}
+        className="space-y-3 md:hidden"
+      >
+        <motion.div layoutId={headerLayoutId} className="flex items-center justify-between rounded-2xl border border-subtle-border bg-background/76 px-3 py-2">
           <motion.span
             layoutId={iconLayoutId}
             initial={reducedMotion ? { opacity: 0.94 } : false}
@@ -354,7 +361,7 @@ export default function Jobs() {
           >
             {todayStats.total} משימות
           </motion.span>
-        </div>
+        </motion.div>
         <CompactStatusStrip
           roleLabel="טכנאי"
           lastSyncedAt={lastSyncedAt}
@@ -471,7 +478,7 @@ export default function Jobs() {
             ]}
           />
         </motion.div>
-      </div>
+      </motion.div>
 
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

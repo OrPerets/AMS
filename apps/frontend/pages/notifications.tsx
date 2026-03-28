@@ -105,6 +105,8 @@ export default function NotificationsPage() {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
   const transitionTokens = getRouteTransitionTokensByKey('notifications');
+  const containerLayoutId = prefersReducedMotion ? undefined : transitionTokens.container;
+  const headerLayoutId = prefersReducedMotion ? undefined : transitionTokens.header;
   const iconLayoutId = prefersReducedMotion ? undefined : transitionTokens.icon;
   const badgeLayoutId = prefersReducedMotion ? undefined : transitionTokens.badge;
   const titleLayoutId = prefersReducedMotion ? undefined : transitionTokens.title;
@@ -393,10 +395,15 @@ export default function NotificationsPage() {
         label={t('notifications.pullToRefresh')}
       />
 
-      <PageHero
-        compact
-        kicker={t('notifications.title')}
-        eyebrow={
+      <motion.div
+        layoutId={containerLayoutId}
+        initial={prefersReducedMotion ? undefined : { borderRadius: 28 }}
+        animate={prefersReducedMotion ? undefined : { borderRadius: 28 }}
+      >
+        <PageHero
+          compact
+          kicker={t('notifications.title')}
+          eyebrow={
           <div className="flex flex-wrap items-center justify-end gap-2">
             <motion.span
               layoutId={iconLayoutId}
@@ -420,18 +427,20 @@ export default function NotificationsPage() {
             </motion.span>
           </div>
         }
-        title={
-          <motion.span
-            layoutId={titleLayoutId}
-            initial={prefersReducedMotion ? { opacity: 0.94 } : false}
-            animate={prefersReducedMotion ? { opacity: 1 } : undefined}
-            transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
-          >
-            {t('notifications.title')}
-          </motion.span>
-        }
-        description={t('notifications.description')}
-        actions={
+          title={
+            <motion.span
+              layoutId={titleLayoutId}
+              initial={prefersReducedMotion ? { opacity: 0.94 } : false}
+              animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+              transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+            >
+              <motion.span layoutId={headerLayoutId} className="inline-flex">
+                {t('notifications.title')}
+              </motion.span>
+            </motion.span>
+          }
+          description={t('notifications.description')}
+          actions={
           <>
             {unreadCount > 0 ? (
               <Button size="sm" variant="hero" onClick={markAllAsRead}>
@@ -443,8 +452,9 @@ export default function NotificationsPage() {
               {t('notifications.refresh')}
             </Button>
           </>
-        }
-      />
+          }
+        />
+      </motion.div>
 
       <motion.div
         initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: MOTION_DISTANCE.xs }}

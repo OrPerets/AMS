@@ -94,6 +94,7 @@ export function PrimaryActionCard({
   const Icon = tone === 'success' ? CheckCircle2 : CircleAlert;
   const depthRef = useMobileDepthEffect(mobileHomeEffect);
   const sharedTransitionTokens = resolveRouteTransitionTokensByHref(href);
+  const containerLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.container;
   const iconLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.icon;
   const badgeLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.badge;
   const titleLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.title;
@@ -127,6 +128,7 @@ export function PrimaryActionCard({
   const panel = (
     <>
     <motion.div
+      layoutId={containerLayoutId}
       ref={depthRef as React.Ref<HTMLDivElement>}
       whileTap={reducedMotion ? undefined : { scale: 0.985 }}
       animate={hold.isHolding && !reducedMotion ? { y: -MOTION_DISTANCE.xxs, scale: 1.01 } : { y: 0, scale: 1 }}

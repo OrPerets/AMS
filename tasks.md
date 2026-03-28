@@ -249,14 +249,14 @@ This plan covers the mobile web experience in `apps/frontend`, with emphasis on 
 - [ ] Define fallback when route has no matching shared destination.
 
 ### Frontend
-- [ ] Extend `apps/frontend/lib/route-transition-contract.ts` with shared container/surface tokens.
+- [x] Extend `apps/frontend/lib/route-transition-contract.ts` with shared container/surface tokens.
 - [ ] Update:
-  - [ ] `apps/frontend/components/ui/primary-action-card.tsx`
-  - [ ] `apps/frontend/components/ui/mobile-action-hub.tsx`
-  - [ ] destination headers/toolbars on matching pages
-- [ ] Tune `_app.tsx` route wrapper so page content reveal waits slightly for the morph.
-- [ ] Ensure active bottom-nav state settles after the destination header lands, not before.
-- [ ] Preserve reduced-motion fallback as a simpler opacity/translate transition.
+  - [x] `apps/frontend/components/ui/primary-action-card.tsx`
+  - [x] `apps/frontend/components/ui/mobile-action-hub.tsx`
+  - [x] destination headers/toolbars on matching pages
+- [x] Tune `_app.tsx` route wrapper so page content reveal waits slightly for the morph.
+- [x] Ensure active bottom-nav state settles after the destination header lands, not before.
+- [x] Preserve reduced-motion fallback as a simpler opacity/translate transition.
 
 ### QA
 - [ ] Verify morph continuity on slow navigation and fast cached navigation.
@@ -268,7 +268,7 @@ This plan covers the mobile web experience in `apps/frontend`, with emphasis on 
 - [ ] Measure back navigation within 5 seconds as a proxy for disorientation.
 
 ### Exit Criteria
-- [ ] Shared morph works on at least 3 high-traffic routes.
+- [x] Shared morph works on at least 3 high-traffic routes.
 - [ ] No broken transitions on unsupported routes.
 - [ ] Reduced-motion behavior is stable.
 

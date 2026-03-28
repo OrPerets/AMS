@@ -133,6 +133,7 @@ function ActionTile({
   const [actionsOpen, setActionsOpen] = React.useState(false);
   const priority = item.priority ?? (isSelected ? 'primary' : 'secondary');
   const sharedTransitionTokens = resolveRouteTransitionTokensByHref(item.href);
+  const containerLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.container;
   const iconLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.icon;
   const badgeLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.badge;
   const titleLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.title;
@@ -164,6 +165,7 @@ function ActionTile({
   return (
     <>
     <motion.div
+      layoutId={containerLayoutId}
       ref={depthRef as React.Ref<HTMLDivElement>}
       animate={hold.isHolding && !reducedMotion ? { y: -3, scale: 1.01 } : { y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}

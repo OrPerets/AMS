@@ -15,6 +15,7 @@ import { AmsCommandDrawer, type AmsCommandDrawerItem } from '../ui/ams-command-d
 import { MOBILE_MORE_SHARED_LAYOUT_IDS } from '../ui/mobile-more-shared-layout';
 import { subscribeUIInteraction } from '../../lib/ui-interaction-bus';
 import { useAnimatedNumber } from '../../hooks/use-animated-number';
+import { resolveRouteTransitionTokensByHref } from '../../lib/route-transition-contract';
 
 const MISCLICK_WINDOW_MS = 10_000;
 const CHURN_WINDOW_MS = 90_000;
@@ -28,6 +29,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   const [mounted, setMounted] = useState(false);
   const [recentShortcuts, setRecentShortcuts] = useState<string[]>([]);
   const [liveAttention, setLiveAttention] = useState(false);
+  const [activePathname, setActivePathname] = useState(router.pathname);
   const prefersReducedMotion = useReducedMotion();
   const navigationTrailRef = React.useRef<Array<{ path: string; timestamp: number }>>([]);
   const lastTrackedChurnRef = React.useRef<string | null>(null);
@@ -49,6 +51,42 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   useEffect(() => {
     setRecentShortcuts(getRecentShortcutHrefs());
   }, [router.asPath, moreOpen]);
+
+  useEffect(() => {
+    const settleTimeouts = new Set<number>();
+    const handleRouteChangeStart = (url: string) => {
+      const sourceHasMorph = Boolean(resolveRouteTransitionTokensByHref(router.asPath));
+      const destinationHasMorph = Boolean(resolveRouteTransitionTokensByHref(url));
+      if (!(sourceHasMorph && destinationHasMorph)) {
+        setActivePathname(router.pathname);
+      }
+    };
+    const handleRouteChangeComplete = (url: string) => {
+      const sourceHasMorph = Boolean(resolveRouteTransitionTokensByHref(router.asPath));
+      const destinationHasMorph = Boolean(resolveRouteTransitionTokensByHref(url));
+      if (!(sourceHasMorph && destinationHasMorph) || prefersReducedMotion) {
+        setActivePathname(router.pathname);
+        return;
+      }
+      const timeout = window.setTimeout(() => {
+        setActivePathname(router.pathname);
+        settleTimeouts.delete(timeout);
+      }, 150);
+      settleTimeouts.add(timeout);
+    };
+
+    router.events.on('routeChangeStart', handleRouteChangeStart);
+    router.events.on('routeChangeComplete', handleRouteChangeComplete);
+    router.events.on('routeChangeError', handleRouteChangeComplete);
+
+    return () => {
+      settleTimeouts.forEach((timeout) => window.clearTimeout(timeout));
+      settleTimeouts.clear();
+      router.events.off('routeChangeStart', handleRouteChangeStart);
+      router.events.off('routeChangeComplete', handleRouteChangeComplete);
+      router.events.off('routeChangeError', handleRouteChangeComplete);
+    };
+  }, [prefersReducedMotion, router.asPath, router.events, router.pathname]);
 
   useEffect(() => {
     const timeouts = new Set<number>();
@@ -145,7 +183,7 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
     if (query) {
       return router.asPath === href;
     }
-    return router.pathname === path || (path !== '/home' && router.pathname.startsWith(path));
+    return activePathname === path || (path !== '/home' && activePathname.startsWith(path));
   };
 
   const isMoreRouteActive = moreGroups.some((group) => group.items.some((item) => isActive(item.href)));
