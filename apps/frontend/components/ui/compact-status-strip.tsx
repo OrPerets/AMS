@@ -3,6 +3,7 @@ import * as React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ShieldCheck } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { MOTION_DURATION, MOTION_EASE } from '../../lib/motion-tokens';
 import { useAnimatedNumber } from '../../hooks/use-animated-number';
 import { useSyncDeltaLabel } from '../../hooks/use-sync-delta-label';
 

@@ -10,6 +10,7 @@
     "start:dev": "ts-node -r dotenv/config src/main.ts",
     "prisma:seed": "ts-node -r dotenv/config prisma/seed.ts",
     "prisma:seed:prod": "ts-node -r dotenv/config scripts/production-seed.ts",
+    "pilot:seed:remote": "ts-node -r dotenv/config scripts/seed-remote-pilot.ts",
     "user:create": "ts-node -r dotenv/config scripts/create-user.ts",
     "users:upsert:prod": "ts-node -r dotenv/config scripts/upsert-demo-users.ts",
     "buildings:upsert:prod": "ts-node -r dotenv/config scripts/upsert-buildings.ts",
