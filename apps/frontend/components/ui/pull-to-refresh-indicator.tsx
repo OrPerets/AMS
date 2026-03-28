@@ -6,6 +6,7 @@ export function PullToRefreshIndicator({
   pullDistance,
   isRefreshing,
   deltaChipCount,
+  deltaSummary,
   threshold = 84,
   label = 'משוך מטה כדי לרענן',
   releaseLabel = 'שחרר כדי לרענן',
@@ -15,6 +16,7 @@ export function PullToRefreshIndicator({
   pullDistance: number;
   isRefreshing: boolean;
   deltaChipCount?: number | null;
+  deltaSummary?: { added?: number; updated?: number; unchanged?: boolean } | null;
   threshold?: number;
   label?: string;
   releaseLabel?: string;
@@ -71,7 +73,13 @@ export function PullToRefreshIndicator({
           ? releaseLabel
           : label;
   const chipText =
-    deltaChipCount && deltaChipCount !== 0 ? `${deltaChipCount > 0 ? '+' : ''}${deltaChipCount}` : null;
+    deltaSummary?.unchanged
+      ? 'ללא שינוי'
+      : deltaSummary && (deltaSummary.added || deltaSummary.updated)
+        ? `${deltaSummary.added ? `+${deltaSummary.added} חדשות` : ''}${deltaSummary.added && deltaSummary.updated ? ' · ' : ''}${deltaSummary.updated ? `${deltaSummary.updated} עודכנו` : ''}`
+        : deltaChipCount && deltaChipCount !== 0
+          ? `${deltaChipCount > 0 ? '+' : ''}${deltaChipCount}`
+          : null;
 
   return (
     <div className="sticky top-2 z-20 flex justify-center lg:hidden">
@@ -96,7 +104,7 @@ export function PullToRefreshIndicator({
         )}
         <span>{text}</span>
         {state === 'completed' && chipText ? (
-          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
             {chipText}
           </span>
         ) : null}

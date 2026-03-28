@@ -101,25 +101,25 @@ function getRequestSignature(item: RequestHistoryItem) {
   ].join('|');
 }
 
-function countChangedRequests(previous: RequestHistoryItem[], next: RequestHistoryItem[]) {
+function summarizeRequestChanges(previous: RequestHistoryItem[], next: RequestHistoryItem[]) {
   const previousMap = new Map(previous.map((item) => [item.requestKey, getRequestSignature(item)]));
-  const nextMap = new Map(next.map((item) => [item.requestKey, getRequestSignature(item)]));
-  let changed = 0;
+  let added = 0;
+  let updated = 0;
 
-  nextMap.forEach((signature, key) => {
+  next.forEach((item) => {
+    const signature = getRequestSignature(item);
+    const key = item.requestKey;
     const previousSignature = previousMap.get(key);
     if (!previousSignature || previousSignature !== signature) {
-      changed += 1;
+      if (!previousSignature) {
+        added += 1;
+      } else {
+        updated += 1;
+      }
     }
   });
 
-  previousMap.forEach((_signature, key) => {
-    if (!nextMap.has(key)) {
-      changed += 1;
-    }
-  });
-
-  return changed;
+  return { added, updated, changed: added + updated, unchanged: added + updated === 0 };
 }
 
 const emptyForm = {
@@ -173,6 +173,7 @@ export default function ResidentRequestsPage() {
   const historyRef = React.useRef<RequestHistoryItem[]>([]);
   const deltaTimeoutRef = React.useRef<number | null>(null);
   const [refreshDeltaCount, setRefreshDeltaCount] = useState<number | null>(null);
+  const [refreshDeltaSummary, setRefreshDeltaSummary] = useState<{ added?: number; updated?: number; unchanged?: boolean } | null>(null);
   const currentUserId = getCurrentUserId() || 'anonymous';
   const currentRole = getEffectiveRole() || 'RESIDENT';
   const draftStorageKey = useMemo(
@@ -183,20 +184,26 @@ export default function ResidentRequestsPage() {
   historyRef.current = history;
 
   const activeType = requestTypes.find((item) => item.value === form.requestType)!;
-  const { pullDistance, isRefreshing, threshold } = usePullToRefresh({
+  const { pullDistance, pullProgress, isRefreshing, threshold } = usePullToRefresh({
     preset: 'detail',
     onThresholdReached: () => triggerHaptic('light'),
     onRefresh: async () => {
       const previousHistory = historyRef.current;
       const nextHistory = await loadHistory();
-      const deltaCount = countChangedRequests(previousHistory, nextHistory);
-      setRefreshDeltaCount(deltaCount);
+      const deltaSummary = summarizeRequestChanges(previousHistory, nextHistory);
+      setRefreshDeltaCount(deltaSummary.changed);
+      setRefreshDeltaSummary(deltaSummary);
       if (deltaTimeoutRef.current) {
         window.clearTimeout(deltaTimeoutRef.current);
       }
-      deltaTimeoutRef.current = window.setTimeout(() => setRefreshDeltaCount(null), 1800);
+      deltaTimeoutRef.current = window.setTimeout(() => {
+        setRefreshDeltaCount(null);
+        setRefreshDeltaSummary(null);
+      }, 1800);
     },
   });
+  const canopyShift = prefersReducedMotion ? 0 : Math.min(pullDistance * 0.2, 16);
+  const canopyScale = prefersReducedMotion ? 1 : 1 - pullProgress * 0.014;
 
   useEffect(() => {
     setResumeState({ screen: 'resident', href: '/resident/requests', label: 'בקשות דייר', role: getEffectiveRole() || 'RESIDENT', userId: getCurrentUserId() });
@@ -471,6 +478,7 @@ export default function ResidentRequestsPage() {
         pullDistance={pullDistance}
         isRefreshing={isRefreshing}
         deltaChipCount={refreshDeltaCount}
+        deltaSummary={refreshDeltaSummary}
         threshold={threshold}
         label="משוך כדי לרענן בקשות דייר"
       />
@@ -498,7 +506,15 @@ export default function ResidentRequestsPage() {
         />
       </div>
 
-      <motion.div layoutId={containerLayoutId} initial={prefersReducedMotion ? undefined : { borderRadius: 28 }} animate={prefersReducedMotion ? undefined : { borderRadius: 28 }}>
+      <motion.div
+        layoutId={containerLayoutId}
+        initial={prefersReducedMotion ? undefined : { borderRadius: 28 }}
+        animate={prefersReducedMotion ? undefined : { borderRadius: 28 }}
+        style={{
+          transform: `translateY(${canopyShift}px) scale(${canopyScale})`,
+          transformOrigin: '50% 0%',
+        }}
+      >
         <GlassSurface strength="strong" className="rounded-[28px] p-4">
           <motion.div layoutId={headerLayoutId} className="flex items-start justify-between gap-3">
           <div className="min-w-0">

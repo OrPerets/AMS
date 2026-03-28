@@ -64,25 +64,25 @@ function getNotificationSignature(item: NotificationItem) {
   ].join('|');
 }
 
-function countChangedNotifications(previous: NotificationItem[], next: NotificationItem[]) {
+function summarizeNotificationChanges(previous: NotificationItem[], next: NotificationItem[]) {
   const previousMap = new Map(previous.map((item) => [item.id, getNotificationSignature(item)]));
-  const nextMap = new Map(next.map((item) => [item.id, getNotificationSignature(item)]));
-  let changed = 0;
+  let added = 0;
+  let updated = 0;
 
-  nextMap.forEach((signature, id) => {
+  next.forEach((item) => {
+    const signature = getNotificationSignature(item);
+    const id = item.id;
     const prevSignature = previousMap.get(id);
     if (!prevSignature || prevSignature !== signature) {
-      changed += 1;
+      if (!prevSignature) {
+        added += 1;
+      } else {
+        updated += 1;
+      }
     }
   });
 
-  previousMap.forEach((_signature, id) => {
-    if (!nextMap.has(id)) {
-      changed += 1;
-    }
-  });
-
-  return changed;
+  return { added, updated, changed: added + updated, unchanged: added + updated === 0 };
 }
 
 function loadPersistedFilters(): { quickFilter: QuickFilter; searchTerm: string } {
@@ -125,6 +125,7 @@ export default function NotificationsPage() {
   const notificationsRef = useRef<NotificationItem[]>([]);
   const deltaTimeoutRef = useRef<number | null>(null);
   const [refreshDeltaCount, setRefreshDeltaCount] = useState<number | null>(null);
+  const [refreshDeltaSummary, setRefreshDeltaSummary] = useState<{ added?: number; updated?: number; unchanged?: boolean } | null>(null);
 
   notificationsRef.current = notifications;
 
@@ -272,7 +273,7 @@ export default function NotificationsPage() {
     }
   };
 
-  const { pullDistance, isRefreshing, threshold } = usePullToRefresh({
+  const { pullDistance, pullProgress, isRefreshing, threshold } = usePullToRefresh({
     enabled: Boolean(currentUserId),
     preset: 'list',
     onThresholdReached: () => triggerHaptic('light'),
@@ -280,14 +281,21 @@ export default function NotificationsPage() {
       const previousNotifications = notificationsRef.current;
       const nextNotifications = await loadNotifications();
       await loadPreferences();
-      const deltaCount = countChangedNotifications(previousNotifications, nextNotifications);
-      setRefreshDeltaCount(deltaCount);
+      const deltaSummary = summarizeNotificationChanges(previousNotifications, nextNotifications);
+      setRefreshDeltaCount(deltaSummary.changed);
+      setRefreshDeltaSummary(deltaSummary);
       if (deltaTimeoutRef.current) {
         window.clearTimeout(deltaTimeoutRef.current);
       }
-      deltaTimeoutRef.current = window.setTimeout(() => setRefreshDeltaCount(null), 1800);
+      deltaTimeoutRef.current = window.setTimeout(() => {
+        setRefreshDeltaCount(null);
+        setRefreshDeltaSummary(null);
+      }, 1800);
     },
   });
+
+  const canopyShift = prefersReducedMotion ? 0 : Math.min(pullDistance * 0.22, 18);
+  const canopyScale = prefersReducedMotion ? 1 : 1 - pullProgress * 0.015;
 
   const filteredNotifications = useMemo(() => {
     return notifications.filter((notification) => {
@@ -391,6 +399,7 @@ export default function NotificationsPage() {
         pullDistance={pullDistance}
         isRefreshing={isRefreshing}
         deltaChipCount={refreshDeltaCount}
+        deltaSummary={refreshDeltaSummary}
         threshold={threshold}
         label={t('notifications.pullToRefresh')}
       />
@@ -399,6 +408,10 @@ export default function NotificationsPage() {
         layoutId={containerLayoutId}
         initial={prefersReducedMotion ? undefined : { borderRadius: 28 }}
         animate={prefersReducedMotion ? undefined : { borderRadius: 28 }}
+        style={{
+          transform: `translateY(${canopyShift}px) scale(${canopyScale})`,
+          transformOrigin: '50% 0%',
+        }}
       >
         <PageHero
           compact

@@ -292,13 +292,13 @@ This plan covers the mobile web experience in `apps/frontend`, with emphasis on 
 
 ### Frontend
 - [ ] Upgrade `apps/frontend/components/ui/ams-drawer.tsx` to support:
-  - [ ] drag-to-resize
-  - [ ] snap points
-  - [ ] velocity-based dismissal
-  - [ ] remembered snap point per drawer key
-  - [ ] content scroll handoff
-- [ ] Update `apps/frontend/components/ui/mobile-row-actions-sheet.tsx` to take advantage of peek mode.
-- [ ] Add subtle background scale/backdrop response behind open sheets.
+  - [x] drag-to-resize
+  - [x] snap points
+  - [x] velocity-based dismissal
+  - [x] remembered snap point per drawer key
+  - [x] content scroll handoff
+- [x] Update `apps/frontend/components/ui/mobile-row-actions-sheet.tsx` to take advantage of peek mode.
+- [x] Add subtle background scale/backdrop response behind open sheets.
 - [ ] Ensure focus management remains correct after adding drag behavior.
 
 ### QA
@@ -307,11 +307,11 @@ This plan covers the mobile web experience in `apps/frontend`, with emphasis on 
 - [ ] Verify keyboard focus remains trapped correctly on supported devices.
 
 ### Analytics
-- [ ] Track snap point usage: peek only, expanded, dismissed.
+- [x] Track snap point usage: peek only, expanded, dismissed.
 - [ ] Track if users complete primary actions more often from peek state.
 
 ### Exit Criteria
-- [ ] At least two drawer types support snap points without gesture conflict.
+- [x] At least two drawer types support snap points without gesture conflict.
 - [ ] Drag interactions feel stable on iOS Safari.
 
 ---
@@ -332,11 +332,11 @@ This plan covers the mobile web experience in `apps/frontend`, with emphasis on 
 - [ ] Approve max visual displacement so the gesture stays useful, not theatrical.
 
 ### Frontend
-- [ ] Use `pullDistance` from `apps/frontend/hooks/use-pull-to-refresh.ts` to animate top-of-page surfaces, not only the indicator chip.
-- [ ] Extend `apps/frontend/components/ui/pull-to-refresh-indicator.tsx` with richer delta presentation.
-- [ ] Add page-level canopy transforms to the affected screens.
-- [ ] Reuse the same threshold presets, but allow route-specific visual tuning.
-- [ ] Ensure refresh completion resets gracefully after interrupted pulls.
+- [x] Use `pullDistance` from `apps/frontend/hooks/use-pull-to-refresh.ts` to animate top-of-page surfaces, not only the indicator chip.
+- [x] Extend `apps/frontend/components/ui/pull-to-refresh-indicator.tsx` with richer delta presentation.
+- [x] Add page-level canopy transforms to the affected screens.
+- [x] Reuse the same threshold presets, but allow route-specific visual tuning.
+- [x] Ensure refresh completion resets gracefully after interrupted pulls.
 
 ### Backend
 - [ ] Where feasible, return compact delta metadata to support "what changed" messaging.
@@ -351,7 +351,7 @@ This plan covers the mobile web experience in `apps/frontend`, with emphasis on 
 - [ ] Track repeated pull attempts within short windows as a possible signal of mistrust or slowness.
 
 ### Exit Criteria
-- [ ] At least three pages use the canopy pattern.
+- [x] At least three pages use the canopy pattern.
 - [ ] Completion state communicates useful change, not just "updated."
 
 ---

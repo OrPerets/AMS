@@ -99,6 +99,7 @@ export function DispatchWorkspace() {
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [updatedTicketIds, setUpdatedTicketIds] = useState<Set<number>>(new Set());
   const [refreshDeltaCount, setRefreshDeltaCount] = useState<number | null>(null);
+  const [refreshDeltaSummary, setRefreshDeltaSummary] = useState<{ added?: number; updated?: number; unchanged?: boolean } | null>(null);
   const lastPayloadSignaturesRef = useRef<Map<number, string>>(new Map());
   const rowHighlightTimeoutRef = useRef<number | null>(null);
   const deltaTimeoutRef = useRef<number | null>(null);
@@ -294,7 +295,7 @@ export function DispatchWorkspace() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [canDispatch, selectedTicket, dispatchData?.items]);
 
-  const { pullDistance, isRefreshing, threshold } = usePullToRefresh({
+  const { pullDistance, pullProgress, isRefreshing, threshold } = usePullToRefresh({
     enabled: Boolean(dispatchData),
     preset: 'dashboard',
     onThresholdReached: () => triggerHaptic('light'),
@@ -331,6 +332,8 @@ export function DispatchWorkspace() {
       const previousSignatures = lastPayloadSignaturesRef.current;
       const nextSignatures = new Map<number, string>();
       const changedIds: number[] = [];
+      let addedCount = 0;
+      let updatedCount = 0;
       payload.items.forEach((ticket) => {
         const signature = [
           ticket.status,
@@ -345,6 +348,11 @@ export function DispatchWorkspace() {
         const previousSignature = previousSignatures.get(ticket.id);
         if (!previousSignature || previousSignature !== signature) {
           changedIds.push(ticket.id);
+          if (!previousSignature) {
+            addedCount += 1;
+          } else {
+            updatedCount += 1;
+          }
         }
       });
       previousSignatures.forEach((_signature, ticketId) => {
@@ -362,10 +370,14 @@ export function DispatchWorkspace() {
       rowHighlightTimeoutRef.current = window.setTimeout(() => setUpdatedTicketIds(new Set()), 2200);
       if (options?.revealDelta) {
         setRefreshDeltaCount(changedIds.length);
+        setRefreshDeltaSummary({ added: addedCount, updated: updatedCount, unchanged: changedIds.length === 0 });
         if (deltaTimeoutRef.current) {
           window.clearTimeout(deltaTimeoutRef.current);
         }
-        deltaTimeoutRef.current = window.setTimeout(() => setRefreshDeltaCount(null), 1800);
+        deltaTimeoutRef.current = window.setTimeout(() => {
+          setRefreshDeltaCount(null);
+          setRefreshDeltaSummary(null);
+        }, 1800);
       }
       const nextId =
         preferredTicketId && payload.items.some((ticket) => ticket.id === preferredTicketId)
@@ -884,6 +896,8 @@ export function DispatchWorkspace() {
 
   const selectedPresetName = allPresets.find((preset) => preset.id === selectedPresetId)?.name ?? 'תצוגה מותאמת';
   const roleLabel = currentRole === 'PM' ? 'מנהל נכס' : currentRole === 'MASTER' ? 'מנהל ראשי' : 'מנהל מערכת';
+  const canopyShift = prefersReducedMotion ? 0 : Math.min(pullDistance * 0.18, 14);
+  const canopyScale = prefersReducedMotion ? 1 : 1 - pullProgress * 0.012;
 
   return (
     <div className="space-y-5 pb-4 sm:space-y-6">
@@ -891,6 +905,7 @@ export function DispatchWorkspace() {
         pullDistance={pullDistance}
         isRefreshing={isRefreshing}
         deltaChipCount={refreshDeltaCount}
+        deltaSummary={refreshDeltaSummary}
         threshold={threshold}
         label="משוך כדי לרענן את לוח הקריאות"
       />
@@ -900,6 +915,10 @@ export function DispatchWorkspace() {
         initial={prefersReducedMotion ? undefined : { borderRadius: 24 }}
         animate={prefersReducedMotion ? undefined : { borderRadius: 24 }}
         className="space-y-3 md:hidden"
+        style={{
+          transform: `translateY(${canopyShift}px) scale(${canopyScale})`,
+          transformOrigin: '50% 0%',
+        }}
       >
         <motion.div layoutId={headerLayoutId} className="flex items-center justify-between rounded-2xl border border-subtle-border bg-background/76 px-3 py-2">
           <motion.span
