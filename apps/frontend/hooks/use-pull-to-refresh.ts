@@ -17,6 +17,12 @@ type UsePullToRefreshOptions = {
   onRefresh: () => Promise<void> | void;
 };
 
+function mapPullDistanceElastic(deltaY: number, threshold: number) {
+  const maxPullDistance = threshold * 1.4;
+  const resistance = maxPullDistance / 0.6;
+  return maxPullDistance * (1 - Math.exp(-Math.max(deltaY, 0) / resistance));
+}
+
 export function usePullToRefresh({
   enabled = true,
   threshold: customThreshold,
@@ -98,7 +104,7 @@ export function usePullToRefresh({
         event.preventDefault();
       }
 
-      const nextDistance = Math.min(deltaY * 0.6, threshold * 1.4);
+      const nextDistance = mapPullDistanceElastic(deltaY, threshold);
 
       if (!thresholdReachedRef.current && nextDistance >= threshold) {
         thresholdReachedRef.current = true;

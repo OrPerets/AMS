@@ -1,4 +1,4 @@
-import React, { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useRouter } from 'next/router';
 import { Bell, ExternalLink, Filter, Radio, RefreshCw, Settings, SlidersHorizontal } from 'lucide-react';
@@ -51,6 +51,39 @@ type QuickFilter = 'all' | 'unread' | 'urgent' | 'assigned' | 'archived';
 
 const FILTER_STORAGE_KEY = 'amit-notification-filters';
 
+function getNotificationSignature(item: NotificationItem) {
+  return [
+    item.id,
+    item.read ? '1' : '0',
+    item.title,
+    item.message,
+    item.type,
+    item.createdAt,
+    JSON.stringify(item.metadata ?? {}),
+  ].join('|');
+}
+
+function countChangedNotifications(previous: NotificationItem[], next: NotificationItem[]) {
+  const previousMap = new Map(previous.map((item) => [item.id, getNotificationSignature(item)]));
+  const nextMap = new Map(next.map((item) => [item.id, getNotificationSignature(item)]));
+  let changed = 0;
+
+  nextMap.forEach((signature, id) => {
+    const prevSignature = previousMap.get(id);
+    if (!prevSignature || prevSignature !== signature) {
+      changed += 1;
+    }
+  });
+
+  previousMap.forEach((_signature, id) => {
+    if (!nextMap.has(id)) {
+      changed += 1;
+    }
+  });
+
+  return changed;
+}
+
 function loadPersistedFilters(): { quickFilter: QuickFilter; searchTerm: string } {
   if (typeof window === 'undefined') return { quickFilter: 'all', searchTerm: '' };
   try {
@@ -86,10 +119,23 @@ export default function NotificationsPage() {
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(persisted.quickFilter);
   const [searchTerm, setSearchTerm] = useState(persisted.searchTerm);
   const deferredSearchTerm = useDeferredValue(searchTerm);
+  const notificationsRef = useRef<NotificationItem[]>([]);
+  const deltaTimeoutRef = useRef<number | null>(null);
+  const [refreshDeltaCount, setRefreshDeltaCount] = useState<number | null>(null);
+
+  notificationsRef.current = notifications;
 
   useEffect(() => {
     persistFilters(quickFilter, searchTerm);
   }, [quickFilter, searchTerm]);
+
+  useEffect(() => {
+    return () => {
+      if (deltaTimeoutRef.current) {
+        window.clearTimeout(deltaTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setCurrentUserId(getCurrentUserId());
@@ -111,19 +157,22 @@ export default function NotificationsPage() {
       if (!userId) {
         setNotifications([]);
         setLoading(false);
-        return;
+        return [] as NotificationItem[];
       }
       try {
         setLoading(true);
         const response = await authFetch(`/api/v1/notifications/user/${userId}`);
         if (!response.ok) throw new Error(await response.text());
-        setNotifications(normalizeNotifications(await response.json()));
+        const nextNotifications = normalizeNotifications(await response.json());
+        setNotifications(nextNotifications);
+        return nextNotifications;
       } catch {
         toast({
           title: t('notifications.loadFailedTitle'),
           description: t('notifications.loadFailedDescription'),
           variant: 'destructive',
         });
+        return notificationsRef.current;
       } finally {
         setLoading(false);
       }
@@ -225,8 +274,15 @@ export default function NotificationsPage() {
     preset: 'list',
     onThresholdReached: () => triggerHaptic('light'),
     onRefresh: async () => {
-      await loadNotifications();
+      const previousNotifications = notificationsRef.current;
+      const nextNotifications = await loadNotifications();
       await loadPreferences();
+      const deltaCount = countChangedNotifications(previousNotifications, nextNotifications);
+      setRefreshDeltaCount(deltaCount);
+      if (deltaTimeoutRef.current) {
+        window.clearTimeout(deltaTimeoutRef.current);
+      }
+      deltaTimeoutRef.current = window.setTimeout(() => setRefreshDeltaCount(null), 1800);
     },
   });
 
@@ -331,6 +387,7 @@ export default function NotificationsPage() {
       <PullToRefreshIndicator
         pullDistance={pullDistance}
         isRefreshing={isRefreshing}
+        deltaChipCount={refreshDeltaCount}
         threshold={threshold}
         label={t('notifications.pullToRefresh')}
       />

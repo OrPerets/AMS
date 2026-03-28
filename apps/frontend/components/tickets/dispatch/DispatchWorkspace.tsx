@@ -93,8 +93,10 @@ export function DispatchWorkspace() {
   const [triageLoading, setTriageLoading] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [updatedTicketIds, setUpdatedTicketIds] = useState<Set<number>>(new Set());
+  const [refreshDeltaCount, setRefreshDeltaCount] = useState<number | null>(null);
   const lastPayloadSignaturesRef = useRef<Map<number, string>>(new Map());
   const rowHighlightTimeoutRef = useRef<number | null>(null);
+  const deltaTimeoutRef = useRef<number | null>(null);
 
   const allPresets = useMemo(() => [...BUILTIN_PRESETS, ...customPresets], [customPresets]);
   const selectedTicket = useMemo(
@@ -168,6 +170,9 @@ export function DispatchWorkspace() {
     return () => {
       if (rowHighlightTimeoutRef.current) {
         window.clearTimeout(rowHighlightTimeoutRef.current);
+      }
+      if (deltaTimeoutRef.current) {
+        window.clearTimeout(deltaTimeoutRef.current);
       }
     };
   }, []);
@@ -289,11 +294,11 @@ export function DispatchWorkspace() {
     preset: 'dashboard',
     onThresholdReached: () => triggerHaptic('light'),
     onRefresh: async () => {
-      await loadDispatch(selectedTicket?.id);
+      await loadDispatch(selectedTicket?.id, { revealDelta: true });
     },
   });
 
-  async function loadDispatch(preferredTicketId?: number) {
+  async function loadDispatch(preferredTicketId?: number, options?: { revealDelta?: boolean }) {
     try {
       setLoading((current) => current && !dispatchData);
       setRefreshing(true);
@@ -318,6 +323,7 @@ export function DispatchWorkspace() {
       }
 
       const payload = (await response.json()) as DispatchResponse;
+      const previousSignatures = lastPayloadSignaturesRef.current;
       const nextSignatures = new Map<number, string>();
       const changedIds: number[] = [];
       payload.items.forEach((ticket) => {
@@ -331,9 +337,14 @@ export function DispatchWorkspace() {
           ticket.photoCount,
         ].join('|');
         nextSignatures.set(ticket.id, signature);
-        const previousSignature = lastPayloadSignaturesRef.current.get(ticket.id);
-        if (previousSignature && previousSignature !== signature) {
+        const previousSignature = previousSignatures.get(ticket.id);
+        if (!previousSignature || previousSignature !== signature) {
           changedIds.push(ticket.id);
+        }
+      });
+      previousSignatures.forEach((_signature, ticketId) => {
+        if (!nextSignatures.has(ticketId)) {
+          changedIds.push(ticketId);
         }
       });
       lastPayloadSignaturesRef.current = nextSignatures;
@@ -344,6 +355,13 @@ export function DispatchWorkspace() {
       }
       setUpdatedTicketIds(new Set(changedIds));
       rowHighlightTimeoutRef.current = window.setTimeout(() => setUpdatedTicketIds(new Set()), 2200);
+      if (options?.revealDelta) {
+        setRefreshDeltaCount(changedIds.length);
+        if (deltaTimeoutRef.current) {
+          window.clearTimeout(deltaTimeoutRef.current);
+        }
+        deltaTimeoutRef.current = window.setTimeout(() => setRefreshDeltaCount(null), 1800);
+      }
       const nextId =
         preferredTicketId && payload.items.some((ticket) => ticket.id === preferredTicketId)
           ? preferredTicketId
@@ -855,6 +873,7 @@ export function DispatchWorkspace() {
       <PullToRefreshIndicator
         pullDistance={pullDistance}
         isRefreshing={isRefreshing}
+        deltaChipCount={refreshDeltaCount}
         threshold={threshold}
         label="משוך כדי לרענן את לוח הקריאות"
       />
