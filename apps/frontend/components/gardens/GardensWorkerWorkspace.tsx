@@ -280,7 +280,24 @@ export function GardensWorkerWorkspace() {
   };
 
   if (loading) {
-    return <MobileCardSkeleton cards={2} />;
+    return (
+      <GardensModuleShell
+        role={role}
+        activePlan={selectedPlan || null}
+        moduleLabel="מרחב עבודה לעובד"
+        title="מרחב העבודה האישי בגינון"
+        description="המודול שומר עבורך מסלול עבודה נפרד: חודש פעיל, סטטוס ההגשה, הנחיות, ושמירה מהירה בלי לחזור למסכי AMS הכלליים."
+      >
+        <PageHero
+          variant="operational"
+          compact
+          kicker="WORKSPACE"
+          title="המשך לעדכן את החודש הפעיל"
+          description="טוענים את פרטי החודש והימים השמורים שלך."
+        />
+        <MobileCardSkeleton cards={2} />
+      </GardensModuleShell>
+    );
   }
 
   if (!dashboard || !activeMonth?.month) {

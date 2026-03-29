@@ -87,7 +87,17 @@ export function GardensManagerHome() {
   };
 
   if (loading) {
-    return <MobileCardSkeleton cards={3} />;
+    return (
+      <GardensModuleShell
+        role={role}
+        activePlan={latestPlan}
+        moduleLabel="דף הבית של מודול הגינון"
+        title="מודול הגינון"
+        description="ניהול חודשי, אישורים, דוחות ותזכורות — במרחב נפרד בתוך AMS."
+      >
+        <MobileCardSkeleton cards={3} />
+      </GardensModuleShell>
+    );
   }
 
   return (

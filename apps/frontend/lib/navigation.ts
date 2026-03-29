@@ -128,7 +128,7 @@ function adminModel(t: Translator): NavigationModel {
         id: 'dashboard',
         title: t('nav.group.dashboard'),
         items: [
-          { id: 'home', title: t('nav.homeOverview'), href: '/home', icon: Home },
+          { id: 'home', title: 'בית', href: '/home', icon: Home },
           { id: 'dashboard', title: t('nav.dashboard'), href: '/admin/dashboard', icon: BarChart3 },
         ],
       },
@@ -231,7 +231,7 @@ function pmModel(t: Translator): NavigationModel {
         id: 'dashboard',
         title: t('nav.group.dashboard'),
         items: [
-          { id: 'home', title: t('nav.homeOverview'), href: '/home', icon: Home },
+          { id: 'home', title: 'בית', href: '/home', icon: Home },
           { id: 'dashboard', title: t('nav.dashboard'), href: '/admin/dashboard', icon: BarChart3 },
           { id: 'maya', title: t('nav.mayaDashboard'), href: '/maya-dashboard', icon: Ticket },
         ],

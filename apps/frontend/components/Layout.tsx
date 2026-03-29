@@ -286,7 +286,7 @@ export default function Layout({ children }: Props) {
         >
           <div
             className={cn(
-              "container min-h-full max-w-full px-3 py-3 sm:px-6 sm:py-6 safe-pb",
+              "container min-h-full max-w-full px-3 py-2.5 sm:px-6 sm:py-6 safe-pb",
               direction === 'rtl' ? 'text-right' : 'text-left',
             )}
             style={

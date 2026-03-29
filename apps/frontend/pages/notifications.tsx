@@ -276,11 +276,11 @@ export default function NotificationsPage() {
   const { pullDistance, pullProgress, isRefreshing, threshold } = usePullToRefresh({
     enabled: Boolean(currentUserId),
     preset: 'list',
-    onThresholdReached: () => triggerHaptic('light'),
     onRefresh: async () => {
       const previousNotifications = notificationsRef.current;
       const nextNotifications = await loadNotifications();
       await loadPreferences();
+      triggerHaptic('success');
       const deltaSummary = summarizeNotificationChanges(previousNotifications, nextNotifications);
       setRefreshDeltaCount(deltaSummary.changed);
       setRefreshDeltaSummary(deltaSummary);
@@ -429,10 +429,11 @@ export default function NotificationsPage() {
             </motion.span>
             <StatusBadge label={liveConnected ? t('notifications.liveConnected') : t('notifications.liveDisconnected')} tone={liveConnected ? 'success' : 'warning'} />
             <motion.span
+              key={`unread-count-${unreadCount}`}
               layoutId={badgeLayoutId}
-              initial={prefersReducedMotion ? { opacity: 0.92 } : false}
-              animate={prefersReducedMotion ? { opacity: 1 } : undefined}
-              transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              initial={prefersReducedMotion ? { opacity: 0.92 } : { opacity: 0.72, scale: 0.94 }}
+              animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+              transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : { duration: 0.22, ease: MOTION_EASE.emphasized }}
             >
               <Badge variant="outline" className="border-white/12 bg-white/8 text-white/82">
                 {unreadCount} {t('notifications.unread')}

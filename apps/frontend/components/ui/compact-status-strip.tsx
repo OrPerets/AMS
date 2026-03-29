@@ -48,6 +48,7 @@ export function CompactStatusStrip({
   lastSyncedAt,
   className,
   tone = 'default',
+  density = 'compact',
 }: {
   roleLabel: string;
   icon?: React.ReactNode;
@@ -56,6 +57,7 @@ export function CompactStatusStrip({
   lastSyncedAt?: number | null;
   className?: string;
   tone?: 'default' | 'resident' | 'pm' | 'admin';
+  density?: 'default' | 'compact';
 }) {
   const reducedMotion = useReducedMotion();
   const [pulsingMetricId, setPulsingMetricId] = React.useState<string | null>(null);
@@ -124,7 +126,8 @@ export function CompactStatusStrip({
   return (
     <section
       className={cn(
-        'flex min-h-[48px] flex-col items-stretch gap-2 overflow-hidden rounded-[20px] border px-3 py-2.5 shadow-elevation-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:py-2 sm:pe-4',
+        'flex flex-col items-stretch gap-2 overflow-hidden border shadow-elevation-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:pe-4',
+        density === 'compact' ? 'min-h-[44px] rounded-[18px] px-3 py-2 sm:py-2' : 'min-h-[48px] rounded-[20px] px-3 py-2.5 sm:py-2',
         tone === 'default' && 'border-subtle-border bg-card',
         tone === 'resident' &&
           'border-primary/14 bg-[linear-gradient(180deg,rgba(255,251,245,0.96)_0%,rgba(255,255,255,0.92)_100%)] shadow-[0_14px_30px_rgba(84,58,15,0.08)]',
@@ -140,14 +143,14 @@ export function CompactStatusStrip({
         <div className="flex min-w-0 items-center gap-2">
         <span
           className={cn(
-            'flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-[14px]',
+            density === 'compact' ? 'flex h-7 w-7 shrink-0 items-center justify-center rounded-[12px]' : 'flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-[14px]',
             'bg-primary/10 text-primary',
           )}
           aria-hidden="true"
         >
           {icon ?? <ShieldCheck className="h-4 w-4" strokeWidth={1.75} />}
         </span>
-        <span className="truncate text-[13px] font-semibold text-foreground">
+        <span className={cn(density === 'compact' ? 'truncate text-[12px]' : 'truncate text-[13px]', 'font-semibold text-foreground')}>
           {roleLabel}
         </span>
         </div>

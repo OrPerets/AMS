@@ -48,3 +48,32 @@ export const INTERACTION_THRESHOLDS = {
   swipeFlashDuration: 0.18,
   undoWindowMs: 8000,
 } as const;
+
+export const MOBILE_MOTION_PRESET = {
+  routeEnter: {
+    initial: { opacity: 0, y: MOTION_DISTANCE.sm, scale: 0.992 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    transition: { duration: MOTION_DURATION.standard, ease: MOTION_EASE.emphasized },
+  },
+  sectionEnter: {
+    initial: { opacity: 0, y: MOTION_DISTANCE.xs },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: MOTION_DURATION.moderate, ease: MOTION_EASE.emphasized },
+  },
+  stepAdvance: {
+    initial: { opacity: 0, x: MOTION_DISTANCE.md, y: MOTION_DISTANCE.xxs },
+    animate: { opacity: 1, x: 0, y: 0 },
+    exit: { opacity: 0, x: -MOTION_DISTANCE.xs, y: -MOTION_DISTANCE.xxs },
+    transition: { duration: MOTION_DURATION.fast, ease: MOTION_EASE.emphasized },
+  },
+  successReveal: {
+    initial: { opacity: 0, scale: 0.982, y: MOTION_DISTANCE.sm },
+    animate: { opacity: 1, scale: 1, y: 0 },
+    exit: { opacity: 0 },
+    transition: { duration: MOTION_DURATION.moderate, ease: MOTION_EASE.emphasized },
+  },
+  liveBadge: {
+    animate: { scale: [1, 1.05, 1], opacity: [1, 0.9, 1] },
+    transition: { duration: MOTION_DURATION.pulse, ease: MOTION_EASE.standardInOut },
+  },
+} as const;

@@ -51,17 +51,17 @@ export function PageHero({
               </div>
             ) : null}
             <div className="space-y-1">
-              <h1 className={cn('max-w-[18ch] text-[1.1rem] font-bold leading-[1.05] sm:text-[1.45rem] lg:text-[1.7rem]', isOperational ? 'text-foreground' : 'text-foreground')}>
+              <h1 className={cn('max-w-[18ch] text-balance text-[1.05rem] font-bold leading-[1.05] sm:text-[1.45rem] lg:text-[1.7rem]', isOperational ? 'text-foreground' : 'text-foreground')}>
                 {title}
               </h1>
               {description ? (
-                <p className={cn('max-w-2xl text-[13px] leading-5 sm:text-sm sm:leading-6', mobileCompact ? 'hidden sm:block' : '', isOperational ? 'text-muted-foreground' : 'text-secondary-foreground')}>
+                <p className={cn('max-w-2xl text-[12px] leading-5 sm:text-sm sm:leading-6', mobileCompact ? 'line-clamp-2 sm:line-clamp-none' : '', isOperational ? 'text-muted-foreground' : 'text-secondary-foreground')}>
                   {description}
                 </p>
               ) : null}
             </div>
           </div>
-          {actions ? <div className="relative flex shrink-0 flex-wrap gap-2 sm:justify-end">{actions}</div> : null}
+          {actions ? <div className="relative flex shrink-0 flex-wrap gap-2 sm:justify-end [&>*]:min-h-[40px] [&>*]:rounded-full">{actions}</div> : null}
         </div>
       </section>
     );

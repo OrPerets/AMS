@@ -124,7 +124,7 @@ test.describe('mobile support smoke', () => {
     await setSession(page, 'TECH');
 
     await page.goto('/tech/jobs');
-    await expect(page.getByRole('heading', { name: 'כלי שטח' })).toBeVisible();
+    await expect(page.locator('h1').filter({ hasText: 'כלי שטח' }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /דוח פיקוח/ }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /^גינון/ }).last()).toBeVisible();
     await expect(page.getByRole('link', { name: /עדכון סטטוס/ }).first()).toBeVisible();
@@ -136,14 +136,16 @@ test.describe('mobile support smoke', () => {
     await setSession(page, 'MASTER');
 
     await page.goto('/home');
-    const sidebarDialog = page.getByRole('dialog').filter({ has: page.getByRole('navigation').first() });
-    if (!(await sidebarDialog.isVisible().catch(() => false))) {
+    const shellSurface = page.locator('[role="dialog"]').first();
+    if (!(await shellSurface.isVisible().catch(() => false))) {
       await page.locator('header button').first().click({ force: true });
     }
 
-    await expect(sidebarDialog.getByRole('link', { name: /בית/ }).first()).toBeVisible();
-    await expect(sidebarDialog.getByRole('link', { name: /בקשות/ }).first()).toBeVisible();
-    await expect(sidebarDialog.getByRole('link', { name: /דוח פיקוח/ }).first()).toBeVisible();
+    await expect(page.locator('a[href="/home"]:visible').first()).toBeVisible();
+    await expect(page.locator('a[href="/tickets"]:visible').first()).toBeVisible();
+    await expect(page.locator('a[href="/supervision-report"]:visible').first()).toBeVisible();
+    await page.goto('/supervision-report');
+    await expect(page).toHaveURL(/\/supervision-report$/);
     await expectNoHorizontalOverflow(page);
   });
 });

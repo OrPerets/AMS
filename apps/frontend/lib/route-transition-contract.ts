@@ -1,4 +1,4 @@
-export type RouteTransitionKey = 'tickets' | 'notifications' | 'payments' | 'requests' | 'jobs';
+export type RouteTransitionKey = 'tickets' | 'notifications' | 'payments' | 'requests' | 'jobs' | 'settings';
 
 export type RouteTransitionTokens = {
   key: RouteTransitionKey;
@@ -52,6 +52,14 @@ const ROUTE_TRANSITION_CONTRACT: Record<RouteTransitionKey, RouteTransitionToken
     title: `${ROUTE_TRANSITION_PREFIX}-jobs-title`,
     header: `${ROUTE_TRANSITION_PREFIX}-jobs-header`,
   },
+  settings: {
+    key: 'settings',
+    container: `${ROUTE_TRANSITION_PREFIX}-settings-container`,
+    icon: `${ROUTE_TRANSITION_PREFIX}-settings-icon`,
+    badge: `${ROUTE_TRANSITION_PREFIX}-settings-badge`,
+    title: `${ROUTE_TRANSITION_PREFIX}-settings-title`,
+    header: `${ROUTE_TRANSITION_PREFIX}-settings-header`,
+  },
 };
 
 function normalizeHref(href?: string): string {
@@ -67,6 +75,7 @@ export function resolveRouteTransitionTokensByHref(href?: string): RouteTransiti
   if (normalizedHref.startsWith('/payments')) return ROUTE_TRANSITION_CONTRACT.payments;
   if (normalizedHref.startsWith('/resident/requests')) return ROUTE_TRANSITION_CONTRACT.requests;
   if (normalizedHref.startsWith('/tech/jobs') || normalizedHref.startsWith('/work-orders')) return ROUTE_TRANSITION_CONTRACT.jobs;
+  if (normalizedHref.startsWith('/settings')) return ROUTE_TRANSITION_CONTRACT.settings;
 
   return null;
 }

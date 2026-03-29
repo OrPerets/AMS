@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { FormActionHint, FormField, FormErrorSummary } from '../components/ui/form-field';
 import { InlineErrorPanel } from '../components/ui/inline-feedback';
 import { Input } from '../components/ui/input';
+import { PageHero } from '../components/ui/page-hero';
 import { PasswordInput } from '../components/ui/password-input';
 import { SectionHeader } from '../components/ui/section-header';
 import { StatusBadge } from '../components/ui/status-badge';
@@ -254,50 +255,52 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <Card variant="featured" className="overflow-hidden rounded-[22px]">
-        <CardContent className="space-y-4 p-4 sm:p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <StatusBadge label={t('settings.heroBadge')} tone="finance" />
-                <StatusBadge label={direction === 'rtl' ? t('settings.direction.rtl') : t('settings.direction.ltr')} tone="active" />
-              </div>
-              <h1 className="text-xl font-bold text-foreground">{t('settings.heroTitle')}</h1>
-              <p className="text-sm text-secondary-foreground">עדכן פרופיל, אבטחה והתראות ממסך אחד.</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => void loadSettings()}>
-              {t('notifications.refresh')}
-            </Button>
-          </div>
+      <PageHero
+        compact
+        mobileCompact
+        variant="operational"
+        kicker={t('settings.heroTitle')}
+        eyebrow={
+          <>
+            <StatusBadge label={t('settings.heroBadge')} tone="finance" />
+            <StatusBadge label={direction === 'rtl' ? t('settings.direction.rtl') : t('settings.direction.ltr')} tone="active" />
+          </>
+        }
+        title={t('settings.heroTitle')}
+        description="עדכן פרופיל, אבטחה והתראות ממסך אחד."
+        actions={
+          <Button variant="outline" size="sm" onClick={() => void loadSettings()}>
+            {t('notifications.refresh')}
+          </Button>
+        }
+      />
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <SettingsSummaryCard
-              icon={<UserRound className="h-4 w-4 text-primary" />}
-              label={t('settings.section.profileTitle')}
-              value={profile.email || t('settings.section.profileTitle')}
-              description={profile.phone || t('settings.field.phoneHint')}
-            />
-            <SettingsSummaryCard
-              icon={<Bell className="h-4 w-4 text-primary" />}
-              label={t('settings.section.preferencesTitle')}
-              value={`${enabledTopics}/${topicPrefs.length}`}
-              description={t('settings.preference.explanation')}
-            />
-            <SettingsSummaryCard
-              icon={<Globe className="h-4 w-4 text-primary" />}
-              label={t('settings.section.languageTitle')}
-              value={t('settings.language.he')}
-              description={`${t('settings.direction.rtl')} · ${regionalFormats[regionalFormat].label}`}
-            />
-            <SettingsSummaryCard
-              icon={<ShieldCheck className="h-4 w-4 text-primary" />}
-              label={t('settings.section.passwordTitle')}
-              value={passwords.newPassword ? t('settings.unsavedChanges') : t('settings.meta.secured')}
-              description={t('common.saved')}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <SettingsSummaryCard
+          icon={<UserRound className="h-4 w-4 text-primary" />}
+          label={t('settings.section.profileTitle')}
+          value={profile.email || t('settings.section.profileTitle')}
+          description={profile.phone || t('settings.field.phoneHint')}
+        />
+        <SettingsSummaryCard
+          icon={<Bell className="h-4 w-4 text-primary" />}
+          label={t('settings.section.preferencesTitle')}
+          value={`${enabledTopics}/${topicPrefs.length}`}
+          description={t('settings.preference.explanation')}
+        />
+        <SettingsSummaryCard
+          icon={<Globe className="h-4 w-4 text-primary" />}
+          label={t('settings.section.languageTitle')}
+          value={t('settings.language.he')}
+          description={`${t('settings.direction.rtl')} · ${regionalFormats[regionalFormat].label}`}
+        />
+        <SettingsSummaryCard
+          icon={<ShieldCheck className="h-4 w-4 text-primary" />}
+          label={t('settings.section.passwordTitle')}
+          value={passwords.newPassword ? t('settings.unsavedChanges') : t('settings.meta.secured')}
+          description={t('common.saved')}
+        />
+      </div>
 
       {loadError ? <InlineErrorPanel title={t('settings.loadErrorTitle')} description={loadError} onRetry={loadSettings} /> : null}
 

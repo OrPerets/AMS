@@ -414,9 +414,15 @@ export default function Buildings() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-10 w-32" />
+        <div className="page-header">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">ניהול בניינים</h1>
+            <p className="text-muted-foreground">ניהול רכוש והתחזוקה של הבניינים במערכת</p>
+          </div>
+          <div className="page-header-actions">
+            <Skeleton className="h-10 w-10 rounded-xl" />
+            <Skeleton className="h-10 w-32 rounded-xl" />
+          </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (

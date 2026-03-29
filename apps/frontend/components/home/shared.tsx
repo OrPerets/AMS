@@ -197,6 +197,7 @@ export function RoleHomeShell({
       <CompactStatusStrip
         roleLabel={roleLabel}
         icon={icon}
+        density="compact"
         tone={tone}
         contextChips={quickActions.slice(0, 2).map((item) => ({
           id: `chip-${item.id}`,

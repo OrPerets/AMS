@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Sun, Moon, ChevronLeft, ChevronRight, ChevronDown, Bell, Command, Search, ArrowRight, AlertTriangle, Clock, Info, Home, Building2, Settings as SettingsIcon, Wrench, CreditCard, ClipboardList, Menu } from 'lucide-react';
+import { Sun, Moon, ChevronLeft, ChevronRight, Bell, Command, Search, ArrowRight, AlertTriangle, Clock, Info, Home, Building2, Settings as SettingsIcon, Wrench, CreditCard, ClipboardList, Menu } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { useTheme, useDirection, useLocale } from '../../lib/providers';
@@ -77,10 +77,6 @@ export default function Header({
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [mobileSubtitleVisible, setMobileSubtitleVisible] = useState(false);
-  const subtitleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressTriggeredRef = useRef(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
   const currentUserId = getCurrentUserId();
@@ -165,117 +161,41 @@ export default function Header({
     router.push('/notifications');
   };
 
-  const revealMobileSubtitle = useCallback(() => {
-    setMobileSubtitleVisible(true);
-    if (subtitleTimeoutRef.current) {
-      clearTimeout(subtitleTimeoutRef.current);
-    }
-    subtitleTimeoutRef.current = setTimeout(() => {
-      setMobileSubtitleVisible(false);
-      subtitleTimeoutRef.current = null;
-    }, 4000);
-  }, []);
-
-  useEffect(() => {
-    setMobileSubtitleVisible(false);
-  }, [router.pathname]);
-
-  useEffect(() => {
-    return () => {
-      if (subtitleTimeoutRef.current) {
-        clearTimeout(subtitleTimeoutRef.current);
-      }
-      if (longPressTimeoutRef.current) {
-        clearTimeout(longPressTimeoutRef.current);
-      }
-    };
-  }, []);
-
   return (
     <header className={cn(
       "sticky top-0 z-40 w-full border-b bg-background/72 backdrop-blur-xl",
       className
     )}>
       <div className="container px-3 sm:px-6">
-        <div className="flex items-center gap-1.5 py-2 md:hidden" style={{ maxWidth: '100vw' }}>
+        <div className="flex items-center gap-1.5 py-1.5 md:hidden" style={{ maxWidth: '100vw' }}>
           <Button
             variant="outline"
             size="icon"
             onClick={onMenuClick}
-            className="mobile-touch-strip h-10 w-10 shrink-0 border-0 px-0 shadow-none shell-frost touch-manipulation"
+            className="mobile-touch-strip h-9 w-9 shrink-0 border-0 px-0 shadow-none shell-frost touch-manipulation"
             aria-label="פתח תפריט"
           >
             <Menu className="h-4 w-4" />
           </Button>
 
-          <div className="mobile-shell-panel flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 touch-manipulation">
+          <div className="mobile-shell-panel flex min-w-0 flex-1 items-center gap-2 px-2.5 py-1.5 touch-manipulation">
             <Link
               href={isResidentMobileRoute ? '/resident/account' : router.pathname === '/home' ? '/home' : router.asPath}
               className="flex min-w-0 flex-1 items-center gap-2"
               aria-label={mobileContextAriaLabel}
-              onPointerDown={() => {
-                longPressTriggeredRef.current = false;
-                if (longPressTimeoutRef.current) {
-                  clearTimeout(longPressTimeoutRef.current);
-                }
-                longPressTimeoutRef.current = setTimeout(() => {
-                  longPressTriggeredRef.current = true;
-                  revealMobileSubtitle();
-                }, 450);
-              }}
-              onPointerUp={() => {
-                if (longPressTimeoutRef.current) {
-                  clearTimeout(longPressTimeoutRef.current);
-                  longPressTimeoutRef.current = null;
-                }
-              }}
-              onPointerLeave={() => {
-                if (longPressTimeoutRef.current) {
-                  clearTimeout(longPressTimeoutRef.current);
-                  longPressTimeoutRef.current = null;
-                }
-              }}
-              onPointerCancel={() => {
-                if (longPressTimeoutRef.current) {
-                  clearTimeout(longPressTimeoutRef.current);
-                  longPressTimeoutRef.current = null;
-                }
-              }}
-              onClick={(event) => {
-                if (longPressTriggeredRef.current) {
-                  event.preventDefault();
-                }
-              }}
             >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[14px] bg-primary/10 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.28)]">
-                <MobileContextIcon className="h-4 w-4" />
+              <div className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-[12px] bg-primary/10 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.28)]">
+                <MobileContextIcon className="h-3.5 w-3.5" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[14px] font-semibold leading-tight text-foreground">{mobileContext.title}</div>
-                {mobileSubtitleVisible && (
-                  <div className="truncate text-[10px] leading-tight text-muted-foreground">{mobileContext.subtitle}</div>
-                )}
+                <div className="truncate text-[13px] font-semibold leading-tight text-foreground">{mobileContext.title}</div>
+                {mobileContext.subtitle ? <div className="truncate text-[10px] leading-tight text-muted-foreground">{mobileContext.subtitle}</div> : null}
               </div>
             </Link>
-            {!!mobileContext.subtitle && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 shrink-0 rounded-[14px] text-muted-foreground touch-manipulation"
-                aria-label="הצג הקשר נוסף"
-                onClick={(event) => {
-                  event.preventDefault();
-                  revealMobileSubtitle();
-                }}
-              >
-                <ChevronDown className={cn("h-4 w-4 transition-transform", mobileSubtitleVisible ? "rotate-180" : "")} />
-              </Button>
-            )}
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            <Link href="/notifications" className="relative mobile-shell-panel flex h-10 w-10 min-h-10 min-w-10 shrink-0 items-center justify-center rounded-[18px] border touch-manipulation">
+            <Link href="/notifications" className="relative mobile-shell-panel flex h-9 w-9 min-h-9 min-w-9 shrink-0 items-center justify-center rounded-[16px] border touch-manipulation">
               <Bell className="h-4 w-4 text-foreground" />
               {unreadCount > 0 && (
                 <span className="absolute -end-0.5 -top-0.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
@@ -284,7 +204,7 @@ export default function Header({
               )}
             </Link>
 
-            <div className="mobile-shell-panel flex h-10 w-10 min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border p-0.5 touch-manipulation [&>button]:h-full [&>button]:w-full">
+            <div className="mobile-shell-panel flex h-9 w-9 min-h-9 min-w-9 shrink-0 items-center justify-center rounded-full border p-0.5 touch-manipulation [&>button]:h-full [&>button]:w-full">
               <UserMenu />
             </div>
           </div>
