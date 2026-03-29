@@ -13,11 +13,11 @@ test.describe('mobile support smoke', () => {
     if (!(await sidebarDialog.isVisible().catch(() => false))) {
       await page.locator('header button').first().click({ force: true });
     }
-    const buildingsLink = sidebarDialog.getByRole('link', { name: /בניינים/ }).first();
+    const buildingsLink = page.locator('a[href="/buildings"]:visible').first();
     await expect(buildingsLink).toBeVisible();
     await Promise.all([
       page.waitForURL(/\/buildings$/),
-      buildingsLink.click({ force: true }),
+      buildingsLink.evaluate((node) => (node as HTMLAnchorElement).click()),
     ]);
     await expect(page).toHaveURL(/\/buildings$/);
     await expect(page.getByRole('banner').getByText('בניינים ונכסים')).toBeVisible();

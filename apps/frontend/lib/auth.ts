@@ -15,6 +15,10 @@ export type AuthSnapshot = {
   isAuthenticated: boolean;
 };
 
+type AuthFetchInit = RequestInit & {
+  timeoutMs?: number;
+};
+
 function isBrowser() {
   return typeof window !== 'undefined';
 }
@@ -27,6 +31,49 @@ function decodeBase64Url(value: string): string {
 
 function getUnixTime() {
   return Math.floor(Date.now() / 1000);
+}
+
+function createAbortError(message: string, name: string) {
+  if (typeof DOMException === 'function') {
+    return new DOMException(message, name);
+  }
+
+  const error = new Error(message);
+  error.name = name;
+  return error;
+}
+
+function createTimeoutSignal(sourceSignal: AbortSignal | null | undefined, timeoutMs: number) {
+  const controller = new AbortController();
+  const cleanupCallbacks: Array<() => void> = [];
+
+  const abort = (reason: unknown) => {
+    if (!controller.signal.aborted) {
+      controller.abort(reason);
+    }
+  };
+
+  if (sourceSignal) {
+    if (sourceSignal.aborted) {
+      abort(sourceSignal.reason);
+    } else {
+      const handleAbort = () => abort(sourceSignal.reason);
+      sourceSignal.addEventListener('abort', handleAbort, { once: true });
+      cleanupCallbacks.push(() => sourceSignal.removeEventListener('abort', handleAbort));
+    }
+  }
+
+  const timeoutId = window.setTimeout(() => {
+    abort(createAbortError('Request timed out', 'TimeoutError'));
+  }, timeoutMs);
+
+  return {
+    signal: controller.signal,
+    cleanup: () => {
+      window.clearTimeout(timeoutId);
+      cleanupCallbacks.forEach((callback) => callback());
+    },
+  };
 }
 
 function removeStoredToken(key: string) {
@@ -158,21 +205,27 @@ export function isMasterPendingRoleSelection(): boolean {
   return Boolean(payload?.role === 'MASTER' && !payload?.actAsRole);
 }
 
-export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+export async function authFetch(input: RequestInfo | URL, init: AuthFetchInit = {}) {
   const headers = new Headers(init.headers || {});
   const token = getAccessToken();
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
-  
+
+  const timeoutMs = init.timeoutMs ?? 15_000;
+  const timeoutController = isBrowser()
+    ? createTimeoutSignal(init.signal, timeoutMs)
+    : null;
+  const signal = timeoutController?.signal ?? init.signal;
+
   try {
-    let res = await fetch(input, { ...init, headers });
+    let res = await fetch(input, { ...init, headers, signal });
     if (res.status === 401 && isBrowser()) {
       const refreshed = await refreshTokens();
       if (refreshed) {
         const newToken = getAccessToken();
         if (newToken) headers.set('Authorization', `Bearer ${newToken}`);
-        res = await fetch(input, { ...init, headers });
+        res = await fetch(input, { ...init, headers, signal });
       }
       if (res.status === 401) {
         clearTokens();
@@ -182,20 +235,29 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
     }
     return res;
   } catch (error) {
-    // Handle network errors, connection timeouts, etc.
     console.error('Network error in authFetch:', error);
-    
-    // Create a mock response for connection errors
+
+    const isCallerAbort = Boolean(init.signal?.aborted);
+    const isTimeoutAbort = Boolean(signal?.aborted) && !isCallerAbort;
+    const status = isTimeoutAbort ? 504 : isCallerAbort ? 499 : 503;
+    const message = isTimeoutAbort
+      ? 'Backend request timed out'
+      : isCallerAbort
+        ? 'Request was cancelled'
+        : 'Backend server is unavailable';
+
     const mockResponse = new Response(
-      JSON.stringify({ error: 'Connection failed', message: 'Backend server is unavailable' }),
+      JSON.stringify({ error: 'Connection failed', message }),
       {
-        status: 503,
-        statusText: 'Service Unavailable',
-        headers: { 'Content-Type': 'application/json' }
-      }
+        status,
+        statusText: isTimeoutAbort ? 'Gateway Timeout' : isCallerAbort ? 'Client Closed Request' : 'Service Unavailable',
+        headers: { 'Content-Type': 'application/json' },
+      },
     );
-    
+
     return mockResponse;
+  } finally {
+    timeoutController?.cleanup();
   }
 }
 
@@ -388,6 +450,10 @@ export function getPortalEntryRoute(
 
   if (portal === 'resident' && (effectiveRole === 'RESIDENT' || isMasterPendingRoleSelection())) {
     return '/resident/account';
+  }
+
+  if (portal === 'worker' && effectiveRole && effectiveRole !== 'RESIDENT') {
+    return '/home';
   }
 
   return getDefaultRoute(effectiveRole);

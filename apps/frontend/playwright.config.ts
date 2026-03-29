@@ -10,13 +10,13 @@ export default defineConfig({
     },
   },
   use: {
-    baseURL: 'http://127.0.0.1:3001',
+    baseURL: 'http://127.0.0.1:3101',
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npm run dev',
+    command: 'npx next dev -p 3101 -H 127.0.0.1',
     cwd: __dirname,
-    url: 'http://127.0.0.1:3001',
+    url: 'http://127.0.0.1:3101',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

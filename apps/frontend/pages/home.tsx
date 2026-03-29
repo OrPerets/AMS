@@ -17,6 +17,7 @@ import { AccountantMobileHome, buildAccountantFallback, type AccountantMobileHom
 import { PmMobileHome, buildPmFallback, type PmMobileHomeData } from '../components/home/PmMobileHome';
 import { TechMobileHome, buildTechFallback, type TechMobileHomeData } from '../components/home/TechMobileHome';
 import type { DashboardResponse } from '../components/admin/dashboard/types';
+import { useHomeBlueprint } from '../features/home';
 
 type UserNotificationSnapshot = Array<{
   id?: number;
@@ -196,87 +197,16 @@ type ResidentHomeData = {
 };
 
 export default function HomePage() {
-  const router = useRouter();
-  const [role, setRole] = useState<RoleKey>('RESIDENT');
-  const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [blueprint, setBlueprint] = useState<HomeBlueprintState | null>(null);
-  const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const currentUserId = getCurrentUserId();
-
-  useEffect(() => {
-    setMounted(true);
-    setRole((getEffectiveRole() as RoleKey) || 'RESIDENT');
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-
-    const authSnapshot = getAuthSnapshot();
-    const effectiveRole = (authSnapshot.role as RoleKey | null) || 'RESIDENT';
-    setRole(effectiveRole);
-
-    if (!authSnapshot.isAuthenticated) {
-      const next = encodeURIComponent(router.asPath || '/home');
-      void router.replace(`/login?next=${next}`);
-      return;
-    }
-
-    const capabilities = getRoleCapabilities(effectiveRole);
-
-    if (capabilities?.role === 'RESIDENT') {
-      void router.replace('/resident/account');
-      return;
-    }
-
-    if (!capabilities?.canAccessAms) {
-      void router.replace(ROLE_SELECTION_ROUTE);
-      return;
-    }
-
-    setLastModule('ams', authSnapshot.userId, effectiveRole);
-    addRecentAction({ id: 'home-visit', label: 'דף הבית', href: '/home', screen: 'home', role: effectiveRole }, authSnapshot.userId);
-    void loadBlueprint(effectiveRole);
-  }, [mounted, router]);
-
-  useEffect(() => {
-    if (!mounted || !currentUserId) return;
-    const key = `amit-onboarding:v8:${currentUserId}:${role}`;
-    const seen = window.localStorage.getItem(key);
-    setOnboardingOpen(!seen);
-  }, [currentUserId, mounted, role]);
-
-  async function loadBlueprint(activeRole: RoleKey) {
-    try {
-      setLoading(true);
-      setBlueprint(await buildHomeBlueprint(activeRole, currentUserId));
-    } catch (error) {
-      console.error(error);
-      toast({
-        title: 'טעינת דף הבית נכשלה',
-        description: 'תצורת הגיבוי הופעלה כדי שתוכל להמשיך לעבוד במסלולים הראשיים.',
-        variant: 'destructive',
-      });
-      setBlueprint(buildFallbackBlueprint(activeRole));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const onboardingSteps = useMemo(() => getOnboardingSteps(role), [role]);
-
-  function completeOnboarding() {
-    if (currentUserId && typeof window !== 'undefined') {
-      window.localStorage.setItem(`amit-onboarding:v8:${currentUserId}:${role}`, new Date().toISOString());
-    }
-    setOnboardingOpen(false);
-    trackEvent('onboarding_complete', { role });
-    toast({
-      title: 'מסלול הפתיחה נשמר',
-      description: 'המסך הראשי ימשיך לפתוח עבורך את הבלופרינט המתאים לכל תפקיד.',
-      variant: 'success',
-    });
-  }
+  const {
+    role,
+    mounted,
+    loading,
+    blueprint,
+    onboardingOpen,
+    setOnboardingOpen,
+    onboardingSteps,
+    completeOnboarding,
+  } = useHomeBlueprint();
 
   if (!mounted || loading || !blueprint) {
     return <MobileCardSkeleton cards={4} />;

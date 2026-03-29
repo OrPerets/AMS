@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 import { Skeleton } from '../components/ui/skeleton';
+import { InlineErrorPanel } from '../components/ui/inline-feedback';
 import { cn, formatNumber } from '../lib/utils';
 import { toast } from '../components/ui/use-toast';
 import { useRouter } from 'next/router';
@@ -88,11 +89,17 @@ export default function Buildings() {
   const [overviewLoading, setOverviewLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const router = useRouter();
 
   const loadBuildings = async () => {
+    setError(null);
+    if (!buildings.length) {
+      setLoading(true);
+    }
+
     try {
       const res = await authFetch('/api/v1/buildings');
       if (res.ok) {
@@ -156,13 +163,13 @@ export default function Buildings() {
         setSelectedBuildingId((current) => current ?? fallback[0]?.id ?? null);
       }
     } catch (error: any) {
+      const message = error?.message || "לא ניתן לטעון את רשימת הבניינים";
+      setError(message);
       toast({
         title: "שגיאה בטעינת בניינים",
-        description: error?.message || "לא ניתן לטעון את רשימת הבניינים",
+        description: message,
         variant: "destructive",
       });
-      // Still show mock data for demo
-      setBuildings([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -425,6 +432,16 @@ export default function Buildings() {
     );
   }
 
+  if (error && !buildings.length) {
+    return (
+      <InlineErrorPanel
+        title="רשימת הבניינים לא נטענה"
+        description={error}
+        onRetry={() => void loadBuildings()}
+      />
+    );
+  }
+
   const selectedBuilding = filteredBuildings.find((building) => building.id === selectedBuildingId) ?? null;
   const rankedBuildings = [...filteredBuildings]
     .sort((left, right) => {
@@ -458,6 +475,14 @@ export default function Buildings() {
 
   return (
     <div className="space-y-6">
+      {error ? (
+        <InlineErrorPanel
+          className="mb-2"
+          title="הנתונים חלקיים"
+          description={error}
+          onRetry={() => void loadBuildings()}
+        />
+      ) : null}
       <MobileContextBar
         roleLabel={t('buildings.mobile.roleLabel')}
         contextLabel={selectedBuilding ? selectedBuilding.name : t('buildings.mobile.portfolioOverview')}

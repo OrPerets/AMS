@@ -29,6 +29,7 @@ import { Badge } from '../../components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { MobileSwipeActionCard } from '../../components/ui/mobile-swipe-action-card';
 import { Skeleton } from '../../components/ui/skeleton';
+import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { cn, formatDate, formatCurrency } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
 import { getRouteTransitionTokensByKey } from '../../lib/route-transition-contract';
@@ -72,6 +73,7 @@ export default function Jobs() {
   const [orders, setOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [updatedOrderIds, setUpdatedOrderIds] = useState<Set<number>>(new Set());
   const { locale } = useLocale();
@@ -115,6 +117,11 @@ export default function Jobs() {
   };
 
   const loadJobs = async () => {
+      setError(null);
+      if (!orders.length) {
+        setLoading(true);
+      }
+
       try {
         const currentUserId = getCurrentUserId();
         // Work orders are assigned to technicians via the ticket assignee, not a fixed supplier id.
@@ -210,10 +217,12 @@ export default function Jobs() {
           }
         ]);
       }
-    } catch (error) {
+    } catch (error: any) {
+      const message = error?.message || "לא ניתן לטעון את רשימת המשימות";
+      setError(message);
       toast({
         title: "שגיאה בטעינת משימות",
-        description: "לא ניתן לטעון את רשימת המשימות",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -334,8 +343,26 @@ export default function Jobs() {
     );
   }
 
+  if (error && !orders.length) {
+    return (
+      <InlineErrorPanel
+        title="משימות היום לא נטענו"
+        description={error}
+        onRetry={() => void loadJobs()}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {error ? (
+        <InlineErrorPanel
+          className="mb-2"
+          title="חלק מהנתונים לא נטענו"
+          description={error}
+          onRetry={() => void loadJobs()}
+        />
+      ) : null}
       <motion.div
         layoutId={containerLayoutId}
         initial={reducedMotion ? undefined : { borderRadius: 24 }}
