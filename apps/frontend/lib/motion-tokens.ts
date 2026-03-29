@@ -11,8 +11,11 @@ export const MOTION_DURATION = {
   moderate: 0.28,
   standard: 0.34,
   deliberate: 0.38,
+  heroReveal: 0.6,
   pulse: 0.9,
   accentPulse: 1.2,
+  diffDecay: 1.5,
+  confettiBurst: 0.7,
 } as const;
 
 export const MOTION_DISTANCE = {
@@ -37,6 +40,8 @@ export const MOTION_SPRING = {
   card: { type: 'spring' as const, stiffness: 320, damping: 26 },
   cardTight: { type: 'spring' as const, stiffness: 320, damping: 24 },
   layout: { type: 'spring' as const, stiffness: 320, damping: 30 },
+  insertion: { type: 'spring' as const, stiffness: 300, damping: 28 },
+  metricFlip: { type: 'spring' as const, stiffness: 380, damping: 22 },
 } as const;
 
 
@@ -75,5 +80,30 @@ export const MOBILE_MOTION_PRESET = {
   liveBadge: {
     animate: { scale: [1, 1.05, 1], opacity: [1, 0.9, 1] },
     transition: { duration: MOTION_DURATION.pulse, ease: MOTION_EASE.standardInOut },
+  },
+  liveInsertion: {
+    initial: { opacity: 0, y: MOTION_DISTANCE.xs, scale: 0.98 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    exit: { opacity: 0, height: 0, marginTop: 0, marginBottom: 0 },
+    transition: { ...MOTION_SPRING.insertion },
+  },
+  chartReveal: {
+    initial: { opacity: 0, pathLength: 0 },
+    animate: { opacity: 1, pathLength: 1 },
+    transition: { duration: MOTION_DURATION.deliberate, ease: MOTION_EASE.emphasized },
+  },
+  metricFlip: {
+    initial: { opacity: 0, y: 12, scale: 0.96 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    transition: { ...MOTION_SPRING.metricFlip },
+  },
+  skeletonToContent: {
+    initial: { opacity: 0, scale: 0.985 },
+    animate: { opacity: 1, scale: 1 },
+    transition: { duration: MOTION_DURATION.moderate, ease: MOTION_EASE.emphasized },
+  },
+  confettiBurst: {
+    animate: { scale: [0, 1.2, 1], opacity: [1, 1, 0] },
+    transition: { duration: 0.7, ease: MOTION_EASE.standardOut },
   },
 } as const;
