@@ -48,3 +48,18 @@ export function getMobileSurfaceInteractionState(surface: MobileSurfaceClass, sn
     liveChoreography: canLiveChoreograph,
   };
 }
+
+export function getMobileWowState(snapshot?: AuthSnapshot | null) {
+  const authSnapshot = snapshot ?? getAuthSnapshot();
+  return {
+    chartWrappers: isMobileInteractionFeatureEnabled('mobile-wow-chart-wrappers', authSnapshot),
+    skeletonLifecycle: isMobileInteractionFeatureEnabled('mobile-wow-skeleton-lifecycle', authSnapshot),
+    liveDiff: isMobileInteractionFeatureEnabled('mobile-wow-live-diff', authSnapshot),
+    insertionChoreography: isMobileInteractionFeatureEnabled('mobile-wow-insertion-choreography', authSnapshot),
+    gesturePolish: isMobileInteractionFeatureEnabled('mobile-wow-gesture-polish', authSnapshot),
+    metricFlip: isMobileInteractionFeatureEnabled('mobile-wow-metric-flip', authSnapshot),
+    confettiLite: isMobileInteractionFeatureEnabled('mobile-wow-confetti-lite', authSnapshot),
+    aiShimmer: isMobileInteractionFeatureEnabled('mobile-wow-ai-shimmer', authSnapshot),
+    timelineSparkline: isMobileInteractionFeatureEnabled('mobile-wow-timeline-sparkline', authSnapshot),
+  };
+}
