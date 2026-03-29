@@ -220,7 +220,7 @@ export default function HomePage() {
     <div className="space-y-3 sm:space-y-8">
       {renderBlueprint(blueprint)}
 
-      <Dialog open={onboardingOpen} onOpenChange={setOnboardingOpen}>
+      {/* <Dialog open={onboardingOpen} onOpenChange={setOnboardingOpen}>
         <DialogContent className="mx-3 max-w-lg border-white/10 bg-slate-950/95 text-white shadow-modal backdrop-blur-xl sm:mx-auto sm:max-w-2xl dark-surface">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base text-white sm:text-lg">
@@ -257,7 +257,7 @@ export default function HomePage() {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </div>
   );
 }
