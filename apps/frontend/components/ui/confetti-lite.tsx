@@ -55,13 +55,13 @@ export function ConfettiLite({ trigger, className, onComplete }: ConfettiLitePro
   const featureEnabled = isMobileInteractionFeatureEnabled('mobile-wow-confetti-lite');
   const [particles, setParticles] = React.useState<ConfettiParticle[]>([]);
   const [isActive, setIsActive] = React.useState(false);
-  const timerRef = React.useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => {
     if (trigger && featureEnabled && !reducedMotion) {
       setParticles(generateParticles());
       setIsActive(true);
-      clearTimeout(timerRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         setIsActive(false);
         setParticles([]);
@@ -71,7 +71,7 @@ export function ConfettiLite({ trigger, className, onComplete }: ConfettiLitePro
   }, [trigger, featureEnabled, reducedMotion, onComplete]);
 
   React.useEffect(() => {
-    return () => clearTimeout(timerRef.current);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, []);
 
   if (!featureEnabled || reducedMotion) return null;

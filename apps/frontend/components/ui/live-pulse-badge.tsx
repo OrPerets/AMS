@@ -44,7 +44,7 @@ export function LivePulseBadge({
   const featureEnabled = isMobileInteractionFeatureEnabled('mobile-interactions-live-choreography');
   const [showAbsolute, setShowAbsolute] = React.useState(false);
   const [relativeLabel, setRelativeLabel] = React.useState('');
-  const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout>>();
+  const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => {
     if (!lastUpdated || !showTimestamp) return;
@@ -61,12 +61,12 @@ export function LivePulseBadge({
   }, [lastUpdated]);
 
   const handlePointerUp = React.useCallback(() => {
-    clearTimeout(longPressTimerRef.current);
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
     setShowAbsolute(false);
   }, []);
 
   React.useEffect(() => {
-    return () => clearTimeout(longPressTimerRef.current);
+    return () => { if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current); };
   }, []);
 
   if (!isLive && !lastUpdated) return null;
@@ -92,7 +92,10 @@ export function LivePulseBadge({
       {shouldAnimate ? (
         <motion.span
           className="inline-block h-1.5 w-1.5 rounded-full bg-current"
-          animate={MOBILE_MOTION_PRESET.liveBadge.animate}
+          animate={{
+            scale: [1, 1.05, 1] as number[],
+            opacity: [1, 0.9, 1] as number[],
+          }}
           transition={{
             ...MOBILE_MOTION_PRESET.liveBadge.transition,
             repeat: Infinity,

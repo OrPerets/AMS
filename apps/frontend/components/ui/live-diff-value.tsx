@@ -54,7 +54,7 @@ export function LiveDiffValue({
   const [isHighlighted, setIsHighlighted] = React.useState(false);
   const [direction, setDirection] = React.useState<DiffDirection>('neutral');
   const prevRef = React.useRef(value);
-  const timerRef = React.useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => {
     if (prevRef.current !== value) {
@@ -63,7 +63,7 @@ export function LiveDiffValue({
       if (dir !== 'neutral' && diffEnabled) {
         setDirection(dir);
         setIsHighlighted(true);
-        clearTimeout(timerRef.current);
+        if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(() => {
           setIsHighlighted(false);
           setDirection('neutral');
@@ -73,7 +73,7 @@ export function LiveDiffValue({
   }, [value, diffEnabled, highlightDuration]);
 
   React.useEffect(() => {
-    return () => clearTimeout(timerRef.current);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, []);
 
   const displayValue = formatValue ? formatValue(value) : String(value);
@@ -139,19 +139,19 @@ export function LiveDiffStatus({
   const diffEnabled = isMobileInteractionFeatureEnabled('mobile-wow-live-diff');
   const [isHighlighted, setIsHighlighted] = React.useState(false);
   const prevRef = React.useRef(status);
-  const timerRef = React.useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => {
     if (prevRef.current !== status && diffEnabled) {
       prevRef.current = status;
       setIsHighlighted(true);
-      clearTimeout(timerRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => setIsHighlighted(false), MOTION_DURATION.diffDecay * 1000);
     }
   }, [status, diffEnabled]);
 
   React.useEffect(() => {
-    return () => clearTimeout(timerRef.current);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, []);
 
   const color = statusColorMap?.[status];

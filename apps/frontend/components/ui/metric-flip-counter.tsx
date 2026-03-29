@@ -58,7 +58,7 @@ export function MetricFlipCounter({
   const shouldAnimate = flipEnabled && !reducedMotion;
   const [isFlashing, setIsFlashing] = React.useState(false);
   const prevValueRef = React.useRef(value);
-  const flashTimerRef = React.useRef<ReturnType<typeof setTimeout>>();
+  const flashTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const animatedValue = useAnimatedNumber(value, shouldAnimate);
 
@@ -74,7 +74,7 @@ export function MetricFlipCounter({
     if (prevValueRef.current !== value && shouldAnimate && accentFlash) {
       prevValueRef.current = value;
       setIsFlashing(true);
-      clearTimeout(flashTimerRef.current);
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
       flashTimerRef.current = setTimeout(() => setIsFlashing(false), 600);
     } else {
       prevValueRef.current = value;
@@ -82,7 +82,7 @@ export function MetricFlipCounter({
   }, [value, shouldAnimate, accentFlash]);
 
   React.useEffect(() => {
-    return () => clearTimeout(flashTimerRef.current);
+    return () => { if (flashTimerRef.current) clearTimeout(flashTimerRef.current); };
   }, []);
 
   const delta = previousValue !== undefined ? value - previousValue : undefined;
