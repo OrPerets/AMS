@@ -17,6 +17,7 @@ type ResidentHeroProps = {
   subtitleClassName?: string;
   floatingCardClassName?: string;
   bodyClassName?: string;
+  density?: 'default' | 'compact';
 };
 
 export function ResidentHero({
@@ -34,20 +35,24 @@ export function ResidentHero({
   subtitleClassName,
   floatingCardClassName,
   bodyClassName,
+  density = 'default',
 }: ResidentHeroProps) {
+  const compact = density === 'compact';
   const resolvedEyebrowIcon =
     eyebrowIcon === undefined ? <Sparkles className="h-3.5 w-3.5" strokeWidth={1.9} /> : eyebrowIcon;
 
   return (
     <div
       className={cn(
-        'glass-surface-strong overflow-hidden rounded-[34px] shadow-[0_34px_80px_rgba(44,28,9,0.14)]',
+        'glass-surface-strong overflow-hidden shadow-[0_34px_80px_rgba(44,28,9,0.14)]',
+        compact ? 'rounded-[30px]' : 'rounded-[34px]',
         className,
       )}
     >
       <div
         className={cn(
-          'resident-profile-hero-light relative px-5 pb-14 pt-6 text-foreground',
+          'resident-profile-hero-light relative text-foreground',
+          compact ? 'px-4 pb-10 pt-5' : 'px-5 pb-14 pt-6',
           shellClassName,
         )}
       >
@@ -55,14 +60,27 @@ export function ResidentHero({
         <div className={cn('relative z-10 flex items-start justify-between gap-3', headerClassName)}>
           <div className="min-w-0 text-right">
             {eyebrow ? (
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/12 bg-white/72 px-3 py-1 text-[11px] font-semibold tracking-[0.12em] text-primary">
+              <div
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-full border border-primary/12 bg-white/72 font-semibold tracking-[0.12em] text-primary',
+                  compact ? 'px-2.5 py-1 text-[10px]' : 'px-3 py-1 text-[11px]',
+                )}
+              >
                 {resolvedEyebrowIcon}
                 <span>{eyebrow}</span>
               </div>
             ) : null}
-            <h1 className={cn('mt-2 text-[28px] font-black leading-none text-foreground', titleClassName)}>{title}</h1>
+            <h1 className={cn(compact ? 'mt-1.5 text-[24px]' : 'mt-2 text-[28px]', 'font-black leading-none text-foreground', titleClassName)}>{title}</h1>
             {subtitle ? (
-              <div className={cn('mt-1.5 max-w-[18rem] text-sm leading-6 text-secondary-foreground', subtitleClassName)}>{subtitle}</div>
+              <div
+                className={cn(
+                  compact ? 'mt-1 max-w-[18rem] text-[13px] leading-5.5' : 'mt-1.5 max-w-[18rem] text-sm leading-6',
+                  'text-secondary-foreground',
+                  subtitleClassName,
+                )}
+              >
+                {subtitle}
+              </div>
             ) : null}
           </div>
           {badge ? <div className="shrink-0">{badge}</div> : null}
@@ -70,10 +88,11 @@ export function ResidentHero({
       </div>
 
       {floatingCard ? (
-        <div className="relative px-5 pb-5">
+        <div className={cn('relative', compact ? 'px-4 pb-4' : 'px-5 pb-5')}>
           <div
             className={cn(
-              'glass-surface -mt-10 rounded-[30px] p-4 shadow-[0_26px_56px_rgba(44,28,9,0.14)]',
+              'glass-surface shadow-[0_26px_56px_rgba(44,28,9,0.14)]',
+              compact ? '-mt-7 rounded-[26px] p-3.5' : '-mt-10 rounded-[30px] p-4',
               floatingCardClassName,
             )}
           >
@@ -82,7 +101,7 @@ export function ResidentHero({
         </div>
       ) : null}
 
-      {children ? <div className={cn('px-5 pb-5', bodyClassName)}>{children}</div> : null}
+      {children ? <div className={cn(compact ? 'px-4 pb-4' : 'px-5 pb-5', bodyClassName)}>{children}</div> : null}
     </div>
   );
 }

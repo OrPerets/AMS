@@ -10,6 +10,20 @@ export type FeatureFlag =
   | 'ux-v2-maintenance'
   | 'ux-v2-finance'
   | 'ux-v2-gardens'
+  | 'mobile-interactions-card-morph'
+  | 'mobile-interactions-peek-drawers'
+  | 'mobile-interactions-swipe-undo'
+  | 'mobile-interactions-elastic-refresh'
+  | 'mobile-interactions-live-choreography'
+  | 'mobile-wow-chart-wrappers'
+  | 'mobile-wow-skeleton-lifecycle'
+  | 'mobile-wow-live-diff'
+  | 'mobile-wow-insertion-choreography'
+  | 'mobile-wow-gesture-polish'
+  | 'mobile-wow-metric-flip'
+  | 'mobile-wow-confetti-lite'
+  | 'mobile-wow-ai-shimmer'
+  | 'mobile-wow-timeline-sparkline'
   | 'perf-budgets-enforced'
   | 'a11y-gates-enforced';
 
@@ -86,6 +100,104 @@ const FLAG_REGISTRY: FlagConfig[] = [
     percentage: 100,
     allowedRoles: ['PM', 'ADMIN', 'TECH', 'MASTER'],
     description: 'V2 gardens module with worker dashboard',
+  },
+  {
+    flag: 'mobile-interactions-card-morph',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Card-to-screen morph transition family for mobile routes',
+  },
+  {
+    flag: 'mobile-interactions-peek-drawers',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Peek/snap motion behavior for mobile drawers and sheets',
+  },
+  {
+    flag: 'mobile-interactions-swipe-undo',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Swipe commit, collapse, and undo behavior family on mobile rows',
+  },
+  {
+    flag: 'mobile-interactions-elastic-refresh',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Elastic pull-to-refresh canopy interactions',
+  },
+  {
+    flag: 'mobile-interactions-live-choreography',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Coordinated live-update choreography across mobile surfaces',
+  },
+  {
+    flag: 'mobile-wow-chart-wrappers',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Phase 1: shadcn-inspired chart wrappers with mobile-first readability',
+  },
+  {
+    flag: 'mobile-wow-skeleton-lifecycle',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Phase 1: skeleton-to-content staged reveal + sonner promise-toast lifecycle',
+  },
+  {
+    flag: 'mobile-wow-live-diff',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Phase 2: live diff highlighting for changed values with tint decay',
+  },
+  {
+    flag: 'mobile-wow-insertion-choreography',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Phase 2: spring-based list insertion animation for live items',
+  },
+  {
+    flag: 'mobile-wow-gesture-polish',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Phase 3: gesture confirmation band + peek drawer enhancements',
+  },
+  {
+    flag: 'mobile-wow-metric-flip',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'MASTER'],
+    description: 'Phase 3: KPI metric flip animation with number tween + color accent flash',
+  },
+  {
+    flag: 'mobile-wow-confetti-lite',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'MASTER', 'ACCOUNTANT'],
+    description: 'Phase 3: contextual confetti-lite burst for rare wins (700ms max)',
+  },
+  {
+    flag: 'mobile-wow-ai-shimmer',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'RESIDENT', 'MASTER', 'ACCOUNTANT'],
+    description: 'Phase 3: AI-style thinking shimmer for generated summaries',
+  },
+  {
+    flag: 'mobile-wow-timeline-sparkline',
+    stage: 'internal',
+    percentage: 100,
+    allowedRoles: ['PM', 'ADMIN', 'TECH', 'MASTER'],
+    description: 'Phase 3: inline timeline sparkline for cards with frequent status changes',
   },
   {
     flag: 'perf-budgets-enforced',

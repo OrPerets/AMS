@@ -4,6 +4,9 @@ import * as React from 'react';
 import { Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from '@heroui/react';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { MOTION_DISTANCE, MOTION_DURATION, MOTION_EASE } from '../../lib/motion-tokens';
+import { trackInteractionLifecycle } from '../../lib/analytics';
+import { isMobileInteractionFeatureEnabled } from '../../lib/mobile-interaction-flags';
 
 type AmsDrawerProps = {
   isOpen: boolean;
@@ -21,6 +24,12 @@ type AmsDrawerProps = {
   backdrop?: 'opaque' | 'blur' | 'transparent';
   scrollBehavior?: 'inside' | 'outside';
   tone?: 'dark' | 'light';
+  preferSharedTransition?: boolean;
+  enableSnapPoints?: boolean;
+  drawerKey?: string;
+  snapPoints?: number[];
+  defaultSnapPoint?: number;
+  onSnapPointChange?: (snapPoint: number) => void;
 };
 
 const FOCUSABLE_SELECTOR = [
@@ -48,9 +57,79 @@ export function AmsDrawer({
   backdrop = 'blur',
   scrollBehavior = 'inside',
   tone = 'light',
+  preferSharedTransition = false,
+  enableSnapPoints = false,
+  drawerKey,
+  snapPoints = [0.34, 0.62, 0.92],
+  defaultSnapPoint = 1,
+  onSnapPointChange,
 }: AmsDrawerProps) {
+  const drawerFeatureEnabled = isMobileInteractionFeatureEnabled('mobile-interactions-peek-drawers');
+  const snapEnabled = enableSnapPoints && drawerFeatureEnabled;
   const lightTone = tone === 'light';
   const contentRef = React.useRef<HTMLDivElement | null>(null);
+  const dragStartRef = React.useRef<{ y: number; ratio: number; time: number } | null>(null);
+  const dragLastRef = React.useRef<{ y: number; time: number } | null>(null);
+  const [activeSnapPoint, setActiveSnapPoint] = React.useState(() => {
+    const fallback = snapPoints[Math.min(Math.max(defaultSnapPoint, 0), snapPoints.length - 1)] ?? 1;
+    return fallback;
+  });
+  const [viewportHeight, setViewportHeight] = React.useState(900);
+
+  const normalizedSnapPoints = React.useMemo(
+    () =>
+      Array.from(new Set(snapPoints.map((point) => Math.min(1, Math.max(0.2, point))))).sort((a, b) => a - b),
+    [snapPoints],
+  );
+
+  const saveSnapPoint = React.useCallback(
+    (point: number) => {
+      if (!drawerKey || typeof window === 'undefined') return;
+      try {
+        window.sessionStorage.setItem(`ams-drawer-snap:${drawerKey}`, point.toString());
+      } catch {}
+    },
+    [drawerKey],
+  );
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const syncViewportHeight = () => setViewportHeight(window.innerHeight);
+    syncViewportHeight();
+    window.addEventListener('resize', syncViewportHeight);
+    return () => window.removeEventListener('resize', syncViewportHeight);
+  }, []);
+
+  React.useEffect(() => {
+    if (!snapEnabled || !isOpen || placement !== 'bottom' || !drawerKey || typeof window === 'undefined') return;
+    try {
+      const raw = window.sessionStorage.getItem(`ams-drawer-snap:${drawerKey}`);
+      if (!raw) return;
+      const parsed = Number(raw);
+      if (Number.isNaN(parsed)) return;
+      const nearest = normalizedSnapPoints.reduce((closest, candidate) => {
+        return Math.abs(candidate - parsed) < Math.abs(closest - parsed) ? candidate : closest;
+      }, normalizedSnapPoints[normalizedSnapPoints.length - 1] ?? 1);
+      setActiveSnapPoint(nearest);
+    } catch {}
+  }, [drawerKey, snapEnabled, isOpen, normalizedSnapPoints, placement]);
+
+  React.useEffect(() => {
+    if (!isOpen || placement !== 'bottom') return;
+    const appSurface = document.querySelector<HTMLElement>('[data-scroll-container="app"]');
+    if (!appSurface) return;
+    const backdropProgress = snapEnabled ? activeSnapPoint : 1;
+    appSurface.style.transition = 'transform 220ms ease, filter 220ms ease';
+    appSurface.style.transformOrigin = '50% 8%';
+    appSurface.style.transform = `scale(${1 - backdropProgress * 0.015})`;
+    appSurface.style.filter = `saturate(${1 - backdropProgress * 0.08})`;
+    return () => {
+      appSurface.style.transform = '';
+      appSurface.style.filter = '';
+      appSurface.style.transition = '';
+      appSurface.style.transformOrigin = '';
+    };
+  }, [activeSnapPoint, snapEnabled, isOpen, placement]);
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -96,6 +175,72 @@ export function AmsDrawer({
     return () => container.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
+  const commitSnapPoint = React.useCallback(
+    (nextPoint: number) => {
+      const nearest = normalizedSnapPoints.reduce((closest, candidate) => {
+        return Math.abs(candidate - nextPoint) < Math.abs(closest - nextPoint) ? candidate : closest;
+      }, normalizedSnapPoints[normalizedSnapPoints.length - 1] ?? 1);
+      setActiveSnapPoint(nearest);
+      saveSnapPoint(nearest);
+      onSnapPointChange?.(nearest);
+      if (typeof window !== 'undefined' && snapEnabled) {
+        const snapType = nearest <= 0.36 ? 'peek' : nearest <= 0.7 ? 'half' : 'full';
+        trackInteractionLifecycle('interaction_committed', {
+          pathname: window.location.pathname,
+          sourceSurface: 'drawer',
+          destinationSurface: 'drawer',
+          interactionType: 'drawer_snap',
+          interactionId: drawerKey,
+          tone: snapType,
+        });
+      }
+    },
+    [normalizedSnapPoints, onSnapPointChange, saveSnapPoint, snapEnabled, drawerKey],
+  );
+
+  const handleDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!snapEnabled || placement !== 'bottom') return;
+    const startPoint = event.clientY;
+    dragStartRef.current = { y: startPoint, ratio: activeSnapPoint, time: Date.now() };
+    dragLastRef.current = { y: startPoint, time: Date.now() };
+    (event.currentTarget as HTMLDivElement).setPointerCapture(event.pointerId);
+  };
+
+  const handleDragMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!snapEnabled || placement !== 'bottom' || !dragStartRef.current) return;
+    const maxHeight = Math.max(window.innerHeight * 0.88, 1);
+    const delta = dragStartRef.current.y - event.clientY;
+    const nextRatio = Math.min(1, Math.max(0.2, dragStartRef.current.ratio + delta / maxHeight));
+    setActiveSnapPoint(nextRatio);
+    dragLastRef.current = { y: event.clientY, time: Date.now() };
+  };
+
+  const handleDragEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!snapEnabled || placement !== 'bottom' || !dragStartRef.current) return;
+    const start = dragStartRef.current;
+    const last = dragLastRef.current ?? { y: event.clientY, time: Date.now() };
+    const elapsedMs = Math.max(last.time - start.time, 1);
+    const velocity = (last.y - start.y) / elapsedMs;
+    const lowestSnap = normalizedSnapPoints[0] ?? 0.34;
+    if (velocity > 0.95 && activeSnapPoint <= lowestSnap + 0.05) {
+      if (typeof window !== 'undefined') {
+        trackInteractionLifecycle('interaction_cancelled', {
+          pathname: window.location.pathname,
+          sourceSurface: 'drawer',
+          destinationSurface: null,
+          interactionType: 'drawer_dismiss',
+          interactionId: drawerKey,
+        });
+      }
+      onOpenChange(false);
+    } else {
+      commitSnapPoint(activeSnapPoint);
+    }
+    dragStartRef.current = null;
+    dragLastRef.current = null;
+    (event.currentTarget as HTMLDivElement).releasePointerCapture(event.pointerId);
+  };
+
   return (
     <Drawer
       isOpen={isOpen}
@@ -127,19 +272,19 @@ export function AmsDrawer({
             ? {
                 enter: {
                   y: 0,
-                  scale: 1,
+                  scale: MOTION_DISTANCE.drawerEnterScale,
                   opacity: 1,
-                  transition: { duration: 0.34, ease: [0.16, 1, 0.3, 1] },
+                  transition: { duration: MOTION_DURATION.standard, ease: MOTION_EASE.emphasized },
                 },
                 exit: {
-                  y: '100%',
-                  scale: 0.985,
+                  y: preferSharedTransition ? 0 : MOTION_DISTANCE.drawerHiddenY,
+                  scale: MOTION_DISTANCE.drawerExitScale,
                   opacity: 0.96,
-                  transition: { duration: 0.22, ease: [0.7, 0, 0.84, 0] },
+                  transition: { duration: MOTION_DURATION.fast, ease: MOTION_EASE.emphasizedExit },
                 },
                 initial: {
-                  y: '100%',
-                  scale: 0.97,
+                  y: preferSharedTransition ? 0 : MOTION_DISTANCE.drawerHiddenY,
+                  scale: MOTION_DISTANCE.drawerInitialScale,
                   opacity: 0.92,
                 },
               }
@@ -148,9 +293,30 @@ export function AmsDrawer({
     >
       <DrawerContent>
         {(onClose) => (
-          <div ref={contentRef} className="text-start">
+          <div
+            ref={contentRef}
+            className="text-start"
+            style={
+              placement === 'bottom' && snapEnabled
+                ? {
+                  height: `${Math.max(viewportHeight * 0.88 * activeSnapPoint, 220)}px`,
+                    maxHeight: '88dvh',
+                    transition: dragStartRef.current ? undefined : 'height 240ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+                  }
+                : undefined
+            }
+          >
             <div className="px-4 pt-3">
-              <div className="gold-current-pulse mx-auto h-1.5 w-14 rounded-full bg-[linear-gradient(90deg,rgba(255,242,214,0.28),rgba(224,182,89,0.95),rgba(255,242,214,0.28))]" />
+              <div
+                onPointerDown={handleDragStart}
+                onPointerMove={handleDragMove}
+                onPointerUp={handleDragEnd}
+                onPointerCancel={handleDragEnd}
+                className={cn(snapEnabled && placement === 'bottom' && 'cursor-grab touch-none active:cursor-grabbing')}
+                aria-label="Drawer resize handle"
+              >
+                <div className="gold-current-pulse mx-auto h-1.5 w-14 rounded-full bg-[linear-gradient(90deg,rgba(255,242,214,0.28),rgba(224,182,89,0.95),rgba(255,242,214,0.28))]" />
+              </div>
             </div>
             {(title || description || !hideCloseButton) ? (
               <DrawerHeader>

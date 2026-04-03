@@ -6,10 +6,16 @@ import { ArrowUpRight, CircleAlert, Clock3, ShieldAlert } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './card';
 import { StatusBadge } from './status-badge';
 import { Button } from './button';
+import { ToastAction } from './toast';
+import { toast } from './use-toast';
 import { cn } from '../../lib/utils';
 import { useDirection, useLocale } from '../../lib/providers';
 import { triggerHaptic } from '../../lib/mobile';
+import { trackInteractionLifecycle, trackLiveEventReactionRendered } from '../../lib/analytics';
+import { isMobileInteractionFeatureEnabled } from '../../lib/mobile-interaction-flags';
 import { useTouchHoldLift } from './mobile-card-effects';
+import { INTERACTION_THRESHOLDS, MOTION_DISTANCE, MOTION_DURATION, MOTION_SPRING, MOTION_STAGGER } from '../../lib/motion-tokens';
+import { subscribeUIInteraction } from '../../lib/ui-interaction-bus';
 
 type InboxTone = 'neutral' | 'active' | 'success' | 'warning' | 'danger';
 
@@ -75,28 +81,38 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
   index: number;
   swipeDirection: 1 | -1;
   roleHint: 'resident' | 'admin' | 'operations';
+  onActionCommitted?: (item: MobilePriorityInboxItem) => void;
 }>(({
   item,
   index,
   swipeDirection,
   roleHint,
+  onActionCommitted,
 }, ref) => {
   const reducedMotion = useReducedMotion();
+  const swipeEnabled = isMobileInteractionFeatureEnabled('mobile-interactions-swipe-undo');
   const [offset, setOffset] = React.useState(0);
+  const [isPrepared, setIsPrepared] = React.useState(false);
+  const [isCommitArmed, setIsCommitArmed] = React.useState(false);
   const touchStartXRef = React.useRef<number | null>(null);
   const touchStartYRef = React.useRef<number | null>(null);
   const swipeLockedRef = React.useRef(false);
+  const revealCrossedRef = React.useRef(false);
+  const commitCrossedRef = React.useRef(false);
   const action = resolveSwipeAction(item, roleHint);
   const hold = useTouchHoldLift(true);
+  const revealThreshold = INTERACTION_THRESHOLDS.swipeReveal;
+  const commitThreshold = INTERACTION_THRESHOLDS.swipeCommit;
+  const maxSwipeDistance = INTERACTION_THRESHOLDS.swipeMaxDistance;
 
   return (
     <motion.div
       ref={ref}
       layout
-      initial={reducedMotion ? false : { opacity: 0, y: 16, scale: 0.98 }}
+      initial={reducedMotion ? false : { opacity: 0, y: -MOTION_DISTANCE.sm, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -14, scale: 0.98 }}
-      transition={{ layout: { type: 'spring', stiffness: 320, damping: 30 }, duration: 0.28, delay: reducedMotion ? 0 : index * 0.04 }}
+      exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -MOTION_DISTANCE.xs, scale: 0.98 }}
+      transition={{ layout: MOTION_SPRING.layout, duration: MOTION_DURATION.moderate, delay: reducedMotion ? 0 : index * MOTION_STAGGER.quick }}
       role="listitem"
       aria-label={`${item.status} ${item.title}`}
       className="relative overflow-hidden rounded-2xl"
@@ -107,7 +123,7 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
           swipeDirection === 1 ? 'left-0 justify-start' : 'right-0 justify-end',
           actionToneClasses(action.tone),
         )}
-        style={{ opacity: Math.abs(offset) > 10 ? 1 : 0 }}
+        style={{ opacity: isPrepared ? 1 : 0 }}
         aria-hidden="true"
       >
         {action.label}
@@ -120,15 +136,29 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
         )}
         layout
         style={{ x: offset, touchAction: 'pan-y' }}
-        animate={hold.isHolding && !reducedMotion ? { y: -3, scale: 1.01 } : { y: 0, scale: 1 }}
-        transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+        animate={hold.isHolding && !reducedMotion ? { y: -MOTION_DISTANCE.xxs, scale: 1.01 } : { y: 0, scale: 1 }}
+        transition={MOTION_SPRING.cardTight}
         onTouchStart={(event) => {
+          if (!swipeEnabled) return;
           touchStartXRef.current = event.touches[0]?.clientX ?? null;
           touchStartYRef.current = event.touches[0]?.clientY ?? null;
           swipeLockedRef.current = false;
           setOffset(0);
+          setIsPrepared(false);
+          setIsCommitArmed(false);
+          revealCrossedRef.current = false;
+          commitCrossedRef.current = false;
+          trackInteractionLifecycle('interaction_started', {
+            pathname: window.location.pathname,
+            sourceSurface: 'mobile_priority_inbox',
+            destinationSurface: item.href ?? null,
+            interactionType: 'swipe',
+            interactionId: item.id,
+            tone: item.tone,
+          });
         }}
         onTouchMove={(event) => {
+          if (!swipeEnabled) return;
           if (reducedMotion || touchStartXRef.current === null || touchStartYRef.current === null) return;
           const deltaX = event.touches[0].clientX - touchStartXRef.current;
           const deltaY = event.touches[0].clientY - touchStartYRef.current;
@@ -141,28 +171,85 @@ const PriorityInboxItemCard = React.forwardRef<HTMLDivElement, {
           }
 
           const directionalDelta = deltaX * swipeDirection;
-          const clamped = Math.max(0, Math.min(directionalDelta, 116)) * swipeDirection;
+          const clamped = Math.max(0, Math.min(directionalDelta, maxSwipeDistance)) * swipeDirection;
+          const absoluteOffset = Math.abs(clamped);
+          const isRevealActive = absoluteOffset >= revealThreshold;
+          const isCommitActive = absoluteOffset >= commitThreshold;
+
+          if (isRevealActive !== revealCrossedRef.current) {
+            revealCrossedRef.current = isRevealActive;
+            if (isRevealActive) {
+              triggerHaptic('light');
+              trackInteractionLifecycle('interaction_threshold_reached', {
+                pathname: window.location.pathname,
+                sourceSurface: 'mobile_priority_inbox',
+                destinationSurface: item.href ?? null,
+                interactionType: 'swipe',
+                interactionId: item.id,
+                tone: item.tone,
+              });
+            }
+          }
+
+          if (isCommitActive !== commitCrossedRef.current) {
+            commitCrossedRef.current = isCommitActive;
+            if (isCommitActive) {
+              triggerHaptic(item.tone === 'danger' ? 'warning' : 'light');
+            }
+          }
+
+          setIsPrepared(isRevealActive);
+          setIsCommitArmed(isCommitActive);
           setOffset(clamped);
         }}
         onTouchEnd={() => {
-          const crossedThreshold = Math.abs(offset) > 78 && Math.sign(offset || 0) === swipeDirection;
+          if (!swipeEnabled) return;
+          const crossedThreshold = isCommitArmed && Math.sign(offset || 0) === swipeDirection;
           if (crossedThreshold && (action.href || action.onClick)) {
-            triggerHaptic(item.tone === 'danger' ? 'warning' : 'light');
+            triggerHaptic(item.tone === 'danger' ? 'warning' : 'success');
+            trackInteractionLifecycle('interaction_committed', {
+              pathname: window.location.pathname,
+              sourceSurface: 'mobile_priority_inbox',
+              destinationSurface: item.href ?? null,
+              interactionType: 'swipe',
+              interactionId: item.id,
+              tone: item.tone,
+            });
+            onActionCommitted?.(item);
             if (action.onClick) {
               action.onClick(item);
             } else if (action.href) {
               window.location.assign(action.href);
             }
+          } else {
+            trackInteractionLifecycle('interaction_cancelled', {
+              pathname: window.location.pathname,
+              sourceSurface: 'mobile_priority_inbox',
+              destinationSurface: item.href ?? null,
+              interactionType: 'swipe',
+              interactionId: item.id,
+              tone: item.tone,
+              cancelledAfterThreshold: commitCrossedRef.current || revealCrossedRef.current,
+            });
           }
           touchStartXRef.current = null;
           touchStartYRef.current = null;
           swipeLockedRef.current = false;
+          revealCrossedRef.current = false;
+          commitCrossedRef.current = false;
+          setIsPrepared(false);
+          setIsCommitArmed(false);
           setOffset(0);
         }}
         onTouchCancel={() => {
+          if (!swipeEnabled) return;
           touchStartXRef.current = null;
           touchStartYRef.current = null;
           swipeLockedRef.current = false;
+          revealCrossedRef.current = false;
+          commitCrossedRef.current = false;
+          setIsPrepared(false);
+          setIsCommitArmed(false);
           setOffset(0);
         }}
         {...hold.holdProps}
@@ -211,6 +298,7 @@ export function MobilePriorityInbox({
   emphasizeFirst = true,
   maxItems = 3,
   compact = false,
+  onActionCommitted,
 }: {
   title?: string;
   subtitle?: string;
@@ -222,6 +310,7 @@ export function MobilePriorityInbox({
   emphasizeFirst?: boolean;
   maxItems?: number;
   compact?: boolean;
+  onActionCommitted?: (item: MobilePriorityInboxItem) => void;
 }) {
   const { t } = useLocale();
   const { isRTL } = useDirection();
@@ -229,16 +318,129 @@ export function MobilePriorityInbox({
   const resolvedTitle = title ?? t('mobilePriority.title');
   const resolvedEmptyTitle = emptyTitle ?? t('mobilePriority.emptyTitle');
   const resolvedEmptyDescription = emptyDescription ?? t('mobilePriority.emptyDescription');
-  const visibleItems = items.slice(0, maxItems);
+  const [optimisticallyHiddenIds, setOptimisticallyHiddenIds] = React.useState<string[]>([]);
+  const [undoStack, setUndoStack] = React.useState<Array<{ id: string; index: number; expiresAt: number }>>([]);
+  const [liveAttention, setLiveAttention] = React.useState(false);
+  const undoTimeoutsRef = React.useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const filteredItems = React.useMemo(
+    () => items.filter((item) => !optimisticallyHiddenIds.includes(item.id)),
+    [items, optimisticallyHiddenIds],
+  );
+  const pendingUndoCount = undoStack.length;
+  const visibleItems = filteredItems.slice(0, maxItems);
   const swipeDirection = isRTL ? 1 : -1;
   const roleHint: 'resident' | 'admin' | 'operations' = router.pathname.startsWith('/resident')
     ? 'resident'
     : router.pathname.startsWith('/admin')
       ? 'admin'
       : 'operations';
+  const removeUndoEntry = React.useCallback((id: string) => {
+    const timeout = undoTimeoutsRef.current.get(id);
+    if (timeout) {
+      clearTimeout(timeout);
+      undoTimeoutsRef.current.delete(id);
+    }
+    setUndoStack((current) => current.filter((entry) => entry.id !== id));
+  }, []);
+
+  const handleActionCommitted = React.useCallback((item: MobilePriorityInboxItem) => {
+    const filteredIndex = filteredItems.findIndex((candidate) => candidate.id === item.id);
+    if (filteredIndex === -1) return;
+
+    const expiresAt = Date.now() + 8000;
+
+    setOptimisticallyHiddenIds((current) => (current.includes(item.id) ? current : [...current, item.id]));
+    setUndoStack((current) => {
+      const withoutCurrent = current.filter((entry) => entry.id !== item.id);
+      return [...withoutCurrent, { id: item.id, index: filteredIndex, expiresAt }];
+    });
+
+    const existingTimeout = undoTimeoutsRef.current.get(item.id);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+    undoTimeoutsRef.current.set(
+      item.id,
+      setTimeout(() => {
+        removeUndoEntry(item.id);
+      }, Math.max(0, expiresAt - Date.now())),
+    );
+
+    toast({
+      title: 'הפריט הועבר לטיפול',
+      description: pendingUndoCount > 0 ? `${item.title} · ${pendingUndoCount + 1} ממתינים לאישור` : item.title,
+      action: (
+        <ToastAction
+          altText="בטל"
+          onClick={() => {
+            setOptimisticallyHiddenIds((current) => current.filter((id) => id !== item.id));
+            removeUndoEntry(item.id);
+            trackInteractionLifecycle('interaction_undone', {
+              pathname: window.location.pathname,
+              sourceSurface: 'mobile_priority_inbox',
+              destinationSurface: item.href ?? null,
+              interactionType: 'swipe',
+              interactionId: item.id,
+              tone: item.tone,
+            });
+          }}
+        >
+          בטל
+        </ToastAction>
+      ),
+    });
+
+    onActionCommitted?.(item);
+  }, [filteredItems, onActionCommitted, pendingUndoCount, removeUndoEntry]);
+
+  React.useEffect(() => {
+    setOptimisticallyHiddenIds((current) => current.filter((id) => items.some((item) => item.id === id)));
+    setUndoStack((current) => current.filter((entry) => items.some((item) => item.id === entry.id) && entry.expiresAt > Date.now()));
+  }, [items]);
+
+  React.useEffect(() => () => {
+    undoTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+    undoTimeoutsRef.current.clear();
+  }, []);
+
+  React.useEffect(() => {
+    const timeouts = new Set<number>();
+    const unsubscribe = subscribeUIInteraction((event) => {
+      if (event.name !== 'live_event_received') return;
+      const destinationSurface = String(event.payload.destinationSurface ?? '');
+      if (!destinationSurface || (!destinationSurface.includes('/notifications') && !destinationSurface.includes('/tickets'))) {
+        return;
+      }
+      setLiveAttention(true);
+      trackLiveEventReactionRendered({
+        eventType: String(event.payload.eventType ?? 'unknown'),
+        surface: 'mobile_priority_inbox',
+        destinationSurface,
+        reactionLatencyMs: Date.now() - event.timestamp,
+      });
+      const timeout = window.setTimeout(() => {
+        setLiveAttention(false);
+        timeouts.delete(timeout);
+      }, 3800);
+      timeouts.add(timeout);
+    });
+    return () => {
+      unsubscribe();
+      timeouts.forEach((timeout) => window.clearTimeout(timeout));
+      timeouts.clear();
+    };
+  }, []);
 
   return (
-    <Card variant="elevated" className={cn('overflow-hidden', compact && 'rounded-[24px]', className)}>
+    <Card
+      variant="elevated"
+      className={cn(
+        'overflow-hidden',
+        compact && 'rounded-[24px]',
+        liveAttention && 'ring-1 ring-primary/18 shadow-[0_0_0_1px_rgba(224,182,89,0.24)]',
+        className,
+      )}
+    >
       <CardHeader className={cn(compact ? 'pb-2.5 pt-4' : 'pb-3')}>
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -263,7 +465,13 @@ export function MobilePriorityInbox({
                   index === 0 && emphasizeFirst && 'rounded-[22px] bg-[linear-gradient(180deg,rgba(255,250,244,0.75)_0%,rgba(255,255,255,0)_100%)] p-[1px]',
                 )}
               >
-                <PriorityInboxItemCard item={item} index={index} swipeDirection={swipeDirection} roleHint={roleHint} />
+                <PriorityInboxItemCard
+                  item={item}
+                  index={index}
+                  swipeDirection={swipeDirection}
+                  roleHint={roleHint}
+                  onActionCommitted={handleActionCommitted}
+                />
               </div>
             ))}
           </AnimatePresence>

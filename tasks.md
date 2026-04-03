@@ -1,348 +1,421 @@
-# AMS Multi-Role UX Recovery & Architecture Hardening Plan
+# AMS Mobile Interaction Elevation Plan
 
-**Date:** 2026-03-26  
-**Owner:** Product + Frontend + Backend + QA + DevOps  
-**Scope:** Resident, PM, Admin, Tech, Accountant, Master impersonation, shared platform foundations
+**Date:** 2026-03-28  
+**Branch Target:** `dev`  
+**Primary Goal:** Upgrade the mobile product feel from "solid utility app" to "fast, tactile, premium operational tool" without breaking role-specific workflows.
 
----
+## Scope
 
-## 1) Detailed Problem Description
+This plan covers the mobile web experience in `apps/frontend`, with emphasis on these existing interaction systems:
 
-### 1.1 Business Problem
-Resident mobile UX is comparatively clear, but PM/Admin/Tech flows still feel fragmented and “messy,” causing users to:
-- Need extra taps to reach their daily job-to-be-done.
-- See inconsistent layouts and navigation patterns across modules.
-- Lose confidence because page structure and action hierarchy change from screen to screen.
-- Depend on memory/training instead of UI clarity.
+- Shared route transitions from home and navigation surfaces
+- Bottom sheets and row action sheets
+- Swipe actions and long-press affordances
+- Pull-to-refresh behavior
+- Real-time websocket-driven UI updates
 
-This creates direct risk in support load, onboarding time, operational delays, and role-based adoption.
+## Instructions To All Contributors
 
-### 1.2 Product/UX Findings From Current Repo
-The current codebase already contains strong mobile intent (role-aware home blueprints, role selection page, mobile nav model, and mobile redesign spec), but execution is uneven:
+### Product
+- [ ] Treat every sprint as a behavior sprint, not just a styling sprint.
+- [ ] For every feature, write the user intent in one sentence: "what the user is trying to do with one thumb under time pressure."
+- [ ] Reject any motion that adds delay without improving orientation, feedback, or confidence.
+- [ ] Prioritize the top 5 role-critical routes: `/home`, `/tickets`, `/notifications`, `/payments`, `/resident/requests`, `/tech/jobs`.
+- [ ] Define success metrics before implementation begins for each sprint.
 
-1. **Large “orchestrator” files indicate mixed concerns and hard maintenance:**
-   - `home.tsx` is very large and combines role routing, data fetching, fallback, and view assembly.
-   - `resident/account.tsx`, `settings.tsx`, and `navigation.ts` are also large and likely carry both domain and UI logic.
-2. **Role model and route ownership are distributed across multiple places:**
-   - Auth normalization/routing and navigation behavior are split between auth lib, navigation lib, and role entry screens.
-3. **Non-resident experience quality depends on module-by-module implementation maturity:**
-   - Core role homes are structured, but downstream pages still vary in clarity and density.
-4. **Scale risk is visible in breadth:**
-   - 75 frontend pages, 133 frontend components, and 26 backend modules require stronger guardrails for consistency.
+### UX / Design
+- [ ] Produce motion specs as state diagrams, not static screenshots only.
+- [ ] For each interaction, define: resting state, engaged state, committed state, exit state, reduced-motion fallback.
+- [ ] Keep one motion language across all roles.
+- [ ] Use depth, elasticity, and continuity sparingly; avoid ornamental choreography.
+- [ ] Validate all flows in RTL and on narrow mobile widths first.
 
-### 1.3 Root Causes (Likely)
-- No single enforced “mobile role shell contract” for every role/page.
-- Repeated role and navigation logic in several layers.
-- Historical feature additions without consistent UX acceptance gates.
-- Gaps between design spec and implementation verification at page level.
-- Missing architectural fitness checks (complexity, boundaries, ownership).
+### Frontend
+- [ ] Reuse the existing primitives before adding new abstractions.
+- [ ] Centralize new motion constants in `apps/frontend/lib/motion-tokens.ts`.
+- [ ] Gate all advanced motion with reduced-motion checks.
+- [ ] Prefer optimistic UI with undo over modal confirmations on mobile.
+- [ ] Keep feature flags around every new behavior until Sprint 6 exit criteria are met.
 
-### 1.4 Desired End State
-- Any role opens the app and immediately understands: **Where am I, what needs attention now, what is next.**
-- Every role follows one consistent mobile shell language with role-specific content (not role-specific layout chaos).
-- Codebase has clear boundaries, shared primitives, and test guardrails that prevent regression.
-- New features can be added fast without reintroducing UI inconsistency or architectural drift.
+### Backend
+- [ ] Support optimistic UI with idempotent endpoints where actions can be undone.
+- [ ] Expose stable deltas for refresh/live-update surfaces when possible.
+- [ ] Keep event payloads minimal, typed, and predictable for websocket consumers.
 
----
+### QA
+- [ ] Verify all new interactions on touch devices, not mouse emulation only.
+- [ ] Test gesture conflicts: scroll vs swipe, swipe vs tap, drawer drag vs inner scroll, pull-to-refresh vs page drag.
+- [ ] Record short videos of each golden path for regression comparison.
 
-## 2) Instructions to Refine Everything Deeply
+### Analytics / Data
+- [ ] Add event coverage for start, commit, cancel, undo, and error states.
+- [ ] Report behavior quality, not just click volume.
+- [ ] Track whether interactions reduce time-to-action and backtrack churn.
 
-## 2.1 Non-Negotiable Product Principles
-1. **Action-first mobile:** first viewport must expose top role action, not decorative content.
-2. **One role, one mental model:** different data, same interaction grammar.
-3. **Consistency > novelty:** shared patterns across PM/Admin/Tech unless a true role constraint requires divergence.
-4. **Task completion over navigation exploration:** reduce “portal pages” and dead-end hops.
-5. **Progressive disclosure:** show essentials first; advanced surfaces in drill-down layers.
-
-## 2.2 Non-Negotiable Engineering Principles
-1. **Single source of truth** for role normalization, role capabilities, and default routing.
-2. **Separation of concerns:** page orchestration, data adapters, and presentational components must be split.
-3. **Module boundaries:** each domain owns API types, data mapping, and UI composition contracts.
-4. **Typed contracts first:** role/home/page DTOs validated at boundaries.
-5. **Observability by default:** instrument role funnel, action taps, time-to-first-action, and navigation churn.
-
-## 2.3 Deep Refactor Tracks (Run in Parallel With UX Work)
-
-### Track A — UX System Unification
-- Create a formal **Role Mobile Shell Specification** (header, status strip, primary action, 2x2 quick actions, inbox/queue preview, bottom nav behavior).
-- Convert all non-resident role homes to this shell contract.
-- Define page-level density rules (max section count before fold, card spacing, list affordance).
-- Standardize empty/loading/error states across modules.
-
-### Track B — Routing & Role Governance
-- Centralize route decisions behind one resolver:
-  - role normalization
-  - impersonation precedence
-  - default entry route
-  - workspace entry route
-- Remove duplicate redirect logic from multiple pages once resolver is adopted.
-- Add guard pages for unsupported role/capability states.
-
-### Track C — Information Architecture & Navigation
-- Freeze role-specific tab model and “More” budgets (max item counts, max groups).
-- Remove redundant route duplication (tab + More duplicates).
-- Introduce usage-based progressive disclosure for low-value links.
-- Enforce naming consistency (same feature must not have multiple labels across role surfaces).
-
-### Track D — Frontend Code Structure Hardening
-- Split large files into:
-  - page controller/hook
-  - role-specific adapter
-  - pure presentational component tree
-- Establish folder convention per domain:
-  - `features/<domain>/api`
-  - `features/<domain>/model`
-  - `features/<domain>/ui`
-  - `features/<domain>/tests`
-- Extract repeated utilities (formatting, status mapping, route labels) to shared typed packages.
-
-### Track E — Backend/API Contract Consistency
-- Audit role-sensitive endpoints for payload shape consistency.
-- Introduce explicit DTO versioning where unstable.
-- Ensure list/filter/pagination contracts are uniform across major modules.
-- Add contract tests for frontend-critical endpoints used by mobile homes.
-
-### Track F — Quality, Performance, Accessibility
-- Add mandatory QA matrix for: role × theme × direction × breakpoint.
-- Enforce performance budgets (first contentful action card visible fast on mid-range devices).
-- Enforce accessibility checks (focus, contrast, target size, RTL mirroring).
-- Expand E2E to cover first-action path for every role.
+### DevOps / Release
+- [ ] Roll out behind flags by route cluster.
+- [ ] Do not enable globally until mobile QA passes on iPhone Safari and Android Chrome.
+- [ ] Monitor runtime errors, route-change failures, and gesture-related abandonment after release.
 
 ---
 
-## 3) Sprint Plan With Detailed Todo Lists
+## Existing Code Hotspots
 
-## Sprint 0 — Baseline, Evidence, and Alignment (1 week)
-**Goal:** Lock scope with measurable baseline and ownership map.
-
-### Todo
-- [x] Create current-state UX audit board (all roles, top 20 pages by traffic/use).
-- [x] Capture screenshots and annotate “clarity blockers” (first viewport + navigation + action discoverability).
-- [x] Build route/role matrix (entry route, allowed tabs, primary actions, dead routes).
-- [x] Define top KPIs and baseline collection:
-  - time to first meaningful action
-  - taps to top action
-  - abandoned navigation rate
-  - support tickets by role/page confusion
-- [x] Produce ownership map for large files and critical flows.
-- [x] Freeze a “no new UI patterns without review” temporary rule.
-
-### Deliverables
-- [x] UX audit report with severity tags.
-- [x] Role journey map with bottlenecks.
-- [x] Baseline dashboard (analytics + QA findings).
-
-### Sprint 0 Artifacts
-- `reports/sprint-0/ux-audit-board.md`
-- `reports/sprint-0/route-role-matrix.md`
-- `reports/sprint-0/baseline-kpi-dashboard.md`
-- `reports/sprint-0/ownership-map.md`
-- `reports/sprint-0/temporary-ui-pattern-freeze.md`
+- Route continuity: `apps/frontend/lib/route-transition-contract.ts`
+- App-level transition wrapper: `apps/frontend/pages/_app.tsx`
+- Home CTA + shared layout entry points: `apps/frontend/components/ui/primary-action-card.tsx`
+- Home quick action grid: `apps/frontend/components/ui/mobile-action-hub.tsx`
+- Bottom dock + more drawer: `apps/frontend/components/layout/MobileBottomNav.tsx`
+- Shared drawer primitive: `apps/frontend/components/ui/ams-drawer.tsx`
+- Row action sheet: `apps/frontend/components/ui/mobile-row-actions-sheet.tsx`
+- Swipe card primitive: `apps/frontend/components/ui/mobile-swipe-action-card.tsx`
+- Priority inbox cards: `apps/frontend/components/ui/mobile-priority-inbox.tsx`
+- Pull-to-refresh hook: `apps/frontend/hooks/use-pull-to-refresh.ts`
+- Pull indicator: `apps/frontend/components/ui/pull-to-refresh-indicator.tsx`
+- Live update entry point: `apps/frontend/components/Layout.tsx`
+- KPI animation surface: `apps/frontend/components/ui/compact-status-strip.tsx`
 
 ---
 
-## Sprint 1 — Role Governance + Routing Consolidation (1–1.5 weeks)
-**Goal:** Remove routing ambiguity and role inconsistency at the foundation.
+## Program Guardrails
 
-### Todo
-- [x] Build `role-capabilities` model (single place for role abilities).
-- [x] Build `route-resolver` module for all post-login/default/workspace logic.
-- [x] Move duplicate role checks from pages to resolver-driven hooks.
-- [x] Define unsupported role UI state and telemetry event.
-- [x] Add unit tests for role normalization, impersonation, and destination outputs.
-- [x] Add integration tests for login → destination by role.
+- [ ] No new easing curves outside `motion-tokens.ts`.
+- [ ] No screen-specific gesture logic if the primitive can own it.
+- [ ] No "surprise" navigation after gesture commit; every destructive or stateful gesture must show visible confirmation.
+- [ ] No interaction launches without reduced-motion behavior defined.
+- [ ] No sprint closes until analytics events and QA cases exist for the new behavior.
+
+---
+
+## Sprint 0 — Alignment, Instrumentation, and Feature Flags
+
+**Goal:** Create the execution rails before changing behavior.
+
+### Product / UX
+- [x] Write one-page behavior briefs for:
+  - [x] Card-to-screen morph
+  - [x] Peek/snap drawers
+  - [x] Swipe commit with undo
+  - [x] Elastic refresh canopy
+  - [x] Live event choreography
+- [x] Define success criteria for each feature:
+  - [x] perceived speed
+  - [x] task completion speed
+  - [x] reduced accidental navigation
+  - [x] reduced backtracking
+- [x] Approve one shared motion language for all five features.
+
+### Frontend
+- [x] Add feature flags in `apps/frontend/lib/feature-flags.ts` for each interaction family.
+- [x] Normalize motion constants in `apps/frontend/lib/motion-tokens.ts`.
+- [x] Add a lightweight UI event bus for frontend-only interaction reactions if existing analytics/event plumbing is insufficient.
+- [x] Audit current reduced-motion coverage and fill obvious gaps.
+
+### Analytics
+- [ ] Define event names for gesture lifecycle:
+  - [x] `interaction_started`
+  - [x] `interaction_threshold_reached`
+  - [x] `interaction_committed`
+  - [x] `interaction_undone`
+  - [x] `interaction_cancelled`
+- [x] Add route-level context fields: role, pathname, source surface, destination surface.
+
+### QA
+- [x] Build a mobile interaction checklist template for every sprint.
+- [x] Capture baseline videos for current `/home`, `/tickets`, `/notifications`, `/payments/resident`, `/resident/requests`, `/tech/jobs`.
 
 ### Exit Criteria
-- Zero conflicting role redirects.
-- 100% role route decisions test-covered.
-- No page with custom ad-hoc role fallback logic.
+- [x] All five features have flags.
+- [x] All five features have analytics contracts.
+- [x] Motion language and QA checklist approved.
 
 ---
 
-## Sprint 2 — Mobile Shell Standardization for PM/Admin/Tech (2 weeks)
-**Goal:** Match non-resident clarity to resident-level quality using one unified shell.
+## Sprint 1 — Swipe-To-Resolve With Collapse And Undo
 
-### Todo
-- [x] Create shell primitives with strict API (status strip, primary card, quick actions, inbox slice).
-- [x] Refactor PM home to strict shell contract.
-- [x] Refactor Admin home to strict shell contract.
-- [x] Refactor Tech home to strict shell contract.
-- [x] Align microcopy tone: short, task-oriented, no marketing style on work surfaces.
-- [x] Enforce first-viewport rule in automated visual checks.
-- [x] Add analytics events for top-card impression and first action click.
+**Goal:** Make swipe actions feel decisive, safe, and rewarding.
+
+### Product / UX
+- [x] Define which row types support swipe on first release:
+  - [x] resident requests
+  - [x] tech jobs
+  - [x] tickets dispatch rows
+  - [x] priority inbox items
+- [x] Define per-tone behavior:
+  - [x] warning = softer confirmation
+  - [x] danger = stronger resistance + warning haptic
+  - [x] success = lighter completion
+- [x] Specify undo copy per action type.
+
+### Frontend
+- [ ] Extend `apps/frontend/components/ui/mobile-swipe-action-card.tsx` to support:
+  - [x] post-commit locked state
+  - [x] commit flash/tint state
+  - [x] collapse-out animation
+  - [x] optional optimistic removal callback
+  - [x] undo timeout hook
+- [ ] Extend `apps/frontend/components/ui/mobile-priority-inbox.tsx` to animate:
+  - [x] committed card exit
+  - [x] list reflow spring
+  - [x] restored card re-entry after undo
+- [x] Integrate undo toast using existing toast system.
+- [x] Preserve tap behavior when swipe is cancelled.
+- [x] Ensure RTL swipe direction rules remain correct.
+
+### Backend
+- [ ] Confirm all committed swipe actions are idempotent.
+- [ ] Support rollback or no-op replay where undo restores frontend state before server confirmation.
+
+### Analytics
+- [x] Track swipe start, reveal threshold, commit, undo, and cancel.
+- [x] Track false positives where swipe is started but cancelled frequently.
+
+### QA
+- [ ] Verify swipe does not break vertical scrolling.
+- [ ] Verify undo restores row and local counts.
+- [ ] Verify no duplicate API call on repeated gesture.
+- [ ] Verify behavior on low-end mobile frame rates.
 
 ### Exit Criteria
-- All three roles pass same shell checklist.
-- First action visible above fold on common mobile widths.
-- No role-specific visual “one-off” components without documented exception.
+- [ ] Swipe commit visually removes the row.
+- [ ] Undo restores state reliably.
+- [ ] No gesture regression on scroll-heavy pages.
 
 ---
 
-## Sprint 3 — Page Cleanup Wave (High-Use Modules) (2 weeks)
-**Goal:** Clean the highest-friction pages beyond home.
+## Sprint 2 — Live Event Choreography
 
-### Prioritized Modules
-1. Tickets
-2. Buildings/Assets
-3. Maintenance/Operations Calendar
-4. Notifications/Settings
-5. Gardens entry surfaces for PM/Tech
+**Goal:** Turn websocket events into coordinated, product-wide feedback instead of isolated toasts.
 
-### Todo
-- [x] Apply section hierarchy template to each high-use page.
-- [x] Replace oversized headers/hero blocks with compact context headers.
-- [x] Normalize filters/search/action bar pattern.
-- [x] Normalize list item structure (status, urgency, owner, due indicator).
-- [x] Add empty/loading/error consistency kit.
-- [x] Remove duplicate action CTAs competing for primary intent.
+### Product / UX
+- [ ] Define event choreography for:
+  - [ ] new ticket
+  - [ ] ticket update
+  - [ ] new notification
+- [ ] Map each event to affected surfaces:
+  - [ ] bottom nav badge
+  - [ ] compact KPI strip
+  - [ ] priority inbox / notifications list
+  - [ ] page-local list or counter
+- [ ] Decide where sound/haptic is allowed and where it must remain silent.
+
+### Frontend
+- [x] Refactor websocket listeners in `apps/frontend/components/Layout.tsx` to emit structured UI interaction events.
+- [ ] Add coordinated reactions to:
+  - [x] `apps/frontend/components/layout/MobileBottomNav.tsx`
+  - [x] `apps/frontend/components/ui/compact-status-strip.tsx`
+  - [x] `apps/frontend/components/ui/mobile-priority-inbox.tsx`
+  - [ ] relevant page-local counters and lists
+- [x] Reuse `useAnimatedNumber` for count deltas.
+- [x] Animate inserted list items from the top with short spring motion.
+- [x] Add subtle attention states that decay automatically after a few seconds.
+
+### Backend
+- [ ] Audit websocket payload consistency for ticket and notification events.
+- [ ] Include enough metadata to identify route destination and urgency.
+
+### Analytics
+- [x] Track event receipt to visible reaction time.
+- [x] Track whether users navigate into the highlighted module after a live event.
+
+### QA
+- [ ] Verify no double reactions when page-level and global listeners both receive the same event.
+- [ ] Verify stale counters cannot overshoot when refresh lands after websocket update.
+- [ ] Verify animation remains understandable during rapid bursts.
 
 ### Exit Criteria
-- [x] Top 15 non-resident pages use shared mobile layout patterns.
-- [x] Scroll depth before first interaction reduced materially.
-- [x] QA score for clarity improved to target threshold.
+- [ ] A single live event updates at least three surfaces coherently.
+- [ ] No duplicate pulses or duplicate increments.
+- [ ] Users can still act immediately without waiting for motion to finish.
 
 ---
 
-## Sprint 4 — Navigation IA Hardening (1 week)
-**Goal:** Make navigation predictable and role-appropriate.
+## Sprint 3 — Card-To-Screen Morph
 
-### Todo
-- [x] Finalize role tab bars (4 + More where applicable).
-- [x] Enforce “More” cap rules (max groups/items).
-- [x] Remove duplicate entries between tabs and More.
-- [x] Add “recently used” smart shortcuts with expiry window.
-- [x] Add telemetry for misclick loops and back-and-forth churn.
-- [x] Validate label consistency across all locales/directions.
+**Goal:** Make navigation from mobile home and primary entry points feel spatial and premium.
+
+### Product / UX
+- [ ] Finalize the morph routes for first release:
+  - [ ] home -> tickets
+  - [ ] home -> notifications
+  - [ ] home -> payments
+  - [ ] home -> resident requests
+  - [ ] home -> tech jobs
+- [ ] Specify source and destination states:
+  - [ ] source pressed
+  - [ ] shell expansion
+  - [ ] destination header settle
+  - [ ] content reveal
+- [ ] Define fallback when route has no matching shared destination.
+
+### Frontend
+- [x] Extend `apps/frontend/lib/route-transition-contract.ts` with shared container/surface tokens.
+- [ ] Update:
+  - [x] `apps/frontend/components/ui/primary-action-card.tsx`
+  - [x] `apps/frontend/components/ui/mobile-action-hub.tsx`
+  - [x] destination headers/toolbars on matching pages
+- [x] Tune `_app.tsx` route wrapper so page content reveal waits slightly for the morph.
+- [x] Ensure active bottom-nav state settles after the destination header lands, not before.
+- [x] Preserve reduced-motion fallback as a simpler opacity/translate transition.
+
+### QA
+- [ ] Verify morph continuity on slow navigation and fast cached navigation.
+- [ ] Verify no flash when source and destination load at different times.
+- [ ] Verify morph still works in RTL.
+
+### Analytics
+- [ ] Track morph-enabled route usage vs non-morph fallback.
+- [ ] Measure back navigation within 5 seconds as a proxy for disorientation.
 
 ### Exit Criteria
-- [x] Navigation model validated for each role.
-- [x] Reduced navigation churn in telemetry.
-- [x] No orphaned routes from role menus.
+- [x] Shared morph works on at least 3 high-traffic routes.
+- [ ] No broken transitions on unsupported routes.
+- [ ] Reduced-motion behavior is stable.
 
 ---
 
-## Sprint 5 — Codebase Restructure for Scale & Maintainability (2 weeks)
-**Goal:** Convert fragile page-centric structure into maintainable feature architecture.
+## Sprint 4 — Peek/Then/Snap Drawers
 
-### Todo
-- [x] Define target frontend architecture RFC (feature folders + boundaries + dependency rules).
-- [x] Split large files into controller/hook + UI components + adapters.
-- [x] Introduce lint boundaries (no cross-feature imports outside public API).
-- [x] Add shared domain enums/status mappers with typed exports.
-- [x] Add codemods/scripts for safe migrations.
-- [x] Document contribution conventions and PR checklist.
+**Goal:** Make bottom sheets feel native, layered, and easier to use one-handed.
+
+### Product / UX
+- [ ] Define which drawers get snap behavior first:
+  - [ ] row action sheet
+  - [ ] ticket quick view
+  - [ ] payments detail sheet
+  - [ ] resident requests detail
+- [ ] Define snap points per use case:
+  - [ ] peek
+  - [ ] half
+  - [ ] full
+- [ ] Define what content is visible at peek height.
+
+### Frontend
+- [ ] Upgrade `apps/frontend/components/ui/ams-drawer.tsx` to support:
+  - [x] drag-to-resize
+  - [x] snap points
+  - [x] velocity-based dismissal
+  - [x] remembered snap point per drawer key
+  - [x] content scroll handoff
+- [x] Update `apps/frontend/components/ui/mobile-row-actions-sheet.tsx` to take advantage of peek mode.
+- [x] Add subtle background scale/backdrop response behind open sheets.
+- [ ] Ensure focus management remains correct after adding drag behavior.
+
+### QA
+- [ ] Verify inner list scroll does not fight drawer drag.
+- [ ] Verify close button, backdrop tap, and downward drag all work consistently.
+- [ ] Verify keyboard focus remains trapped correctly on supported devices.
+
+### Analytics
+- [x] Track snap point usage: peek only, expanded, dismissed.
+- [ ] Track if users complete primary actions more often from peek state.
 
 ### Exit Criteria
-- [x] Largest risky pages reduced in complexity and size.
-- [x] Clear import boundaries enforced in CI.
-- [x] New feature development path documented and adopted.
-
-### Sprint 5 Artifacts
-- `reports/sprint-5/architecture-rfc.md`
-- `apps/frontend/features/` (11 domain feature folders)
-- `apps/frontend/shared/domain/` (typed enums + status mappers)
-- `apps/frontend/shared/api/` (fetch helpers + response types)
-- `scripts/migrate-to-features.mjs` (scaffold, audit, validate)
-- `scripts/verify-feature-boundaries.mjs` (CI boundary checker)
-- `CONTRIBUTING.md` (conventions + PR checklist)
-- `eslint.config.mjs` (feature boundary lint rules)
+- [x] At least two drawer types support snap points without gesture conflict.
+- [ ] Drag interactions feel stable on iOS Safari.
 
 ---
 
-## Sprint 6 — API Contract, Data Quality, and Reliability (1.5 weeks)
-**Goal:** Ensure frontend clarity is backed by stable, predictable backend contracts.
+## Sprint 5 — Elastic Refresh Canopy
 
-### Todo
-- [x] Audit endpoint response shape consistency for mobile critical flows.
-- [x] Introduce API schema tests (snapshot or contract-driven).
-- [x] Standardize pagination/meta patterns.
-- [x] Standardize server-side status enums and translation mapping.
-- [x] Add resilience behavior for partial failures (graceful fallback modules).
-- [x] Add SLOs for key endpoints used on role home screens.
+**Goal:** Turn pull-to-refresh into a branded, informative motion pattern.
+
+### Product / UX
+- [ ] Define refresh visuals for:
+  - [ ] notifications
+  - [ ] resident requests
+  - [ ] tickets dispatch
+- [ ] Define completion states:
+  - [ ] no changes
+  - [ ] new items added
+  - [ ] existing items updated
+- [ ] Approve max visual displacement so the gesture stays useful, not theatrical.
+
+### Frontend
+- [x] Use `pullDistance` from `apps/frontend/hooks/use-pull-to-refresh.ts` to animate top-of-page surfaces, not only the indicator chip.
+- [x] Extend `apps/frontend/components/ui/pull-to-refresh-indicator.tsx` with richer delta presentation.
+- [x] Add page-level canopy transforms to the affected screens.
+- [x] Reuse the same threshold presets, but allow route-specific visual tuning.
+- [x] Ensure refresh completion resets gracefully after interrupted pulls.
+
+### Backend
+- [ ] Where feasible, return compact delta metadata to support "what changed" messaging.
+
+### QA
+- [ ] Verify canopy motion does not cause layout jump.
+- [ ] Verify gesture does not trigger when scroll position is not at top.
+- [ ] Verify completion chip text matches real delta counts.
+
+### Analytics
+- [ ] Track refresh completion rate and immediate follow-up interactions.
+- [ ] Track repeated pull attempts within short windows as a possible signal of mistrust or slowness.
 
 ### Exit Criteria
-- [x] Contract diffs detected automatically in CI.
-- [x] Fewer frontend defensive branches for shape mismatch.
-- [x] Improved reliability metrics on critical dashboards.
-
-### Sprint 6 Artifacts
-- `reports/sprint-6/api-audit-report.md`
-- `reports/sprint-6/slo-definitions.md`
-- `apps/backend/src/common/dto/pagination.dto.ts` (PaginationQueryDto)
-- `apps/backend/src/common/dto/api-response.dto.ts` (PaginatedResponseDto, ListResponseDto)
-- `apps/backend/src/common/dto/status-enums.ts` (all domain status maps + translations)
-- `apps/backend/src/common/slo-tracking.interceptor.ts` (SLO tracking + metrics)
-- `apps/backend/src/common/__tests__/` (37 contract + snapshot tests)
-- `apps/frontend/shared/api/resilience.ts` (resilientFetch, resilientFetchAll, fetchWithRetry)
+- [x] At least three pages use the canopy pattern.
+- [ ] Completion state communicates useful change, not just "updated."
 
 ---
 
-## Sprint 7 — Test Matrix, Accessibility, and Performance Budget (1 week)
-**Goal:** Prevent regression and certify multi-role mobile quality.
+## Sprint 6 — Hardening, Rollout, and Regression Shields
 
-### Todo
-- [x] Expand E2E suite by role × top tasks.
-- [x] Add visual regression snapshots for key pages per role.
-- [x] Run accessibility audits (contrast, focus order, labels, hit targets).
-- [x] Add performance checks (bundle/page interaction budgets).
-- [x] Add RTL + dark mode verification gates.
-- [x] Add release checklist requiring UX + architecture sign-off.
+**Goal:** Release safely and lock in the new interaction quality.
+
+### Frontend
+- [x] Remove dead code paths from superseded gesture experiments.
+- [x] Consolidate final motion constants and docs.
+- [x] Ensure each feature can be independently disabled by flag.
+
+### QA
+- [x] Add or update Playwright coverage for:
+  - [x] swipe commit and undo
+  - [x] live event visual reaction
+  - [x] route morph continuity
+  - [x] drawer snap interactions
+  - [x] pull-to-refresh canopy
+- [ ] Run full mobile matrix:
+  - [ ] iPhone Safari
+  - [ ] Android Chrome
+  - [ ] RTL
+  - [ ] dark mode
+  - [ ] reduced motion
+
+### Analytics / Product
+- [ ] Compare pre/post for:
+  - [ ] time to first action
+  - [ ] backtrack churn
+  - [ ] unread-notification open rate
+  - [ ] swipe completion rate
+  - [ ] home-to-module navigation speed
+- [ ] Decide which flags graduate and which need another sprint.
+
+### DevOps
+- [ ] Progressive rollout on `dev` first, then production by route cluster.
+- [ ] Watch for:
+  - [ ] route transition errors
+  - [ ] gesture-related JS errors
+  - [ ] unexpected bounce/scroll lock issues
+  - [ ] mobile CLS increases
 
 ### Exit Criteria
-- [x] CI blocks merges on major UX regressions.
-- [x] Accessibility threshold met on high-use pages.
-- [x] Performance budgets enforced.
-
-### Sprint 7 Artifacts
-- `apps/frontend/e2e/qa-sprint-7-role-tasks.spec.ts` (role × top-task E2E matrix)
-- `apps/frontend/e2e/qa-sprint-7-visual-regression.spec.ts` (visual regression snapshots)
-- `apps/frontend/e2e/qa-sprint-7-a11y-audit.spec.ts` (axe-core accessibility audit)
-- `apps/frontend/e2e/qa-sprint-7-performance.spec.ts` (performance budget checks)
-- `apps/frontend/e2e/qa-sprint-7-rtl-dark-gates.spec.ts` (RTL + dark mode verification gates)
-- `scripts/check-performance-budgets.mjs` (CI bundle size budget checker)
-- `reports/sprint-7/release-checklist.md` (UX + architecture sign-off checklist)
+- [ ] All five interaction families are either released or explicitly deferred with rationale.
+- [ ] No critical mobile regression remains open.
+- [ ] The team has golden-path videos and test coverage for the new interaction system.
 
 ---
 
-## Sprint 8 — Rollout, Monitoring, and Continuous Governance (ongoing)
-**Goal:** Release safely and keep quality high as product evolves.
+## Definition Of Done
 
-### Todo
-- [x] Progressive rollout by role (feature flags).
-- [x] Monitor KPI changes weekly with alert thresholds.
-- [x] Run weekly “UX debt triage” with engineering and product.
-- [x] Keep architecture dashboard (complexity, file size, boundary violations).
-- [x] Establish quarterly refactor budget and ownership.
+This program is complete only when all of the following are true:
 
-### Exit Criteria
-- [x] Stable improvement in role adoption and task completion speed.
-- [x] Declining support issues tied to UI confusion.
-- [x] Architecture debt remains within agreed threshold.
-
-### Sprint 8 Artifacts
-- `apps/frontend/lib/feature-flags.ts` (feature flag system with progressive rollout)
-- `apps/frontend/lib/kpi-monitoring.ts` (KPI thresholds, alerts, weekly reports)
-- `apps/frontend/e2e/qa-sprint-8-rollout.spec.ts` (feature flag + KPI + rollout E2E)
-- `scripts/architecture-dashboard.mjs` (complexity, file size, boundary monitoring)
-- `reports/sprint-8/ux-debt-triage-process.md` (weekly UX debt triage process)
-- `reports/sprint-8/quarterly-refactor-budget.md` (refactor budget + ownership map)
+- [ ] Mobile navigation feels continuous, not page-jumpy.
+- [ ] Swipe actions feel decisive and reversible.
+- [ ] Bottom sheets feel native and layered.
+- [ ] Pull-to-refresh feels branded and informative.
+- [ ] Live events update the UI coherently, not as isolated alerts.
+- [ ] All behaviors are measurable, tested, and reduced-motion safe.
 
 ---
 
-## Implementation Governance Checklist (Apply Every Sprint)
-- [ ] Every task maps to measurable KPI or reliability metric.
-- [ ] Every UX change has screenshot evidence and role-specific acceptance criteria.
-- [ ] Every structural refactor has boundary tests and migration notes.
-- [ ] No merge without QA matrix pass for impacted roles.
-- [ ] No net increase in duplicated role/routing logic.
+## Immediate Next Step
 
----
-
-## Definition of Done (Program-Level)
-This initiative is done only when:
-1. PM/Admin/Tech mobile journeys are as clear and fast as resident journeys.
-2. Role-based UI is consistent in shell, hierarchy, and interaction grammar.
-3. Routing and role capability logic is centralized and fully tested.
-4. Large fragile files are decomposed and governed by feature boundaries.
-5. CI enforces UX, accessibility, performance, and architectural guardrails.
-6. Post-release metrics confirm sustained usability and maintenance improvements.
+- [ ] Start Sprint 0 and do not open implementation PRs until flags, analytics contracts, and the motion language are approved.

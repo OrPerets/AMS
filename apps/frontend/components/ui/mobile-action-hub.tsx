@@ -5,8 +5,12 @@ import { ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useMobileDepthEffect, useTouchHoldLift } from './mobile-card-effects';
 import { MiniSparkline } from './mobile-insight-widget';
+import { resolveRouteTransitionTokensByHref } from '../../lib/route-transition-contract';
+import { MobileRowActionsSheet, type MobileRowActionItem } from './mobile-row-actions-sheet';
+import { useLongPressActions } from '../../hooks/use-long-press-actions';
 
 type IconType = React.ComponentType<{ className?: string; strokeWidth?: number }>;
+type LongPressActionType = 'tickets' | 'notifications' | 'requests' | 'jobs';
 
 export type MobileActionHubItem = {
   id: string;
@@ -23,7 +27,47 @@ export type MobileActionHubItem = {
   previewValue?: string | number;
   microViz?: number[];
   fullCardTap?: boolean;
+  actionType?: LongPressActionType;
 };
+
+const LONG_PRESS_CONTEXT_ACTIONS: Record<LongPressActionType, MobileRowActionItem[]> = {
+  tickets: [
+    { id: 'tickets-open', label: 'פתח קריאות', description: 'מעבר לכל הקריאות הפעילות.', href: '/tickets' },
+    { id: 'tickets-mine', label: 'הקריאות שלי', description: 'קריאות שמוקצות אליך.', href: '/tickets?mine=true' },
+  ],
+  notifications: [
+    { id: 'notifications-open', label: 'מרכז ההתראות', description: 'צפה בכל ההתראות האחרונות.', href: '/notifications' },
+    { id: 'notifications-action', label: 'דורש טיפול', description: 'סינון התראות עם פעולה פתוחה.', href: '/notifications?filter=needs_action' },
+  ],
+  requests: [
+    { id: 'requests-open', label: 'מעקב בקשות', description: 'מעבר לכל בקשות הדיירים.', href: '/resident/requests?view=history' },
+    { id: 'requests-new', label: 'בקשה חדשה', description: 'יצירה מהירה של בקשה חדשה.', href: '/create-call' },
+  ],
+  jobs: [
+    { id: 'jobs-open', label: 'תור משימות', description: 'צפייה בכל המשימות הפעילות.', href: '/tech/jobs' },
+    { id: 'jobs-today', label: 'משימות להיום', description: 'פתיחה מהירה של משימות היום.', href: '/tech/jobs?view=today' },
+  ],
+};
+
+function composeHandlers<T>(...handlers: Array<((event: T) => void) | undefined>) {
+  return (event: T) => {
+    handlers.forEach((handler) => handler?.(event));
+  };
+}
+
+function resolveActionType(item: MobileActionHubItem): LongPressActionType | null {
+  if (item.actionType) return item.actionType;
+  const route = item.href?.split('?')[0] ?? '';
+  if (route.startsWith('/tickets')) return 'tickets';
+  if (route.startsWith('/notifications')) return 'notifications';
+  if (route.startsWith('/resident/requests')) return 'requests';
+  if (route.startsWith('/tech/jobs') || route.startsWith('/work-orders')) return 'jobs';
+  if (item.id.includes('ticket')) return 'tickets';
+  if (item.id.includes('notification')) return 'notifications';
+  if (item.id.includes('request')) return 'requests';
+  if (item.id.includes('job')) return 'jobs';
+  return null;
+}
 
 function toneClasses(accent: MobileActionHubItem['accent']) {
   switch (accent) {
@@ -40,6 +84,7 @@ function toneClasses(accent: MobileActionHubItem['accent']) {
       return 'border-primary/16 bg-primary/10 text-primary';
   }
 }
+
 
 function TileShell({
   children,
@@ -85,10 +130,42 @@ function ActionTile({
   const hold = useTouchHoldLift(true);
   const Icon = item.icon;
   const isSelected = Boolean(item.selected || item.emphasize);
+  const [actionsOpen, setActionsOpen] = React.useState(false);
   const priority = item.priority ?? (isSelected ? 'primary' : 'secondary');
+  const sharedTransitionTokens = resolveRouteTransitionTokensByHref(item.href);
+  const containerLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.container;
+  const iconLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.icon;
+  const badgeLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.badge;
+  const titleLayoutId = reducedMotion ? undefined : sharedTransitionTokens?.title;
+  const resolvedActionType = resolveActionType(item);
+  const rowActions = React.useMemo<MobileRowActionItem[]>(() => {
+    const destinationActions = resolvedActionType ? LONG_PRESS_CONTEXT_ACTIONS[resolvedActionType] : [];
+    const quickOpenAction =
+      item.href || item.onClick
+        ? [
+            {
+              id: `open-${item.id}`,
+              label: `פתח ${item.label}`,
+              description: 'מעבר מהיר למסך הנבחר.',
+              tone: 'primary' as const,
+              ...(item.href ? { href: item.href } : { onSelect: item.onClick }),
+            },
+          ]
+        : [];
+    const dedupedContext = destinationActions.filter((action) => !item.href || action.href !== item.href);
+    return [...quickOpenAction, ...dedupedContext];
+  }, [item.href, item.id, item.label, item.onClick, resolvedActionType]);
+  const { longPressProps } = useLongPressActions({
+    onLongPress: () => {
+      if (!rowActions.length) return;
+      setActionsOpen(true);
+    },
+  });
 
   return (
+    <>
     <motion.div
+      layoutId={containerLayoutId}
       ref={depthRef as React.Ref<HTMLDivElement>}
       animate={hold.isHolding && !reducedMotion ? { y: -3, scale: 1.01 } : { y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
@@ -97,7 +174,13 @@ function ActionTile({
           '[box-shadow:0_calc(10px*var(--mobile-card-depth,0))_24px_rgba(84,58,15,0.10)] [filter:saturate(calc(1+var(--mobile-card-depth,0)*0.06))] [transform:translateY(calc(var(--mobile-card-depth,0)*-2px))]',
         hold.isHolding && 'rounded-2xl shadow-[0_16px_32px_rgba(84,58,15,0.14)] ring-1 ring-primary/10',
       )}
-      {...hold.holdProps}
+      onPointerDown={composeHandlers(hold.holdProps.onPointerDown, longPressProps.onPointerDown)}
+      onPointerMove={longPressProps.onPointerMove}
+      onPointerUp={composeHandlers(hold.holdProps.onPointerUp, longPressProps.onPointerUp)}
+      onPointerLeave={composeHandlers(hold.holdProps.onPointerLeave, longPressProps.onPointerLeave)}
+      onPointerCancel={composeHandlers(hold.holdProps.onPointerCancel, longPressProps.onPointerCancel)}
+      onBlur={hold.holdProps.onBlur}
+      onClickCapture={longPressProps.onClickCapture}
     >
       <TileShell
         href={item.href}
@@ -117,7 +200,11 @@ function ActionTile({
       >
         <div className={cn('flex h-full flex-col', layout === 'hierarchy' && priority === 'primary' ? 'items-stretch text-start' : 'items-center')}>
           <div className="flex w-full items-start justify-between gap-2">
-            <span
+            <motion.span
+              layoutId={iconLayoutId}
+              initial={reducedMotion ? { opacity: 0.94 } : false}
+              animate={reducedMotion ? { opacity: 1 } : undefined}
+              transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
               className={cn(
                 'flex items-center justify-center rounded-xl border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]',
                 layout === 'hierarchy' && priority === 'utility'
@@ -131,16 +218,28 @@ function ActionTile({
               )}
             >
               <Icon className={cn(density === 'compact' ? 'h-3.5 w-3.5 sm:h-4 sm:w-4' : 'h-4 w-4 sm:h-5 sm:w-5')} strokeWidth={1.75} />
-            </span>
+            </motion.span>
             {item.badge !== undefined && item.badge !== '' ? (
-              <span className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+              <motion.span
+                layoutId={badgeLayoutId}
+                initial={reducedMotion ? { opacity: 0.92 } : false}
+                animate={reducedMotion ? { opacity: 1 } : undefined}
+                transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+                className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
+              >
                 {item.badge}
-              </span>
+              </motion.span>
             ) : isSelected ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-primary/18 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+              <motion.span
+                layoutId={badgeLayoutId}
+                initial={reducedMotion ? { opacity: 0.92 } : false}
+                animate={reducedMotion ? { opacity: 1 } : undefined}
+                transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+                className="inline-flex items-center gap-1 rounded-full border border-primary/18 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
+              >
                 <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.9} />
                 נבחר
-              </span>
+              </motion.span>
             ) : null}
           </div>
 
@@ -150,9 +249,15 @@ function ActionTile({
                 <bdi>{item.previewValue}</bdi>
               </div>
             ) : null}
-            <div className={cn(priority === 'primary' ? (density === 'compact' ? 'text-[14px]' : 'text-[15px]') : density === 'compact' ? 'text-[13px] sm:text-[13px]' : 'text-[14px] sm:text-sm', 'font-semibold leading-5 text-foreground')}>
+            <motion.div
+              layoutId={titleLayoutId}
+              initial={reducedMotion ? { opacity: 0.94 } : false}
+              animate={reducedMotion ? { opacity: 1 } : undefined}
+              transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              className={cn(priority === 'primary' ? (density === 'compact' ? 'text-[14px]' : 'text-[15px]') : density === 'compact' ? 'text-[13px] sm:text-[13px]' : 'text-[14px] sm:text-sm', 'font-semibold leading-5 text-foreground')}
+            >
               {item.label}
-            </div>
+            </motion.div>
             {item.description ? (
               <div
                 className={cn(
@@ -184,6 +289,15 @@ function ActionTile({
         </div>
       </TileShell>
     </motion.div>
+    <MobileRowActionsSheet
+      title={item.label}
+      description={item.description}
+      actions={rowActions}
+      open={actionsOpen}
+      onOpenChange={setActionsOpen}
+      hideTrigger
+    />
+    </>
   );
 }
 

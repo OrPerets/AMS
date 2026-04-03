@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
 import { Bell, CheckCircle2, Globe, KeyRound, Save, ShieldCheck, Smartphone, UserRound } from 'lucide-react';
 import { authFetch } from '../lib/auth';
 import { formatCurrency, formatDate, formatNumber, formatTime, regionalFormats } from '../lib/i18n';
 import { isValidEmail } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { FormField } from '../components/ui/form-field';
+import { FormActionHint, FormField, FormErrorSummary } from '../components/ui/form-field';
 import { InlineErrorPanel } from '../components/ui/inline-feedback';
 import { Input } from '../components/ui/input';
+import { PageHero } from '../components/ui/page-hero';
 import { PasswordInput } from '../components/ui/password-input';
 import { SectionHeader } from '../components/ui/section-header';
 import { StatusBadge } from '../components/ui/status-badge';
@@ -34,10 +36,14 @@ const defaultPreferences: NotificationPreferences = {
 
 type ChannelPref = { key: string; label: string; description: string };
 type TopicPref = { key: string; label: string; description: string };
+type SettingsTabKey = 'profile' | 'security' | 'notifications' | 'language';
+const SETTINGS_TAB_KEYS: SettingsTabKey[] = ['profile', 'security', 'notifications', 'language'];
 
 export default function SettingsPage() {
+  const router = useRouter();
   const { t, regionalFormat } = useLocale();
   const { direction } = useDirection();
+  const [activeTab, setActiveTab] = useState<SettingsTabKey>('profile');
 
   const [profile, setProfile] = useState({ email: '', phone: '', pushToken: '' });
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '' });
@@ -56,6 +62,16 @@ export default function SettingsPage() {
   useEffect(() => {
     void loadSettings();
   }, []);
+
+  useEffect(() => {
+    const tabParam = router.query.tab;
+    const queryTab = typeof tabParam === 'string' ? tabParam : null;
+    if (queryTab && SETTINGS_TAB_KEYS.includes(queryTab as SettingsTabKey)) {
+      setActiveTab(queryTab as SettingsTabKey);
+      return;
+    }
+    setActiveTab('profile');
+  }, [router.query.tab]);
 
   async function loadSettings() {
     try {
@@ -202,6 +218,18 @@ export default function SettingsPage() {
       newPassword: passwords.newPassword.length >= 6 ? '' : t('settings.validation.newPassword'),
     };
   }, [passwords.currentPassword, passwords.newPassword, t]);
+  const profileHasRequiredErrors = Boolean(profileErrors.email || profileErrors.phone);
+  const passwordHasRequiredErrors = Boolean(passwordErrors.currentPassword || passwordErrors.newPassword);
+  const profileVisibleErrors = useMemo(() => (
+    (Object.keys(profileErrors) as Array<keyof typeof profileErrors>)
+      .filter((key) => profileErrors[key] && shouldShowProfileError(key))
+      .map((key) => ({ field: key, message: profileErrors[key] }))
+  ), [profileErrors, profileSubmitted, profileTouched]);
+  const passwordVisibleErrors = useMemo(() => (
+    (Object.keys(passwordErrors) as Array<keyof typeof passwordErrors>)
+      .filter((key) => passwordErrors[key] && shouldShowPasswordError(key))
+      .map((key) => ({ field: key, message: passwordErrors[key] }))
+  ), [passwordErrors, passwordSubmitted, passwordTouched]);
 
   const channelPrefs: ChannelPref[] = [
     { key: 'email', label: t('settings.preference.email'), description: t('settings.preference.emailDesc') },
@@ -227,50 +255,52 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <Card variant="featured" className="overflow-hidden rounded-[22px]">
-        <CardContent className="space-y-4 p-4 sm:p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <StatusBadge label={t('settings.heroBadge')} tone="finance" />
-                <StatusBadge label={direction === 'rtl' ? t('settings.direction.rtl') : t('settings.direction.ltr')} tone="active" />
-              </div>
-              <h1 className="text-xl font-bold text-foreground">{t('settings.heroTitle')}</h1>
-              <p className="text-sm text-secondary-foreground">עדכן פרופיל, אבטחה והתראות ממסך אחד.</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => void loadSettings()}>
-              {t('notifications.refresh')}
-            </Button>
-          </div>
+      <PageHero
+        compact
+        mobileCompact
+        variant="operational"
+        kicker={t('settings.heroTitle')}
+        eyebrow={
+          <>
+            <StatusBadge label={t('settings.heroBadge')} tone="finance" />
+            <StatusBadge label={direction === 'rtl' ? t('settings.direction.rtl') : t('settings.direction.ltr')} tone="active" />
+          </>
+        }
+        title={t('settings.heroTitle')}
+        description="עדכן פרופיל, אבטחה והתראות ממסך אחד."
+        actions={
+          <Button variant="outline" size="sm" onClick={() => void loadSettings()}>
+            {t('notifications.refresh')}
+          </Button>
+        }
+      />
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <SettingsSummaryCard
-              icon={<UserRound className="h-4 w-4 text-primary" />}
-              label={t('settings.section.profileTitle')}
-              value={profile.email || t('settings.section.profileTitle')}
-              description={profile.phone || t('settings.field.phoneHint')}
-            />
-            <SettingsSummaryCard
-              icon={<Bell className="h-4 w-4 text-primary" />}
-              label={t('settings.section.preferencesTitle')}
-              value={`${enabledTopics}/${topicPrefs.length}`}
-              description={t('settings.preference.explanation')}
-            />
-            <SettingsSummaryCard
-              icon={<Globe className="h-4 w-4 text-primary" />}
-              label={t('settings.section.languageTitle')}
-              value={t('settings.language.he')}
-              description={`${t('settings.direction.rtl')} · ${regionalFormats[regionalFormat].label}`}
-            />
-            <SettingsSummaryCard
-              icon={<ShieldCheck className="h-4 w-4 text-primary" />}
-              label={t('settings.section.passwordTitle')}
-              value={passwords.newPassword ? t('settings.unsavedChanges') : t('settings.meta.secured')}
-              description={t('common.saved')}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <SettingsSummaryCard
+          icon={<UserRound className="h-4 w-4 text-primary" />}
+          label={t('settings.section.profileTitle')}
+          value={profile.email || t('settings.section.profileTitle')}
+          description={profile.phone || t('settings.field.phoneHint')}
+        />
+        <SettingsSummaryCard
+          icon={<Bell className="h-4 w-4 text-primary" />}
+          label={t('settings.section.preferencesTitle')}
+          value={`${enabledTopics}/${topicPrefs.length}`}
+          description={t('settings.preference.explanation')}
+        />
+        <SettingsSummaryCard
+          icon={<Globe className="h-4 w-4 text-primary" />}
+          label={t('settings.section.languageTitle')}
+          value={t('settings.language.he')}
+          description={`${t('settings.direction.rtl')} · ${regionalFormats[regionalFormat].label}`}
+        />
+        <SettingsSummaryCard
+          icon={<ShieldCheck className="h-4 w-4 text-primary" />}
+          label={t('settings.section.passwordTitle')}
+          value={passwords.newPassword ? t('settings.unsavedChanges') : t('settings.meta.secured')}
+          description={t('common.saved')}
+        />
+      </div>
 
       {loadError ? <InlineErrorPanel title={t('settings.loadErrorTitle')} description={loadError} onRetry={loadSettings} /> : null}
 
@@ -283,7 +313,19 @@ export default function SettingsPage() {
         </Card>
       ) : null}
 
-      <Tabs defaultValue="profile" className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          const nextTab = value as SettingsTabKey;
+          setActiveTab(nextTab);
+          void router.replace(
+            { pathname: '/settings', query: nextTab === 'profile' ? {} : { tab: nextTab } },
+            undefined,
+            { shallow: true },
+          );
+        }}
+        className="space-y-4"
+      >
         <TabsList className="grid w-full grid-cols-2 gap-1 rounded-[24px] border border-subtle-border bg-muted/24 p-1 md:grid-cols-4">
           <TabsTrigger value="profile" className="gap-1.5 rounded-[18px]">
             <UserRound className="h-3.5 w-3.5" />
@@ -328,9 +370,18 @@ export default function SettingsPage() {
                   subtitle={t('settings.section.profileSubtitle')}
                   eyebrow={t('settings.section.profileTitle')}
                 />
+                <FormErrorSummary
+                  errors={profileVisibleErrors}
+                  fieldLabels={{
+                    email: t('settings.field.email'),
+                    phone: t('settings.field.phone'),
+                  }}
+                  sticky
+                />
 
                 <FormField
                   label={t('settings.field.email')}
+                  fieldKey="email"
                   error={shouldShowProfileError('email') ? profileErrors.email || undefined : undefined}
                   required
                 >
@@ -348,6 +399,7 @@ export default function SettingsPage() {
 
                 <FormField
                   label={t('settings.field.phone')}
+                  fieldKey="phone"
                   description={t('settings.field.phoneHint')}
                   error={shouldShowProfileError('phone') ? profileErrors.phone || undefined : undefined}
                 >
@@ -364,11 +416,16 @@ export default function SettingsPage() {
                 </FormField>
 
                 <div className="flex justify-end">
-                  <Button onClick={saveProfile} disabled={savingProfile || Boolean(profileErrors.email || profileErrors.phone)}>
+                  <Button onClick={saveProfile} disabled={savingProfile || profileHasRequiredErrors}>
                     <Save className="me-2 h-4 w-4" />
                     {savingProfile ? t('common.saving') : t('settings.action.saveProfile')}
                   </Button>
                 </div>
+                {!savingProfile && profileHasRequiredErrors ? (
+                  <FormActionHint className="text-end">
+                    יש להשלים אימייל תקין וטלפון בפורמט חוקי לפני שמירה.
+                  </FormActionHint>
+                ) : null}
               </CardContent>
             </Card>
 
@@ -415,8 +472,17 @@ export default function SettingsPage() {
 
           <Card variant="elevated">
             <CardContent className="space-y-5 p-4 sm:p-5">
+              <FormErrorSummary
+                errors={passwordVisibleErrors}
+                fieldLabels={{
+                  currentPassword: t('settings.field.currentPassword'),
+                  newPassword: t('settings.field.newPassword'),
+                }}
+                sticky
+              />
               <FormField
                 label={t('settings.field.currentPassword')}
+                fieldKey="currentPassword"
                 error={shouldShowPasswordError('currentPassword') ? passwordErrors.currentPassword || undefined : undefined}
                 required
               >
@@ -432,6 +498,7 @@ export default function SettingsPage() {
 
               <FormField
                 label={t('settings.field.newPassword')}
+                fieldKey="newPassword"
                 description={t('settings.validation.newPassword')}
                 error={shouldShowPasswordError('newPassword') ? passwordErrors.newPassword || undefined : undefined}
                 required
@@ -447,11 +514,16 @@ export default function SettingsPage() {
               </FormField>
 
               <div className="flex justify-end">
-                <Button onClick={savePassword} disabled={savingPassword || Boolean(passwordErrors.currentPassword || passwordErrors.newPassword)}>
+                <Button onClick={savePassword} disabled={savingPassword || passwordHasRequiredErrors}>
                   <KeyRound className="me-2 h-4 w-4" />
                   {savingPassword ? t('common.saving') : t('settings.action.updatePassword')}
                 </Button>
               </div>
+              {!savingPassword && passwordHasRequiredErrors ? (
+                <FormActionHint className="text-end">
+                  הזן סיסמה נוכחית וסיסמה חדשה באורך 6 תווים לפחות כדי לעדכן.
+                </FormActionHint>
+              ) : null}
             </CardContent>
           </Card>
         </TabsContent>
@@ -468,6 +540,8 @@ export default function SettingsPage() {
               <div className="rounded-[24px] border border-subtle-border bg-background/86 p-4 text-sm leading-6 text-muted-foreground">
                 {t('settings.preference.explanation')}
               </div>
+              {/* Migration note: this Notifications tab is the canonical preference editor.
+                  Keep labels and control names here in sync with /notifications summary to avoid duplicate editable forms. */}
             </CardContent>
           </Card>
 

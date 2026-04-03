@@ -1,17 +1,38 @@
 import { useEffect, useRef, useState } from 'react';
+import { isMobileInteractionFeatureEnabled } from '../lib/mobile-interaction-flags';
 import { isTouchDevice } from '../lib/mobile';
+
+const PULL_TO_REFRESH_PRESETS = {
+  list: { threshold: 84 },
+  dashboard: { threshold: 96 },
+  detail: { threshold: 72 },
+} as const;
+
+type PullToRefreshPreset = keyof typeof PULL_TO_REFRESH_PRESETS;
 
 type UsePullToRefreshOptions = {
   enabled?: boolean;
   threshold?: number;
+  preset?: PullToRefreshPreset;
+  onThresholdReached?: () => void;
   onRefresh: () => Promise<void> | void;
 };
 
+function mapPullDistanceElastic(deltaY: number, threshold: number) {
+  const maxPullDistance = threshold * 1.4;
+  const resistance = maxPullDistance / 0.6;
+  return maxPullDistance * (1 - Math.exp(-Math.max(deltaY, 0) / resistance));
+}
+
 export function usePullToRefresh({
   enabled = true,
-  threshold = 84,
+  threshold: customThreshold,
+  preset = 'list',
+  onThresholdReached,
   onRefresh,
 }: UsePullToRefreshOptions) {
+  const refreshFeatureEnabled = isMobileInteractionFeatureEnabled('mobile-interactions-elastic-refresh');
+  const threshold = customThreshold ?? PULL_TO_REFRESH_PRESETS[preset].threshold;
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const startYRef = useRef<number | null>(null);
@@ -19,12 +40,15 @@ export function usePullToRefresh({
   const shouldTrackRef = useRef(false);
   const refreshRef = useRef(onRefresh);
   const pullDistanceRef = useRef(0);
+  const thresholdReachedRef = useRef(false);
+  const thresholdCallbackRef = useRef(onThresholdReached);
 
   refreshRef.current = onRefresh;
+  thresholdCallbackRef.current = onThresholdReached;
   pullDistanceRef.current = pullDistance;
 
   useEffect(() => {
-    if (!enabled || !isTouchDevice()) {
+    if (!enabled || !refreshFeatureEnabled || !isTouchDevice()) {
       return;
     }
 
@@ -38,6 +62,7 @@ export function usePullToRefresh({
       startXRef.current = null;
       shouldTrackRef.current = false;
       pullDistanceRef.current = 0;
+      thresholdReachedRef.current = false;
       setPullDistance(0);
     };
 
@@ -81,7 +106,13 @@ export function usePullToRefresh({
         event.preventDefault();
       }
 
-      const nextDistance = Math.min(deltaY * 0.6, threshold * 1.4);
+      const nextDistance = mapPullDistanceElastic(deltaY, threshold);
+
+      if (!thresholdReachedRef.current && nextDistance >= threshold) {
+        thresholdReachedRef.current = true;
+        thresholdCallbackRef.current?.();
+      }
+
       pullDistanceRef.current = nextDistance;
       setPullDistance(nextDistance);
     };
@@ -118,11 +149,14 @@ export function usePullToRefresh({
       scrollContainer.removeEventListener('touchend', handleTouchEnd);
       scrollContainer.removeEventListener('touchcancel', reset);
     };
-  }, [enabled, isRefreshing, threshold]);
+  }, [enabled, isRefreshing, refreshFeatureEnabled, threshold]);
 
   return {
     isPulling: pullDistance > 0,
     isRefreshing,
     pullDistance,
+    pullProgress: Math.min(pullDistance / threshold, 1),
+    threshold,
+    thresholdReached: pullDistance >= threshold,
   };
 }

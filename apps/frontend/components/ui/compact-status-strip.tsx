@@ -3,7 +3,11 @@ import * as React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ShieldCheck } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { MOTION_DURATION, MOTION_EASE } from '../../lib/motion-tokens';
 import { useAnimatedNumber } from '../../hooks/use-animated-number';
+import { useSyncDeltaLabel } from '../../hooks/use-sync-delta-label';
+import { subscribeUIInteraction } from '../../lib/ui-interaction-bus';
+import { trackLiveEventReactionRendered } from '../../lib/analytics';
 
 type StatusMetric = {
   id: string;
@@ -41,18 +45,25 @@ export function CompactStatusStrip({
   icon,
   metrics,
   contextChips,
+  lastSyncedAt,
   className,
   tone = 'default',
+  density = 'compact',
 }: {
   roleLabel: string;
   icon?: React.ReactNode;
   metrics: StatusMetric[];
   contextChips?: StatusContextChip[];
+  lastSyncedAt?: number | null;
   className?: string;
   tone?: 'default' | 'resident' | 'pm' | 'admin';
+  density?: 'default' | 'compact';
 }) {
   const reducedMotion = useReducedMotion();
   const [pulsingMetricId, setPulsingMetricId] = React.useState<string | null>(null);
+  const [liveAttention, setLiveAttention] = React.useState(false);
+  const freshnessLabel = useSyncDeltaLabel(lastSyncedAt ?? null);
+  const justSynced = Boolean(lastSyncedAt && Date.now() - lastSyncedAt < 8_000);
 
   const highlightedMetricId = React.useMemo(() => {
     const visibleMetrics = metrics.slice(0, 2);
@@ -65,6 +76,38 @@ export function CompactStatusStrip({
         return rightPriority - leftPriority;
       })[0]?.id ?? null;
   }, [metrics]);
+
+  React.useEffect(() => {
+    const timeouts = new Set<number>();
+    const unsubscribe = subscribeUIInteraction((event) => {
+      if (event.name !== 'live_event_received') return;
+      const destinationSurface = String(event.payload.destinationSurface ?? '');
+      if (!destinationSurface || (!destinationSurface.includes('/notifications') && !destinationSurface.includes('/tickets'))) {
+        return;
+      }
+      setLiveAttention(true);
+      if (!reducedMotion && metrics[0]?.id) {
+        setPulsingMetricId(metrics[0].id);
+      }
+      trackLiveEventReactionRendered({
+        eventType: String(event.payload.eventType ?? 'unknown'),
+        surface: 'compact_status_strip',
+        destinationSurface,
+        reactionLatencyMs: Date.now() - event.timestamp,
+      });
+      const timeout = window.setTimeout(() => {
+        setLiveAttention(false);
+        setPulsingMetricId((current) => (current === metrics[0]?.id ? null : current));
+        timeouts.delete(timeout);
+      }, 3600);
+      timeouts.add(timeout);
+    });
+    return () => {
+      unsubscribe();
+      timeouts.forEach((timeout) => window.clearTimeout(timeout));
+      timeouts.clear();
+    };
+  }, [metrics, reducedMotion]);
 
   React.useEffect(() => {
     if (reducedMotion || !highlightedMetricId) {
@@ -83,7 +126,8 @@ export function CompactStatusStrip({
   return (
     <section
       className={cn(
-        'flex min-h-[48px] flex-col items-stretch gap-2 overflow-hidden rounded-[20px] border px-3 py-2.5 shadow-elevation-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:py-2 sm:pe-4',
+        'flex flex-col items-stretch gap-2 overflow-hidden border shadow-elevation-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:pe-4',
+        density === 'compact' ? 'min-h-[44px] rounded-[18px] px-3 py-2 sm:py-2' : 'min-h-[48px] rounded-[20px] px-3 py-2.5 sm:py-2',
         tone === 'default' && 'border-subtle-border bg-card',
         tone === 'resident' &&
           'border-primary/14 bg-[linear-gradient(180deg,rgba(255,251,245,0.96)_0%,rgba(255,255,255,0.92)_100%)] shadow-[0_14px_30px_rgba(84,58,15,0.08)]',
@@ -95,18 +139,30 @@ export function CompactStatusStrip({
       )}
       aria-label={roleLabel}
     >
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="flex min-w-0 flex-col items-start gap-1">
+        <div className="flex min-w-0 items-center gap-2">
         <span
           className={cn(
-            'flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-[14px]',
+            density === 'compact' ? 'flex h-7 w-7 shrink-0 items-center justify-center rounded-[12px]' : 'flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-[14px]',
             'bg-primary/10 text-primary',
           )}
           aria-hidden="true"
         >
           {icon ?? <ShieldCheck className="h-4 w-4" strokeWidth={1.75} />}
         </span>
-        <span className="truncate text-[13px] font-semibold text-foreground">
+        <span className={cn(density === 'compact' ? 'truncate text-[12px]' : 'truncate text-[13px]', 'font-semibold text-foreground')}>
           {roleLabel}
+        </span>
+        </div>
+        <span
+          className={cn(
+            'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground',
+            justSynced && 'border-primary/18 text-primary',
+            liveAttention && 'border-primary/24 bg-primary/8 text-primary',
+            !reducedMotion && justSynced && 'animate-pulse',
+          )}
+        >
+          {freshnessLabel}
         </span>
       </div>
 
@@ -182,11 +238,11 @@ export function CompactStatusStrip({
                 transition={
                   shouldPulse && !reducedMotion
                     ? {
-                        duration: 0.9,
+                        duration: MOTION_DURATION.pulse,
                         repeat: 3,
-                        ease: 'easeInOut',
+                        ease: MOTION_EASE.standardInOut,
                       }
-                    : { duration: 0.2 }
+                    : { duration: MOTION_DURATION.instant }
                 }
               >
                 {shouldPulse && !reducedMotion ? (
@@ -200,7 +256,7 @@ export function CompactStatusStrip({
                     )}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: [0.12, 0.28, 0], scale: [0.92, 1.18, 1.28] }}
-                    transition={{ duration: 0.9, repeat: 3, ease: 'easeOut' }}
+                    transition={{ duration: MOTION_DURATION.pulse, repeat: 3, ease: MOTION_EASE.standardOut }}
                     aria-hidden="true"
                   />
                 ) : null}

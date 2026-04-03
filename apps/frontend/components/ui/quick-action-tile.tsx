@@ -2,6 +2,7 @@ import Link from 'next/link';
 import * as React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, CheckCircle2, type LucideIcon } from 'lucide-react';
+import { resolveRouteTransitionTokensByHref } from '../../lib/route-transition-contract';
 import { cn } from '../../lib/utils';
 import { useTouchHoldLift } from './mobile-card-effects';
 import { GlassSurface } from './glass-surface';
@@ -48,6 +49,10 @@ export function QuickActionTile({
 }: QuickActionTileProps) {
   const reducedMotion = useReducedMotion();
   const hold = useTouchHoldLift(Boolean(fullCardTap));
+  const transitionTokens = resolveRouteTransitionTokensByHref(href);
+  const iconLayoutId = reducedMotion ? undefined : transitionTokens?.icon;
+  const badgeLayoutId = reducedMotion ? undefined : transitionTokens?.badge;
+  const titleLayoutId = reducedMotion ? undefined : transitionTokens?.title;
   const content = (
     <GlassSurface
       strength="default"
@@ -56,22 +61,48 @@ export function QuickActionTile({
       data-interactive-card={fullCardTap ? 'true' : undefined}
     >
       <div className="flex items-start justify-between gap-3">
-        <span className={cn('flex h-12 w-12 items-center justify-center rounded-[18px] border shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]', toneClasses(tone))}>
+        <motion.span
+          layoutId={iconLayoutId}
+          initial={reducedMotion ? { opacity: 0.94 } : false}
+          animate={reducedMotion ? { opacity: 1 } : undefined}
+          transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+          className={cn('flex h-12 w-12 items-center justify-center rounded-[18px] border shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]', toneClasses(tone))}
+        >
           <Icon className="h-5 w-5" strokeWidth={1.85} />
-        </span>
+        </motion.span>
         {badge !== undefined && badge !== null ? (
-          <span className="rounded-full border border-primary/14 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
+          <motion.span
+            layoutId={badgeLayoutId}
+            initial={reducedMotion ? { opacity: 0.92 } : false}
+            animate={reducedMotion ? { opacity: 1 } : undefined}
+            transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+            className="rounded-full border border-primary/14 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary"
+          >
             <bdi>{badge}</bdi>
-          </span>
+          </motion.span>
         ) : stateLabel ? (
-          <span className="inline-flex items-center gap-1 rounded-full border border-subtle-border bg-background/72 px-2.5 py-1 text-[11px] font-semibold text-secondary-foreground">
+          <motion.span
+            layoutId={badgeLayoutId}
+            initial={reducedMotion ? { opacity: 0.92 } : false}
+            animate={reducedMotion ? { opacity: 1 } : undefined}
+            transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+            className="inline-flex items-center gap-1 rounded-full border border-subtle-border bg-background/72 px-2.5 py-1 text-[11px] font-semibold text-secondary-foreground"
+          >
             <CheckCircle2 className="h-3.5 w-3.5 text-primary" strokeWidth={1.8} />
             {stateLabel}
-          </span>
+          </motion.span>
         ) : null}
       </div>
       <div className="mt-4">
-        <div className="text-[15px] font-semibold leading-5 text-foreground">{title}</div>
+        <motion.div
+          layoutId={titleLayoutId}
+          initial={reducedMotion ? { opacity: 0.94 } : false}
+          animate={reducedMotion ? { opacity: 1 } : undefined}
+          transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+          className="text-[15px] font-semibold leading-5 text-foreground"
+        >
+          {title}
+        </motion.div>
         <div className="mt-1 text-[11px] leading-4.5 text-secondary-foreground">{subtitle}</div>
       </div>
       <div className="mt-3 flex justify-end text-primary">

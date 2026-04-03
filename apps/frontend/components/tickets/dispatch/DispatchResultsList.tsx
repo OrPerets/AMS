@@ -1,8 +1,13 @@
+import * as React from 'react';
 import { Building2, Camera, Filter, MessageSquare, Search, UserRound } from 'lucide-react';
+import { useReducedMotion } from 'framer-motion';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
+import { MobileSwipeActionCard } from '../../ui/mobile-swipe-action-card';
+import { MobileRowActionsSheet, type MobileRowActionItem } from '../../ui/mobile-row-actions-sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+import { useLongPressActions } from '../../../hooks/use-long-press-actions';
 import type { DispatchResponse, DispatchTicket } from './types';
 import {
   formatRelative,
@@ -28,6 +33,7 @@ export function DispatchResultsList({
   onSelectTicket,
   onToggleTicket,
   onToggleAllVisible,
+  updatedTicketIds,
 }: {
   dispatchData: DispatchResponse | null;
   selectedTicketId: number | null;
@@ -44,6 +50,7 @@ export function DispatchResultsList({
   onSelectTicket: (ticketId: number) => void;
   onToggleTicket: (ticketId: number) => void;
   onToggleAllVisible: () => void;
+  updatedTicketIds: Set<number>;
 }) {
   const allVisibleSelected = Boolean(dispatchData?.items.length) && dispatchData!.items.every((ticket) => selectedIds.includes(ticket.id));
 
@@ -137,6 +144,7 @@ export function DispatchResultsList({
               checked={selectedIds.includes(ticket.id)}
               onSelect={() => onSelectTicket(ticket.id)}
               onToggle={() => onToggleTicket(ticket.id)}
+              isUpdated={updatedTicketIds.has(ticket.id)}
             />
           ))
         ) : (
@@ -159,14 +167,35 @@ function TicketListCard({
   checked,
   onSelect,
   onToggle,
+  isUpdated,
 }: {
   ticket: DispatchTicket;
   selected: boolean;
   checked: boolean;
   onSelect: () => void;
   onToggle: () => void;
+  isUpdated: boolean;
 }) {
   const isUrgent = ticket.slaState === 'BREACHED' || ticket.severity === 'URGENT';
+  const [actionsOpen, setActionsOpen] = React.useState(false);
+  const actions: MobileRowActionItem[] = [
+    {
+      id: 'open-ticket',
+      label: 'פתח פרטי קריאה',
+      description: 'מעבר לפירוט הקריאה ולפעולות מהירות.',
+      tone: 'primary',
+      onSelect,
+    },
+    {
+      id: checked ? 'unselect-ticket' : 'select-ticket',
+      label: checked ? 'בטל בחירה' : 'בחר לקריאה מרובה',
+      description: checked ? 'הסרת הקריאה מהרשימה הנבחרת.' : 'הוספת הקריאה לבחירה מרובה.',
+      onSelect: onToggle,
+    },
+  ];
+  const { longPressProps } = useLongPressActions({
+    onLongPress: () => setActionsOpen(true),
+  });
 
   return (
     <div
@@ -174,7 +203,9 @@ function TicketListCard({
         selected
           ? 'border-primary/24 border-s-primary bg-[linear-gradient(180deg,rgba(215,164,62,0.18)_0%,rgba(255,250,240,0.96)_100%)] text-foreground shadow-[0_24px_56px_-38px_rgba(84,58,15,0.34)]'
           : `border-subtle-border ${severityBorderColors[ticket.severity]} bg-background/86 hover:border-primary/16 hover:bg-white hover:shadow-card`
-      } ${isUrgent && !selected ? 'ring-1 ring-destructive/16' : ''}`}
+      } ${isUrgent && !selected ? 'ring-1 ring-destructive/16' : ''} ${
+        isUpdated ? (reducedMotion ? 'ring-2 ring-primary/25' : 'ring-2 ring-primary/25 animate-[pulse_1.2s_ease-out_1]') : ''
+      }`}
     >
       <div className="flex gap-3">
         <label className="mt-1 flex items-start">
@@ -187,61 +218,90 @@ function TicketListCard({
           />
         </label>
 
-        <button type="button" onClick={onSelect} className="flex-1 text-right">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0 flex-1 space-y-2.5">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <Badge variant={selected ? 'secondary' : 'outline'} className="text-[11px]">
-                  #{ticket.id}
-                </Badge>
-                <TicketSeverityBadge severity={ticket.severity} />
-                <TicketStatusBadge status={ticket.status} />
-                <SlaBadge state={ticket.slaState} />
-              </div>
+        <MobileSwipeActionCard
+          actions={[
+            {
+              id: 'open-ticket-swipe',
+              label: 'פתח קריאה',
+              tone: 'primary',
+              side: 'start',
+              onCommit: onSelect,
+            },
+            {
+              id: checked ? 'unselect-ticket-swipe' : 'select-ticket-swipe',
+              label: checked ? 'בטל בחירה' : 'בחר לטיפול',
+              tone: checked ? 'warning' : 'success',
+              side: 'end',
+              onCommit: onToggle,
+            },
+          ]}
+          className="flex-1 rounded-[18px]"
+        >
+          <button type="button" onClick={onSelect} className="flex w-full touch-pan-y text-right" {...longPressProps}>
+            <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0 flex-1 space-y-2.5">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge variant={selected ? 'secondary' : 'outline'} className="text-[11px]">
+                    #{ticket.id}
+                  </Badge>
+                  {isUpdated ? <Badge variant="outline" className="text-[10px] text-primary">עודכן</Badge> : null}
+                  <TicketSeverityBadge severity={ticket.severity} />
+                  <TicketStatusBadge status={ticket.status} />
+                  <SlaBadge state={ticket.slaState} />
+                </div>
 
-              <div className="min-w-0">
-                <p className={`break-words text-[15px] font-bold leading-snug ${selected ? 'text-foreground' : 'text-slate-950'}`}>
-                  {ticket.title}
-                </p>
-                <p className={`mt-1 line-clamp-2 break-words text-sm leading-6 ${selected ? 'text-secondary-foreground' : 'text-slate-500'}`}>
-                  {ticket.description}
-                </p>
-              </div>
+                <div className="min-w-0">
+                  <p className={`break-words text-[15px] font-bold leading-snug ${selected ? 'text-foreground' : 'text-slate-950'}`}>
+                    {ticket.title}
+                  </p>
+                  <p className={`mt-1 line-clamp-2 break-words text-sm leading-6 ${selected ? 'text-secondary-foreground' : 'text-slate-500'}`}>
+                    {ticket.description}
+                  </p>
+                </div>
 
-              <div className={`flex flex-wrap gap-x-3 gap-y-1.5 text-[13px] ${selected ? 'text-secondary-foreground' : 'text-slate-500'}`}>
-                <span className="inline-flex min-w-0 items-center gap-1">
-                  <Building2 className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">
-                    {ticket.building.name} • {ticket.unit.number}
+                <div className={`flex flex-wrap gap-x-3 gap-y-1.5 text-[13px] ${selected ? 'text-secondary-foreground' : 'text-slate-500'}`}>
+                  <span className="inline-flex min-w-0 items-center gap-1">
+                    <Building2 className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">
+                      {ticket.building.name} • {ticket.unit.number}
+                    </span>
                   </span>
-                </span>
-                <span className="inline-flex min-w-0 items-center gap-1">
-                  <UserRound className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{ticket.residentName}</span>
-                </span>
+                  <span className="inline-flex min-w-0 items-center gap-1">
+                    <UserRound className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{ticket.residentName}</span>
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <div className={`grid gap-2 sm:grid-cols-2 lg:w-[220px] lg:shrink-0 lg:grid-cols-1 ${selected ? 'text-secondary-foreground' : 'text-slate-600'}`}>
-              <div className="rounded-xl border border-current/10 bg-white/45 px-3 py-2 text-sm">
-                <p className="text-[11px] opacity-60">מטפל</p>
-                <p className="mt-0.5 truncate font-semibold">{ticket.assignedTo?.email || 'לא הוקצה'}</p>
-              </div>
-              <div className="flex items-center justify-between gap-1.5 text-sm">
-                <span className="inline-flex items-center gap-1 rounded-xl border border-current/10 px-2.5 py-1.5">
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  {ticket.commentCount}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-xl border border-current/10 px-2.5 py-1.5">
-                  <Camera className="h-3.5 w-3.5" />
-                  {ticket.photoCount}
-                </span>
-                <span className="text-xs opacity-70">{formatRelative(ticket.latestActivityAt)}</span>
+              <div className={`grid gap-2 sm:grid-cols-2 lg:w-[220px] lg:shrink-0 lg:grid-cols-1 ${selected ? 'text-secondary-foreground' : 'text-slate-600'}`}>
+                <div className="rounded-xl border border-current/10 bg-white/45 px-3 py-2 text-sm">
+                  <p className="text-[11px] opacity-60">מטפל</p>
+                  <p className="mt-0.5 truncate font-semibold">{ticket.assignedTo?.email || 'לא הוקצה'}</p>
+                </div>
+                <div className="flex items-center justify-between gap-1.5 text-sm">
+                  <span className="inline-flex items-center gap-1 rounded-xl border border-current/10 px-2.5 py-1.5">
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    {ticket.commentCount}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-xl border border-current/10 px-2.5 py-1.5">
+                    <Camera className="h-3.5 w-3.5" />
+                    {ticket.photoCount}
+                  </span>
+                  <span className="text-xs opacity-70">{formatRelative(ticket.latestActivityAt)}</span>
+                </div>
               </div>
             </div>
-          </div>
-        </button>
+          </button>
+        </MobileSwipeActionCard>
       </div>
+      <MobileRowActionsSheet
+        title={`קריאה #${ticket.id}`}
+        description={ticket.title}
+        actions={actions}
+        open={actionsOpen}
+        onOpenChange={setActionsOpen}
+        hideTrigger
+      />
     </div>
   );
 }

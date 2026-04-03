@@ -152,6 +152,9 @@ export default function Header({
   const mobileContext = useMemo(() => getMobileRouteContext(router.pathname), [router.pathname]);
   const MobileContextIcon = mobileContext.icon;
   const isResidentMobileRoute = /^\/resident\/(account|building|payment-methods|requests)/.test(router.pathname);
+  const mobileContextAriaLabel = mobileContext.subtitle
+    ? `${mobileContext.title} — ${mobileContext.subtitle}`
+    : mobileContext.title;
 
   const navigateToInbox = () => {
     setPreviewOpen(false);
@@ -164,34 +167,35 @@ export default function Header({
       className
     )}>
       <div className="container px-3 sm:px-6">
-        <div className="flex items-center gap-1.5 py-2 md:hidden" style={{ maxWidth: '100vw' }}>
+        <div className="flex items-center gap-1.5 py-1.5 md:hidden" style={{ maxWidth: '100vw' }}>
           <Button
             variant="outline"
             size="icon"
             onClick={onMenuClick}
-            className="mobile-touch-strip h-10 w-10 shrink-0 border-0 px-0 shadow-none shell-frost touch-manipulation"
+            className="mobile-touch-strip h-9 w-9 shrink-0 border-0 px-0 shadow-none shell-frost touch-manipulation"
             aria-label="פתח תפריט"
           >
             <Menu className="h-4 w-4" />
           </Button>
 
-          <Link
-            href={isResidentMobileRoute ? '/resident/account' : router.pathname === '/home' ? '/home' : router.asPath}
-            className="mobile-shell-panel flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 touch-manipulation"
-            aria-label={mobileContext.title}
-          >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[14px] bg-primary/10 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.28)]">
-              <MobileContextIcon className="h-4 w-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-[9px] font-medium uppercase tracking-[0.15em] text-tertiary">{t('app.shortName')}</div>
-              <div className="truncate text-[14px] font-semibold leading-tight text-foreground">{mobileContext.title}</div>
-              <div className="truncate text-[10px] leading-tight text-muted-foreground">{mobileContext.subtitle}</div>
-            </div>
-          </Link>
+          <div className="mobile-shell-panel flex min-w-0 flex-1 items-center gap-2 px-2.5 py-1.5 touch-manipulation">
+            <Link
+              href={isResidentMobileRoute ? '/resident/account' : router.pathname === '/home' ? '/home' : router.asPath}
+              className="flex min-w-0 flex-1 items-center gap-2"
+              aria-label={mobileContextAriaLabel}
+            >
+              <div className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-[12px] bg-primary/10 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.28)]">
+                <MobileContextIcon className="h-3.5 w-3.5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] font-semibold leading-tight text-foreground">{mobileContext.title}</div>
+                {mobileContext.subtitle ? <div className="truncate text-[10px] leading-tight text-muted-foreground">{mobileContext.subtitle}</div> : null}
+              </div>
+            </Link>
+          </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            <Link href="/notifications" className="relative mobile-shell-panel flex h-10 w-10 shrink-0 items-center justify-center rounded-[18px] border touch-manipulation">
+            <Link href="/notifications" className="relative mobile-shell-panel flex h-9 w-9 min-h-9 min-w-9 shrink-0 items-center justify-center rounded-[16px] border touch-manipulation">
               <Bell className="h-4 w-4 text-foreground" />
               {unreadCount > 0 && (
                 <span className="absolute -end-0.5 -top-0.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
@@ -200,7 +204,7 @@ export default function Header({
               )}
             </Link>
 
-            <div className="mobile-shell-panel shrink-0 rounded-full border p-0.5 touch-manipulation">
+            <div className="mobile-shell-panel flex h-9 w-9 min-h-9 min-w-9 shrink-0 items-center justify-center rounded-full border p-0.5 touch-manipulation [&>button]:h-full [&>button]:w-full">
               <UserMenu />
             </div>
           </div>

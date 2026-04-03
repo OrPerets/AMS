@@ -3,15 +3,19 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { MoreHorizontal } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
 import { getTokenPayload, normalizeRole } from '../../lib/auth';
 import { useRegisterBottomSurface } from '../../lib/bottom-surface';
-import { trackNavigationBacktrackChurn, trackNavigationMisclickLoop } from '../../lib/analytics';
+import { trackLiveEventNavigationFollow, trackNavigationBacktrackChurn, trackNavigationDedupeSuppressed, trackNavigationMisclickLoop } from '../../lib/analytics';
 import { getNavigationModel, getRecentShortcutHrefs, recordRecentShortcut, validateMobileLabelConsistency, type NavigationItem } from '../../lib/navigation';
 import { AmsCommandDrawer, type AmsCommandDrawerItem } from '../ui/ams-command-drawer';
+import { MOBILE_MORE_SHARED_LAYOUT_IDS } from '../ui/mobile-more-shared-layout';
+import { subscribeUIInteraction } from '../../lib/ui-interaction-bus';
+import { useAnimatedNumber } from '../../hooks/use-animated-number';
+import { resolveRouteTransitionTokensByHref } from '../../lib/route-transition-contract';
 
 const MISCLICK_WINDOW_MS = 10_000;
 const CHURN_WINDOW_MS = 90_000;
@@ -24,9 +28,14 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   const [commandQuery, setCommandQuery] = useState('');
   const [mounted, setMounted] = useState(false);
   const [recentShortcuts, setRecentShortcuts] = useState<string[]>([]);
+  const [liveAttention, setLiveAttention] = useState(false);
+  const [activePathname, setActivePathname] = useState(router.pathname);
+  const prefersReducedMotion = useReducedMotion();
   const navigationTrailRef = React.useRef<Array<{ path: string; timestamp: number }>>([]);
   const lastTrackedChurnRef = React.useRef<string | null>(null);
+  const latestLiveEventRef = React.useRef<{ eventType: string; sourceSurface: string; destinationSurface: string; timestamp: number } | null>(null);
   const { refCallback: navRef } = useRegisterBottomSurface('mobile-bottom-nav', 'essential');
+  const animatedUnread = useAnimatedNumber(unreadNotifications);
 
   useEffect(() => {
     setMounted(true);
@@ -43,6 +52,71 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
     setRecentShortcuts(getRecentShortcutHrefs());
   }, [router.asPath, moreOpen]);
 
+  useEffect(() => {
+    const settleTimeouts = new Set<number>();
+    const handleRouteChangeStart = (url: string) => {
+      const sourceHasMorph = Boolean(resolveRouteTransitionTokensByHref(router.asPath));
+      const destinationHasMorph = Boolean(resolveRouteTransitionTokensByHref(url));
+      if (!(sourceHasMorph && destinationHasMorph)) {
+        setActivePathname(router.pathname);
+      }
+    };
+    const handleRouteChangeComplete = (url: string) => {
+      const sourceHasMorph = Boolean(resolveRouteTransitionTokensByHref(router.asPath));
+      const destinationHasMorph = Boolean(resolveRouteTransitionTokensByHref(url));
+      if (!(sourceHasMorph && destinationHasMorph) || prefersReducedMotion) {
+        setActivePathname(router.pathname);
+        return;
+      }
+      const timeout = window.setTimeout(() => {
+        setActivePathname(router.pathname);
+        settleTimeouts.delete(timeout);
+      }, 150);
+      settleTimeouts.add(timeout);
+    };
+
+    router.events.on('routeChangeStart', handleRouteChangeStart);
+    router.events.on('routeChangeComplete', handleRouteChangeComplete);
+    router.events.on('routeChangeError', handleRouteChangeComplete);
+
+    return () => {
+      settleTimeouts.forEach((timeout) => window.clearTimeout(timeout));
+      settleTimeouts.clear();
+      router.events.off('routeChangeStart', handleRouteChangeStart);
+      router.events.off('routeChangeComplete', handleRouteChangeComplete);
+      router.events.off('routeChangeError', handleRouteChangeComplete);
+    };
+  }, [prefersReducedMotion, router.asPath, router.events, router.pathname]);
+
+  useEffect(() => {
+    const timeouts = new Set<number>();
+    const unsubscribe = subscribeUIInteraction((event) => {
+      if (event.name !== 'live_event_received') return;
+      const destinationSurface = String(event.payload.destinationSurface ?? '');
+      if (!destinationSurface || (!destinationSurface.includes('/notifications') && !destinationSurface.includes('/tickets'))) {
+        return;
+      }
+      setLiveAttention(true);
+      latestLiveEventRef.current = {
+        eventType: String(event.payload.eventType ?? 'unknown'),
+        sourceSurface: String(event.payload.sourceSurface ?? 'websocket'),
+        destinationSurface,
+        timestamp: event.timestamp,
+      };
+      const timeout = window.setTimeout(() => {
+        setLiveAttention(false);
+        timeouts.delete(timeout);
+      }, 4200);
+      timeouts.add(timeout);
+    });
+
+    return () => {
+      unsubscribe();
+      timeouts.forEach((timeout) => window.clearTimeout(timeout));
+      timeouts.clear();
+    };
+  }, []);
+
   if (!mounted) return null;
 
   const roleConfig = getNavigationModel(userRole, t);
@@ -54,14 +128,18 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
       console.warn('[navigation] Mobile label consistency issues detected', issues);
     }
   }
-  const topActionItems = primaryItems.map((item) => ({
-    id: item.id,
-    title: item.title,
-    href: item.href,
-    icon: item.icon,
-    hint: item.hint,
-    badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
-  }));
+  const topActionItems = dedupeCommandItemsByHref(
+    primaryItems.map((item) => ({
+      id: item.id,
+      title: item.title,
+      href: item.href,
+      icon: item.icon,
+      hint: item.hint,
+      badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
+    })),
+    userRole,
+    'top_actions',
+  );
   const allToolsItems = moreGroups.flatMap((group) =>
     group.items.map((item) => ({
       id: item.id,
@@ -72,34 +150,44 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
       badge: item.href === '/notifications' && unreadNotifications > 0 ? unreadNotifications : undefined,
     })),
   );
-  const recentItems = recentShortcuts
-    .map((href) => [...primaryItems, ...allToolsItems].find((item) => item.href === href))
-    .filter((item): item is NavigationItem & { badge?: React.ReactNode } => Boolean(item));
-  const commandSections = allToolsItems.length
+  const dedupedToolItems = dedupeCommandItemsByHref(allToolsItems, userRole, 'section_all_tools');
+  const recentItems = dedupeCommandItemsByHref(
+    recentShortcuts
+      .map((href) => [...primaryItems, ...dedupedToolItems].find((item) => item.href === href))
+      .filter((item): item is NavigationItem & { badge?: React.ReactNode } => Boolean(item)),
+    userRole,
+    'recent_items',
+  );
+  const commandSections = dedupedToolItems.length
     ? [
         {
           id: 'all-tools',
           title: 'כל הכלים',
-          items: allToolsItems,
+          items: dedupedToolItems,
         },
       ]
     : [];
-  const priorityItems = buildPriorityItems({
-    role: userRole,
-    primaryItems,
-    allToolsItems,
-    unreadNotifications,
-    t,
-  });
+  const priorityItems = dedupeCommandItemsByHref(
+    buildPriorityItems({
+      role: userRole,
+      primaryItems,
+      allToolsItems: dedupedToolItems,
+      unreadNotifications,
+      t,
+    }),
+    userRole,
+    'priority_items',
+  );
   const isActive = (href: string) => {
     const [path, query] = href.split('?');
     if (query) {
       return router.asPath === href;
     }
-    return router.pathname === path || (path !== '/home' && router.pathname.startsWith(path));
+    return activePathname === path || (path !== '/home' && activePathname.startsWith(path));
   };
 
   const isMoreRouteActive = moreGroups.some((group) => group.items.some((item) => isActive(item.href)));
+  const shouldUseSharedLayout = !prefersReducedMotion;
 
   const trackPotentialChurn = (nextPath: string) => {
     const now = Date.now();
@@ -133,6 +221,16 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
     }
 
     trackPotentialChurn(href);
+    const lastLive = latestLiveEventRef.current;
+    if (lastLive && href.startsWith(lastLive.destinationSurface)) {
+      trackLiveEventNavigationFollow({
+        eventType: lastLive.eventType,
+        sourceSurface: lastLive.sourceSurface,
+        destinationSurface: lastLive.destinationSurface,
+        elapsedMs: Date.now() - lastLive.timestamp,
+      });
+      latestLiveEventRef.current = null;
+    }
     setRecentShortcuts(getRecentShortcutHrefs(now));
     setMoreOpen(false);
     setCommandQuery('');
@@ -195,20 +293,52 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
             aria-controls="mobile-more-sheet"
           >
             {moreOpen || isMoreRouteActive ? (
-              <span className="gold-active-pill gold-current-pulse absolute inset-0 rounded-[20px] shadow-[0_18px_30px_-24px_rgba(84,58,15,0.52)]" />
+              shouldUseSharedLayout ? (
+                <motion.span
+                  layoutId={MOBILE_MORE_SHARED_LAYOUT_IDS.pill}
+                  className="gold-active-pill gold-current-pulse absolute inset-0 rounded-[20px] shadow-[0_18px_30px_-24px_rgba(84,58,15,0.52)]"
+                />
+              ) : (
+                <span className="gold-active-pill gold-current-pulse absolute inset-0 rounded-[20px] shadow-[0_18px_30px_-24px_rgba(84,58,15,0.52)]" />
+              )
             ) : null}
             <span className={cn('relative z-10 flex h-[32px] w-[32px] items-center justify-center rounded-[15px] transition-[color,transform,background-color,box-shadow] duration-200', moreOpen || isMoreRouteActive ? 'bg-white/78 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_10px_18px_-14px_rgba(84,58,15,0.38)]' : 'text-muted-foreground')}>
-              <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
-              {unreadNotifications > 0 ? (
-                <motion.span
-                  key={unreadNotifications}
-                  initial={{ scale: 0.95, opacity: 0.82 }}
-                  animate={{ scale: [1, 1.16, 1], opacity: [0.9, 1, 0.95] }}
-                  transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground shadow-[0_10px_18px_-12px_rgba(153,27,27,0.75)]"
-                >
-                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
+              {shouldUseSharedLayout ? (
+                <motion.span layoutId={MOBILE_MORE_SHARED_LAYOUT_IDS.icon} className="inline-flex h-[18px] w-[18px] items-center justify-center">
+                  <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
                 </motion.span>
+              ) : (
+                <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              )}
+              {unreadNotifications > 0 ? (
+                shouldUseSharedLayout ? (
+                  <motion.span
+                    key={unreadNotifications}
+                    layoutId={MOBILE_MORE_SHARED_LAYOUT_IDS.badge}
+                    initial={{ scale: 0.95, opacity: 0.82 }}
+                    animate={{ scale: [1, 1.16, 1], opacity: [0.9, 1, 0.95] }}
+                    transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+                    className={cn(
+                      "absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground shadow-[0_10px_18px_-12px_rgba(153,27,27,0.75)]",
+                      liveAttention && "animate-pulse",
+                    )}
+                  >
+                    {animatedUnread > 9 ? '9+' : Math.round(animatedUnread)}
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key={unreadNotifications}
+                    initial={{ scale: 0.95, opacity: 0.82 }}
+                    animate={{ scale: [1, 1.16, 1], opacity: [0.9, 1, 0.95] }}
+                    transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+                    className={cn(
+                      "absolute -end-1.5 -top-0.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-destructive px-0.5 text-[8px] font-bold text-destructive-foreground shadow-[0_10px_18px_-12px_rgba(153,27,27,0.75)]",
+                      liveAttention && "animate-pulse",
+                    )}
+                  >
+                    {animatedUnread > 9 ? '9+' : Math.round(animatedUnread)}
+                  </motion.span>
+                )
               ) : null}
             </span>
             <span className="relative z-10 text-center leading-tight">
@@ -240,6 +370,20 @@ export default function MobileBottomNav({ className, unreadNotifications = 0 }: 
   );
 }
 
+
+function dedupeCommandItemsByHref<T extends { href: string }>(items: T[], role: string, section: string): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (!item.href) return false;
+    if (seen.has(item.href)) {
+      trackNavigationDedupeSuppressed(role, section, item.href);
+      return false;
+    }
+    seen.add(item.href);
+    return true;
+  });
+}
+
 function toCommandItem(item: NavigationItem & { badge?: React.ReactNode }): AmsCommandDrawerItem {
   return {
     id: item.id,
@@ -250,6 +394,14 @@ function toCommandItem(item: NavigationItem & { badge?: React.ReactNode }): AmsC
     badge: item.badge,
   };
 }
+
+const OVERDUE_ACTION_HREFS_BY_ROLE: Record<string, string[]> = {
+  ADMIN: ['/tickets', '/admin/approvals'],
+  PM: ['/tickets', '/operations/calendar'],
+  TECH: ['/tech/jobs', '/tickets?mine=true'],
+  ACCOUNTANT: ['/payments', '/finance/budgets'],
+  RESIDENT: ['/payments/resident', '/resident/requests'],
+};
 
 function buildPriorityItems({
   role,
@@ -282,34 +434,13 @@ function buildPriorityItems({
   };
 
   if (unreadNotifications > 0) {
-    addItem('/notifications', 'לא נקראו', unreadNotifications > 9 ? '9+' : unreadNotifications);
+    addItem('/notifications', 'דחוף · לא נקראו', unreadNotifications > 9 ? '9+' : unreadNotifications);
   }
 
-  switch (role) {
-    case 'ADMIN':
-      addItem('/tickets', 'תפעול');
-      addItem('/admin/approvals', 'ממתין');
-      break;
-    case 'PM':
-      addItem('/tickets', 'שיוך');
-      addItem('/operations/calendar', 'היום');
-      break;
-    case 'TECH':
-      addItem('/tech/jobs', 'הבא בתור');
-      addItem('/tickets?mine=true', 'עדכון');
-      break;
-    case 'ACCOUNTANT':
-      addItem('/payments', 'גבייה');
-      addItem('/finance/budgets', 'בדיקה');
-      break;
-    case 'RESIDENT':
-    default:
-      addItem('/payments/resident', 'לטיפול');
-      addItem('/resident/requests', 'מעקב');
-      break;
-  }
+  const overdueRoutes = OVERDUE_ACTION_HREFS_BY_ROLE[role] ?? OVERDUE_ACTION_HREFS_BY_ROLE.RESIDENT;
+  overdueRoutes.forEach((href) => addItem(href, 'לטיפול · באיחור'));
 
-  return items.slice(0, 3).map((item) => ({
+  return items.slice(0, 2).map((item) => ({
     ...item,
     title: item.href === '/notifications' ? t('nav.notifications') : item.title,
   }));

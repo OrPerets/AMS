@@ -22,7 +22,16 @@ type AnalyticsEventName =
   | 'onboarding_dismiss'
   | 'page_view'
   | 'navigation_misclick_loop'
-  | 'navigation_backtrack_churn';
+  | 'navigation_backtrack_churn'
+  | 'navigation_dedupe_suppressed'
+  | 'interaction_started'
+  | 'interaction_threshold_reached'
+  | 'interaction_committed'
+  | 'interaction_undone'
+  | 'interaction_cancelled'
+  | 'live_event_received'
+  | 'live_event_reaction_rendered'
+  | 'live_event_navigation_follow';
 
 type AnalyticsPayload = Record<string, string | number | boolean | null | undefined>;
 
@@ -159,5 +168,90 @@ export function trackNavigationBacktrackChurn(role: string, routeA: string, rout
     routeB,
     switches: Math.max(0, Math.round(switches)),
     windowMs: Math.max(0, Math.round(windowMs)),
+  });
+}
+
+export function trackNavigationDedupeSuppressed(role: string, section: string, href: string) {
+  trackEvent('navigation_dedupe_suppressed', {
+    role,
+    section,
+    href,
+  });
+}
+
+
+type InteractionLifecycleEvent =
+  | 'interaction_started'
+  | 'interaction_threshold_reached'
+  | 'interaction_committed'
+  | 'interaction_undone'
+  | 'interaction_cancelled';
+
+export function trackInteractionLifecycle(
+  event: InteractionLifecycleEvent,
+  context: {
+    role?: string | null;
+    pathname: string;
+    sourceSurface: string;
+    destinationSurface?: string | null;
+    interactionType: string;
+    interactionId?: string;
+    tone?: string;
+    cancelledAfterThreshold?: boolean;
+  },
+) {
+  trackEvent(event, {
+    role: context.role ?? undefined,
+    pathname: context.pathname,
+    sourceSurface: context.sourceSurface,
+    destinationSurface: context.destinationSurface ?? undefined,
+    interactionType: context.interactionType,
+    interactionId: context.interactionId ?? undefined,
+    tone: context.tone ?? undefined,
+    cancelledAfterThreshold: context.cancelledAfterThreshold ?? undefined,
+  });
+}
+
+export function trackLiveEventReceived(context: {
+  eventType: string;
+  sourceSurface: string;
+  destinationSurface?: string | null;
+  urgency?: string;
+  role?: string | null;
+}) {
+  trackEvent('live_event_received', {
+    eventType: context.eventType,
+    sourceSurface: context.sourceSurface,
+    destinationSurface: context.destinationSurface ?? undefined,
+    urgency: context.urgency ?? undefined,
+    role: context.role ?? undefined,
+  });
+}
+
+export function trackLiveEventReactionRendered(context: {
+  eventType: string;
+  surface: string;
+  reactionLatencyMs: number;
+  destinationSurface?: string | null;
+}) {
+  trackEvent('live_event_reaction_rendered', {
+    eventType: context.eventType,
+    surface: context.surface,
+    destinationSurface: context.destinationSurface ?? undefined,
+    reactionLatencyMs: Math.max(0, Math.round(context.reactionLatencyMs)),
+  });
+}
+
+export function trackLiveEventNavigationFollow(context: {
+  eventType: string;
+  sourceSurface: string;
+  destinationSurface: string;
+  elapsedMs: number;
+}) {
+  trackEvent('live_event_navigation_follow', {
+    eventType: context.eventType,
+    sourceSurface: context.sourceSurface,
+    destinationSurface: context.destinationSurface,
+    elapsedMs: Math.max(0, Math.round(context.elapsedMs)),
   });
 }

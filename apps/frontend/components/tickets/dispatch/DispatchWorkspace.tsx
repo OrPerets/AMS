@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { authFetch, getCurrentUserId, getEffectiveRole, hasRoleAccess } from '../../../lib/auth';
 import { CompactStatusStrip } from '../../ui/compact-status-strip';
@@ -30,6 +31,8 @@ import type {
 } from './types';
 import { usePullToRefresh } from '../../../hooks/use-pull-to-refresh';
 import { triggerHaptic } from '../../../lib/mobile';
+import { getRouteTransitionTokensByKey } from '../../../lib/route-transition-contract';
+import { MOTION_DISTANCE, MOTION_DURATION, MOTION_EASE } from '../../../lib/motion-tokens';
 
 const defaultCreateForm = {
   buildingId: '',
@@ -43,6 +46,12 @@ const defaultCreateForm = {
 
 export function DispatchWorkspace() {
   const router = useRouter();
+  const prefersReducedMotion = useReducedMotion();
+  const transitionTokens = getRouteTransitionTokensByKey('tickets');
+  const containerLayoutId = prefersReducedMotion ? undefined : transitionTokens.container;
+  const headerLayoutId = prefersReducedMotion ? undefined : transitionTokens.header;
+  const iconLayoutId = prefersReducedMotion ? undefined : transitionTokens.icon;
+  const badgeLayoutId = prefersReducedMotion ? undefined : transitionTokens.badge;
   const searchRef = useRef<HTMLInputElement>(null);
   const technicianTriggerRef = useRef<HTMLButtonElement>(null);
   const statusTriggerRef = useRef<HTMLButtonElement>(null);
@@ -87,6 +96,13 @@ export function DispatchWorkspace() {
   const [escalating, setEscalating] = useState(false);
   const [triagePreview, setTriagePreview] = useState<SmartTriagePreview | null>(null);
   const [triageLoading, setTriageLoading] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const [updatedTicketIds, setUpdatedTicketIds] = useState<Set<number>>(new Set());
+  const [refreshDeltaCount, setRefreshDeltaCount] = useState<number | null>(null);
+  const [refreshDeltaSummary, setRefreshDeltaSummary] = useState<{ added?: number; updated?: number; unchanged?: boolean } | null>(null);
+  const lastPayloadSignaturesRef = useRef<Map<number, string>>(new Map());
+  const rowHighlightTimeoutRef = useRef<number | null>(null);
+  const deltaTimeoutRef = useRef<number | null>(null);
 
   const allPresets = useMemo(() => [...BUILTIN_PRESETS, ...customPresets], [customPresets]);
   const selectedTicket = useMemo(
@@ -154,6 +170,17 @@ export function DispatchWorkspace() {
     } else {
       setVendors([]);
     }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (rowHighlightTimeoutRef.current) {
+        window.clearTimeout(rowHighlightTimeoutRef.current);
+      }
+      if (deltaTimeoutRef.current) {
+        window.clearTimeout(deltaTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -268,14 +295,16 @@ export function DispatchWorkspace() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [canDispatch, selectedTicket, dispatchData?.items]);
 
-  const { pullDistance, isRefreshing } = usePullToRefresh({
+  const { pullDistance, pullProgress, isRefreshing, threshold } = usePullToRefresh({
     enabled: Boolean(dispatchData),
+    preset: 'dashboard',
+    onThresholdReached: () => triggerHaptic('light'),
     onRefresh: async () => {
-      await loadDispatch(selectedTicket?.id);
+      await loadDispatch(selectedTicket?.id, { revealDelta: true });
     },
   });
 
-  async function loadDispatch(preferredTicketId?: number) {
+  async function loadDispatch(preferredTicketId?: number, options?: { revealDelta?: boolean }) {
     try {
       setLoading((current) => current && !dispatchData);
       setRefreshing(true);
@@ -300,7 +329,56 @@ export function DispatchWorkspace() {
       }
 
       const payload = (await response.json()) as DispatchResponse;
+      const previousSignatures = lastPayloadSignaturesRef.current;
+      const nextSignatures = new Map<number, string>();
+      const changedIds: number[] = [];
+      let addedCount = 0;
+      let updatedCount = 0;
+      payload.items.forEach((ticket) => {
+        const signature = [
+          ticket.status,
+          ticket.severity,
+          ticket.slaState,
+          ticket.assignedTo?.id ?? 'none',
+          ticket.latestActivityAt ?? 'none',
+          ticket.commentCount,
+          ticket.photoCount,
+        ].join('|');
+        nextSignatures.set(ticket.id, signature);
+        const previousSignature = previousSignatures.get(ticket.id);
+        if (!previousSignature || previousSignature !== signature) {
+          changedIds.push(ticket.id);
+          if (!previousSignature) {
+            addedCount += 1;
+          } else {
+            updatedCount += 1;
+          }
+        }
+      });
+      previousSignatures.forEach((_signature, ticketId) => {
+        if (!nextSignatures.has(ticketId)) {
+          changedIds.push(ticketId);
+        }
+      });
+      lastPayloadSignaturesRef.current = nextSignatures;
       setDispatchData(payload);
+      setLastSyncedAt(Date.now());
+      if (rowHighlightTimeoutRef.current) {
+        window.clearTimeout(rowHighlightTimeoutRef.current);
+      }
+      setUpdatedTicketIds(new Set(changedIds));
+      rowHighlightTimeoutRef.current = window.setTimeout(() => setUpdatedTicketIds(new Set()), 2200);
+      if (options?.revealDelta) {
+        setRefreshDeltaCount(changedIds.length);
+        setRefreshDeltaSummary({ added: addedCount, updated: updatedCount, unchanged: changedIds.length === 0 });
+        if (deltaTimeoutRef.current) {
+          window.clearTimeout(deltaTimeoutRef.current);
+        }
+        deltaTimeoutRef.current = window.setTimeout(() => {
+          setRefreshDeltaCount(null);
+          setRefreshDeltaSummary(null);
+        }, 1800);
+      }
       const nextId =
         preferredTicketId && payload.items.some((ticket) => ticket.id === preferredTicketId)
           ? preferredTicketId
@@ -804,29 +882,81 @@ export function DispatchWorkspace() {
     );
   }
 
+  if (!dispatchData) {
+    return (
+      <div className="rounded-3xl border border-subtle-border bg-surface p-6 text-center shadow-elevation-sm">
+        <h2 className="text-lg font-semibold text-foreground">טעינת לוח הקריאות נכשלה</h2>
+        <p className="mt-2 text-sm text-muted-foreground">לא הצלחנו להביא את הנתונים כרגע. אפשר לרענן ולנסות שוב.</p>
+        <Button className="mt-4" onClick={() => void loadDispatch()}>
+          נסה שוב
+        </Button>
+      </div>
+    );
+  }
+
   const selectedPresetName = allPresets.find((preset) => preset.id === selectedPresetId)?.name ?? 'תצוגה מותאמת';
   const roleLabel = currentRole === 'PM' ? 'מנהל נכס' : currentRole === 'MASTER' ? 'מנהל ראשי' : 'מנהל מערכת';
+  const canopyShift = prefersReducedMotion ? 0 : Math.min(pullDistance * 0.18, 14);
+  const canopyScale = prefersReducedMotion ? 1 : 1 - pullProgress * 0.012;
 
   return (
     <div className="space-y-5 pb-4 sm:space-y-6">
-      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label="משוך כדי לרענן את לוח הקריאות" />
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        isRefreshing={isRefreshing}
+        deltaChipCount={refreshDeltaCount}
+        deltaSummary={refreshDeltaSummary}
+        threshold={threshold}
+        label="משוך כדי לרענן את לוח הקריאות"
+      />
 
-      <div className="space-y-3 md:hidden">
+      <motion.div
+        layoutId={containerLayoutId}
+        initial={prefersReducedMotion ? undefined : { borderRadius: 24 }}
+        animate={prefersReducedMotion ? undefined : { borderRadius: 24 }}
+        className="space-y-3 md:hidden"
+        style={{
+          transform: `translateY(${canopyShift}px) scale(${canopyScale})`,
+          transformOrigin: '50% 0%',
+        }}
+      >
+        <motion.div layoutId={headerLayoutId} className="flex items-center justify-between rounded-2xl border border-subtle-border bg-background/76 px-3 py-2">
+          <motion.span
+            layoutId={iconLayoutId}
+            initial={prefersReducedMotion ? { opacity: 0.94 } : false}
+            animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+            transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-primary/16 bg-primary/10 text-primary"
+          >
+            <Plus className="h-4 w-4" />
+          </motion.span>
+          <motion.span
+            layoutId={badgeLayoutId}
+            initial={prefersReducedMotion ? { opacity: 0.92 } : false}
+            animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+            transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+            className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
+          >
+            {dispatchData?.summary.open ?? 0} פתוחות
+          </motion.span>
+        </motion.div>
         <CompactStatusStrip
           roleLabel={roleLabel}
           tone="admin"
+          lastSyncedAt={lastSyncedAt}
           metrics={[
             { id: 'open', label: 'פתוחות', value: dispatchData?.summary.open ?? 0, tone: (dispatchData?.summary.open ?? 0) > 0 ? 'warning' : 'success' },
             { id: 'sla', label: 'SLA', value: dispatchData?.summary.breached ?? 0, tone: (dispatchData?.summary.breached ?? 0) > 0 ? 'danger' : 'default' },
           ]}
         />
-      </div>
+      </motion.div>
 
       <div className="hidden md:block">
         <MobileContextBar
           roleLabel={roleLabel}
           contextLabel={selectedPresetName}
           syncLabel={refreshing ? 'מרענן עכשיו' : 'סנכרון חי'}
+          lastSyncedAt={lastSyncedAt}
           chips={[
             `${dispatchData?.summary.open ?? 0} פתוחות`,
             `${dispatchData?.summary.unassigned ?? 0} ללא שיוך`,
@@ -856,91 +986,99 @@ export function DispatchWorkspace() {
         onOpenHelp={() => setDialogs((current) => ({ ...current, help: true }))}
       />
 
-      <DispatchSavedViews
-        presets={allPresets}
-        selectedPresetId={selectedPresetId}
-        onSelectPreset={applyPresetById}
-        onOpenSaveDialog={() => setDialogs((current) => ({ ...current, savePreset: true }))}
-        onResetFilters={resetFilters}
-      />
-
-      <DispatchQueueTabs queue={filters.queue} queueCounts={dispatchData?.queueCounts ?? { TRIAGE: 0, UNASSIGNED: 0, SLA_RISK: 0, ACTIVE: 0, RESOLVED_RECENT: 0 }} onQueueChange={(value) => updateFilter('queue', value)} />
-
-      <section className="grid gap-6 xl:grid-cols-[0.85fr_1fr_0.78fr]">
-        <DispatchResultsList
-          dispatchData={dispatchData}
-          selectedTicketId={selectedTicket?.id ?? null}
-          selectedIds={selectedIds}
-          statusFilter={filters.statusFilter}
-          severityFilter={filters.severityFilter}
-          slaFilter={filters.slaFilter}
-          categoryFilter={filters.categoryFilter}
-          onStatusFilterChange={(value) => updateFilter('statusFilter', value)}
-          onSeverityFilterChange={(value) => updateFilter('severityFilter', value)}
-          onSlaFilterChange={(value) => updateFilter('slaFilter', value)}
-          onCategoryFilterChange={(value) => updateFilter('categoryFilter', value)}
+      <motion.div
+        initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: MOTION_DISTANCE.xs }}
+        animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        transition={{ delay: prefersReducedMotion ? 0 : 0.14, duration: MOTION_DURATION.moderate, ease: MOTION_EASE.emphasized }}
+        className="space-y-5"
+      >
+        <DispatchSavedViews
+          presets={allPresets}
+          selectedPresetId={selectedPresetId}
+          onSelectPreset={applyPresetById}
+          onOpenSaveDialog={() => setDialogs((current) => ({ ...current, savePreset: true }))}
           onResetFilters={resetFilters}
-          onSelectTicket={setSelectedTicketId}
-          onToggleTicket={toggleTicketSelection}
-          onToggleAllVisible={toggleAllVisible}
         />
 
-        <DispatchDetailPanel
-          ticket={selectedTicket}
-          canNavigatePrevious={Boolean(dispatchData?.items.length && selectedTicket && dispatchData.items.findIndex((ticket) => ticket.id === selectedTicket.id) > 0)}
-          canNavigateNext={Boolean(
-            dispatchData?.items.length &&
-              selectedTicket &&
-              dispatchData.items.findIndex((ticket) => ticket.id === selectedTicket.id) < dispatchData.items.length - 1,
-          )}
-          onNavigatePrevious={() => navigateTicketSelection(-1)}
-          onNavigateNext={() => navigateTicketSelection(1)}
-        />
+        <DispatchQueueTabs queue={filters.queue} queueCounts={dispatchData?.queueCounts ?? { TRIAGE: 0, UNASSIGNED: 0, SLA_RISK: 0, ACTIVE: 0, RESOLVED_RECENT: 0 }} onQueueChange={(value) => updateFilter('queue', value)} />
 
-        <DispatchActionRail
-          ticket={selectedTicket}
-          dispatchData={dispatchData}
-          technicians={technicianInsights}
-          vendors={vendors}
-          canDispatch={canDispatch}
-          assignmentTarget={assignmentTarget}
-          supplierTarget={supplierTarget}
-          statusTarget={statusTarget}
-          severityTarget={severityTarget}
-          costEstimate={costEstimate}
-          newNote={newNote}
-          bulkSelectionCount={selectedIds.length}
-          technicianTriggerRef={technicianTriggerRef}
-          statusTriggerRef={statusTriggerRef}
-          severityTriggerRef={severityTriggerRef}
-          onAssignmentTargetChange={setAssignmentTarget}
-          onSupplierTargetChange={setSupplierTarget}
-          onStatusTargetChange={setStatusTarget}
-          onSeverityTargetChange={setSeverityTarget}
-          onCostEstimateChange={setCostEstimate}
-          onNewNoteChange={setNewNote}
-          onAssignTechnician={() => void handleAssignTechnician(selectedTicket ? [selectedTicket.id] : [])}
-          onAssignSupplier={() => void handleAssignSupplier()}
-          onUpdateStatus={() => void handleUpdateStatus(selectedTicket ? [selectedTicket.id] : [])}
-          onUpdateSeverity={() => void handleUpdateSeverity(selectedTicket ? [selectedTicket.id] : [])}
-          onAddNote={() => void handleAddNote()}
-          onBulkAssignTechnician={() => void handleAssignTechnician(selectedIds)}
-          onBulkUpdateStatus={() => void handleUpdateStatus(selectedIds)}
-          onBulkUpdateSeverity={() => void handleUpdateSeverity(selectedIds)}
-          assigning={assigning}
-          assigningSupplier={assigningSupplier}
-          updatingStatus={updatingStatus}
-          updatingSeverity={updatingSeverity}
-          addingNote={addingNote}
-          escalating={escalating}
-          onEscalateTicket={() => void handleEscalateTicket()}
-          triagePreview={triagePreview}
-          triageLoading={triageLoading}
-          onRunTriage={() => void handleRunTriage()}
-          onApplyTriage={applyTriageSuggestion}
-          onUseDraftResponse={useDraftResponse}
-        />
-      </section>
+        <section className="grid gap-6 xl:grid-cols-[0.85fr_1fr_0.78fr]">
+          <DispatchResultsList
+            dispatchData={dispatchData}
+            selectedTicketId={selectedTicket?.id ?? null}
+            selectedIds={selectedIds}
+            statusFilter={filters.statusFilter}
+            severityFilter={filters.severityFilter}
+            slaFilter={filters.slaFilter}
+            categoryFilter={filters.categoryFilter}
+            onStatusFilterChange={(value) => updateFilter('statusFilter', value)}
+            onSeverityFilterChange={(value) => updateFilter('severityFilter', value)}
+            onSlaFilterChange={(value) => updateFilter('slaFilter', value)}
+            onCategoryFilterChange={(value) => updateFilter('categoryFilter', value)}
+            onResetFilters={resetFilters}
+            onSelectTicket={setSelectedTicketId}
+            onToggleTicket={toggleTicketSelection}
+            onToggleAllVisible={toggleAllVisible}
+            updatedTicketIds={updatedTicketIds}
+          />
+
+          <DispatchDetailPanel
+            ticket={selectedTicket}
+            canNavigatePrevious={Boolean(dispatchData?.items.length && selectedTicket && dispatchData.items.findIndex((ticket) => ticket.id === selectedTicket.id) > 0)}
+            canNavigateNext={Boolean(
+              dispatchData?.items.length &&
+                selectedTicket &&
+                dispatchData.items.findIndex((ticket) => ticket.id === selectedTicket.id) < dispatchData.items.length - 1,
+            )}
+            onNavigatePrevious={() => navigateTicketSelection(-1)}
+            onNavigateNext={() => navigateTicketSelection(1)}
+          />
+
+          <DispatchActionRail
+            ticket={selectedTicket}
+            dispatchData={dispatchData}
+            technicians={technicianInsights}
+            vendors={vendors}
+            canDispatch={canDispatch}
+            assignmentTarget={assignmentTarget}
+            supplierTarget={supplierTarget}
+            statusTarget={statusTarget}
+            severityTarget={severityTarget}
+            costEstimate={costEstimate}
+            newNote={newNote}
+            bulkSelectionCount={selectedIds.length}
+            technicianTriggerRef={technicianTriggerRef}
+            statusTriggerRef={statusTriggerRef}
+            severityTriggerRef={severityTriggerRef}
+            onAssignmentTargetChange={setAssignmentTarget}
+            onSupplierTargetChange={setSupplierTarget}
+            onStatusTargetChange={setStatusTarget}
+            onSeverityTargetChange={setSeverityTarget}
+            onCostEstimateChange={setCostEstimate}
+            onNewNoteChange={setNewNote}
+            onAssignTechnician={() => void handleAssignTechnician(selectedTicket ? [selectedTicket.id] : [])}
+            onAssignSupplier={() => void handleAssignSupplier()}
+            onUpdateStatus={() => void handleUpdateStatus(selectedTicket ? [selectedTicket.id] : [])}
+            onUpdateSeverity={() => void handleUpdateSeverity(selectedTicket ? [selectedTicket.id] : [])}
+            onAddNote={() => void handleAddNote()}
+            onBulkAssignTechnician={() => void handleAssignTechnician(selectedIds)}
+            onBulkUpdateStatus={() => void handleUpdateStatus(selectedIds)}
+            onBulkUpdateSeverity={() => void handleUpdateSeverity(selectedIds)}
+            assigning={assigning}
+            assigningSupplier={assigningSupplier}
+            updatingStatus={updatingStatus}
+            updatingSeverity={updatingSeverity}
+            addingNote={addingNote}
+            escalating={escalating}
+            onEscalateTicket={() => void handleEscalateTicket()}
+            triagePreview={triagePreview}
+            triageLoading={triageLoading}
+            onRunTriage={() => void handleRunTriage()}
+            onApplyTriage={applyTriageSuggestion}
+            onUseDraftResponse={useDraftResponse}
+          />
+        </section>
+      </motion.div>
 
       <DispatchDialogs
         helpOpen={dialogs.help}

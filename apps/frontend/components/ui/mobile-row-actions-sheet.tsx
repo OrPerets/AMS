@@ -34,15 +34,23 @@ export function MobileRowActionsSheet({
   actions,
   triggerLabel = 'פעולות נוספות',
   className,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
 }: {
   title: string;
   description?: string;
   actions: MobileRowActionItem[];
   triggerLabel?: string;
   className?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }) {
   const router = useRouter();
-  const [open, setOpen] = React.useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = onOpenChange ?? setUncontrolledOpen;
 
   const primaryActions = actions.filter((action) => action.tone !== 'danger');
   const destructiveActions = actions.filter((action) => action.tone === 'danger');
@@ -69,17 +77,19 @@ export function MobileRowActionsSheet({
 
   return (
     <>
-      <button
-        type="button"
-        className={cn(
-          'touch-target inline-flex h-11 w-11 items-center justify-center rounded-full border border-subtle-border bg-background/92 text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] transition hover:border-primary/22 hover:text-primary',
-          className,
-        )}
-        aria-label={triggerLabel}
-        onClick={() => setOpen(true)}
-      >
-        <MoreVertical className="h-4 w-4" strokeWidth={1.85} />
-      </button>
+      {!hideTrigger ? (
+        <button
+          type="button"
+          className={cn(
+            'touch-target inline-flex h-11 w-11 items-center justify-center rounded-full border border-subtle-border bg-background/92 text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] transition hover:border-primary/22 hover:text-primary',
+            className,
+          )}
+          aria-label={triggerLabel}
+          onClick={() => setOpen(true)}
+        >
+          <MoreVertical className="h-4 w-4" strokeWidth={1.85} />
+        </button>
+      ) : null}
 
       <AmsDrawer
         isOpen={open}
@@ -88,6 +98,10 @@ export function MobileRowActionsSheet({
         description={description}
         placement="bottom"
         size="lg"
+        enableSnapPoints
+        drawerKey="mobile-row-actions"
+        snapPoints={[0.32, 0.56, 0.88]}
+        defaultSnapPoint={0}
       >
         <div className="space-y-3 pb-2">
           {primaryActions.map((action) => {

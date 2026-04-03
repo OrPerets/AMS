@@ -4,6 +4,11 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, CheckCircle2, CircleAlert } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useMobileDepthEffect, useTouchHoldLift } from './mobile-card-effects';
+import { MOTION_DISTANCE, MOTION_SPRING } from '../../lib/motion-tokens';
+import { isMobileInteractionFeatureEnabled } from '../../lib/mobile-interaction-flags';
+import { resolveRouteTransitionTokensByHref } from '../../lib/route-transition-contract';
+import { MobileRowActionsSheet, type MobileRowActionItem } from './mobile-row-actions-sheet';
+import { useLongPressActions } from '../../hooks/use-long-press-actions';
 
 type PrimaryActionTone = 'default' | 'warning' | 'danger' | 'success';
 type PrimaryActionPulseMetric = {
@@ -13,6 +18,43 @@ type PrimaryActionPulseMetric = {
   meta?: string;
   tone?: PrimaryActionTone;
 };
+
+type LongPressActionType = 'tickets' | 'notifications' | 'requests' | 'jobs';
+
+const LONG_PRESS_CONTEXT_ACTIONS: Record<LongPressActionType, MobileRowActionItem[]> = {
+  tickets: [
+    { id: 'tickets-open', label: 'פתח קריאות', description: 'מעבר לכל הקריאות הפעילות.', href: '/tickets' },
+    { id: 'tickets-mine', label: 'הקריאות שלי', description: 'קריאות שמוקצות אליך.', href: '/tickets?mine=true' },
+  ],
+  notifications: [
+    { id: 'notifications-open', label: 'מרכז ההתראות', description: 'צפה בכל ההתראות האחרונות.', href: '/notifications' },
+    { id: 'notifications-action', label: 'דורש טיפול', description: 'סינון התראות עם פעולה פתוחה.', href: '/notifications?filter=needs_action' },
+  ],
+  requests: [
+    { id: 'requests-open', label: 'מעקב בקשות', description: 'מעבר לכל בקשות הדיירים.', href: '/resident/requests?view=history' },
+    { id: 'requests-new', label: 'בקשה חדשה', description: 'יצירה מהירה של בקשה חדשה.', href: '/create-call' },
+  ],
+  jobs: [
+    { id: 'jobs-open', label: 'תור משימות', description: 'צפייה בכל המשימות הפעילות.', href: '/tech/jobs' },
+    { id: 'jobs-today', label: 'משימות להיום', description: 'פתיחה מהירה של משימות היום.', href: '/tech/jobs?view=today' },
+  ],
+};
+
+function composeHandlers<T>(...handlers: Array<((event: T) => void) | undefined>) {
+  return (event: T) => {
+    handlers.forEach((handler) => handler?.(event));
+  };
+}
+
+function resolveActionType(href?: string, actionType?: LongPressActionType) {
+  if (actionType) return actionType;
+  const route = href?.split('?')[0] ?? '';
+  if (route.startsWith('/tickets')) return 'tickets';
+  if (route.startsWith('/notifications')) return 'notifications';
+  if (route.startsWith('/resident/requests')) return 'requests';
+  if (route.startsWith('/tech/jobs') || route.startsWith('/work-orders')) return 'jobs';
+  return null;
+}
 
 export function PrimaryActionCard({
   eyebrow,
@@ -30,6 +72,7 @@ export function PrimaryActionCard({
   visualStyle = 'default',
   density = 'default',
   pulseMetrics,
+  actionType,
 }: {
   eyebrow?: string;
   title: string;
@@ -46,18 +89,52 @@ export function PrimaryActionCard({
   visualStyle?: 'default' | 'resident' | 'pm' | 'admin';
   density?: 'default' | 'compact';
   pulseMetrics?: PrimaryActionPulseMetric[];
+  actionType?: LongPressActionType;
 }) {
   const reducedMotion = useReducedMotion();
+  const morphEnabled = isMobileInteractionFeatureEnabled('mobile-interactions-card-morph');
   const Icon = tone === 'success' ? CheckCircle2 : CircleAlert;
   const depthRef = useMobileDepthEffect(mobileHomeEffect);
+  const sharedTransitionTokens = resolveRouteTransitionTokensByHref(href);
+  const containerLayoutId = reducedMotion || !morphEnabled ? undefined : sharedTransitionTokens?.container;
+  const iconLayoutId = reducedMotion || !morphEnabled ? undefined : sharedTransitionTokens?.icon;
+  const badgeLayoutId = reducedMotion || !morphEnabled ? undefined : sharedTransitionTokens?.badge;
+  const titleLayoutId = reducedMotion || !morphEnabled ? undefined : sharedTransitionTokens?.title;
   const hold = useTouchHoldLift(true);
+  const [actionsOpen, setActionsOpen] = React.useState(false);
+  const resolvedActionType = resolveActionType(href, actionType);
+  const rowActions = React.useMemo<MobileRowActionItem[]>(() => {
+    const destinationActions = resolvedActionType ? LONG_PRESS_CONTEXT_ACTIONS[resolvedActionType] : [];
+    const quickOpenAction =
+      href || onClick
+        ? [
+            {
+              id: 'open-primary-action',
+              label: ctaLabel,
+              description: 'פתיחת הפעולה הראשית.',
+              tone: 'primary' as const,
+              ...(href ? { href } : { onSelect: onClick }),
+            },
+          ]
+        : [];
+    const dedupedContext = destinationActions.filter((action) => !href || action.href !== href);
+    return [...quickOpenAction, ...dedupedContext];
+  }, [ctaLabel, href, onClick, resolvedActionType]);
+  const { longPressProps } = useLongPressActions({
+    onLongPress: () => {
+      if (!rowActions.length) return;
+      setActionsOpen(true);
+    },
+  });
 
   const panel = (
+    <>
     <motion.div
+      layoutId={containerLayoutId}
       ref={depthRef as React.Ref<HTMLDivElement>}
       whileTap={reducedMotion ? undefined : { scale: 0.985 }}
-      animate={hold.isHolding && !reducedMotion ? { y: -3, scale: 1.01 } : { y: 0, scale: 1 }}
-      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+      animate={hold.isHolding && !reducedMotion ? { y: -MOTION_DISTANCE.xxs, scale: 1.01 } : { y: 0, scale: 1 }}
+      transition={MOTION_SPRING.card}
       className={cn(
         'overflow-hidden border border-s-4 text-right transition-[transform,box-shadow,filter] duration-300',
         density === 'compact' ? 'rounded-2xl p-3 md:rounded-[22px] md:p-3' : 'rounded-2xl p-3 md:rounded-[26px] md:p-3.5',
@@ -78,7 +155,13 @@ export function PrimaryActionCard({
         className,
       )}
       data-testid="primary-action-card"
-      {...hold.holdProps}
+      onPointerDown={composeHandlers(hold.holdProps.onPointerDown, longPressProps.onPointerDown)}
+      onPointerMove={longPressProps.onPointerMove}
+      onPointerUp={composeHandlers(hold.holdProps.onPointerUp, longPressProps.onPointerUp)}
+      onPointerLeave={composeHandlers(hold.holdProps.onPointerLeave, longPressProps.onPointerLeave)}
+      onPointerCancel={composeHandlers(hold.holdProps.onPointerCancel, longPressProps.onPointerCancel)}
+      onBlur={hold.holdProps.onBlur}
+      onClickCapture={longPressProps.onClickCapture}
     >
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1 space-y-1.5">
@@ -88,19 +171,31 @@ export function PrimaryActionCard({
             </div>
           ) : null}
           <div className="flex items-start gap-2">
-            <Icon
-              className={cn(
-                'mt-0.5 h-4 w-4 shrink-0',
-                tone === 'warning' && 'text-warning',
-                tone === 'danger' && 'text-destructive',
-                tone === 'success' && 'text-success',
-                tone === 'default' && 'text-primary',
-              )}
-              strokeWidth={1.75}
-              aria-hidden="true"
-            />
+            <motion.span
+              layoutId={iconLayoutId}
+              initial={reducedMotion ? { opacity: 0.94 } : false}
+              animate={reducedMotion ? { opacity: 1 } : undefined}
+              transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              className="mt-0.5 shrink-0"
+            >
+              <Icon
+                className={cn(
+                  'h-4 w-4',
+                  tone === 'warning' && 'text-warning',
+                  tone === 'danger' && 'text-destructive',
+                  tone === 'success' && 'text-success',
+                  tone === 'default' && 'text-primary',
+                )}
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
+            </motion.span>
             <div className="min-w-0">
-              <div
+              <motion.div
+                layoutId={titleLayoutId}
+                initial={reducedMotion ? { opacity: 0.94 } : false}
+                animate={reducedMotion ? { opacity: 1 } : undefined}
+                transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
                 className={cn(
                   density === 'compact' ? 'text-[14px] leading-5 sm:text-[15px]' : 'text-[15px] leading-5 sm:text-base',
                   'font-semibold',
@@ -108,7 +203,7 @@ export function PrimaryActionCard({
                 )}
               >
                 {title}
-              </div>
+              </motion.div>
               <div
                 className={cn(
                   density === 'compact' ? 'line-clamp-1 text-[11px] leading-4.5 sm:text-[12px]' : 'line-clamp-2 text-[12px] leading-4.5 sm:text-[13px] sm:leading-5',
@@ -161,7 +256,14 @@ export function PrimaryActionCard({
               data-accent-sheen="true"
               data-testid="primary-action-cta"
             >
-              {ctaLabel}
+              <motion.span
+                layoutId={badgeLayoutId}
+                initial={reducedMotion ? { opacity: 0.92 } : false}
+                animate={reducedMotion ? { opacity: 1 } : undefined}
+                transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              >
+                {ctaLabel}
+              </motion.span>
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.75} />
             </Link>
           ) : (
@@ -182,7 +284,14 @@ export function PrimaryActionCard({
               data-accent-sheen="true"
               data-testid="primary-action-cta"
             >
-              {ctaLabel}
+              <motion.span
+                layoutId={badgeLayoutId}
+                initial={reducedMotion ? { opacity: 0.92 } : false}
+                animate={reducedMotion ? { opacity: 1 } : undefined}
+                transition={reducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              >
+                {ctaLabel}
+              </motion.span>
               <ArrowUpRight className="icon-directional h-4 w-4" strokeWidth={1.75} />
             </button>
           )}
@@ -191,6 +300,15 @@ export function PrimaryActionCard({
       {supportingContent ? <div className={cn(density === 'compact' ? 'mt-2' : 'mt-2.5')}>{supportingContent}</div> : null}
       {secondaryAction ? <div className={cn(density === 'compact' ? 'mt-2 flex justify-stretch sm:justify-end' : 'mt-2.5 flex justify-stretch sm:justify-end')}>{secondaryAction}</div> : null}
     </motion.div>
+    <MobileRowActionsSheet
+      title={title}
+      description={description}
+      actions={rowActions}
+      open={actionsOpen}
+      onOpenChange={setActionsOpen}
+      hideTrigger
+    />
+    </>
   );
 
   return panel;

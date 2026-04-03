@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, CalendarDays, CheckCircle2, FileText, Move, ParkingCircle, PhoneCall, Sparkles } from 'lucide-react';
 import { authFetch, getCurrentUserId, getEffectiveRole } from '../../lib/auth';
 import { Button } from '../../components/ui/button';
@@ -9,13 +10,15 @@ import { cn } from '../../lib/utils';
 import { Card, CardContent } from '../../components/ui/card';
 import { EmptyState } from '../../components/ui/empty-state';
 import { FileUpload } from '../../components/ui/file-upload';
-import { FormField, FormErrorSummary } from '../../components/ui/form-field';
+import { FormActionHint, FormField, FormErrorSummary } from '../../components/ui/form-field';
 import { Input } from '../../components/ui/input';
 import { InlineErrorPanel } from '../../components/ui/inline-feedback';
 import { MobileContextBar } from '../../components/ui/mobile-context-bar';
+import { MobileRowActionsSheet, type MobileRowActionItem } from '../../components/ui/mobile-row-actions-sheet';
 import { MobileCardSkeleton } from '../../components/ui/page-states';
 import { CompactStatusStrip } from '../../components/ui/compact-status-strip';
 import { GlassSurface } from '../../components/ui/glass-surface';
+import { MobileSwipeActionCard } from '../../components/ui/mobile-swipe-action-card';
 import { PrimaryActionCard } from '../../components/ui/primary-action-card';
 import { PullToRefreshIndicator } from '../../components/ui/pull-to-refresh-indicator';
 import { QuickActionTile } from '../../components/ui/quick-action-tile';
@@ -29,7 +32,9 @@ import { AmsTabs } from '../../components/ui/ams-tabs';
 import { Textarea } from '../../components/ui/textarea';
 import { toast } from '../../components/ui/use-toast';
 import { usePullToRefresh } from '../../hooks/use-pull-to-refresh';
+import { useLongPressActions } from '../../hooks/use-long-press-actions';
 import { triggerHaptic } from '../../lib/mobile';
+import { getRouteTransitionTokensByKey } from '../../lib/route-transition-contract';
 import { showRequestSubmitted } from '../../lib/success-feedback';
 import {
   formatDate,
@@ -39,6 +44,7 @@ import {
 } from '../../lib/utils';
 import { useLocale } from '../../lib/providers';
 import { setResumeState } from '../../lib/engagement';
+import { MOTION_DISTANCE, MOTION_DURATION, MOTION_EASE } from '../../lib/motion-tokens';
 
 const requestTypes = [
   { value: 'MOVING', label: 'מעבר', icon: Move, description: 'תיאום מהיר' },
@@ -83,6 +89,39 @@ type RequestHistoryItem = {
   statusNotes?: string | null;
 };
 
+function getRequestSignature(item: RequestHistoryItem) {
+  return [
+    item.requestKey,
+    item.status,
+    item.updatedAt,
+    item.subject,
+    item.message,
+    item.requestType,
+    item.statusNotes ?? '',
+  ].join('|');
+}
+
+function summarizeRequestChanges(previous: RequestHistoryItem[], next: RequestHistoryItem[]) {
+  const previousMap = new Map(previous.map((item) => [item.requestKey, getRequestSignature(item)]));
+  let added = 0;
+  let updated = 0;
+
+  next.forEach((item) => {
+    const signature = getRequestSignature(item);
+    const key = item.requestKey;
+    const previousSignature = previousMap.get(key);
+    if (!previousSignature || previousSignature !== signature) {
+      if (!previousSignature) {
+        added += 1;
+      } else {
+        updated += 1;
+      }
+    }
+  });
+
+  return { added, updated, changed: added + updated, unchanged: added + updated === 0 };
+}
+
 const emptyForm = {
   requestType: 'MOVING',
   subject: '',
@@ -99,9 +138,21 @@ const emptyForm = {
   extraContact: '',
 };
 
+type RequestDraftPayload = {
+  form: typeof emptyForm;
+  formStep: 1 | 2 | 3;
+};
+
 export default function ResidentRequestsPage() {
   const router = useRouter();
   const { locale, t } = useLocale();
+  const prefersReducedMotion = useReducedMotion();
+  const transitionTokens = getRouteTransitionTokensByKey('requests');
+  const containerLayoutId = prefersReducedMotion ? undefined : transitionTokens.container;
+  const headerLayoutId = prefersReducedMotion ? undefined : transitionTokens.header;
+  const iconLayoutId = prefersReducedMotion ? undefined : transitionTokens.icon;
+  const badgeLayoutId = prefersReducedMotion ? undefined : transitionTokens.badge;
+  const titleLayoutId = prefersReducedMotion ? undefined : transitionTokens.title;
   const [form, setForm] = useState(emptyForm);
   const [history, setHistory] = useState<RequestHistoryItem[]>([]);
   const [historyFilter, setHistoryFilter] = useState({ status: 'ALL', requestType: 'ALL' });
@@ -117,13 +168,42 @@ export default function ResidentRequestsPage() {
   const [submittedRequestKey, setSubmittedRequestKey] = useState<string | null>(null);
   const [submittedRequestType, setSubmittedRequestType] = useState<string | null>(null);
   const [view, setView] = useState<'new' | 'history'>('history');
+  const [draftRestored, setDraftRestored] = useState(false);
+  const draftHydratedRef = React.useRef(false);
+  const historyRef = React.useRef<RequestHistoryItem[]>([]);
+  const deltaTimeoutRef = React.useRef<number | null>(null);
+  const [refreshDeltaCount, setRefreshDeltaCount] = useState<number | null>(null);
+  const [refreshDeltaSummary, setRefreshDeltaSummary] = useState<{ added?: number; updated?: number; unchanged?: boolean } | null>(null);
+  const currentUserId = getCurrentUserId() || 'anonymous';
+  const currentRole = getEffectiveRole() || 'RESIDENT';
+  const draftStorageKey = useMemo(
+    () => `resident-requests-draft:${currentUserId}:${currentRole}`,
+    [currentRole, currentUserId],
+  );
+
+  historyRef.current = history;
 
   const activeType = requestTypes.find((item) => item.value === form.requestType)!;
-  const { pullDistance, isRefreshing } = usePullToRefresh({
+  const { pullDistance, pullProgress, isRefreshing, threshold } = usePullToRefresh({
+    preset: 'detail',
+    onThresholdReached: () => triggerHaptic('light'),
     onRefresh: async () => {
-      await loadHistory();
+      const previousHistory = historyRef.current;
+      const nextHistory = await loadHistory();
+      const deltaSummary = summarizeRequestChanges(previousHistory, nextHistory);
+      setRefreshDeltaCount(deltaSummary.changed);
+      setRefreshDeltaSummary(deltaSummary);
+      if (deltaTimeoutRef.current) {
+        window.clearTimeout(deltaTimeoutRef.current);
+      }
+      deltaTimeoutRef.current = window.setTimeout(() => {
+        setRefreshDeltaCount(null);
+        setRefreshDeltaSummary(null);
+      }, 1800);
     },
   });
+  const canopyShift = prefersReducedMotion ? 0 : Math.min(pullDistance * 0.2, 16);
+  const canopyScale = prefersReducedMotion ? 1 : 1 - pullProgress * 0.014;
 
   useEffect(() => {
     setResumeState({ screen: 'resident', href: '/resident/requests', label: 'בקשות דייר', role: getEffectiveRole() || 'RESIDENT', userId: getCurrentUserId() });
@@ -134,12 +214,61 @@ export default function ResidentRequestsPage() {
   }, [historyFilter.status, historyFilter.requestType]);
 
   useEffect(() => {
+    return () => {
+      if (deltaTimeoutRef.current) {
+        window.clearTimeout(deltaTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!router.isReady) return;
     const nextView = router.query.view === 'new' ? 'new' : 'history';
     setView(nextView);
     setComposerOpen(nextView === 'new');
     setFormStep(1);
   }, [router.isReady, router.query.view]);
+
+  useEffect(() => {
+    draftHydratedRef.current = false;
+    setDraftRestored(false);
+  }, [draftStorageKey]);
+
+  useEffect(() => {
+    if (!composerOpen || draftHydratedRef.current) return;
+    draftHydratedRef.current = true;
+    if (typeof window === 'undefined') return;
+
+    const serializedDraft = window.localStorage.getItem(draftStorageKey);
+    if (!serializedDraft) return;
+
+    try {
+      const parsedDraft = JSON.parse(serializedDraft) as Partial<RequestDraftPayload>;
+      if (parsedDraft.form && typeof parsedDraft.form === 'object') {
+        setForm((current) => ({ ...current, ...parsedDraft.form }));
+      }
+      if (parsedDraft.formStep && [1, 2, 3].includes(parsedDraft.formStep)) {
+        setFormStep(parsedDraft.formStep);
+      }
+      setDraftRestored(true);
+    } catch (error) {
+      console.error(error);
+      window.localStorage.removeItem(draftStorageKey);
+    }
+  }, [composerOpen, draftStorageKey]);
+
+  useEffect(() => {
+    if (!composerOpen || typeof window === 'undefined') return;
+    const timeoutId = window.setTimeout(() => {
+      const draftPayload: RequestDraftPayload = {
+        form,
+        formStep,
+      };
+      window.localStorage.setItem(draftStorageKey, JSON.stringify(draftPayload));
+    }, 350);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [composerOpen, draftStorageKey, form, formStep]);
 
   useEffect(() => {
     if (view !== 'new' || !composerOpen) return;
@@ -166,11 +295,14 @@ export default function ResidentRequestsPage() {
       const response = await authFetch(`/api/v1/communications/resident-requests${params.toString() ? `?${params.toString()}` : ''}`);
       if (!response.ok) throw new Error(await response.text());
       const payload = await response.json();
-      setHistory(Array.isArray(payload) ? payload : []);
+      const nextHistory = Array.isArray(payload) ? payload : [];
+      setHistory(nextHistory);
+      return nextHistory as RequestHistoryItem[];
     } catch (error) {
       console.error(error);
       setHistoryError('לא ניתן לטעון כרגע את היסטוריית הבקשות.');
       toast({ title: 'טעינת היסטוריית הבקשות נכשלה', variant: 'destructive' });
+      return historyRef.current;
     } finally {
       setLoading(false);
     }
@@ -225,12 +357,13 @@ export default function ResidentRequestsPage() {
       .filter((key) => formErrors[key] && shouldShowError(key))
       .map((key) => ({ field: key, message: formErrors[key] }));
   }, [formErrors, formSubmitted, formTouched]);
+  const hasRequiredErrors = Boolean(formErrors.subject || formErrors.message || formErrors.requestedDate);
 
   async function submitRequest() {
     setFormSubmitted(true);
     setSubmitError(null);
 
-    if (formErrors.subject || formErrors.message) {
+    if (hasRequiredErrors) {
       toast({ title: 'יש להשלים את שדות החובה לפני השליחה', variant: 'destructive' });
       requestAnimationFrame(() => {
         const el = document.querySelector<HTMLElement>('[aria-invalid="true"]');
@@ -261,6 +394,9 @@ export default function ResidentRequestsPage() {
       triggerHaptic('success');
       setSubmittedRequestKey(payload?.requestKey || `REQ-${new Date().getTime().toString().slice(-6)}`);
       setSubmittedRequestType(form.requestType);
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(draftStorageKey);
+      }
       setForm(emptyForm);
       setDraftAttachment(null);
       setFormTouched({});
@@ -300,12 +436,26 @@ export default function ResidentRequestsPage() {
     setComposerOpen(true);
     setFormStep(nextStep);
     setSubmitError(null);
+    setDraftRestored(false);
     setView('new');
     triggerHaptic('light');
   }
 
   function closeComposer() {
     setComposerOpen(false);
+  }
+
+  function clearDraft() {
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(draftStorageKey);
+    }
+    setForm(emptyForm);
+    setFormTouched({});
+    setFormSubmitted(false);
+    setSubmitError(null);
+    setFormStep(1);
+    setDraftAttachment(null);
+    setDraftRestored(false);
   }
 
   function advanceComposer(nextStep: 1 | 2 | 3) {
@@ -315,7 +465,7 @@ export default function ResidentRequestsPage() {
 
   function advanceToReview() {
     setFormSubmitted(true);
-    if (formErrors.subject || formErrors.message || formErrors.requestedDate) {
+    if (hasRequiredErrors) {
       toast({ title: 'יש להשלים את השדות הנדרשים לפני האישור', variant: 'destructive' });
       return;
     }
@@ -324,7 +474,14 @@ export default function ResidentRequestsPage() {
 
   return (
     <div className="space-y-5 pb-4 sm:space-y-8">
-      <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} label="משוך כדי לרענן בקשות דייר" />
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        isRefreshing={isRefreshing}
+        deltaChipCount={refreshDeltaCount}
+        deltaSummary={refreshDeltaSummary}
+        threshold={threshold}
+        label="משוך כדי לרענן בקשות דייר"
+      />
 
       <div className="space-y-3 md:hidden">
         <CompactStatusStrip
@@ -349,11 +506,48 @@ export default function ResidentRequestsPage() {
         />
       </div>
 
-      <GlassSurface strength="strong" className="rounded-[28px] p-4">
-        <div className="flex items-start justify-between gap-3">
+      <motion.div
+        layoutId={containerLayoutId}
+        initial={prefersReducedMotion ? undefined : { borderRadius: 28 }}
+        animate={prefersReducedMotion ? undefined : { borderRadius: 28 }}
+        style={{
+          transform: `translateY(${canopyShift}px) scale(${canopyScale})`,
+          transformOrigin: '50% 0%',
+        }}
+      >
+        <GlassSurface strength="strong" className="rounded-[28px] p-4">
+          <motion.div layoutId={headerLayoutId} className="flex items-start justify-between gap-3">
           <div className="min-w-0">
+            <div className="mb-2 flex items-center gap-2 md:hidden">
+              <motion.span
+                layoutId={iconLayoutId}
+                initial={prefersReducedMotion ? { opacity: 0.94 } : false}
+                animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+                transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-primary/16 bg-primary/10 text-primary"
+              >
+                <FileText className="h-4 w-4" strokeWidth={1.85} />
+              </motion.span>
+              <motion.span
+                layoutId={badgeLayoutId}
+                initial={prefersReducedMotion ? { opacity: 0.92 } : false}
+                animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+                transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+                className="rounded-full border border-primary/16 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
+              >
+                {openRequests.length ? `${openRequests.length} פתוחות` : 'מסלולי שירות'}
+              </motion.span>
+            </div>
             <div className="text-[11px] font-semibold tracking-[0.12em] text-primary/72">בקשות</div>
-            <div className="mt-1 text-[25px] font-black leading-[1.04] text-foreground">בקשות דייר</div>
+            <motion.div
+              layoutId={titleLayoutId}
+              initial={prefersReducedMotion ? { opacity: 0.94 } : false}
+              animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+              transition={prefersReducedMotion ? { duration: 0.2, ease: 'easeOut' } : undefined}
+              className="mt-1 text-[25px] font-black leading-[1.04] text-foreground"
+            >
+              בקשות דייר
+            </motion.div>
             <div className="mt-1.5 text-[13px] leading-5 text-secondary-foreground">
               {openRequests[0]
                 ? openRequests[0].statusNotes || t('residentRequests.priority.waitingReason')
@@ -364,7 +558,7 @@ export default function ResidentRequestsPage() {
             label={openRequests[0] ? getResidentRequestStatusLabel(openRequests[0].status) : 'פתיחה מהירה'}
             tone={openRequests[0] ? getResidentRequestStatusTone(openRequests[0].status) : 'finance'}
           />
-        </div>
+          </motion.div>
 
         <div className="mt-4 rounded-[22px] border border-subtle-border bg-background/88 p-4">
           <div className="flex items-start justify-between gap-3">
@@ -401,22 +595,29 @@ export default function ResidentRequestsPage() {
             </Button>
           </div>
         </div>
-      </GlassSurface>
+        </GlassSurface>
+      </motion.div>
 
-      <AmsTabs
-        ariaLabel="בקשות דייר"
-        selectedKey={view}
-        onSelectionChange={(key) => {
-          const nextView = key as 'new' | 'history';
-          setView(nextView);
-          setComposerOpen(false);
-          void router.replace(`/resident/requests?view=${nextView}`, undefined, { shallow: true });
-        }}
-        items={[
-          { key: 'new', title: 'בקשה חדשה' },
-          { key: 'history', title: 'מעקב', badge: openRequests.length || null },
-        ]}
-      />
+      <motion.div
+        initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: MOTION_DISTANCE.xs }}
+        animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        transition={{ delay: prefersReducedMotion ? 0 : 0.14, duration: MOTION_DURATION.moderate, ease: MOTION_EASE.emphasized }}
+        className="space-y-5"
+      >
+        <AmsTabs
+          ariaLabel="בקשות דייר"
+          selectedKey={view}
+          onSelectionChange={(key) => {
+            const nextView = key as 'new' | 'history';
+            setView(nextView);
+            setComposerOpen(false);
+            void router.replace(`/resident/requests?view=${nextView}`, undefined, { shallow: true });
+          }}
+          items={[
+            { key: 'new', title: 'בקשה חדשה' },
+            { key: 'history', title: 'מעקב', badge: openRequests.length || null },
+          ]}
+        />
 
       {view === 'history' && openRequests[0] ? (
         <PrimaryActionCard
@@ -518,6 +719,8 @@ export default function ResidentRequestsPage() {
         </section>
       ) : null}
 
+      </motion.div>
+
       <AmsDrawer
         isOpen={composerOpen}
         onOpenChange={(open) => {
@@ -550,9 +753,14 @@ export default function ResidentRequestsPage() {
             ) : null}
             {formStep === 3 ? (
               <>
-                <button type="button" className="gold-sheen-button flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-base font-semibold" data-accent-sheen="true" onClick={submitRequest} disabled={submitting}>
+                <button type="button" className="gold-sheen-button flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-base font-semibold" data-accent-sheen="true" onClick={submitRequest} disabled={submitting || hasRequiredErrors}>
                   {submitting ? 'שולח...' : 'שלח בקשה'}
                 </button>
+                {hasRequiredErrors ? (
+                  <FormActionHint>
+                    יש להשלים את שדות החובה המסומנים כדי לשלוח את הבקשה.
+                  </FormActionHint>
+                ) : null}
                 <Button type="button" variant="outline" className="w-full rounded-full min-h-[52px]" onClick={() => advanceComposer(2)}>
                   חזרה לפרטים
                 </Button>
@@ -573,6 +781,20 @@ export default function ResidentRequestsPage() {
         )}
       >
         <div className="space-y-4">
+          {draftRestored ? (
+            <div className="flex items-center justify-between gap-3 rounded-[16px] border border-subtle-border bg-muted/40 px-3 py-2 text-sm">
+              <span className="font-medium text-foreground">טיוטה שוחזרה</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-auto rounded-full px-3 py-1 text-secondary-foreground"
+                onClick={clearDraft}
+              >
+                נקה טיוטה
+              </Button>
+            </div>
+          ) : null}
           <RequestFlowProgress currentStep={formStep} items={stepSummaries} />
 
           {formStep === 1 ? (
@@ -595,7 +817,7 @@ export default function ResidentRequestsPage() {
                 <div className="mt-1 text-sm leading-6 text-secondary-foreground">{selectedTypeDescription.responseWindow}</div>
               </div>
 
-              <FormErrorSummary errors={visibleFormErrors} fieldLabels={fieldLabels} />
+              <FormErrorSummary errors={visibleFormErrors} fieldLabels={fieldLabels} sticky />
 
               {form.requestType === 'MOVING' ? (
                 <div className="space-y-4">
@@ -608,7 +830,7 @@ export default function ResidentRequestsPage() {
                   </FormField>
 
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <FormField label="תאריך מבוקש" error={shouldShowError('requestedDate') ? formErrors.requestedDate : ''}>
+                    <FormField label="תאריך מבוקש" fieldKey="requestedDate" error={shouldShowError('requestedDate') ? formErrors.requestedDate : ''}>
                       <Input
                         name="requestedDate"
                         aria-label="תאריך מבוקש"
@@ -709,7 +931,7 @@ export default function ResidentRequestsPage() {
               ) : null}
 
               <div className="grid gap-4">
-                <FormField label="נושא" required error={shouldShowError('subject') ? formErrors.subject : ''}>
+                <FormField label="נושא" fieldKey="subject" required error={shouldShowError('subject') ? formErrors.subject : ''}>
                   <Input
                     name="subject"
                     aria-label="נושא"
@@ -720,7 +942,7 @@ export default function ResidentRequestsPage() {
                   />
                 </FormField>
 
-                <FormField label="פרטי הבקשה" required error={shouldShowError('message') ? formErrors.message : ''}>
+                <FormField label="פרטי הבקשה" fieldKey="message" required error={shouldShowError('message') ? formErrors.message : ''}>
                   <Textarea
                     name="message"
                     aria-label="פרטי הבקשה"
@@ -824,7 +1046,9 @@ export default function ResidentRequestsPage() {
             </FormField>
           </div>
 
-          {historyError ? <InlineErrorPanel title="היסטוריית הבקשות לא נטענה" description={historyError} onRetry={loadHistory} /> : null}
+          {historyError ? (
+            <InlineErrorPanel title="היסטוריית הבקשות לא נטענה" description={historyError} onRetry={() => void loadHistory()} />
+          ) : null}
 
           {loading ? (
             <MobileCardSkeleton cards={2} />
@@ -1010,43 +1234,107 @@ function ReviewTile({ label, value }: { label: string; value: string }) {
 }
 
 function RequestHistoryList({ items, locale }: { items: RequestHistoryItem[]; locale: string }) {
+  const router = useRouter();
+
   return (
     <div className="space-y-3">
       {items.map((item, index) => (
-        <div key={item.requestKey} className="space-y-2">
-          <ResidentListCard
-            title={item.subject.replace(/^[A-Z_]+:\s*/, '')}
-            subtitle={item.message}
-            icon={item.requestType === 'MOVING' ? Move : item.requestType === 'PARKING' ? ParkingCircle : item.requestType === 'DOCUMENT' ? FileText : item.requestType === 'CONTACT_UPDATE' ? PhoneCall : Sparkles}
-            accent={item.status === 'SUBMITTED' || item.status === 'IN_REVIEW' ? 'warning' : 'success'}
-            delay={index * 0.04}
-            meta={<StatusBadge label={getResidentRequestStatusLabel(item.status)} tone={getResidentRequestStatusTone(item.status)} className="px-1.5 py-0 h-4 text-[9px]" />}
-            endSlot={
-              <div className="flex flex-col items-end gap-1 shrink-0">
-                <div className="text-[10px] font-bold text-muted-foreground/60"><bdi>{formatDate(new Date(item.updatedAt || item.createdAt), locale)}</bdi></div>
-                <StatusBadge label={getRequestTypeLabel(item.requestType)} tone="neutral" className="px-1.5 py-0 h-4 text-[9px]" />
-              </div>
-            }
-          />
-
-          {item.statusNotes ? (
-            <GlassSurface className="rounded-[20px] px-3 py-2.5">
-              <div className="mb-1 flex items-center gap-1.5 text-[12px] font-bold text-primary">
-                <Sparkles className="h-3.5 w-3.5" strokeWidth={2.5} />
-                עדכון
-              </div>
-              <div className="text-[12px] leading-5 text-secondary-foreground">{item.statusNotes}</div>
-            </GlassSurface>
-          ) : null}
-
-          {item.requestedDate ? (
-            <div className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-warning">
-              <CalendarDays className="h-3.5 w-3.5" strokeWidth={2.5} />
-              <span>יעד: <bdi>{formatDate(item.requestedDate, locale)}</bdi></span>
-            </div>
-          ) : null}
-        </div>
+        <RequestHistoryCard key={item.requestKey} item={item} index={index} locale={locale} onNavigate={() => router.push(`/resident/requests?view=history&requestKey=${encodeURIComponent(item.requestKey)}`)} />
       ))}
+    </div>
+  );
+}
+
+function RequestHistoryCard({
+  item,
+  index,
+  locale,
+  onNavigate,
+}: {
+  item: RequestHistoryItem;
+  index: number;
+  locale: string;
+  onNavigate: () => void;
+}) {
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const actions: MobileRowActionItem[] = [
+    {
+      id: 'open-request',
+      label: 'פתח מעקב בקשה',
+      description: 'מעבר למסך המעקב של הבקשה.',
+      tone: 'primary',
+      onSelect: onNavigate,
+    },
+  ];
+  const { longPressProps } = useLongPressActions({
+    onLongPress: () => setActionsOpen(true),
+  });
+
+  return (
+    <div className="space-y-2">
+      <MobileSwipeActionCard
+        actions={[
+          {
+            id: `open-request-${item.requestKey}`,
+            label: 'פתח מעקב',
+            tone: 'primary',
+            side: 'start',
+            onCommit: onNavigate,
+          },
+          {
+            id: `request-status-${item.requestKey}`,
+            label: item.status === 'COMPLETED' || item.status === 'CLOSED' ? 'הצג סיכום' : 'בדוק סטטוס',
+            tone: item.status === 'COMPLETED' || item.status === 'CLOSED' ? 'success' : 'warning',
+            side: 'end',
+            onCommit: onNavigate,
+          },
+        ]}
+        className="rounded-[24px]"
+      >
+        <div className="touch-pan-y" {...longPressProps}>
+            <ResidentListCard
+              title={item.subject.replace(/^[A-Z_]+:\s*/, '')}
+              subtitle={item.message}
+              icon={item.requestType === 'MOVING' ? Move : item.requestType === 'PARKING' ? ParkingCircle : item.requestType === 'DOCUMENT' ? FileText : item.requestType === 'CONTACT_UPDATE' ? PhoneCall : Sparkles}
+              accent={item.status === 'SUBMITTED' || item.status === 'IN_REVIEW' ? 'warning' : 'success'}
+              delay={index * 0.04}
+              onClick={onNavigate}
+              meta={<StatusBadge label={getResidentRequestStatusLabel(item.status)} tone={getResidentRequestStatusTone(item.status)} className="px-1.5 py-0 h-4 text-[9px]" />}
+              endSlot={
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <div className="text-[10px] font-bold text-muted-foreground/60"><bdi>{formatDate(new Date(item.updatedAt || item.createdAt), locale)}</bdi></div>
+                  <StatusBadge label={getRequestTypeLabel(item.requestType)} tone="neutral" className="px-1.5 py-0 h-4 text-[9px]" />
+                </div>
+              }
+            />
+        </div>
+      </MobileSwipeActionCard>
+
+      {item.statusNotes ? (
+        <GlassSurface className="rounded-[20px] px-3 py-2.5">
+          <div className="mb-1 flex items-center gap-1.5 text-[12px] font-bold text-primary">
+            <Sparkles className="h-3.5 w-3.5" strokeWidth={2.5} />
+            עדכון
+          </div>
+          <div className="text-[12px] leading-5 text-secondary-foreground">{item.statusNotes}</div>
+        </GlassSurface>
+      ) : null}
+
+      {item.requestedDate ? (
+        <div className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-warning">
+          <CalendarDays className="h-3.5 w-3.5" strokeWidth={2.5} />
+          <span>יעד: <bdi>{formatDate(item.requestedDate, locale)}</bdi></span>
+        </div>
+      ) : null}
+
+      <MobileRowActionsSheet
+        title={item.subject.replace(/^[A-Z_]+:\s*/, '')}
+        description={item.message}
+        actions={actions}
+        open={actionsOpen}
+        onOpenChange={setActionsOpen}
+        hideTrigger
+      />
     </div>
   );
 }

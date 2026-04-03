@@ -3,6 +3,7 @@ import { getRoleCapabilities, type SupportedRole } from './role-capabilities';
 
 export type DestinationReason =
   | 'unauthenticated'
+  | 'next_override'
   | 'resident_default'
   | 'role_selection'
   | 'portal_resident'
@@ -42,8 +43,26 @@ export function resolvePostLoginRoute(input: ResolverInput): RouteResolution {
   if (input.next) {
     return {
       destination: input.next,
-      reason: 'portal_worker',
+      reason: 'next_override',
       normalizedRole: (capabilities?.role ?? null),
+      unsupportedRole: false,
+    };
+  }
+
+  if (input.portal === 'worker') {
+    if (capabilities?.role && capabilities.role !== 'RESIDENT') {
+      return {
+        destination: '/home',
+        reason: 'portal_worker',
+        normalizedRole: capabilities.role,
+        unsupportedRole: false,
+      };
+    }
+
+    return {
+      destination: '/resident/account',
+      reason: 'resident_default',
+      normalizedRole: capabilities?.role ?? null,
       unsupportedRole: false,
     };
   }
